@@ -1,161 +1,192 @@
-import React from "react";
-import { Stack, Link } from "expo-router";
-import { FlatList, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
 
-const ICON_COLOR = "#007AFF";
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import { Stack } from 'expo-router';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import PostButton from '@/components/PostButton';
+import PostCard from '@/components/PostCard';
+import ShowCard from '@/components/ShowCard';
+import PostModal from '@/components/PostModal';
+import { mockPosts, mockShows } from '@/data/mockData';
+import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HomeScreen() {
-  const theme = useTheme();
-  const modalDemos = [
-    {
-      title: "Standard Modal",
-      description: "Full screen modal presentation",
-      route: "/modal",
-      color: "#007AFF",
-    },
-    {
-      title: "Form Sheet",
-      description: "Bottom sheet with detents and grabber",
-      route: "/formsheet",
-      color: "#34C759",
-    },
-    {
-      title: "Transparent Modal",
-      description: "Overlay without obscuring background",
-      route: "/transparent-modal",
-      color: "#FF9500",
-    }
-  ];
+  const [modalVisible, setModalVisible] = useState(false);
+  const [posts, setPosts] = useState(mockPosts);
 
-  const renderModalDemo = ({ item }: { item: (typeof modalDemos)[0] }) => (
-    <GlassView style={[
-      styles.demoCard,
-      Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-    ]} glassEffectStyle="regular">
-      <View style={[styles.demoIcon, { backgroundColor: item.color }]}>
-        <IconSymbol name="square.grid.3x3" color="white" size={24} />
-      </View>
-      <View style={styles.demoContent}>
-        <Text style={[styles.demoTitle, { color: theme.colors.text }]}>{item.title}</Text>
-        <Text style={[styles.demoDescription, { color: theme.dark ? '#98989D' : '#666' }]}>{item.description}</Text>
-      </View>
-      <Link href={item.route as any} asChild>
-        <Pressable>
-          <GlassView style={[
-            styles.tryButton,
-            Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)' }
-          ]} glassEffectStyle="clear">
-            <Text style={[styles.tryButtonText, { color: theme.colors.primary }]}>Try It</Text>
-          </GlassView>
-        </Pressable>
-      </Link>
-    </GlassView>
-  );
+  const handleLike = (postId: string) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId
+          ? {
+              ...post,
+              isLiked: !post.isLiked,
+              likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+            }
+          : post
+      )
+    );
+  };
 
-  const renderHeaderRight = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol name="plus" color={theme.colors.primary} />
-    </Pressable>
-  );
-
-  const renderHeaderLeft = () => (
-    <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
-      style={styles.headerButtonContainer}
-    >
-      <IconSymbol
-        name="gear"
-        color={theme.colors.primary}
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
+      <Text style={styles.logo}>EPISADA</Text>
+      <Image
+        source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' }}
+        style={styles.profilePic}
       />
-    </Pressable>
+    </View>
+  );
+
+  const renderWelcome = () => (
+    <View style={styles.welcomeContainer}>
+      <Text style={styles.welcomeText}>Welcome back</Text>
+      <Text style={styles.userName}>Jacqueline</Text>
+    </View>
+  );
+
+  const renderRecommendedTitles = () => (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Recommended Titles</Text>
+        <IconSymbol name="arrow.right" size={20} color={colors.text} />
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.showsScroll}>
+        {mockShows.slice(0, 6).map((show) => (
+          <ShowCard key={show.id} show={show} />
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  const renderFriendActivity = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Friend Activity</Text>
+      {posts.length > 0 ? (
+        posts.map((post) => (
+          <PostCard key={post.id} post={post} onLike={() => handleLike(post.id)} />
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <IconSymbol name="person.2" size={48} color={colors.textSecondary} />
+          <Text style={styles.emptyStateTitle}>No friend activity yet</Text>
+          <Text style={styles.emptyStateText}>
+            Invite your friends to see what they&apos;re watching!
+          </Text>
+          <Pressable style={styles.inviteButton}>
+            <Text style={styles.inviteButtonText}>Invite Friends</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
   );
 
   return (
     <>
-      {Platform.OS === 'ios' && (
-        <Stack.Screen
-          options={{
-            title: "Building the app...",
-            headerRight: renderHeaderRight,
-            headerLeft: renderHeaderLeft,
-          }}
-        />
-      )}
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <FlatList
-          data={modalDemos}
-          renderItem={renderModalDemo}
-          keyExtractor={(item) => item.route}
-          contentContainerStyle={[
-            styles.listContainer,
-            Platform.OS !== 'ios' && styles.listContainerWithTabBar
-          ]}
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-        />
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={commonStyles.container}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {renderHeader()}
+          {renderWelcome()}
+          <View style={styles.content}>
+            <PostButton onPress={() => setModalVisible(true)} />
+            {renderRecommendedTitles()}
+            {renderFriendActivity()}
+          </View>
+        </ScrollView>
       </View>
+      <PostModal visible={modalVisible} onClose={() => setModalVisible(false)} />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    // backgroundColor handled dynamically
   },
-  listContainer: {
-    paddingVertical: 16,
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 60,
+    paddingBottom: 16,
+  },
+  logo: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    letterSpacing: 2,
+  },
+  profilePic: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  welcomeContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  showsScroll: {
+    marginHorizontal: -16,
     paddingHorizontal: 16,
   },
-  listContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
-  },
-  demoCard: {
+  emptyState: {
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
-  demoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  demoContent: {
-    flex: 1,
-  },
-  demoTitle: {
+  emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
-    // color handled dynamically
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
   },
-  demoDescription: {
+  emptyStateText: {
     fontSize: 14,
-    lineHeight: 18,
-    // color handled dynamically
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
   },
-  headerButtonContainer: {
-    padding: 6,
+  inviteButton: {
+    backgroundColor: colors.secondary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
-  tryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  tryButtonText: {
-    fontSize: 14,
+  inviteButtonText: {
+    fontSize: 16,
     fontWeight: '600',
-    // color handled dynamically
+    color: colors.text,
   },
 });

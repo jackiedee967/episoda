@@ -1,22 +1,34 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
-import { currentUser, mockPosts } from '@/data/mockData';
+import { mockUsers, mockPosts, currentUser } from '@/data/mockData';
 
-export default function ProfileScreen() {
-  const router = useRouter();
-  const userPosts = mockPosts.filter((p) => p.user.id === currentUser.id);
+export default function UserProfile() {
+  const { id } = useLocalSearchParams();
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
+  const userPosts = mockPosts.filter((p) => p.user.id === id);
+  const isCurrentUser = id === currentUser.id;
+
+  if (!user) {
+    return (
+      <View style={commonStyles.container}>
+        <Text style={commonStyles.text}>User not found</Text>
+      </View>
+    );
+  }
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-      <Text style={styles.displayName}>{currentUser.displayName}</Text>
-      <Text style={styles.username}>@{currentUser.username}</Text>
-      {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
+      <Image source={{ uri: user.avatar }} style={styles.avatar} />
+      <Text style={styles.displayName}>{user.displayName}</Text>
+      <Text style={styles.username}>@{user.username}</Text>
+      {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
 
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
@@ -33,15 +45,22 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.editButton}>
-        <Text style={styles.editButtonText}>Edit Profile</Text>
-      </Pressable>
+      {!isCurrentUser && (
+        <Pressable
+          style={[styles.followButton, isFollowing && styles.followingButton]}
+          onPress={() => setIsFollowing(!isFollowing)}
+        >
+          <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+            {isFollowing ? 'Following' : 'Follow'}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 
   const renderPosts = () => (
     <View style={styles.postsContainer}>
-      <Text style={styles.sectionTitle}>Your Posts</Text>
+      <Text style={styles.sectionTitle}>Posts</Text>
       {userPosts.length > 0 ? (
         userPosts.map((post) => <PostCard key={post.id} post={post} />)
       ) : (
@@ -49,7 +68,9 @@ export default function ProfileScreen() {
           <IconSymbol name="bubble.left" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyStateTitle}>No posts yet</Text>
           <Text style={styles.emptyStateText}>
-            Start logging shows to see your posts here!
+            {isCurrentUser
+              ? 'Start logging shows to see your posts here!'
+              : `${user.displayName} hasn't posted anything yet.`}
           </Text>
         </View>
       )}
@@ -58,12 +79,15 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen
+        options={{
+          title: user.username,
+          headerBackTitle: 'Back',
+          headerTintColor: colors.text,
+        }}
+      />
       <View style={commonStyles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Profile</Text>
-          </View>
           {renderHeader()}
           {renderPosts()}
         </ScrollView>
@@ -76,23 +100,10 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  headerContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
-  },
   header: {
     alignItems: 'center',
     padding: 24,
     backgroundColor: colors.card,
-    marginHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 16,
   },
   avatar: {
     width: 100,
@@ -134,18 +145,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  editButton: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+  followButton: {
+    backgroundColor: colors.secondary,
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  editButtonText: {
+  followingButton: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  followButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+  followingButtonText: {
+    color: colors.textSecondary,
   },
   postsContainer: {
     padding: 16,
