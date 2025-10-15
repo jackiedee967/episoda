@@ -30,11 +30,15 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   };
 
   const handleShowPress = () => {
-    router.push(`/show/${post.show.id}`);
+    if (post?.show?.id) {
+      router.push(`/show/${post.show.id}`);
+    }
   };
 
   const handleUserPress = () => {
-    router.push(`/user/${post.user.id}`);
+    if (post?.user?.id) {
+      router.push(`/user/${post.user.id}`);
+    }
   };
 
   const getShowTagColor = (showTitle: string) => {
@@ -48,14 +52,38 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     return colors[index];
   };
 
+  // Add safety checks for post data
+  if (!post) {
+    console.log('PostCard: post is undefined');
+    return null;
+  }
+
+  if (!post.user) {
+    console.log('PostCard: post.user is undefined for post:', post.id);
+    return null;
+  }
+
+  if (!post.show) {
+    console.log('PostCard: post.show is undefined for post:', post.id);
+    return null;
+  }
+
   const showColor = getShowTagColor(post.show.title);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={handleUserPress} style={styles.userInfo}>
-          <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-          <Text style={styles.displayName}>{post.user.displayName}</Text>
+          {post.user.avatar ? (
+            <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarPlaceholderText}>
+                {post.user.displayName?.charAt(0) || '?'}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
         </Pressable>
         <Text style={styles.justWatched}>just watched</Text>
         {post.episodes && post.episodes.length > 0 && (
@@ -169,6 +197,16 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     marginRight: 6,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
   },
   displayName: {
     fontSize: 14,

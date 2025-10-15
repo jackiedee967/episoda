@@ -14,7 +14,9 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const router = useRouter();
 
   const handlePress = () => {
-    router.push(`/show/${show.id}`);
+    if (show?.id) {
+      router.push(`/show/${show.id}`);
+    }
   };
 
   const renderFriendAvatars = () => {
@@ -25,11 +27,22 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
       <View style={styles.friendsContainer}>
         <View style={styles.avatarRow}>
           {displayFriends.map((friend, index) => (
-            <Image
-              key={friend.id}
-              source={{ uri: friend.avatar }}
-              style={[styles.avatar, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
-            />
+            friend?.avatar ? (
+              <Image
+                key={friend.id}
+                source={{ uri: friend.avatar }}
+                style={[styles.avatar, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
+              />
+            ) : (
+              <View
+                key={friend?.id || `placeholder-${index}`}
+                style={[styles.avatar, styles.avatarPlaceholder, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
+              >
+                <Text style={styles.avatarPlaceholderText}>
+                  {friend?.displayName?.charAt(0) || '?'}
+                </Text>
+              </View>
+            )
           ))}
         </View>
         <Text style={styles.friendsText} numberOfLines={2}>
@@ -40,9 +53,20 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
     );
   };
 
+  if (!show) {
+    console.log('ShowCard: show is undefined');
+    return null;
+  }
+
   return (
     <Pressable style={styles.container} onPress={handlePress}>
-      <Image source={{ uri: show.poster }} style={styles.poster} />
+      {show.poster ? (
+        <Image source={{ uri: show.poster }} style={styles.poster} />
+      ) : (
+        <View style={[styles.poster, styles.posterPlaceholder]}>
+          <Text style={styles.posterPlaceholderText}>{show.title?.charAt(0) || '?'}</Text>
+        </View>
+      )}
       {renderFriendAvatars()}
     </Pressable>
   );
@@ -58,6 +82,16 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 8,
   },
+  posterPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  posterPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 48,
+    fontWeight: '600',
+  },
   friendsContainer: {
     marginTop: 8,
   },
@@ -72,6 +106,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1.5,
     borderColor: colors.background,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '600',
   },
   friendsText: {
     fontSize: 12,
