@@ -33,7 +33,7 @@ export default function HomeScreen() {
   const renderHeader = () => (
     <View style={styles.header}>
       <Image
-        source={require('@/assets/images/59e4d593-53e7-4f24-ac6a-4b6a77fdf55c.png')}
+        source={require('@/assets/images/37b8ed8a-6d1a-4831-b023-91c2cb1a7f19.png')}
         style={styles.logo}
         resizeMode="contain"
       />

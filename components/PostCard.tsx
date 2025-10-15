@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, Alert } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
@@ -16,6 +16,7 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare }: PostCardProps) {
   const router = useRouter();
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
 
   const formatTimestamp = (date: Date) => {
     try {
@@ -139,7 +140,26 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           )}
 
           {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-          {post.body && <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>}
+          
+          {/* Spoiler Alert Handling */}
+          {post.isSpoiler && !spoilerRevealed ? (
+            <View style={styles.spoilerContainer}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
+              <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
+              <Pressable 
+                style={styles.spoilerButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setSpoilerRevealed(true);
+                }}
+              >
+                <IconSymbol name="eye" size={16} color="#FFFFFF" style={styles.spoilerButtonIcon} />
+                <Text style={styles.spoilerButtonText}>Click to reveal</Text>
+              </Pressable>
+            </View>
+          ) : (
+            post.body && <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
+          )}
 
           {post.tags && post.tags.length > 0 && (
             <View style={styles.tagsContainer}>
@@ -344,6 +364,41 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
+  },
+  spoilerContainer: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  spoilerWarning: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#991B1B',
+    marginTop: 8,
+    marginBottom: 12,
+    fontFamily: 'System',
+  },
+  spoilerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  spoilerButtonIcon: {
+    marginRight: 2,
+  },
+  spoilerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'System',
   },
   tagsContainer: {
     flexDirection: 'row',

@@ -31,6 +31,7 @@ export default function PostDetail() {
   const [commentImage, setCommentImage] = useState<string | undefined>();
   const [isLiked, setIsLiked] = useState(post?.isLiked || false);
   const [likes, setLikes] = useState(post?.likes || 0);
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
 
   if (!post) {
     return (
@@ -267,7 +268,23 @@ export default function PostDetail() {
           </View>
 
           {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-          <Text style={styles.postBody}>{post.body}</Text>
+          
+          {/* Spoiler Alert Handling */}
+          {post.isSpoiler && !spoilerRevealed ? (
+            <View style={styles.spoilerContainer}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={32} color="#DC2626" />
+              <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
+              <Pressable 
+                style={styles.spoilerButton}
+                onPress={() => setSpoilerRevealed(true)}
+              >
+                <IconSymbol name="eye" size={18} color="#FFFFFF" style={styles.spoilerButtonIcon} />
+                <Text style={styles.spoilerButtonText}>Click to reveal</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={styles.postBody}>{post.body}</Text>
+          )}
 
           <View style={styles.tagsContainer}>
             {post.tags.map((tag, index) => {
@@ -534,6 +551,41 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: 24,
     marginBottom: 16,
+    fontFamily: 'System',
+  },
+  spoilerContainer: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  spoilerWarning: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#991B1B',
+    marginTop: 12,
+    marginBottom: 16,
+    fontFamily: 'System',
+  },
+  spoilerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  spoilerButtonIcon: {
+    marginRight: 2,
+  },
+  spoilerButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
     fontFamily: 'System',
   },
   tagsContainer: {

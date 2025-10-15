@@ -43,7 +43,6 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
-  const [multiSelectMode, setMultiSelectMode] = useState(false);
 
   const predefinedTags: PostTag[] = ['spoiler alert', 'fan theory', 'discussion', 'episode recap', 'misc'];
 
@@ -88,17 +87,13 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   };
 
   const handleEpisodeToggle = (episode: Episode) => {
-    if (!multiSelectMode) {
-      setSelectedEpisodes([episode]);
-    } else {
-      setSelectedEpisodes((prev) => {
-        const exists = prev.find((e) => e.id === episode.id);
-        if (exists) {
-          return prev.filter((e) => e.id !== episode.id);
-        }
-        return [...prev, episode];
-      });
-    }
+    setSelectedEpisodes((prev) => {
+      const exists = prev.find((e) => e.id === episode.id);
+      if (exists) {
+        return prev.filter((e) => e.id !== episode.id);
+      }
+      return [...prev, episode];
+    });
   };
 
   const handleTagToggle = (tag: string) => {
@@ -160,7 +155,6 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
     setSelectedTags([]);
     setCustomTag('');
     setSeasons([]);
-    setMultiSelectMode(false);
   };
 
   const renderSelectShow = () => (
@@ -206,21 +200,6 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
         </View>
       </View>
 
-      <View style={styles.multiSelectToggle}>
-        <Text style={styles.multiSelectLabel}>Select multiple episodes</Text>
-        <Pressable
-          style={[styles.toggleButton, multiSelectMode && styles.toggleButtonActive]}
-          onPress={() => {
-            setMultiSelectMode(!multiSelectMode);
-            if (multiSelectMode) {
-              setSelectedEpisodes([]);
-            }
-          }}
-        >
-          <View style={[styles.toggleCircle, multiSelectMode && styles.toggleCircleActive]} />
-        </Pressable>
-      </View>
-
       <ScrollView style={styles.seasonList}>
         {seasons.map((season) => (
           <View key={season.seasonNumber} style={styles.seasonContainer}>
@@ -246,6 +225,11 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
                       style={[styles.episodeItem, isSelected && styles.episodeItemSelected]}
                       onPress={() => handleEpisodeToggle(episode)}
                     >
+                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                        {isSelected && (
+                          <IconSymbol name="checkmark" size={16} color="#FFFFFF" />
+                        )}
+                      </View>
                       <Image
                         source={{ uri: episode.thumbnail || selectedShow?.poster }}
                         style={styles.episodeThumbnail}
@@ -259,9 +243,6 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
                           {episode.description}
                         </Text>
                       </View>
-                      {isSelected && (
-                        <IconSymbol name="checkmark.circle.fill" size={24} color={colors.secondary} />
-                      )}
                     </Pressable>
                   );
                 })}
@@ -479,40 +460,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  multiSelectToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  multiSelectLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  toggleButton: {
-    width: 50,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.border,
-    justifyContent: 'center',
-    padding: 2,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.secondary,
-  },
-  toggleCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.background,
-  },
-  toggleCircleActive: {
-    alignSelf: 'flex-end',
-  },
   seasonList: {
     flex: 1,
   },
@@ -546,6 +493,21 @@ const styles = StyleSheet.create({
   episodeItemSelected: {
     backgroundColor: colors.highlight,
     borderWidth: 2,
+    borderColor: colors.secondary,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  checkboxSelected: {
+    backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
   episodeThumbnail: {
