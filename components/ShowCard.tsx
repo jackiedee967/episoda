@@ -87,7 +87,6 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
 const styles = StyleSheet.create({
   container: {
     width: 120,
-    marginRight: 12,
   },
   poster: {
     width: 120,
@@ -106,10 +105,12 @@ const styles = StyleSheet.create({
   },
   friendsContainer: {
     marginTop: 8,
+    alignItems: 'center',
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
   },
   avatar: {
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 16,
+    textAlign: 'center',
   },
   friendNameLink: {
     fontWeight: '600',

@@ -6,7 +6,7 @@ import ShowCard from '@/components/ShowCard';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PostButton from '@/components/PostButton';
-import { mockPosts, mockShows, mockUsers } from '@/data/mockData';
+import { mockPosts, mockShows, mockUsers, currentUser } from '@/data/mockData';
 import { colors, commonStyles } from '@/styles/commonStyles';
 
 export default function HomeScreen() {
@@ -33,13 +33,13 @@ export default function HomeScreen() {
   const renderHeader = () => (
     <View style={styles.header}>
       <Image
-        source={require('@/assets/images/b303e3e9-2bc1-4b4a-af6a-04a2254bf6e9.png')}
+        source={require('@/assets/images/59e4d593-53e7-4f24-ac6a-4b6a77fdf55c.png')}
         style={styles.logo}
         resizeMode="contain"
       />
       <Pressable>
         <Image
-          source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' }}
+          source={{ uri: currentUser.avatar }}
           style={styles.profileImage}
         />
       </Pressable>
@@ -62,20 +62,36 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderFriendActivity = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Friend Activity</Text>
-      {mockPosts.map((post) => (
-        <PostCard
-          key={post.id}
-          post={post}
-          onLike={() => handleLike(post.id)}
-          onRepost={() => handleRepost(post.id)}
-          onShare={() => handleShare(post.id)}
-        />
-      ))}
-    </View>
-  );
+  const renderFriendActivity = () => {
+    // Include posts from current user and friends
+    const friendActivity = mockPosts.filter(post => 
+      post.user.id === currentUser.id || mockUsers.some(user => user.id === post.user.id)
+    );
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Friend Activity</Text>
+        {friendActivity.length > 0 ? (
+          friendActivity.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onLike={() => handleLike(post.id)}
+              onRepost={() => handleRepost(post.id)}
+              onShare={() => handleShare(post.id)}
+            />
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No activity yet</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Be the first to post or invite friends to see their activity
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -164,7 +180,24 @@ const styles = StyleSheet.create({
     fontFamily: 'FunnelDisplay_700Bold',
   },
   showsContainer: {
-    gap: 12,
+    gap: 8,
     paddingRight: 16,
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });

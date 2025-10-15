@@ -27,6 +27,7 @@ export interface Episode {
   description: string;
   rating: number;
   postCount: number;
+  thumbnail?: string;
 }
 
 export interface Comment {

@@ -100,15 +100,17 @@ export const mockShows: Show[] = [
 ];
 
 export const mockEpisodes: Episode[] = [
+  // Love Island USA - Season 1
   {
     id: 'ep-1',
     showId: 'show-1',
-    seasonNumber: 3,
-    episodeNumber: 5,
+    seasonNumber: 1,
+    episodeNumber: 1,
     title: 'First Impressions',
     description: 'The islanders arrive and couple up for the first time.',
     rating: 4.0,
     postCount: 45,
+    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop',
   },
   {
     id: 'ep-2',
@@ -119,16 +121,64 @@ export const mockEpisodes: Episode[] = [
     description: 'The couples go on their first dates and drama begins.',
     rating: 4.2,
     postCount: 38,
+    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop',
   },
   {
     id: 'ep-3',
-    showId: 'show-3',
-    seasonNumber: 5,
-    episodeNumber: 7,
+    showId: 'show-1',
+    seasonNumber: 1,
+    episodeNumber: 3,
     title: 'Recoupling Ceremony',
     description: 'The first recoupling shakes things up in the villa.',
     rating: 4.5,
     postCount: 67,
+    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop',
+  },
+  // Love Island USA - Season 2
+  {
+    id: 'ep-4',
+    showId: 'show-1',
+    seasonNumber: 2,
+    episodeNumber: 1,
+    title: 'New Season, New Islanders',
+    description: 'A fresh batch of singles arrive at the villa.',
+    rating: 4.1,
+    postCount: 52,
+    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop',
+  },
+  {
+    id: 'ep-5',
+    showId: 'show-1',
+    seasonNumber: 2,
+    episodeNumber: 2,
+    title: 'Casa Amor Begins',
+    description: 'The villa splits as Casa Amor opens its doors.',
+    rating: 4.6,
+    postCount: 89,
+    thumbnail: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=200&fit=crop',
+  },
+  // The Golden Bachelor - Season 1
+  {
+    id: 'ep-6',
+    showId: 'show-3',
+    seasonNumber: 1,
+    episodeNumber: 1,
+    title: 'Meet the Bachelor',
+    description: 'The golden bachelor meets his potential matches.',
+    rating: 4.0,
+    postCount: 34,
+    thumbnail: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=300&h=200&fit=crop',
+  },
+  {
+    id: 'ep-7',
+    showId: 'show-3',
+    seasonNumber: 1,
+    episodeNumber: 2,
+    title: 'First Dates',
+    description: 'The bachelor goes on his first round of dates.',
+    rating: 4.2,
+    postCount: 28,
+    thumbnail: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=300&h=200&fit=crop',
   },
 ];
 

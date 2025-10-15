@@ -14,7 +14,7 @@ import {
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Show, Episode, PostTag } from '@/types';
-import { mockShows, mockEpisodes } from '@/data/mockData';
+import { mockShows, mockEpisodes, mockPosts, currentUser } from '@/data/mockData';
 
 interface PostModalProps {
   visible: boolean;
@@ -24,10 +24,16 @@ interface PostModalProps {
 
 type Step = 'selectShow' | 'selectEpisodes' | 'postDetails';
 
+interface Season {
+  seasonNumber: number;
+  episodes: Episode[];
+  expanded: boolean;
+}
+
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostModal({ visible, onClose, preselectedShow }: PostModalProps) {
-  const [step, setStep] = useState<Step>('selectShow');
+  const [step, setStep] = useState<Step>(preselectedShow ? 'selectEpisodes' : 'selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +42,8 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
 
   const predefinedTags: PostTag[] = ['spoiler alert', 'fan theory', 'discussion', 'episode recap', 'misc'];
 
@@ -45,17 +53,52 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
   const handleShowSelect = (show: Show) => {
     setSelectedShow(show);
+    
+    // Group episodes by season
+    const showEpisodes = mockEpisodes.filter((ep) => ep.showId === show.id);
+    const seasonMap = new Map<number, Episode[]>();
+    
+    showEpisodes.forEach((episode) => {
+      if (!seasonMap.has(episode.seasonNumber)) {
+        seasonMap.set(episode.seasonNumber, []);
+      }
+      seasonMap.get(episode.seasonNumber)!.push(episode);
+    });
+
+    const seasonsData: Season[] = Array.from(seasonMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([seasonNumber, episodes]) => ({
+        seasonNumber,
+        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+        expanded: false,
+      }));
+
+    setSeasons(seasonsData);
     setStep('selectEpisodes');
   };
 
+  const toggleSeason = (seasonNumber: number) => {
+    setSeasons((prev) =>
+      prev.map((season) =>
+        season.seasonNumber === seasonNumber
+          ? { ...season, expanded: !season.expanded }
+          : season
+      )
+    );
+  };
+
   const handleEpisodeToggle = (episode: Episode) => {
-    setSelectedEpisodes((prev) => {
-      const exists = prev.find((e) => e.id === episode.id);
-      if (exists) {
-        return prev.filter((e) => e.id !== episode.id);
-      }
-      return [...prev, episode];
-    });
+    if (!multiSelectMode) {
+      setSelectedEpisodes([episode]);
+    } else {
+      setSelectedEpisodes((prev) => {
+        const exists = prev.find((e) => e.id === episode.id);
+        if (exists) {
+          return prev.filter((e) => e.id !== episode.id);
+        }
+        return [...prev, episode];
+      });
+    }
   };
 
   const handleTagToggle = (tag: string) => {
@@ -75,20 +118,39 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   };
 
   const handlePost = () => {
-    console.log('Posting:', {
+    if (!selectedShow) {
+      console.log('No show selected');
+      return;
+    }
+
+    const newPost = {
+      id: `post-${Date.now()}`,
+      user: currentUser,
       show: selectedShow,
-      episodes: selectedEpisodes,
-      title,
-      body,
-      rating,
+      episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
+      title: title || undefined,
+      body: body || 'Just watched this!',
+      rating: rating || undefined,
       tags: selectedTags,
-    });
+      likes: 0,
+      comments: 0,
+      reposts: 0,
+      timestamp: new Date(),
+      isLiked: false,
+      isSpoiler: selectedTags.includes('spoiler alert'),
+    };
+
+    console.log('Creating new post:', newPost);
+    
+    // Add to mock posts
+    mockPosts.unshift(newPost);
+    
     onClose();
     resetModal();
   };
 
   const resetModal = () => {
-    setStep('selectShow');
+    setStep(preselectedShow ? 'selectEpisodes' : 'selectShow');
     setSelectedShow(preselectedShow || null);
     setSelectedEpisodes([]);
     setSearchQuery('');
@@ -97,6 +159,8 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
     setRating(0);
     setSelectedTags([]);
     setCustomTag('');
+    setSeasons([]);
+    setMultiSelectMode(false);
   };
 
   const renderSelectShow = () => (
@@ -110,55 +174,103 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
         onChangeText={setSearchQuery}
       />
       <ScrollView style={styles.showList}>
-        {filteredShows.map((show) => (
-          <Pressable
-            key={show.id}
-            style={styles.showItem}
-            onPress={() => handleShowSelect(show)}
-          >
-            <Image source={{ uri: show.poster }} style={styles.showPoster} />
-            <View style={styles.showInfo}>
-              <Text style={styles.showTitle}>{show.title}</Text>
-              <Text style={styles.showMeta}>
-                {show.totalSeasons} seasons • {show.totalEpisodes} episodes
-              </Text>
-            </View>
-          </Pressable>
-        ))}
+        <View style={styles.showGrid}>
+          {filteredShows.map((show) => (
+            <Pressable
+              key={show.id}
+              style={styles.showGridItem}
+              onPress={() => handleShowSelect(show)}
+            >
+              <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
 
   const renderSelectEpisodes = () => (
     <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Select Episodes (Optional)</Text>
-      <Text style={styles.stepSubtitle}>{selectedShow?.title}</Text>
-      <ScrollView style={styles.episodeList}>
-        {mockEpisodes
-          .filter((ep) => ep.showId === selectedShow?.id)
-          .map((episode) => {
-            const isSelected = selectedEpisodes.find((e) => e.id === episode.id);
-            return (
-              <Pressable
-                key={episode.id}
-                style={[styles.episodeItem, isSelected && styles.episodeItemSelected]}
-                onPress={() => handleEpisodeToggle(episode)}
-              >
-                <View style={styles.episodeInfo}>
-                  <Text style={styles.episodeTitle}>
-                    S{episode.seasonNumber}E{episode.episodeNumber}: {episode.title}
-                  </Text>
-                  <Text style={styles.episodeDescription} numberOfLines={2}>
-                    {episode.description}
-                  </Text>
-                </View>
-                {isSelected && (
-                  <IconSymbol name="checkmark.circle.fill" size={24} color={colors.secondary} />
-                )}
-              </Pressable>
-            );
-          })}
+      <Pressable style={styles.backButton} onPress={() => setStep('selectShow')}>
+        <IconSymbol name="chevron.left" size={20} color={colors.text} />
+        <Text style={styles.backButtonText}>Back</Text>
+      </Pressable>
+
+      <View style={styles.showHeader}>
+        <Image source={{ uri: selectedShow?.poster }} style={styles.showHeaderPoster} />
+        <View style={styles.showHeaderInfo}>
+          <Text style={styles.showHeaderTitle}>{selectedShow?.title}</Text>
+          <Text style={styles.showHeaderMeta}>
+            {selectedShow?.totalSeasons} season{selectedShow?.totalSeasons !== 1 ? 's' : ''} • {selectedShow?.totalEpisodes} episodes
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.multiSelectToggle}>
+        <Text style={styles.multiSelectLabel}>Select multiple episodes</Text>
+        <Pressable
+          style={[styles.toggleButton, multiSelectMode && styles.toggleButtonActive]}
+          onPress={() => {
+            setMultiSelectMode(!multiSelectMode);
+            if (multiSelectMode) {
+              setSelectedEpisodes([]);
+            }
+          }}
+        >
+          <View style={[styles.toggleCircle, multiSelectMode && styles.toggleCircleActive]} />
+        </Pressable>
+      </View>
+
+      <ScrollView style={styles.seasonList}>
+        {seasons.map((season) => (
+          <View key={season.seasonNumber} style={styles.seasonContainer}>
+            <Pressable
+              style={styles.seasonHeader}
+              onPress={() => toggleSeason(season.seasonNumber)}
+            >
+              <Text style={styles.seasonTitle}>Season {season.seasonNumber}</Text>
+              <IconSymbol
+                name={season.expanded ? 'chevron.up' : 'chevron.down'}
+                size={20}
+                color={colors.text}
+              />
+            </Pressable>
+
+            {season.expanded && (
+              <View style={styles.episodeList}>
+                {season.episodes.map((episode) => {
+                  const isSelected = selectedEpisodes.find((e) => e.id === episode.id);
+                  return (
+                    <Pressable
+                      key={episode.id}
+                      style={[styles.episodeItem, isSelected && styles.episodeItemSelected]}
+                      onPress={() => handleEpisodeToggle(episode)}
+                    >
+                      <Image
+                        source={{ uri: episode.thumbnail || selectedShow?.poster }}
+                        style={styles.episodeThumbnail}
+                      />
+                      <View style={styles.episodeInfo}>
+                        <Text style={styles.episodeNumber}>
+                          S{episode.seasonNumber}E{episode.episodeNumber}
+                        </Text>
+                        <Text style={styles.episodeTitle}>{episode.title}</Text>
+                        <Text style={styles.episodeDescription} numberOfLines={2}>
+                          {episode.description}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <IconSymbol name="checkmark.circle.fill" size={24} color={colors.secondary} />
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ))}
       </ScrollView>
+
       <Pressable style={styles.nextButton} onPress={() => setStep('postDetails')}>
         <Text style={styles.nextButtonText}>Next</Text>
       </Pressable>
@@ -167,6 +279,11 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
   const renderPostDetails = () => (
     <View style={styles.stepContainer}>
+      <Pressable style={styles.backButton} onPress={() => setStep('selectEpisodes')}>
+        <IconSymbol name="chevron.left" size={20} color={colors.text} />
+        <Text style={styles.backButtonText}>Back</Text>
+      </Pressable>
+
       <Text style={styles.stepTitle}>Post Details</Text>
       <ScrollView style={styles.detailsForm}>
         <TextInput
@@ -265,10 +382,9 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
           <View style={{ width: 24 }} />
         </View>
 
-        {step === 'selectShow' && !preselectedShow && renderSelectShow()}
+        {step === 'selectShow' && renderSelectShow()}
         {step === 'selectEpisodes' && renderSelectEpisodes()}
         {step === 'postDetails' && renderPostDetails()}
-        {preselectedShow && step === 'selectShow' && renderSelectEpisodes()}
       </View>
     </Modal>
   );
@@ -300,12 +416,17 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
-  },
-  stepSubtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
     marginBottom: 16,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: colors.text,
+    marginLeft: 4,
   },
   searchInput: {
     backgroundColor: colors.card,
@@ -318,39 +439,104 @@ const styles = StyleSheet.create({
   showList: {
     flex: 1,
   },
-  showItem: {
+  showGrid: {
     flexDirection: 'row',
-    padding: 12,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    marginBottom: 8,
+    flexWrap: 'wrap',
+    gap: 12,
   },
-  showPoster: {
-    width: 60,
-    height: 90,
-    borderRadius: 4,
+  showGridItem: {
+    width: '31%',
+  },
+  showGridPoster: {
+    width: '100%',
+    aspectRatio: 2 / 3,
+    borderRadius: 8,
+  },
+  showHeader: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    backgroundColor: colors.card,
+    padding: 12,
+    borderRadius: 12,
+  },
+  showHeaderPoster: {
+    width: 80,
+    height: 120,
+    borderRadius: 8,
     marginRight: 12,
   },
-  showInfo: {
+  showHeaderInfo: {
     flex: 1,
     justifyContent: 'center',
   },
-  showTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  showHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  showMeta: {
+  showHeaderMeta: {
     fontSize: 14,
     color: colors.textSecondary,
   },
-  episodeList: {
+  multiSelectToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  multiSelectLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  toggleButton: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    padding: 2,
+  },
+  toggleButtonActive: {
+    backgroundColor: colors.secondary,
+  },
+  toggleCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.background,
+  },
+  toggleCircleActive: {
+    alignSelf: 'flex-end',
+  },
+  seasonList: {
     flex: 1,
+  },
+  seasonContainer: {
+    marginBottom: 12,
+  },
+  seasonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 12,
+  },
+  seasonTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  episodeList: {
+    marginTop: 8,
   },
   episodeItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
     backgroundColor: colors.card,
@@ -359,9 +545,23 @@ const styles = StyleSheet.create({
   },
   episodeItemSelected: {
     backgroundColor: colors.highlight,
+    borderWidth: 2,
+    borderColor: colors.secondary,
+  },
+  episodeThumbnail: {
+    width: 80,
+    height: 45,
+    borderRadius: 6,
+    marginRight: 12,
   },
   episodeInfo: {
     flex: 1,
+  },
+  episodeNumber: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    marginBottom: 2,
   },
   episodeTitle: {
     fontSize: 14,
@@ -372,6 +572,7 @@ const styles = StyleSheet.create({
   episodeDescription: {
     fontSize: 12,
     color: colors.textSecondary,
+    lineHeight: 16,
   },
   nextButton: {
     backgroundColor: colors.secondary,
