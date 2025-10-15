@@ -220,8 +220,8 @@ export default function HomeScreen() {
         <PostButton onPress={() => setIsPostModalVisible(true)} />
 
         {renderRecommendedTitles()}
-        {renderFriendActivity()}
         {renderYouMayKnow()}
+        {renderFriendActivity()}
       </ScrollView>
 
       <PostModal
