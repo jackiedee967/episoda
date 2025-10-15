@@ -18,15 +18,20 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   const router = useRouter();
 
   const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+    try {
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
 
-    if (minutes < 60) return `${minutes}m`;
-    if (hours < 24) return `${hours}h`;
-    return `${days}d`;
+      if (minutes < 60) return `${minutes}m`;
+      if (hours < 24) return `${hours}h`;
+      return `${days}d`;
+    } catch (error) {
+      console.log('Error formatting timestamp:', error);
+      return '0m';
+    }
   };
 
   const handleShowPress = () => {
@@ -54,7 +59,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
       { bg: '#FCE7F3', text: '#9F1239', border: '#EC4899' },
       { bg: '#D1FAE5', text: '#065F46', border: '#10B981' },
     ];
-    const index = showTitle.length % colors.length;
+    const index = (showTitle?.length || 0) % colors.length;
     return colors[index];
   };
 
@@ -74,7 +79,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     return null;
   }
 
-  const showColor = getShowTagColor(post.show.title);
+  const showColor = getShowTagColor(post.show.title || '');
 
   return (
     <Pressable onPress={handlePostPress} style={styles.container}>
@@ -108,7 +113,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
             </Pressable>
             <Text style={styles.justWatched}>just watched</Text>
-            {post.episodes && post.episodes.length > 0 && (
+            {post.episodes && post.episodes.length > 0 && post.episodes[0] && (
               <View style={styles.episodeTag}>
                 <Text style={styles.episodeTagText}>
                   S{post.episodes[0].seasonNumber}E{post.episodes[0].episodeNumber}
@@ -134,36 +139,38 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           )}
 
           {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-          <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
+          {post.body && <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>}
 
-          <View style={styles.tagsContainer}>
-            {post.tags.map((tag, index) => {
-              const isTheory = tag.toLowerCase().includes('theory');
-              const isDiscussion = tag.toLowerCase().includes('discussion');
-              return (
-                <View 
-                  key={index} 
-                  style={[
-                    styles.tag,
-                    isTheory && styles.tagTheory,
-                    isDiscussion && styles.tagDiscussion,
-                  ]}
-                >
-                  {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
-                  {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
-                  <Text 
+          {post.tags && post.tags.length > 0 && (
+            <View style={styles.tagsContainer}>
+              {post.tags.map((tag, index) => {
+                const isTheory = tag.toLowerCase().includes('theory');
+                const isDiscussion = tag.toLowerCase().includes('discussion');
+                return (
+                  <View 
+                    key={index} 
                     style={[
-                      styles.tagText,
-                      isTheory && styles.tagTheoryText,
-                      isDiscussion && styles.tagDiscussionText,
+                      styles.tag,
+                      isTheory && styles.tagTheory,
+                      isDiscussion && styles.tagDiscussion,
                     ]}
                   >
-                    {tag}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
+                    {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
+                    {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
+                    <Text 
+                      style={[
+                        styles.tagText,
+                        isTheory && styles.tagTheoryText,
+                        isDiscussion && styles.tagDiscussionText,
+                      ]}
+                    >
+                      {tag}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
 
           <View style={styles.actions}>
             <Pressable
@@ -178,7 +185,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 size={20}
                 color={post.isLiked ? '#EF4444' : colors.textSecondary}
               />
-              <Text style={styles.actionText}>{post.likes}</Text>
+              <Text style={styles.actionText}>{post.likes || 0}</Text>
             </Pressable>
 
             <Pressable
@@ -189,7 +196,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               }}
             >
               <IconSymbol name="bubble.left" size={20} color={colors.textSecondary} />
-              <Text style={styles.actionText}>{post.comments}</Text>
+              <Text style={styles.actionText}>{post.comments || 0}</Text>
             </Pressable>
 
             <Pressable
@@ -200,7 +207,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               }}
             >
               <IconSymbol name="arrow.2.squarepath" size={20} color={colors.textSecondary} />
-              <Text style={styles.actionText}>{post.reposts}</Text>
+              <Text style={styles.actionText}>{post.reposts || 0}</Text>
             </Pressable>
 
             <Pressable

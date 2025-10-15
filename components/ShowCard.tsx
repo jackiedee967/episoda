@@ -20,22 +20,25 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   };
 
   const handleFriendPress = (friendId: string) => {
-    router.push(`/user/${friendId}`);
+    if (friendId) {
+      router.push(`/user/${friendId}`);
+    }
   };
 
   const renderFriendAvatars = () => {
-    const displayFriends = friends.slice(0, 3);
-    const remainingCount = show.friendsWatching - displayFriends.length;
+    const validFriends = friends.filter(f => f && f.id);
+    const displayFriends = validFriends.slice(0, 3);
+    const remainingCount = Math.max(0, (show?.friendsWatching || 0) - displayFriends.length);
 
     return (
       <View style={styles.friendsContainer}>
         <View style={styles.avatarRow}>
           {displayFriends.map((friend, index) => (
             <Pressable
-              key={friend?.id || `placeholder-${index}`}
-              onPress={() => friend?.id && handleFriendPress(friend.id)}
+              key={friend.id}
+              onPress={() => handleFriendPress(friend.id)}
             >
-              {friend?.avatar ? (
+              {friend.avatar ? (
                 <Image
                   source={{ uri: friend.avatar }}
                   style={[styles.avatar, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
@@ -45,7 +48,7 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
                   style={[styles.avatar, styles.avatarPlaceholder, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
                 >
                   <Text style={styles.avatarPlaceholderText}>
-                    {friend?.displayName?.charAt(0) || '?'}
+                    {friend.displayName?.charAt(0) || '?'}
                   </Text>
                 </View>
               )}
@@ -53,13 +56,19 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
           ))}
         </View>
         <Text style={styles.friendsText} numberOfLines={2}>
-          <Text 
-            style={styles.friendNameLink}
-            onPress={() => displayFriends[0]?.id && handleFriendPress(displayFriends[0].id)}
-          >
-            {displayFriends[0]?.displayName || 'Friends'}
-          </Text>
-          {remainingCount > 0 && ` and ${remainingCount} friend${remainingCount > 1 ? 's' : ''}`} watching
+          {displayFriends.length > 0 ? (
+            <>
+              <Text 
+                style={styles.friendNameLink}
+                onPress={() => handleFriendPress(displayFriends[0].id)}
+              >
+                {displayFriends[0].displayName || 'Friend'}
+              </Text>
+              {remainingCount > 0 && ` and ${remainingCount} friend${remainingCount > 1 ? 's' : ''}`} watching
+            </>
+          ) : (
+            'Friends watching'
+          )}
         </Text>
       </View>
     );
