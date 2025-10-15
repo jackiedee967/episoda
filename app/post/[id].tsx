@@ -66,6 +66,10 @@ export default function PostDetail() {
     }
   };
 
+  const handleEpisodePress = (episodeId: string) => {
+    router.push(`/episode/${episodeId}`);
+  };
+
   const getShowTagColor = (showTitle: string) => {
     const colors = [
       { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -84,12 +88,10 @@ export default function PostDetail() {
 
   const handleRepost = () => {
     console.log('Repost pressed');
-    // TODO: Implement repost functionality
   };
 
   const handleShare = () => {
     console.log('Share pressed');
-    // TODO: Implement share functionality
   };
 
   const handlePickImage = async () => {
@@ -218,25 +220,22 @@ export default function PostDetail() {
           </View>
 
           <View style={styles.showInfo}>
-            <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
-              {post.show.poster ? (
-                <Image source={{ uri: post.show.poster }} style={styles.showPoster} />
-              ) : (
-                <View style={[styles.showPoster, styles.posterPlaceholder]}>
-                  <Text style={styles.posterPlaceholderText}>
-                    {post.show.title?.charAt(0) || '?'}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-
             <View style={styles.showDetails}>
               <View style={styles.showTags}>
+                {/* Show all episode tags */}
                 {post.episodes && post.episodes.length > 0 && (
-                  <View style={styles.episodeTag}>
-                    <Text style={styles.episodeTagText}>
-                      S{post.episodes[0].seasonNumber}E{post.episodes[0].episodeNumber}
-                    </Text>
+                  <View style={styles.episodeTagsContainer}>
+                    {post.episodes.map((episode, index) => (
+                      <Pressable 
+                        key={episode.id || index}
+                        style={styles.episodeTag}
+                        onPress={() => handleEpisodePress(episode.id)}
+                      >
+                        <Text style={styles.episodeTagText}>
+                          S{episode.seasonNumber}E{episode.episodeNumber}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
                 )}
                 <Pressable
@@ -328,25 +327,25 @@ export default function PostDetail() {
           <View style={styles.postActions}>
             <Pressable style={styles.actionButton} onPress={handleLike}>
               <IconSymbol
-                name="flame"
+                name="heart"
                 size={24}
-                color={isLiked ? '#EF4444' : colors.textSecondary}
+                color={isLiked ? '#EF4444' : '#6B7280'}
               />
               <Text style={styles.actionText}>{likes}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton}>
-              <IconSymbol name="bubble.left" size={24} color={colors.textSecondary} />
+              <IconSymbol name="bubble.left" size={24} color="#6B7280" />
               <Text style={styles.actionText}>{comments.length}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleRepost}>
-              <IconSymbol name="arrow.2.squarepath" size={24} color={colors.textSecondary} />
+              <IconSymbol name="arrow.2.squarepath" size={24} color="#6B7280" />
               <Text style={styles.actionText}>{post.reposts}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleShare}>
-              <IconSymbol name="square.and.arrow.up" size={24} color={colors.textSecondary} />
+              <IconSymbol name="square.and.arrow.up" size={24} color="#6B7280" />
             </Pressable>
           </View>
         </View>
@@ -478,37 +477,21 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   showInfo: {
-    flexDirection: 'row',
-    gap: 12,
     marginBottom: 16,
-  },
-  showPosterContainer: {
-    flexShrink: 0,
-  },
-  showPoster: {
-    width: 100,
-    height: 150,
-    borderRadius: 8,
-  },
-  posterPlaceholder: {
-    backgroundColor: colors.purple,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  posterPlaceholderText: {
-    color: '#FFFFFF',
-    fontSize: 40,
-    fontWeight: '600',
   },
   showDetails: {
     flex: 1,
-    justifyContent: 'center',
   },
   showTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 12,
+  },
+  episodeTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   episodeTag: {
     backgroundColor: colors.purpleLight,

@@ -53,6 +53,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     }
   };
 
+  const handleEpisodePress = (episodeId: string) => {
+    router.push(`/episode/${episodeId}`);
+  };
+
   const getShowTagColor = (showTitle: string) => {
     const colors = [
       { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -114,13 +118,27 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
             </Pressable>
             <Text style={styles.justWatched}>just watched</Text>
-            {post.episodes && post.episodes.length > 0 && post.episodes[0] && (
-              <View style={styles.episodeTag}>
-                <Text style={styles.episodeTagText}>
-                  S{post.episodes[0].seasonNumber}E{post.episodes[0].episodeNumber}
-                </Text>
+            
+            {/* Show all episode tags */}
+            {post.episodes && post.episodes.length > 0 && (
+              <View style={styles.episodeTags}>
+                {post.episodes.map((episode, index) => (
+                  <Pressable 
+                    key={episode.id || index}
+                    style={styles.episodeTag}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleEpisodePress(episode.id);
+                    }}
+                  >
+                    <Text style={styles.episodeTagText}>
+                      S{episode.seasonNumber}E{episode.episodeNumber}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
             )}
+            
             <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
               <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
             </Pressable>
@@ -201,9 +219,9 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               }}
             >
               <IconSymbol
-                name="flame"
+                name="heart"
                 size={20}
-                color={post.isLiked ? '#EF4444' : colors.textSecondary}
+                color={post.isLiked ? '#EF4444' : '#6B7280'}
               />
               <Text style={styles.actionText}>{post.likes || 0}</Text>
             </Pressable>
@@ -215,7 +233,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onComment ? onComment() : handlePostPress();
               }}
             >
-              <IconSymbol name="bubble.left" size={20} color={colors.textSecondary} />
+              <IconSymbol name="bubble.left" size={20} color="#6B7280" />
               <Text style={styles.actionText}>{post.comments || 0}</Text>
             </Pressable>
 
@@ -226,7 +244,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onRepost ? onRepost() : console.log('Repost pressed');
               }}
             >
-              <IconSymbol name="arrow.2.squarepath" size={20} color={colors.textSecondary} />
+              <IconSymbol name="arrow.2.squarepath" size={20} color="#6B7280" />
               <Text style={styles.actionText}>{post.reposts || 0}</Text>
             </Pressable>
 
@@ -237,7 +255,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onShare ? onShare() : console.log('Share pressed');
               }}
             >
-              <IconSymbol name="square.and.arrow.up" size={20} color={colors.textSecondary} />
+              <IconSymbol name="square.and.arrow.up" size={20} color="#6B7280" />
             </Pressable>
 
             <View style={styles.spacer} />
@@ -321,6 +339,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontFamily: 'System',
+  },
+  episodeTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   episodeTag: {
     backgroundColor: colors.purpleLight,
@@ -440,7 +463,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 8,
-    gap: 12,
+    gap: 16,
   },
   actionButton: {
     flexDirection: 'row',
