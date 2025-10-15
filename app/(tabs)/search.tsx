@@ -6,14 +6,24 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { mockShows } from '@/data/mockData';
 import { useRouter } from 'expo-router';
+import WatchlistModal from '@/components/WatchlistModal';
+import { Show } from '@/types';
 
 export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
+  const [selectedShow, setSelectedShow] = useState<Show | null>(null);
   const router = useRouter();
 
   const filteredShows = searchQuery
     ? mockShows.filter((show) => show.title.toLowerCase().includes(searchQuery.toLowerCase()))
     : mockShows;
+
+  const handleSavePress = (show: Show, e: any) => {
+    e.stopPropagation();
+    setSelectedShow(show);
+    setWatchlistModalVisible(true);
+  };
 
   return (
     <>
@@ -41,7 +51,15 @@ export default function SearchScreen() {
                 style={styles.showCard}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <Image source={{ uri: show.poster }} style={styles.showPoster} />
+                <View style={styles.posterWrapper}>
+                  <Image source={{ uri: show.poster }} style={styles.showPoster} />
+                  <Pressable 
+                    style={styles.saveIcon} 
+                    onPress={(e) => handleSavePress(show, e)}
+                  >
+                    <IconSymbol name="bookmark" size={14} color="#FFFFFF" />
+                  </Pressable>
+                </View>
                 <View style={styles.showInfo}>
                   <Text style={styles.showTitle}>{show.title}</Text>
                   <Text style={styles.showDescription} numberOfLines={2}>
@@ -63,6 +81,17 @@ export default function SearchScreen() {
           </View>
         </ScrollView>
       </View>
+
+      {selectedShow && (
+        <WatchlistModal
+          visible={watchlistModalVisible}
+          onClose={() => {
+            setWatchlistModalVisible(false);
+            setSelectedShow(null);
+          }}
+          show={selectedShow}
+        />
+      )}
     </>
   );
 }
@@ -107,11 +136,25 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  posterWrapper: {
+    position: 'relative',
+    marginRight: 12,
+  },
   showPoster: {
     width: 80,
     height: 120,
     borderRadius: 8,
-    marginRight: 12,
+  },
+  saveIcon: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 10,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   showInfo: {
     flex: 1,

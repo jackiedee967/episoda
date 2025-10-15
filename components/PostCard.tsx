@@ -5,6 +5,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
 import { useRouter } from 'expo-router';
+import WatchlistModal from '@/components/WatchlistModal';
 
 interface PostCardProps {
   post: Post;
@@ -17,6 +18,7 @@ interface PostCardProps {
 export default function PostCard({ post, onLike, onComment, onRepost, onShare }: PostCardProps) {
   const router = useRouter();
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
 
   const formatTimestamp = (date: Date) => {
     try {
@@ -57,6 +59,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     router.push(`/episode/${episodeId}`);
   };
 
+  const handleSavePress = (e: any) => {
+    e.stopPropagation();
+    setWatchlistModalVisible(true);
+  };
+
   const getShowTagColor = (showTitle: string) => {
     const colors = [
       { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -87,184 +94,202 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   const showColor = getShowTagColor(post.show.title || '');
 
   return (
-    <Pressable onPress={handlePostPress} style={styles.container}>
-      <View style={styles.mainContent}>
-        {/* Show Poster - First Column */}
-        <Pressable onPress={handleShowPress} style={styles.posterContainer}>
-          {post.show.poster ? (
-            <Image source={{ uri: post.show.poster }} style={styles.poster} />
-          ) : (
-            <View style={[styles.poster, styles.posterPlaceholder]}>
-              <Text style={styles.posterPlaceholderText}>
-                {post.show.title?.charAt(0) || '?'}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-
-        {/* Content Column */}
-        <View style={styles.contentColumn}>
-          <View style={styles.header}>
-            <Pressable onPress={handleUserPress} style={styles.userInfo}>
-              {post.user.avatar ? (
-                <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Text style={styles.avatarPlaceholderText}>
-                    {post.user.displayName?.charAt(0) || '?'}
+    <>
+      <Pressable onPress={handlePostPress} style={styles.container}>
+        <View style={styles.mainContent}>
+          {/* Show Poster - First Column */}
+          <Pressable onPress={handleShowPress} style={styles.posterContainer}>
+            {post.show.poster ? (
+              <View style={styles.posterWrapper}>
+                <Image source={{ uri: post.show.poster }} style={styles.poster} />
+                <Pressable style={styles.saveIcon} onPress={handleSavePress}>
+                  <IconSymbol name="bookmark" size={16} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.posterWrapper}>
+                <View style={[styles.poster, styles.posterPlaceholder]}>
+                  <Text style={styles.posterPlaceholderText}>
+                    {post.show.title?.charAt(0) || '?'}
                   </Text>
                 </View>
-              )}
-              <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
-            </Pressable>
-            <Text style={styles.justWatched}>just watched</Text>
-            
-            {/* Show all episode tags */}
-            {post.episodes && post.episodes.length > 0 && (
-              <View style={styles.episodeTags}>
-                {post.episodes.map((episode, index) => (
-                  <Pressable 
-                    key={episode.id || index}
-                    style={styles.episodeTag}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleEpisodePress(episode.id);
-                    }}
-                  >
-                    <Text style={styles.episodeTagText}>
-                      S{episode.seasonNumber}E{episode.episodeNumber}
+                <Pressable style={styles.saveIcon} onPress={handleSavePress}>
+                  <IconSymbol name="bookmark" size={16} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            )}
+          </Pressable>
+
+          {/* Content Column */}
+          <View style={styles.contentColumn}>
+            <View style={styles.header}>
+              <Pressable onPress={handleUserPress} style={styles.userInfo}>
+                {post.user.avatar ? (
+                  <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <Text style={styles.avatarPlaceholderText}>
+                      {post.user.displayName?.charAt(0) || '?'}
                     </Text>
-                  </Pressable>
+                  </View>
+                )}
+                <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
+              </Pressable>
+              <Text style={styles.justWatched}>just watched</Text>
+              
+              {/* Show all episode tags */}
+              {post.episodes && post.episodes.length > 0 && (
+                <View style={styles.episodeTags}>
+                  {post.episodes.map((episode, index) => (
+                    <Pressable 
+                      key={episode.id || index}
+                      style={styles.episodeTag}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleEpisodePress(episode.id);
+                      }}
+                    >
+                      <Text style={styles.episodeTagText}>
+                        S{episode.seasonNumber}E{episode.episodeNumber}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              
+              <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
+                <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
+              </Pressable>
+            </View>
+
+            {post.rating && (
+              <View style={styles.ratingContainer}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <IconSymbol
+                    key={star}
+                    name={star <= post.rating! ? 'star.fill' : 'star'}
+                    size={16}
+                    color="#000000"
+                  />
                 ))}
               </View>
             )}
+
+            {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
             
-            <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
-              <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
-            </Pressable>
-          </View>
+            {/* Spoiler Alert Handling */}
+            {post.isSpoiler && !spoilerRevealed ? (
+              <View style={styles.spoilerContainer}>
+                <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
+                <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
+                <Pressable 
+                  style={styles.spoilerButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setSpoilerRevealed(true);
+                  }}
+                >
+                  <IconSymbol name="eye" size={16} color="#FFFFFF" style={styles.spoilerButtonIcon} />
+                  <Text style={styles.spoilerButtonText}>Click to reveal</Text>
+                </Pressable>
+              </View>
+            ) : (
+              post.body && <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
+            )}
 
-          {post.rating && (
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <IconSymbol
-                  key={star}
-                  name={star <= post.rating! ? 'star.fill' : 'star'}
-                  size={16}
-                  color="#000000"
-                />
-              ))}
-            </View>
-          )}
-
-          {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-          
-          {/* Spoiler Alert Handling */}
-          {post.isSpoiler && !spoilerRevealed ? (
-            <View style={styles.spoilerContainer}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
-              <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
-              <Pressable 
-                style={styles.spoilerButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setSpoilerRevealed(true);
-                }}
-              >
-                <IconSymbol name="eye" size={16} color="#FFFFFF" style={styles.spoilerButtonIcon} />
-                <Text style={styles.spoilerButtonText}>Click to reveal</Text>
-              </Pressable>
-            </View>
-          ) : (
-            post.body && <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
-          )}
-
-          {post.tags && post.tags.length > 0 && (
-            <View style={styles.tagsContainer}>
-              {post.tags.map((tag, index) => {
-                const isTheory = tag.toLowerCase().includes('theory');
-                const isDiscussion = tag.toLowerCase().includes('discussion');
-                return (
-                  <View 
-                    key={index} 
-                    style={[
-                      styles.tag,
-                      isTheory && styles.tagTheory,
-                      isDiscussion && styles.tagDiscussion,
-                    ]}
-                  >
-                    {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
-                    {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
-                    <Text 
+            {post.tags && post.tags.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {post.tags.map((tag, index) => {
+                  const isTheory = tag.toLowerCase().includes('theory');
+                  const isDiscussion = tag.toLowerCase().includes('discussion');
+                  return (
+                    <View 
+                      key={index} 
                       style={[
-                        styles.tagText,
-                        isTheory && styles.tagTheoryText,
-                        isDiscussion && styles.tagDiscussionText,
+                        styles.tag,
+                        isTheory && styles.tagTheory,
+                        isDiscussion && styles.tagDiscussion,
                       ]}
                     >
-                      {tag}
-                    </Text>
-                  </View>
-                );
-              })}
+                      {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
+                      {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
+                      <Text 
+                        style={[
+                          styles.tagText,
+                          isTheory && styles.tagTheoryText,
+                          isDiscussion && styles.tagDiscussionText,
+                        ]}
+                      >
+                        {tag}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            <View style={styles.actions}>
+              <Pressable
+                style={styles.actionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onLike ? onLike() : console.log('Like pressed');
+                }}
+              >
+                <IconSymbol
+                  name={post.isLiked ? 'heart.fill' : 'heart'}
+                  size={20}
+                  color={post.isLiked ? '#EF4444' : '#6B7280'}
+                />
+                <Text style={styles.actionText}>{post.likes || 0}</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.actionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onComment ? onComment() : handlePostPress();
+                }}
+              >
+                <IconSymbol name="message" size={20} color="#6B7280" />
+                <Text style={styles.actionText}>{post.comments || 0}</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.actionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onRepost ? onRepost() : console.log('Repost pressed');
+                }}
+              >
+                <IconSymbol name="arrow.2.squarepath" size={20} color="#6B7280" />
+                <Text style={styles.actionText}>{post.reposts || 0}</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.actionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onShare ? onShare() : console.log('Share pressed');
+                }}
+              >
+                <IconSymbol name="paperplane" size={20} color="#6B7280" />
+              </Pressable>
+
+              <View style={styles.spacer} />
+
+              <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
             </View>
-          )}
-
-          <View style={styles.actions}>
-            <Pressable
-              style={styles.actionButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                onLike ? onLike() : console.log('Like pressed');
-              }}
-            >
-              <IconSymbol
-                name={post.isLiked ? 'heart.fill' : 'heart'}
-                size={20}
-                color={post.isLiked ? '#EF4444' : '#6B7280'}
-              />
-              <Text style={styles.actionText}>{post.likes || 0}</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                onComment ? onComment() : handlePostPress();
-              }}
-            >
-              <IconSymbol name="message" size={20} color="#6B7280" />
-              <Text style={styles.actionText}>{post.comments || 0}</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                onRepost ? onRepost() : console.log('Repost pressed');
-              }}
-            >
-              <IconSymbol name="repeat" size={20} color="#6B7280" />
-              <Text style={styles.actionText}>{post.reposts || 0}</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.actionButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                onShare ? onShare() : console.log('Share pressed');
-              }}
-            >
-              <IconSymbol name="send" size={20} color="#6B7280" />
-            </Pressable>
-
-            <View style={styles.spacer} />
-
-            <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
           </View>
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+      
+      <WatchlistModal
+        visible={watchlistModalVisible}
+        onClose={() => setWatchlistModalVisible(false)}
+        show={post.show}
+      />
+    </>
   );
 }
 
@@ -284,6 +309,9 @@ const styles = StyleSheet.create({
   posterContainer: {
     flexShrink: 0,
   },
+  posterWrapper: {
+    position: 'relative',
+  },
   poster: {
     width: 80,
     height: 120,
@@ -298,6 +326,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 32,
     fontWeight: '600',
+  },
+  saveIcon: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   contentColumn: {
     flex: 1,

@@ -340,12 +340,12 @@ export default function PostDetail() {
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleRepost}>
-              <IconSymbol name="repeat" size={24} color="#6B7280" />
+              <IconSymbol name="arrow.2.squarepath" size={24} color="#6B7280" />
               <Text style={styles.actionText}>{post.reposts}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleShare}>
-              <IconSymbol name="send" size={24} color="#6B7280" />
+              <IconSymbol name="paperplane" size={24} color="#6B7280" />
             </Pressable>
           </View>
         </View>

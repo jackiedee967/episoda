@@ -14,7 +14,8 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
-import { mockShows, mockPosts, mockEpisodes } from '@/data/mockData';
+import WatchlistModal from '@/components/WatchlistModal';
+import { mockShows, mockPosts, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
 
 type Tab = 'friends' | 'all' | 'episodes';
 type SortBy = 'hot' | 'recent';
@@ -25,10 +26,14 @@ export default function ShowHub() {
   const [activeTab, setActiveTab] = useState<Tab>('friends');
   const [sortBy, setSortBy] = useState<SortBy>('hot');
   const [modalVisible, setModalVisible] = useState(false);
+  const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
 
   const show = mockShows.find((s) => s.id === id);
   const showPosts = mockPosts.filter((p) => p.show.id === id);
   const showEpisodes = mockEpisodes.filter((e) => e.showId === id);
+
+  // Get friends watching this show (mock data - in real app would come from backend)
+  const friendsWatching = [mockUsers[0], mockUsers[1], mockUsers[2]];
 
   if (!show) {
     return (
@@ -38,9 +43,21 @@ export default function ShowHub() {
     );
   }
 
+  const handleFriendPress = (friendId: string) => {
+    router.push(`/user/${friendId}`);
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
-      <Image source={{ uri: show.poster }} style={styles.headerPoster} />
+      <View style={styles.posterWrapper}>
+        <Image source={{ uri: show.poster }} style={styles.headerPoster} />
+        <Pressable 
+          style={styles.saveIcon} 
+          onPress={() => setWatchlistModalVisible(true)}
+        >
+          <IconSymbol name="bookmark" size={20} color="#FFFFFF" />
+        </Pressable>
+      </View>
       <View style={styles.headerInfo}>
         <Text style={styles.showTitle}>{show.title}</Text>
         <Text style={styles.showDescription} numberOfLines={3}>
@@ -52,8 +69,47 @@ export default function ShowHub() {
             <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
           </View>
           <View style={styles.stat}>
-            <IconSymbol name="person.2.fill" size={16} color={colors.text} />
-            <Text style={styles.statText}>{show.friendsWatching} friends</Text>
+            <View style={styles.friendAvatarsRow}>
+              {friendsWatching.slice(0, 3).map((friend, index) => (
+                <Pressable
+                  key={friend.id}
+                  onPress={() => handleFriendPress(friend.id)}
+                >
+                  {friend.avatar ? (
+                    <Image
+                      source={{ uri: friend.avatar }}
+                      style={[
+                        styles.friendAvatar,
+                        { marginLeft: index > 0 ? -6 : 0, zIndex: friendsWatching.length - index }
+                      ]}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.friendAvatar,
+                        styles.friendAvatarPlaceholder,
+                        { marginLeft: index > 0 ? -6 : 0, zIndex: friendsWatching.length - index }
+                      ]}
+                    >
+                      <Text style={styles.friendAvatarPlaceholderText}>
+                        {friend.displayName?.charAt(0) || '?'}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.statText}>
+              <Pressable onPress={() => handleFriendPress(friendsWatching[0].id)}>
+                <Text style={styles.friendNameLink}>
+                  {friendsWatching[0].displayName}
+                </Text>
+              </Pressable>
+              {show.friendsWatching > 1 && (
+                <Text> and {show.friendsWatching - 1} friend{show.friendsWatching - 1 > 1 ? 's' : ''} watching</Text>
+              )}
+              {show.friendsWatching === 1 && <Text> watching</Text>}
+            </Text>
           </View>
         </View>
         <Text style={styles.episodeCount}>
@@ -176,6 +232,11 @@ export default function ShowHub() {
         </ScrollView>
       </View>
       <PostModal visible={modalVisible} onClose={() => setModalVisible(false)} preselectedShow={show} />
+      <WatchlistModal
+        visible={watchlistModalVisible}
+        onClose={() => setWatchlistModalVisible(false)}
+        show={show}
+      />
     </>
   );
 }
@@ -189,11 +250,25 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: colors.card,
   },
+  posterWrapper: {
+    position: 'relative',
+    marginRight: 16,
+  },
   headerPoster: {
     width: 120,
     height: 180,
     borderRadius: 8,
-    marginRight: 16,
+  },
+  saveIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 14,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerInfo: {
     flex: 1,
@@ -211,19 +286,45 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   statsContainer: {
-    flexDirection: 'row',
-    gap: 16,
+    flexDirection: 'column',
+    gap: 8,
     marginBottom: 8,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+  },
+  friendAvatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  friendAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
+  friendAvatarPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  friendAvatarPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  friendNameLink: {
+    fontWeight: '600',
+    color: colors.text,
   },
   statText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+    flexShrink: 1,
   },
   episodeCount: {
     fontSize: 12,
