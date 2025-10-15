@@ -219,7 +219,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               }}
             >
               <IconSymbol
-                name="heart"
+                name={post.isLiked ? 'heart.fill' : 'heart'}
                 size={20}
                 color={post.isLiked ? '#EF4444' : '#6B7280'}
               />
@@ -233,7 +233,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onComment ? onComment() : handlePostPress();
               }}
             >
-              <IconSymbol name="bubble.left" size={20} color="#6B7280" />
+              <IconSymbol name="message" size={20} color="#6B7280" />
               <Text style={styles.actionText}>{post.comments || 0}</Text>
             </Pressable>
 
@@ -244,7 +244,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onRepost ? onRepost() : console.log('Repost pressed');
               }}
             >
-              <IconSymbol name="arrow.2.squarepath" size={20} color="#6B7280" />
+              <IconSymbol name="repeat" size={20} color="#6B7280" />
               <Text style={styles.actionText}>{post.reposts || 0}</Text>
             </Pressable>
 
@@ -255,7 +255,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onShare ? onShare() : console.log('Share pressed');
               }}
             >
-              <IconSymbol name="square.and.arrow.up" size={20} color="#6B7280" />
+              <IconSymbol name="send" size={20} color="#6B7280" />
             </Pressable>
 
             <View style={styles.spacer} />

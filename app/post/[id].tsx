@@ -327,7 +327,7 @@ export default function PostDetail() {
           <View style={styles.postActions}>
             <Pressable style={styles.actionButton} onPress={handleLike}>
               <IconSymbol
-                name="heart"
+                name={isLiked ? 'heart.fill' : 'heart'}
                 size={24}
                 color={isLiked ? '#EF4444' : '#6B7280'}
               />
@@ -335,17 +335,17 @@ export default function PostDetail() {
             </Pressable>
 
             <Pressable style={styles.actionButton}>
-              <IconSymbol name="bubble.left" size={24} color="#6B7280" />
+              <IconSymbol name="message" size={24} color="#6B7280" />
               <Text style={styles.actionText}>{comments.length}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleRepost}>
-              <IconSymbol name="arrow.2.squarepath" size={24} color="#6B7280" />
+              <IconSymbol name="repeat" size={24} color="#6B7280" />
               <Text style={styles.actionText}>{post.reposts}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleShare}>
-              <IconSymbol name="square.and.arrow.up" size={24} color="#6B7280" />
+              <IconSymbol name="send" size={24} color="#6B7280" />
             </Pressable>
           </View>
         </View>
