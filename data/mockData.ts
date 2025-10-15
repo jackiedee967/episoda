@@ -1,5 +1,5 @@
 
-import { User, Show, Episode, Post } from '@/types';
+import { User, Show, Episode, Post, Comment, Reply } from '@/types';
 
 export const currentUser: User = {
   id: 'user-1',
@@ -164,5 +164,68 @@ export const mockPosts: Post[] = [
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
     isLiked: false,
     isSpoiler: false,
+  },
+];
+
+export const mockComments: Comment[] = [
+  {
+    id: 'comment-1',
+    postId: 'post-1',
+    user: mockUsers[1],
+    text: 'OMG YES! I totally agree with this theory. The way they set it up in the previous episode was so obvious!',
+    likes: 24,
+    isLiked: false,
+    timestamp: new Date(Date.now() - 1000 * 60 * 25),
+    replies: [
+      {
+        id: 'reply-1',
+        commentId: 'comment-1',
+        user: mockUsers[2],
+        text: 'Right?! I can&apos;t believe more people aren&apos;t talking about this',
+        likes: 8,
+        isLiked: false,
+        timestamp: new Date(Date.now() - 1000 * 60 * 20),
+      },
+      {
+        id: 'reply-2',
+        commentId: 'comment-1',
+        user: currentUser,
+        text: 'Exactly! The foreshadowing was incredible',
+        likes: 5,
+        isLiked: false,
+        timestamp: new Date(Date.now() - 1000 * 60 * 15),
+      },
+    ],
+  },
+  {
+    id: 'comment-2',
+    postId: 'post-1',
+    user: mockUsers[3],
+    text: 'I have a different take on this. What if they&apos;re actually setting up something completely different?',
+    likes: 15,
+    isLiked: true,
+    timestamp: new Date(Date.now() - 1000 * 60 * 18),
+    replies: [],
+  },
+  {
+    id: 'comment-3',
+    postId: 'post-1',
+    user: mockUsers[2],
+    text: 'This episode was INSANE! Can&apos;t wait for next week',
+    image: 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=400&h=300&fit=crop',
+    likes: 42,
+    isLiked: false,
+    timestamp: new Date(Date.now() - 1000 * 60 * 10),
+    replies: [
+      {
+        id: 'reply-3',
+        commentId: 'comment-3',
+        user: mockUsers[4],
+        text: 'Same! The cliffhanger was brutal',
+        likes: 12,
+        isLiked: true,
+        timestamp: new Date(Date.now() - 1000 * 60 * 8),
+      },
+    ],
   },
 ];

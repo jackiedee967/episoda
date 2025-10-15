@@ -29,6 +29,29 @@ export interface Episode {
   postCount: number;
 }
 
+export interface Comment {
+  id: string;
+  postId: string;
+  user: User;
+  text: string;
+  image?: string;
+  likes: number;
+  isLiked: boolean;
+  timestamp: Date;
+  replies: Reply[];
+}
+
+export interface Reply {
+  id: string;
+  commentId: string;
+  user: User;
+  text: string;
+  image?: string;
+  likes: number;
+  isLiked: boolean;
+  timestamp: Date;
+}
+
 export interface Post {
   id: string;
   user: User;

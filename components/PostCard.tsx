@@ -41,6 +41,12 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     }
   };
 
+  const handlePostPress = () => {
+    if (post?.id) {
+      router.push(`/post/${post.id}`);
+    }
+  };
+
   const getShowTagColor = (showTitle: string) => {
     const colors = [
       { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -71,7 +77,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   const showColor = getShowTagColor(post.show.title);
 
   return (
-    <View style={styles.container}>
+    <Pressable onPress={handlePostPress} style={styles.container}>
       <View style={styles.mainContent}>
         {/* Show Poster - First Column */}
         <Pressable onPress={handleShowPress} style={styles.posterContainer}>
@@ -162,7 +168,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           <View style={styles.actions}>
             <Pressable
               style={styles.actionButton}
-              onPress={onLike || (() => console.log('Like pressed'))}
+              onPress={(e) => {
+                e.stopPropagation();
+                onLike ? onLike() : console.log('Like pressed');
+              }}
             >
               <IconSymbol
                 name="flame"
@@ -174,10 +183,34 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
             <Pressable
               style={styles.actionButton}
-              onPress={onComment || (() => console.log('Comment pressed'))}
+              onPress={(e) => {
+                e.stopPropagation();
+                onComment ? onComment() : handlePostPress();
+              }}
             >
               <IconSymbol name="bubble.left" size={20} color={colors.textSecondary} />
               <Text style={styles.actionText}>{post.comments}</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.actionButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onRepost ? onRepost() : console.log('Repost pressed');
+              }}
+            >
+              <IconSymbol name="arrow.2.squarepath" size={20} color={colors.textSecondary} />
+              <Text style={styles.actionText}>{post.reposts}</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.actionButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onShare ? onShare() : console.log('Share pressed');
+              }}
+            >
+              <IconSymbol name="square.and.arrow.up" size={20} color={colors.textSecondary} />
             </Pressable>
 
             <View style={styles.spacer} />
@@ -186,7 +219,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
