@@ -2,14 +2,12 @@
 import React from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
-  Platform,
+  Animated,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors } from '@/styles/commonStyles';
 import { useRouter, usePathname } from 'expo-router';
 
 interface TabBarItem {
@@ -40,22 +38,24 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
   return (
     <SafeAreaView edges={['bottom']} style={styles.safeArea}>
       <View style={styles.container}>
-        {tabs.map((tab, index) => {
-          const active = isActive(tab.route);
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.tab}
-              onPress={() => handleTabPress(tab.route)}
-            >
-              <IconSymbol
-                name={tab.icon}
-                size={24}
-                color={active ? '#FFFFFF' : '#666666'}
-              />
-            </TouchableOpacity>
-          );
-        })}
+        <View style={styles.pillContainer}>
+          {tabs.map((tab, index) => {
+            const active = isActive(tab.route);
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[styles.tab, active && styles.tabActive]}
+                onPress={() => handleTabPress(tab.route)}
+              >
+                <IconSymbol
+                  name={tab.icon}
+                  size={24}
+                  color={active ? '#000000' : '#8BFC76'}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -70,17 +70,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   container: {
-    flexDirection: 'row',
-    backgroundColor: '#000000',
-    paddingVertical: 12,
     paddingHorizontal: 16,
-    justifyContent: 'space-around',
+    paddingBottom: 16,
     alignItems: 'center',
   },
+  pillContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#000000',
+    borderRadius: 30,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 8,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+    elevation: 8,
+  },
   tab: {
-    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+  },
+  tabActive: {
+    backgroundColor: '#8BFC76',
   },
 });

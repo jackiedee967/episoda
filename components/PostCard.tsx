@@ -72,101 +72,119 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={handleUserPress} style={styles.userInfo}>
-          {post.user.avatar ? (
-            <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+      <View style={styles.mainContent}>
+        {/* Show Poster - First Column */}
+        <Pressable onPress={handleShowPress} style={styles.posterContainer}>
+          {post.show.poster ? (
+            <Image source={{ uri: post.show.poster }} style={styles.poster} />
           ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Text style={styles.avatarPlaceholderText}>
-                {post.user.displayName?.charAt(0) || '?'}
+            <View style={[styles.poster, styles.posterPlaceholder]}>
+              <Text style={styles.posterPlaceholderText}>
+                {post.show.title?.charAt(0) || '?'}
               </Text>
             </View>
           )}
-          <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
         </Pressable>
-        <Text style={styles.justWatched}>just watched</Text>
-        {post.episodes && post.episodes.length > 0 && (
-          <View style={styles.episodeTag}>
-            <Text style={styles.episodeTagText}>
-              S{post.episodes[0].seasonNumber}E{post.episodes[0].episodeNumber}
-            </Text>
+
+        {/* Content Column */}
+        <View style={styles.contentColumn}>
+          <View style={styles.header}>
+            <Pressable onPress={handleUserPress} style={styles.userInfo}>
+              {post.user.avatar ? (
+                <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarPlaceholderText}>
+                    {post.user.displayName?.charAt(0) || '?'}
+                  </Text>
+                </View>
+              )}
+              <Text style={styles.displayName}>{post.user.displayName || 'Unknown User'}</Text>
+            </Pressable>
+            <Text style={styles.justWatched}>just watched</Text>
+            {post.episodes && post.episodes.length > 0 && (
+              <View style={styles.episodeTag}>
+                <Text style={styles.episodeTagText}>
+                  S{post.episodes[0].seasonNumber}E{post.episodes[0].episodeNumber}
+                </Text>
+              </View>
+            )}
+            <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
+              <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
+            </Pressable>
           </View>
-        )}
-        <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
-          <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
-        </Pressable>
-      </View>
 
-      {post.rating && (
-        <View style={styles.ratingContainer}>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <IconSymbol
-              key={star}
-              name={star <= post.rating! ? 'star.fill' : 'star'}
-              size={16}
-              color={star <= post.rating! ? '#FCD34D' : '#D1D5DB'}
-            />
-          ))}
-        </View>
-      )}
-
-      {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-      <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
-
-      <View style={styles.tagsContainer}>
-        {post.tags.map((tag, index) => {
-          const isTheory = tag.toLowerCase().includes('theory');
-          const isDiscussion = tag.toLowerCase().includes('discussion');
-          return (
-            <View 
-              key={index} 
-              style={[
-                styles.tag,
-                isTheory && styles.tagTheory,
-                isDiscussion && styles.tagDiscussion,
-              ]}
-            >
-              {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
-              {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
-              <Text 
-                style={[
-                  styles.tagText,
-                  isTheory && styles.tagTheoryText,
-                  isDiscussion && styles.tagDiscussionText,
-                ]}
-              >
-                {tag}
-              </Text>
+          {post.rating && (
+            <View style={styles.ratingContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <IconSymbol
+                  key={star}
+                  name={star <= post.rating! ? 'star.fill' : 'star'}
+                  size={16}
+                  color="#000000"
+                />
+              ))}
             </View>
-          );
-        })}
-      </View>
+          )}
 
-      <View style={styles.actions}>
-        <Pressable
-          style={styles.actionButton}
-          onPress={onLike || (() => console.log('Like pressed'))}
-        >
-          <IconSymbol
-            name={post.isLiked ? 'heart.fill' : 'heart'}
-            size={20}
-            color={post.isLiked ? '#EF4444' : colors.textSecondary}
-          />
-          <Text style={styles.actionText}>{post.likes}</Text>
-        </Pressable>
+          {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
+          <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
 
-        <Pressable
-          style={styles.actionButton}
-          onPress={onComment || (() => console.log('Comment pressed'))}
-        >
-          <IconSymbol name="bubble.left" size={20} color={colors.textSecondary} />
-          <Text style={styles.actionText}>{post.comments} comments</Text>
-        </Pressable>
+          <View style={styles.tagsContainer}>
+            {post.tags.map((tag, index) => {
+              const isTheory = tag.toLowerCase().includes('theory');
+              const isDiscussion = tag.toLowerCase().includes('discussion');
+              return (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.tag,
+                    isTheory && styles.tagTheory,
+                    isDiscussion && styles.tagDiscussion,
+                  ]}
+                >
+                  {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
+                  {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
+                  <Text 
+                    style={[
+                      styles.tagText,
+                      isTheory && styles.tagTheoryText,
+                      isDiscussion && styles.tagDiscussionText,
+                    ]}
+                  >
+                    {tag}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
 
-        <View style={styles.spacer} />
+          <View style={styles.actions}>
+            <Pressable
+              style={styles.actionButton}
+              onPress={onLike || (() => console.log('Like pressed'))}
+            >
+              <IconSymbol
+                name="flame"
+                size={20}
+                color={post.isLiked ? '#EF4444' : colors.textSecondary}
+              />
+              <Text style={styles.actionText}>{post.likes}</Text>
+            </Pressable>
 
-        <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
+            <Pressable
+              style={styles.actionButton}
+              onPress={onComment || (() => console.log('Comment pressed'))}
+            >
+              <IconSymbol name="bubble.left" size={20} color={colors.textSecondary} />
+              <Text style={styles.actionText}>{post.comments}</Text>
+            </Pressable>
+
+            <View style={styles.spacer} />
+
+            <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -180,6 +198,31 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 2,
+  },
+  mainContent: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  posterContainer: {
+    flexShrink: 0,
+  },
+  poster: {
+    width: 80,
+    height: 120,
+    borderRadius: 8,
+  },
+  posterPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  posterPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '600',
+  },
+  contentColumn: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
