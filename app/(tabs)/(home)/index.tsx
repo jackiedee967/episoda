@@ -7,7 +7,7 @@ import PostButton from '@/components/PostButton';
 import PostCard from '@/components/PostCard';
 import ShowCard from '@/components/ShowCard';
 import PostModal from '@/components/PostModal';
-import { mockPosts, mockShows } from '@/data/mockData';
+import { mockPosts, mockShows, mockUsers } from '@/data/mockData';
 import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HomeScreen() {
@@ -29,13 +29,20 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      <Text style={styles.logo}>EPISADA</Text>
-      <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' }}
-        style={styles.profilePic}
-      />
-    </View>
+    <>
+      <View style={styles.headerContainer}>
+        <Image
+          source={require('@/assets/images/fbbcb56a-80e4-45a8-b588-5a910d5e5b2a.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Image
+          source={{ uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop' }}
+          style={styles.profilePic}
+        />
+      </View>
+      <View style={styles.divider} />
+    </>
   );
 
   const renderWelcome = () => (
@@ -51,11 +58,15 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Recommended Titles</Text>
         <IconSymbol name="arrow.right" size={20} color={colors.text} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.showsScroll}>
-        {mockShows.slice(0, 6).map((show) => (
-          <ShowCard key={show.id} show={show} />
+      <View style={styles.showsGrid}>
+        {mockShows.slice(0, 6).map((show, index) => (
+          <ShowCard 
+            key={show.id} 
+            show={show}
+            friends={mockUsers.slice(0, Math.min(3, show.friendsWatching))}
+          />
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 
@@ -109,22 +120,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   logo: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    letterSpacing: 2,
+    height: 32,
+    width: 120,
   },
   profilePic: {
     width: 40,
     height: 40,
     borderRadius: 20,
   },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: 16,
+    opacity: 0.3,
+  },
   welcomeContainer: {
     paddingHorizontal: 16,
+    marginTop: 20,
     marginBottom: 24,
   },
   welcomeText: {
@@ -155,9 +171,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  showsScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+  showsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   emptyState: {
     alignItems: 'center',

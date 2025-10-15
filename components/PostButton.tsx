@@ -32,6 +32,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
     elevation: 4,
+    minHeight: 64,
   },
   content: {
     flexDirection: 'row',
@@ -52,9 +53,9 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: colors.secondary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 20,
   },
   buttonText: {
     fontSize: 14,

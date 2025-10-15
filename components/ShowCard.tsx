@@ -2,51 +2,80 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { colors } from '@/styles/commonStyles';
-import { Show } from '@/types';
+import { Show, User } from '@/types';
 import { useRouter } from 'expo-router';
 
 interface ShowCardProps {
   show: Show;
+  friends?: User[];
 }
 
-export default function ShowCard({ show }: ShowCardProps) {
+export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const router = useRouter();
 
   const handlePress = () => {
     router.push(`/show/${show.id}`);
   };
 
+  const renderFriendAvatars = () => {
+    const displayFriends = friends.slice(0, 3);
+    const remainingCount = show.friendsWatching - displayFriends.length;
+
+    return (
+      <View style={styles.friendsContainer}>
+        <View style={styles.avatarRow}>
+          {displayFriends.map((friend, index) => (
+            <Image
+              key={friend.id}
+              source={{ uri: friend.avatar }}
+              style={[styles.avatar, { marginLeft: index > 0 ? -8 : 0 }]}
+            />
+          ))}
+        </View>
+        <Text style={styles.friendsText}>
+          {displayFriends[0]?.displayName || 'Friends'} 
+          {remainingCount > 0 && ` & ${remainingCount} other${remainingCount > 1 ? 's' : ''}`} watching
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <Pressable style={styles.container} onPress={handlePress}>
       <Image source={{ uri: show.poster }} style={styles.poster} />
-      <View style={styles.friendsWatching}>
-        <Text style={styles.friendsText}>{show.friendsWatching} friends</Text>
-      </View>
+      {renderFriendAvatars()}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: 120,
-    marginRight: 12,
+    width: '48%',
+    marginBottom: 20,
   },
   poster: {
-    width: 120,
-    height: 180,
-    borderRadius: 8,
+    width: '100%',
+    aspectRatio: 2 / 3,
+    borderRadius: 12,
   },
-  friendsWatching: {
+  friendsContainer: {
     marginTop: 8,
-    backgroundColor: colors.highlight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  avatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.background,
   },
   friendsText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.text,
+    fontSize: 11,
+    color: colors.textSecondary,
+    lineHeight: 14,
   },
 });
