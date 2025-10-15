@@ -24,9 +24,9 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
 
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return `${days}d`;
   };
 
   const handleShowPress = () => {
@@ -37,49 +37,82 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     router.push(`/user/${post.user.id}`);
   };
 
+  const getShowTagColor = (showTitle: string) => {
+    const colors = [
+      { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
+      { bg: '#DBEAFE', text: '#1E40AF', border: '#3B82F6' },
+      { bg: '#FCE7F3', text: '#9F1239', border: '#EC4899' },
+      { bg: '#D1FAE5', text: '#065F46', border: '#10B981' },
+    ];
+    const index = showTitle.length % colors.length;
+    return colors[index];
+  };
+
+  const showColor = getShowTagColor(post.show.title);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={handleUserPress} style={styles.userInfo}>
           <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-          <View>
-            <Text style={styles.displayName}>{post.user.displayName}</Text>
-            <Text style={styles.username}>@{post.user.username}</Text>
-          </View>
+          <Text style={styles.displayName}>{post.user.displayName}</Text>
         </Pressable>
-        <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
+        <Text style={styles.justWatched}>just watched</Text>
+        {post.episodes && post.episodes.length > 0 && (
+          <View style={styles.episodeTag}>
+            <Text style={styles.episodeTagText}>
+              S{post.episodes[0].seasonNumber}E{post.episodes[0].episodeNumber}
+            </Text>
+          </View>
+        )}
+        <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
+          <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
+        </Pressable>
       </View>
 
-      <View style={styles.content}>
-        <Pressable onPress={handleShowPress} style={styles.showPoster}>
-          <Image source={{ uri: post.show.poster }} style={styles.posterImage} />
-        </Pressable>
-
-        <View style={styles.postContent}>
-          {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-          <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
-
-          {post.rating && (
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <IconSymbol
-                  key={star}
-                  name={star <= post.rating! ? 'star.fill' : 'star'}
-                  size={14}
-                  color={star <= post.rating! ? colors.secondary : colors.textSecondary}
-                />
-              ))}
-            </View>
-          )}
-
-          <View style={styles.tagsContainer}>
-            {post.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+      {post.rating && (
+        <View style={styles.ratingContainer}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <IconSymbol
+              key={star}
+              name={star <= post.rating! ? 'star.fill' : 'star'}
+              size={16}
+              color={star <= post.rating! ? '#FCD34D' : '#D1D5DB'}
+            />
+          ))}
         </View>
+      )}
+
+      {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
+      <Text style={styles.postBody} numberOfLines={3}>{post.body}</Text>
+
+      <View style={styles.tagsContainer}>
+        {post.tags.map((tag, index) => {
+          const isTheory = tag.toLowerCase().includes('theory');
+          const isDiscussion = tag.toLowerCase().includes('discussion');
+          return (
+            <View 
+              key={index} 
+              style={[
+                styles.tag,
+                isTheory && styles.tagTheory,
+                isDiscussion && styles.tagDiscussion,
+              ]}
+            >
+              {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
+              {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
+              <Text 
+                style={[
+                  styles.tagText,
+                  isTheory && styles.tagTheoryText,
+                  isDiscussion && styles.tagDiscussionText,
+                ]}
+              >
+                {tag}
+              </Text>
+            </View>
+          );
+        })}
       </View>
 
       <View style={styles.actions}>
@@ -90,7 +123,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           <IconSymbol
             name={post.isLiked ? 'heart.fill' : 'heart'}
             size={20}
-            color={post.isLiked ? '#FF0000' : colors.text}
+            color={post.isLiked ? '#EF4444' : colors.textSecondary}
           />
           <Text style={styles.actionText}>{post.likes}</Text>
         </Pressable>
@@ -99,24 +132,13 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           style={styles.actionButton}
           onPress={onComment || (() => console.log('Comment pressed'))}
         >
-          <IconSymbol name="bubble.left" size={20} color={colors.text} />
-          <Text style={styles.actionText}>{post.comments}</Text>
+          <IconSymbol name="bubble.left" size={20} color={colors.textSecondary} />
+          <Text style={styles.actionText}>{post.comments} comments</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.actionButton}
-          onPress={onRepost || (() => console.log('Repost pressed'))}
-        >
-          <IconSymbol name="arrow.2.squarepath" size={20} color={colors.text} />
-          <Text style={styles.actionText}>{post.reposts}</Text>
-        </Pressable>
+        <View style={styles.spacer} />
 
-        <Pressable
-          style={styles.actionButton}
-          onPress={onShare || (() => Alert.alert('Share', 'Deep linking coming soon!'))}
-        >
-          <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
-        </Pressable>
+        <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
       </View>
     </View>
   );
@@ -128,89 +150,121 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 6,
   },
   displayName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+    fontFamily: 'System',
   },
-  username: {
+  justWatched: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontFamily: 'System',
   },
-  timestamp: {
+  episodeTag: {
+    backgroundColor: colors.purpleLight,
+    borderWidth: 1,
+    borderColor: colors.purple,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  episodeTagText: {
     fontSize: 12,
-    color: colors.textSecondary,
-  },
-  content: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  showPoster: {
-    marginRight: 12,
-  },
-  posterImage: {
-    width: 80,
-    height: 120,
-    borderRadius: 8,
-  },
-  postContent: {
-    flex: 1,
-  },
-  postTitle: {
-    fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
+    color: colors.purple,
+    fontFamily: 'System',
   },
-  postBody: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-    marginBottom: 8,
+  showTag: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  showTagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'System',
   },
   ratingContainer: {
     flexDirection: 'row',
+    marginBottom: 8,
+    gap: 2,
+  },
+  postTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+    fontFamily: 'System',
+  },
+  postBody: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
     marginBottom: 8,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+    marginBottom: 8,
   },
   tag: {
-    backgroundColor: colors.highlight,
-    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 10,
+    gap: 4,
+  },
+  tagTheory: {
+    backgroundColor: '#D1FAE5',
+  },
+  tagDiscussion: {
+    backgroundColor: '#DBEAFE',
+  },
+  tagIcon: {
+    marginRight: 2,
   },
   tagText: {
     fontSize: 12,
     color: colors.text,
     fontWeight: '500',
+    fontFamily: 'System',
+  },
+  tagTheoryText: {
+    color: '#059669',
+  },
+  tagDiscussionText: {
+    color: '#2563EB',
   },
   actions: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    alignItems: 'center',
+    paddingTop: 8,
+    gap: 12,
   },
   actionButton: {
     flexDirection: 'row',
@@ -219,6 +273,15 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textSecondary,
+    fontFamily: 'System',
+  },
+  spacer: {
+    flex: 1,
+  },
+  timestamp: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontFamily: 'System',
   },
 });

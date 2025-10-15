@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 
 interface PostButtonProps {
@@ -8,10 +8,38 @@ interface PostButtonProps {
 }
 
 export default function PostButton({ onPress }: PostButtonProps) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
+
   return (
     <Pressable style={styles.container} onPress={onPress}>
-      <View style={styles.content}>
-        <View style={styles.dot} />
+      <View style={styles.leftContent}>
+        <Animated.View 
+          style={[
+            styles.dot,
+            {
+              transform: [{ scale: pulseAnim }],
+            },
+          ]} 
+        />
         <Text style={styles.text}>What are you watching?</Text>
       </View>
       <View style={styles.button}>
@@ -23,18 +51,17 @@ export default function PostButton({ onPress }: PostButtonProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.text,
+    backgroundColor: '#000000',
     borderRadius: 24,
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-    elevation: 4,
-    minHeight: 64,
+    minHeight: 56,
   },
-  content: {
+  leftContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
@@ -43,23 +70,24 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.secondary,
+    backgroundColor: '#8BFC76',
     marginRight: 12,
   },
   text: {
     fontSize: 16,
-    color: colors.background,
-    fontWeight: '500',
+    color: '#FFFFFF',
+    fontFamily: 'System',
   },
   button: {
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    backgroundColor: '#8BFC76',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 20,
   },
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000000',
+    fontFamily: 'System',
   },
 });

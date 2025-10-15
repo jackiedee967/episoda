@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from 'react-native';
 import { Stack } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import PostButton from '@/components/PostButton';
@@ -8,7 +8,6 @@ import PostCard from '@/components/PostCard';
 import ShowCard from '@/components/ShowCard';
 import PostModal from '@/components/PostModal';
 import { mockPosts, mockShows, mockUsers } from '@/data/mockData';
-import { IconSymbol } from '@/components/IconSymbol';
 
 export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,7 +31,7 @@ export default function HomeScreen() {
     <>
       <View style={styles.headerContainer}>
         <Image
-          source={require('@/assets/images/fbbcb56a-80e4-45a8-b588-5a910d5e5b2a.png')}
+          source={require('@/assets/images/b3d4fad8-9b2d-48bf-abdd-0dad6f1f4ff3.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -45,20 +44,14 @@ export default function HomeScreen() {
     </>
   );
 
-  const renderWelcome = () => (
-    <View style={styles.welcomeContainer}>
-      <Text style={styles.welcomeText}>Welcome back</Text>
-      <Text style={styles.userName}>Jacqueline</Text>
-    </View>
-  );
-
   const renderRecommendedTitles = () => (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recommended Titles</Text>
-        <IconSymbol name="arrow.right" size={20} color={colors.text} />
-      </View>
-      <View style={styles.showsGrid}>
+      <Text style={styles.sectionTitle}>Recommended Titles</Text>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.showsScrollContainer}
+      >
         {mockShows.slice(0, 6).map((show, index) => (
           <ShowCard 
             key={show.id} 
@@ -66,7 +59,7 @@ export default function HomeScreen() {
             friends={mockUsers.slice(0, Math.min(3, show.friendsWatching))}
           />
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 
@@ -79,7 +72,6 @@ export default function HomeScreen() {
         ))
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="person.2" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyStateTitle}>No friend activity yet</Text>
           <Text style={styles.emptyStateText}>
             Invite your friends to see what they&apos;re watching!
@@ -98,7 +90,6 @@ export default function HomeScreen() {
       <View style={commonStyles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
-          {renderWelcome()}
           <View style={styles.content}>
             <PostButton onPress={() => setModalVisible(true)} />
             {renderRecommendedTitles()}
@@ -121,10 +112,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   logo: {
-    height: 32,
+    height: 24,
     width: 120,
   },
   profilePic: {
@@ -135,52 +126,33 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginHorizontal: 16,
-    opacity: 0.3,
-  },
-  welcomeContainer: {
-    paddingHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 24,
-  },
-  welcomeText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
+    marginHorizontal: 0,
   },
   content: {
     paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 100,
   },
   section: {
-    marginBottom: 32,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: colors.text,
+    marginBottom: 12,
+    fontFamily: 'System',
   },
-  showsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  showsScrollContainer: {
+    paddingRight: 16,
   },
   emptyState: {
     alignItems: 'center',
     padding: 32,
     backgroundColor: colors.card,
     borderRadius: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
   },
   emptyStateTitle: {
     fontSize: 18,

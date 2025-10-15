@@ -28,13 +28,13 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
             <Image
               key={friend.id}
               source={{ uri: friend.avatar }}
-              style={[styles.avatar, { marginLeft: index > 0 ? -8 : 0 }]}
+              style={[styles.avatar, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
             />
           ))}
         </View>
-        <Text style={styles.friendsText}>
+        <Text style={styles.friendsText} numberOfLines={2}>
           {displayFriends[0]?.displayName || 'Friends'} 
-          {remainingCount > 0 && ` & ${remainingCount} other${remainingCount > 1 ? 's' : ''}`} watching
+          {remainingCount > 0 && ` and ${remainingCount} friend${remainingCount > 1 ? 's' : ''}`} watching
         </Text>
       </View>
     );
@@ -50,13 +50,13 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: '48%',
-    marginBottom: 20,
+    width: 120,
+    marginRight: 12,
   },
   poster: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: 12,
+    width: 120,
+    height: 180,
+    borderRadius: 8,
   },
   friendsContainer: {
     marginTop: 8,
@@ -64,18 +64,18 @@ const styles = StyleSheet.create({
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   avatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
     borderColor: colors.background,
   },
   friendsText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
-    lineHeight: 14,
+    lineHeight: 16,
   },
 });
