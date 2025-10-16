@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable, Animated } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
@@ -20,6 +20,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [localLiked, setLocalLiked] = useState(post.isLiked);
+  const [localLikes, setLocalLikes] = useState(post.likes);
+  const [localReposts, setLocalReposts] = useState(post.reposts);
+  const [isReposted, setIsReposted] = useState(false);
+  const [likeScale] = useState(new Animated.Value(1));
 
   const formatTimestamp = (date: Date) => {
     try {
@@ -29,12 +34,13 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
       const hours = Math.floor(minutes / 60);
       const days = Math.floor(hours / 24);
 
-      if (minutes < 60) return `${minutes}m`;
-      if (hours < 24) return `${hours}h`;
-      return `${days}d`;
+      if (minutes < 1) return 'now';
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      return `${days}d ago`;
     } catch (error) {
       console.log('Error formatting timestamp:', error);
-      return '0m';
+      return '0m ago';
     }
   };
 
@@ -70,6 +76,66 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     console.log(`Show ${showId} added to watchlist ${watchlistId}`);
   };
 
+  const handleLikePress = (e: any) => {
+    e.stopPropagation();
+    
+    // Animate the heart
+    Animated.sequence([
+      Animated.timing(likeScale, {
+        toValue: 1.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(likeScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Toggle like state
+    const newLikedState = !localLiked;
+    setLocalLiked(newLikedState);
+    setLocalLikes(prev => newLikedState ? prev + 1 : prev - 1);
+    
+    if (onLike) {
+      onLike();
+    }
+    
+    console.log(`Post ${post.id} ${newLikedState ? 'liked' : 'unliked'}`);
+  };
+
+  const handleRepostPress = (e: any) => {
+    e.stopPropagation();
+    
+    const newRepostedState = !isReposted;
+    setIsReposted(newRepostedState);
+    setLocalReposts(prev => newRepostedState ? prev + 1 : prev - 1);
+    
+    if (onRepost) {
+      onRepost();
+    }
+    
+    console.log(`Post ${post.id} ${newRepostedState ? 'reposted' : 'unreposted'}`);
+  };
+
+  const handleCommentPress = (e: any) => {
+    e.stopPropagation();
+    if (onComment) {
+      onComment();
+    } else {
+      handlePostPress();
+    }
+  };
+
+  const handleSharePress = (e: any) => {
+    e.stopPropagation();
+    if (onShare) {
+      onShare();
+    }
+    console.log(`Sharing post ${post.id}`);
+  };
+
   const getShowTagColor = (showTitle: string) => {
     const colors = [
       { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -79,6 +145,26 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     ];
     const index = (showTitle?.length || 0) % colors.length;
     return colors[index];
+  };
+
+  const getTagIcon = (tag: string) => {
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag.includes('theory')) return 'lightbulb';
+    if (lowerTag.includes('discussion')) return 'bubble.left.and.bubble.right';
+    if (lowerTag.includes('spoiler')) return 'exclamationmark.triangle';
+    if (lowerTag.includes('recap')) return 'list.bullet';
+    if (lowerTag.includes('misc')) return 'ellipsis.circle';
+    return 'tag';
+  };
+
+  const getTagColor = (tag: string) => {
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag.includes('theory')) return { bg: '#D1FAE5', text: '#059669', icon: '#059669' };
+    if (lowerTag.includes('discussion')) return { bg: '#DBEAFE', text: '#2563EB', icon: '#2563EB' };
+    if (lowerTag.includes('spoiler')) return { bg: '#FEE2E2', text: '#DC2626', icon: '#DC2626' };
+    if (lowerTag.includes('recap')) return { bg: '#E0E7FF', text: '#4F46E5', icon: '#4F46E5' };
+    if (lowerTag.includes('misc')) return { bg: '#F3F4F6', text: '#6B7280', icon: '#6B7280' };
+    return { bg: '#F3F4F6', text: '#6B7280', icon: '#6B7280' };
   };
 
   // Add safety checks for post data
@@ -101,14 +187,26 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   return (
     <>
-      <Pressable onPress={handlePostPress} style={styles.container}>
+      <Pressable 
+        onPress={handlePostPress} 
+        style={({ pressed }) => [
+          styles.container,
+          pressed && styles.containerPressed,
+        ]}
+      >
         <View style={styles.mainContent}>
           {/* Show Poster - First Column */}
           <Pressable onPress={handleShowPress} style={styles.posterContainer}>
             {post.show.poster ? (
               <View style={styles.posterWrapper}>
                 <Image source={{ uri: post.show.poster }} style={styles.poster} />
-                <Pressable style={styles.saveIcon} onPress={handleSavePress}>
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.saveIcon,
+                    pressed && styles.saveIconPressed,
+                  ]} 
+                  onPress={handleSavePress}
+                >
                   <IconSymbol 
                     name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
                     size={18} 
@@ -123,7 +221,13 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                     {post.show.title?.charAt(0) || '?'}
                   </Text>
                 </View>
-                <Pressable style={styles.saveIcon} onPress={handleSavePress}>
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.saveIcon,
+                    pressed && styles.saveIconPressed,
+                  ]} 
+                  onPress={handleSavePress}
+                >
                   <IconSymbol 
                     name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
                     size={18} 
@@ -157,7 +261,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                   {post.episodes.map((episode, index) => (
                     <Pressable 
                       key={episode.id || index}
-                      style={styles.episodeTag}
+                      style={({ pressed }) => [
+                        styles.episodeTag,
+                        pressed && styles.episodeTagPressed,
+                      ]}
                       onPress={(e) => {
                         e.stopPropagation();
                         handleEpisodePress(episode.id);
@@ -171,7 +278,14 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 </View>
               )}
               
-              <Pressable onPress={handleShowPress} style={[styles.showTag, { backgroundColor: showColor.bg, borderColor: showColor.border }]}>
+              <Pressable 
+                onPress={handleShowPress} 
+                style={({ pressed }) => [
+                  styles.showTag, 
+                  { backgroundColor: showColor.bg, borderColor: showColor.border },
+                  pressed && styles.showTagPressed,
+                ]}
+              >
                 <Text style={[styles.showTagText, { color: showColor.text }]}>{post.show.title}</Text>
               </Pressable>
             </View>
@@ -183,7 +297,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                     key={star}
                     name={star <= post.rating! ? 'star.fill' : 'star'}
                     size={16}
-                    color="#000000"
+                    color="#FCD34D"
                   />
                 ))}
               </View>
@@ -197,7 +311,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
                 <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
                 <Pressable 
-                  style={styles.spoilerButton}
+                  style={({ pressed }) => [
+                    styles.spoilerButton,
+                    pressed && styles.spoilerButtonPressed,
+                  ]}
                   onPress={(e) => {
                     e.stopPropagation();
                     setSpoilerRevealed(true);
@@ -214,26 +331,18 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
             {post.tags && post.tags.length > 0 && (
               <View style={styles.tagsContainer}>
                 {post.tags.map((tag, index) => {
-                  const isTheory = tag.toLowerCase().includes('theory');
-                  const isDiscussion = tag.toLowerCase().includes('discussion');
+                  const tagColor = getTagColor(tag);
+                  const tagIcon = getTagIcon(tag);
                   return (
                     <View 
                       key={index} 
                       style={[
                         styles.tag,
-                        isTheory && styles.tagTheory,
-                        isDiscussion && styles.tagDiscussion,
+                        { backgroundColor: tagColor.bg },
                       ]}
                     >
-                      {isTheory && <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />}
-                      {isDiscussion && <IconSymbol name="bubble.left.and.bubble.right" size={12} color="#2563EB" style={styles.tagIcon} />}
-                      <Text 
-                        style={[
-                          styles.tagText,
-                          isTheory && styles.tagTheoryText,
-                          isDiscussion && styles.tagDiscussionText,
-                        ]}
-                      >
+                      <IconSymbol name={tagIcon} size={12} color={tagColor.icon} style={styles.tagIcon} />
+                      <Text style={[styles.tagText, { color: tagColor.text }]}>
                         {tag}
                       </Text>
                     </View>
@@ -245,25 +354,23 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
             <View style={styles.actions}>
               <Pressable
                 style={styles.actionButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  onLike ? onLike() : console.log('Like pressed');
-                }}
+                onPress={handleLikePress}
               >
-                <IconSymbol
-                  name={post.isLiked ? 'heart.fill' : 'heart'}
-                  size={20}
-                  color={post.isLiked ? '#EF4444' : '#6B7280'}
-                />
-                <Text style={styles.actionText}>{post.likes || 0}</Text>
+                <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+                  <IconSymbol
+                    name={localLiked ? 'heart.fill' : 'heart'}
+                    size={20}
+                    color={localLiked ? '#EF4444' : '#6B7280'}
+                  />
+                </Animated.View>
+                <Text style={[styles.actionText, localLiked && styles.actionTextActive]}>
+                  {localLikes || 0}
+                </Text>
               </Pressable>
 
               <Pressable
                 style={styles.actionButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  onComment ? onComment() : handlePostPress();
-                }}
+                onPress={handleCommentPress}
               >
                 <IconSymbol name="message" size={20} color="#6B7280" />
                 <Text style={styles.actionText}>{post.comments || 0}</Text>
@@ -271,21 +378,21 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
               <Pressable
                 style={styles.actionButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  onRepost ? onRepost() : console.log('Repost pressed');
-                }}
+                onPress={handleRepostPress}
               >
-                <IconSymbol name="arrow.2.squarepath" size={20} color="#6B7280" />
-                <Text style={styles.actionText}>{post.reposts || 0}</Text>
+                <IconSymbol 
+                  name="arrow.2.squarepath" 
+                  size={20} 
+                  color={isReposted ? colors.secondary : '#6B7280'} 
+                />
+                <Text style={[styles.actionText, isReposted && styles.actionTextActive]}>
+                  {localReposts || 0}
+                </Text>
               </Pressable>
 
               <Pressable
                 style={styles.actionButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  onShare ? onShare() : console.log('Share pressed');
-                }}
+                onPress={handleSharePress}
               >
                 <IconSymbol name="paperplane" size={20} color="#6B7280" />
               </Pressable>
@@ -316,6 +423,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
     elevation: 2,
+  },
+  containerPressed: {
+    opacity: 0.95,
   },
   mainContent: {
     flexDirection: 'row',
@@ -350,6 +460,10 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   contentColumn: {
     flex: 1,
@@ -405,6 +519,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
+  episodeTagPressed: {
+    opacity: 0.7,
+  },
   episodeTagText: {
     fontSize: 12,
     fontWeight: '600',
@@ -416,6 +533,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
+  },
+  showTagPressed: {
+    opacity: 0.7,
   },
   showTagText: {
     fontSize: 12,
@@ -466,6 +586,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 6,
   },
+  spoilerButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
+  },
   spoilerButtonIcon: {
     marginRight: 2,
   },
@@ -484,32 +608,18 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
     gap: 4,
-  },
-  tagTheory: {
-    backgroundColor: '#D1FAE5',
-  },
-  tagDiscussion: {
-    backgroundColor: '#DBEAFE',
   },
   tagIcon: {
     marginRight: 2,
   },
   tagText: {
     fontSize: 12,
-    color: colors.text,
     fontWeight: '500',
     fontFamily: 'System',
-  },
-  tagTheoryText: {
-    color: '#059669',
-  },
-  tagDiscussionText: {
-    color: '#2563EB',
   },
   actions: {
     flexDirection: 'row',
@@ -526,6 +636,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     fontFamily: 'System',
+  },
+  actionTextActive: {
+    color: colors.text,
+    fontWeight: '600',
   },
   spacer: {
     flex: 1,

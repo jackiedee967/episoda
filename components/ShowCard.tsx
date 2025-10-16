@@ -109,7 +109,13 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
 
   return (
     <>
-      <Pressable style={styles.container} onPress={handlePress}>
+      <Pressable 
+        style={({ pressed }) => [
+          styles.container,
+          pressed && styles.containerPressed,
+        ]} 
+        onPress={handlePress}
+      >
         <View style={styles.posterWrapper}>
           {show.poster ? (
             <Image source={{ uri: show.poster }} style={styles.poster} />
@@ -118,7 +124,13 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
               <Text style={styles.posterPlaceholderText}>{show.title?.charAt(0) || '?'}</Text>
             </View>
           )}
-          <Pressable style={styles.saveIcon} onPress={handleSavePress}>
+          <Pressable 
+            style={({ pressed }) => [
+              styles.saveIcon,
+              pressed && styles.saveIconPressed,
+            ]} 
+            onPress={handleSavePress}
+          >
             <IconSymbol 
               name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
               size={18} 
@@ -142,6 +154,9 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
 const styles = StyleSheet.create({
   container: {
     width: 120,
+  },
+  containerPressed: {
+    opacity: 0.8,
   },
   posterWrapper: {
     position: 'relative',
@@ -169,6 +184,10 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   friendsContainer: {
     marginTop: 8,

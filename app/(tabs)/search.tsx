@@ -45,49 +45,75 @@ export default function SearchScreen() {
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
+              returnKeyType="search"
             />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery('')}>
+                <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+              </Pressable>
+            )}
           </View>
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.resultsContainer}>
-            {filteredShows.map((show) => (
-              <Pressable
-                key={show.id}
-                style={styles.showCard}
-                onPress={() => router.push(`/show/${show.id}`)}
-              >
-                <View style={styles.posterWrapper}>
-                  <Image source={{ uri: show.poster }} style={styles.showPoster} />
-                  <Pressable 
-                    style={styles.saveIcon} 
-                    onPress={(e) => handleSavePress(show, e)}
-                  >
-                    <IconSymbol 
-                      name={showsInWatchlist.has(show.id) ? "bookmark.fill" : "bookmark"} 
-                      size={16} 
-                      color="#FFFFFF" 
-                    />
-                  </Pressable>
-                </View>
-                <View style={styles.showInfo}>
-                  <Text style={styles.showTitle}>{show.title}</Text>
-                  <Text style={styles.showDescription} numberOfLines={2}>
-                    {show.description}
-                  </Text>
-                  <View style={styles.showStats}>
-                    <View style={styles.stat}>
-                      <IconSymbol name="star.fill" size={14} color={colors.secondary} />
-                      <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
-                    </View>
-                    <View style={styles.stat}>
-                      <IconSymbol name="person.2.fill" size={14} color={colors.text} />
-                      <Text style={styles.statText}>{show.friendsWatching} friends</Text>
+            {filteredShows.length === 0 ? (
+              <View style={styles.emptyState}>
+                <IconSymbol name="magnifyingglass" size={48} color={colors.textSecondary} />
+                <Text style={styles.emptyStateText}>No shows found</Text>
+                <Text style={styles.emptyStateSubtext}>Try searching for something else</Text>
+              </View>
+            ) : (
+              filteredShows.map((show) => (
+                <Pressable
+                  key={show.id}
+                  style={({ pressed }) => [
+                    styles.showCard,
+                    pressed && styles.showCardPressed,
+                  ]}
+                  onPress={() => router.push(`/show/${show.id}`)}
+                >
+                  <View style={styles.posterWrapper}>
+                    <Image source={{ uri: show.poster }} style={styles.showPoster} />
+                    <Pressable 
+                      style={({ pressed }) => [
+                        styles.saveIcon,
+                        pressed && styles.saveIconPressed,
+                      ]} 
+                      onPress={(e) => handleSavePress(show, e)}
+                    >
+                      <IconSymbol 
+                        name={showsInWatchlist.has(show.id) ? "bookmark.fill" : "bookmark"} 
+                        size={16} 
+                        color="#FFFFFF" 
+                      />
+                    </Pressable>
+                  </View>
+                  <View style={styles.showInfo}>
+                    <Text style={styles.showTitle}>{show.title}</Text>
+                    <Text style={styles.showDescription} numberOfLines={2}>
+                      {show.description}
+                    </Text>
+                    <View style={styles.showStats}>
+                      <View style={styles.stat}>
+                        <IconSymbol name="star.fill" size={14} color="#FCD34D" />
+                        <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
+                      </View>
+                      <View style={styles.stat}>
+                        <IconSymbol name="person.2.fill" size={14} color={colors.text} />
+                        <Text style={styles.statText}>{show.friendsWatching} friends</Text>
+                      </View>
+                      <View style={styles.stat}>
+                        <IconSymbol name="tv" size={14} color={colors.text} />
+                        <Text style={styles.statText}>
+                          {show.totalSeasons} season{show.totalSeasons > 1 ? 's' : ''}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              </Pressable>
-            ))}
+                </Pressable>
+              ))
+            )}
           </View>
         </ScrollView>
       </View>
@@ -140,12 +166,33 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 100,
   },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 8,
+  },
   showCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+    elevation: 2,
+  },
+  showCardPressed: {
+    opacity: 0.95,
   },
   posterWrapper: {
     position: 'relative',
@@ -164,6 +211,10 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   showInfo: {
     flex: 1,

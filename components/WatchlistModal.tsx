@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
@@ -37,22 +38,72 @@ const initialWatchlists: Watchlist[] = [
 export default function WatchlistModal({ visible, onClose, show, onAddToWatchlist }: WatchlistModalProps) {
   const [watchlists, setWatchlists] = useState<Watchlist[]>(initialWatchlists);
   const [newWatchlistName, setNewWatchlistName] = useState('');
+  const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  React.useEffect(() => {
+    if (visible) {
+      // Slide up and fade in
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Slide down and fade out
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: SCREEN_HEIGHT,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
 
   const handleCreateWatchlist = () => {
     if (newWatchlistName.trim()) {
       const newWatchlist: Watchlist = {
         id: `wl-${Date.now()}`,
         name: newWatchlistName.trim(),
-        shows: [],
+        shows: [show.id], // Automatically add the show to the new watchlist
       };
+      
       setWatchlists([...watchlists, newWatchlist]);
+      console.log(`Created new watchlist "${newWatchlist.name}" and added ${show.title}`);
+      
+      // Call the callback if provided
+      if (onAddToWatchlist) {
+        onAddToWatchlist(newWatchlist.id, show.id);
+      }
+      
+      // Reset the input and close the modal
       setNewWatchlistName('');
-      console.log('Created new watchlist:', newWatchlist.name);
+      onClose();
     }
   };
 
   const handleAddToWatchlist = (watchlistId: string) => {
     const watchlist = watchlists.find(wl => wl.id === watchlistId);
+    
+    // Check if show is already in the watchlist
+    if (watchlist && watchlist.shows.includes(show.id)) {
+      console.log(`${show.title} is already in ${watchlist.name}`);
+      onClose();
+      return;
+    }
     
     // Update the watchlist to include the show
     setWatchlists(prevWatchlists => 
@@ -86,11 +137,26 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={handleClose}
     >
-      <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+      <Animated.View 
+        style={[
+          styles.overlay,
+          {
+            opacity: fadeAnim,
+          }
+        ]}
+      >
+        <Pressable style={styles.overlayTouchable} onPress={handleClose} />
+        <Animated.View 
+          style={[
+            styles.modalContainer,
+            {
+              transform: [{ translateY: slideAnim }],
+            }
+          ]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.handle} />
@@ -108,9 +174,15 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
                 placeholderTextColor={colors.textSecondary}
                 value={newWatchlistName}
                 onChangeText={setNewWatchlistName}
+                returnKeyType="done"
+                onSubmitEditing={handleCreateWatchlist}
               />
               <Pressable
-                style={[styles.createButton, !newWatchlistName.trim() && styles.createButtonDisabled]}
+                style={({ pressed }) => [
+                  styles.createButton,
+                  !newWatchlistName.trim() && styles.createButtonDisabled,
+                  pressed && newWatchlistName.trim() && styles.createButtonPressed,
+                ]}
                 onPress={handleCreateWatchlist}
                 disabled={!newWatchlistName.trim()}
               >
@@ -120,25 +192,36 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
 
             {/* Existing Watchlists */}
             <View style={styles.watchlistsContainer}>
-              {watchlists.map((watchlist) => (
-                <Pressable
-                  key={watchlist.id}
-                  style={styles.watchlistItem}
-                  onPress={() => handleAddToWatchlist(watchlist.id)}
-                >
-                  <View style={styles.watchlistInfo}>
-                    <Text style={styles.watchlistName}>{watchlist.name}</Text>
-                    <Text style={styles.watchlistCount}>
-                      {watchlist.shows.length} show{watchlist.shows.length !== 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                  <IconSymbol name="plus" size={20} color={colors.secondary} />
-                </Pressable>
-              ))}
+              {watchlists.map((watchlist) => {
+                const isShowInList = watchlist.shows.includes(show.id);
+                return (
+                  <Pressable
+                    key={watchlist.id}
+                    style={({ pressed }) => [
+                      styles.watchlistItem,
+                      pressed && styles.watchlistItemPressed,
+                      isShowInList && styles.watchlistItemAdded,
+                    ]}
+                    onPress={() => handleAddToWatchlist(watchlist.id)}
+                  >
+                    <View style={styles.watchlistInfo}>
+                      <Text style={styles.watchlistName}>{watchlist.name}</Text>
+                      <Text style={styles.watchlistCount}>
+                        {watchlist.shows.length} show{watchlist.shows.length !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                    <IconSymbol 
+                      name={isShowInList ? "checkmark.circle.fill" : "plus"} 
+                      size={20} 
+                      color={isShowInList ? colors.secondary : colors.textSecondary} 
+                    />
+                  </Pressable>
+                );
+              })}
             </View>
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -148,6 +231,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  overlayTouchable: {
+    flex: 1,
   },
   modalContainer: {
     backgroundColor: colors.background,
@@ -212,6 +298,10 @@ const styles = StyleSheet.create({
   createButtonDisabled: {
     opacity: 0.5,
   },
+  createButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
+  },
   watchlistsContainer: {
     gap: 12,
   },
@@ -222,6 +312,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
+  },
+  watchlistItemPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  watchlistItemAdded: {
+    backgroundColor: colors.purpleLight,
+    borderWidth: 1,
+    borderColor: colors.purple,
   },
   watchlistInfo: {
     flex: 1,
