@@ -5,19 +5,22 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
-import { mockUsers, mockPosts, currentUser } from '@/data/mockData';
+import { mockUsers, currentUser } from '@/data/mockData';
+import { useData } from '@/contexts/DataContext';
 
 export default function UserProfile() {
   const { id } = useLocalSearchParams();
+  const { posts } = useData();
   const [isFollowing, setIsFollowing] = useState(false);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
-  const userPosts = mockPosts.filter((p) => p.user.id === id);
+  const userPosts = posts.filter((p) => p.user.id === id);
   const isCurrentUser = id === currentUser.id;
 
   if (!user) {
     return (
       <View style={commonStyles.container}>
+        <Stack.Screen options={{ title: 'User Not Found' }} />
         <Text style={commonStyles.text}>User not found</Text>
       </View>
     );
@@ -82,8 +85,6 @@ export default function UserProfile() {
       <Stack.Screen
         options={{
           title: user.username,
-          headerBackTitle: 'Back',
-          headerTintColor: colors.text,
         }}
       />
       <View style={commonStyles.container}>

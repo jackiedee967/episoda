@@ -1,7 +1,7 @@
 
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
@@ -20,9 +20,12 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost } = useData();
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost } = useData();
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [isReposted, setIsReposted] = useState(false);
+  
+  // Get the latest post data from context to ensure we have current like/comment counts
+  const latestPost = getPost(post.id) || post;
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -39,17 +42,17 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const handleShowPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/show/${post.show.id}`);
+    router.push(`/show/${latestPost.show.id}`);
   };
 
   const handleUserPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/user/${post.user.id}`);
+    router.push(`/user/${latestPost.user.id}`);
   };
 
   const handlePostPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/post/${post.id}`);
+    router.push(`/post/${latestPost.id}`);
   };
 
   const handleEpisodePress = (episodeId: string) => {
@@ -72,10 +75,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
-      if (post.isLiked) {
-        await unlikePost(post.id);
+      if (latestPost.isLiked) {
+        await unlikePost(latestPost.id);
       } else {
-        await likePost(post.id);
+        await likePost(latestPost.id);
       }
       
       if (onLike) {
@@ -92,10 +95,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     
     try {
       if (isReposted) {
-        await unrepostPost(post.id);
+        await unrepostPost(latestPost.id);
         setIsReposted(false);
       } else {
-        await repostPost(post.id);
+        await repostPost(latestPost.id);
         setIsReposted(true);
       }
       
@@ -154,7 +157,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     return { bg: '#F3F4F6', border: '#6B7280', text: '#6B7280' };
   };
 
-  const showTagColor = getShowTagColor(post.show.title);
+  const showTagColor = getShowTagColor(latestPost.show.title);
 
   return (
     <>
@@ -164,7 +167,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           {/* Show Poster with Save Icon */}
           <View style={styles.posterContainer}>
             <Pressable onPress={handleShowPress}>
-              <Image source={{ uri: post.show.poster }} style={styles.poster} />
+              <Image source={{ uri: latestPost.show.poster }} style={styles.poster} />
             </Pressable>
             <Pressable onPress={handleSavePress} style={styles.saveButton}>
               <IconSymbol name="bookmark" size={18} color={colors.textSecondary} />
@@ -175,17 +178,17 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           <View style={styles.watchInfo}>
             <View style={styles.userRow}>
               <Pressable onPress={handleUserPress} style={styles.userInfo}>
-                <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-                <Text style={styles.username}>{post.user.displayName}</Text>
+                <Image source={{ uri: latestPost.user.avatar }} style={styles.avatar} />
+                <Text style={styles.username}>{latestPost.user.displayName}</Text>
               </Pressable>
               <Text style={styles.justWatched}>just watched</Text>
             </View>
 
             {/* Episode and Show Tags */}
             <View style={styles.tagsRow}>
-              {post.episodes && post.episodes.length > 0 && (
+              {latestPost.episodes && latestPost.episodes.length > 0 && (
                 <>
-                  {post.episodes.map((episode, index) => (
+                  {latestPost.episodes.map((episode, index) => (
                     <Pressable
                       key={episode.id}
                       onPress={() => handleEpisodePress(episode.id)}
@@ -209,21 +212,21 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                   ]}
                 >
                   <Text style={[styles.showTagText, { color: showTagColor.text }]}>
-                    {post.show.title}
+                    {latestPost.show.title}
                   </Text>
                 </View>
               </Pressable>
             </View>
 
             {/* Rating */}
-            {post.rating && (
+            {latestPost.rating && (
               <View style={styles.ratingContainer}>
                 {[...Array(5)].map((_, i) => (
                   <IconSymbol
                     key={i}
-                    name={i < post.rating! ? 'star.fill' : 'star'}
+                    name={i < latestPost.rating! ? 'star.fill' : 'star'}
                     size={18}
-                    color={i < post.rating! ? '#000000' : colors.textSecondary}
+                    color={i < latestPost.rating! ? '#000000' : colors.textSecondary}
                   />
                 ))}
               </View>
@@ -232,18 +235,18 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
         </View>
 
         {/* Divider - only show if there's post content */}
-        {(post.title || post.body) && <View style={styles.divider} />}
+        {(latestPost.title || latestPost.body) && <View style={styles.divider} />}
 
         {/* Bottom Section - Optional Post Content */}
-        {(post.title || post.body) && (
+        {(latestPost.title || latestPost.body) && (
           <View style={styles.bottomSection}>
-            {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-            {post.body && <Text style={styles.postBody}>{post.body}</Text>}
+            {latestPost.title && <Text style={styles.postTitle}>{latestPost.title}</Text>}
+            {latestPost.body && <Text style={styles.postBody}>{latestPost.body}</Text>}
 
             {/* Post Tags */}
-            {post.tags.length > 0 && (
+            {latestPost.tags.length > 0 && (
               <View style={styles.postTagsContainer}>
-                {post.tags.map((tag, index) => {
+                {latestPost.tags.map((tag, index) => {
                   const tagColor = getTagColor(tag);
                   return (
                     <View
@@ -271,17 +274,17 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
           <Pressable onPress={handleLikePress} style={styles.actionButton}>
             <Heart
               size={20}
-              color={post.isLiked ? '#E53E3E' : colors.textSecondary}
-              fill={post.isLiked ? '#E53E3E' : 'none'}
+              color={latestPost.isLiked ? '#E53E3E' : colors.textSecondary}
+              fill={latestPost.isLiked ? '#E53E3E' : 'none'}
             />
-            <Text style={[styles.actionText, post.isLiked && styles.actionTextActive]}>
-              {post.likes}
+            <Text style={[styles.actionText, latestPost.isLiked && styles.actionTextActive]}>
+              {latestPost.likes}
             </Text>
           </Pressable>
 
           <Pressable onPress={handleCommentPress} style={styles.actionButton}>
             <MessageCircle size={20} color={colors.textSecondary} />
-            <Text style={styles.actionText}>{post.comments}</Text>
+            <Text style={styles.actionText}>{latestPost.comments}</Text>
           </Pressable>
 
           <Pressable onPress={handleRepostPress} style={styles.actionButton}>
@@ -290,7 +293,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               color={isReposted ? '#10B981' : colors.textSecondary}
             />
             <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
-              {post.reposts}
+              {latestPost.reposts}
             </Text>
           </Pressable>
 
@@ -303,7 +306,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
       <WatchlistModal
         visible={showWatchlistModal}
         onClose={() => setShowWatchlistModal(false)}
-        show={post.show}
+        show={latestPost.show}
         onAddToWatchlist={handleAddToWatchlist}
       />
     </>

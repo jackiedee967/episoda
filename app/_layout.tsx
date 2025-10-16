@@ -18,6 +18,7 @@ import "react-native-reanimated";
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SystemBars } from "react-native-edge-to-edge";
+import { colors } from "@/styles/commonStyles";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -48,14 +49,45 @@ export default function RootLayout() {
             <Stack
               screenOptions={{
                 animation: "slide_from_right",
-                headerShown: false,
+                headerShown: true,
+                headerStyle: {
+                  backgroundColor: colors.background,
+                },
+                headerTintColor: colors.text,
+                headerBackTitle: "Back",
+                gestureEnabled: true,
+                gestureDirection: "horizontal",
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="show/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="episode/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
-              <Stack.Screen name="user/[id]" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="show/[id]" 
+                options={{ 
+                  headerShown: true,
+                  title: "Show",
+                }} 
+              />
+              <Stack.Screen 
+                name="episode/[id]" 
+                options={{ 
+                  headerShown: true,
+                  title: "Episode",
+                }} 
+              />
+              <Stack.Screen 
+                name="post/[id]" 
+                options={{ 
+                  headerShown: true,
+                  title: "Post",
+                }} 
+              />
+              <Stack.Screen 
+                name="user/[id]" 
+                options={{ 
+                  headerShown: true,
+                  title: "Profile",
+                }} 
+              />
               <Stack.Screen
                 name="modal"
                 options={{

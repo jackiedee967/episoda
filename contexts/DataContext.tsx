@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   POSTS: '@app/posts',
   USER_DATA: '@app/user_data',
   FOLLOWING: '@app/following',
+  COMMENT_COUNTS: '@app/comment_counts',
 };
 
 export interface Watchlist {
@@ -41,6 +42,8 @@ interface DataContextType {
   unlikePost: (postId: string) => Promise<void>;
   repostPost: (postId: string) => Promise<void>;
   unrepostPost: (postId: string) => Promise<void>;
+  updateCommentCount: (postId: string, count: number) => Promise<void>;
+  getPost: (postId: string) => Post | undefined;
   
   // User data
   currentUser: User;
@@ -218,7 +221,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const updatedPosts = [newPost, ...posts];
     setPosts(updatedPosts);
     await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log('Created new post:', newPost.id);
+    console.log('Created new post:', newPost.id, 'Total posts:', updatedPosts.length);
     
     return newPost;
   };
@@ -289,6 +292,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log(`Unreposted post ${postId}`);
   };
 
+  const updateCommentCount = async (postId: string, count: number): Promise<void> => {
+    const updatedPosts = posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          comments: count,
+        };
+      }
+      return post;
+    });
+
+    setPosts(updatedPosts);
+    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+    console.log(`Updated comment count for post ${postId} to ${count}`);
+  };
+
+  const getPost = (postId: string): Post | undefined => {
+    return posts.find(post => post.id === postId);
+  };
+
   // User functions
   const followUser = async (userId: string): Promise<void> => {
     if (!currentUser.following?.includes(userId)) {
@@ -346,6 +369,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     unlikePost,
     repostPost,
     unrepostPost,
+    updateCommentCount,
+    getPost,
     
     // User data
     currentUser,

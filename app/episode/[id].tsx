@@ -13,26 +13,29 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
-import { mockEpisodes, mockPosts, mockShows } from '@/data/mockData';
+import { mockEpisodes, mockShows } from '@/data/mockData';
+import { useData } from '@/contexts/DataContext';
 
 type Tab = 'friends' | 'all';
 type SortBy = 'hot' | 'recent';
 
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
+  const { posts } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('friends');
   const [sortBy, setSortBy] = useState<SortBy>('hot');
   const [modalVisible, setModalVisible] = useState(false);
 
   const episode = mockEpisodes.find((e) => e.id === id);
   const show = episode ? mockShows.find((s) => s.id === episode.showId) : undefined;
-  const episodePosts = mockPosts.filter((p) => 
+  const episodePosts = posts.filter((p) => 
     p.episodes?.some((e) => e.id === id)
   );
 
   if (!episode || !show) {
     return (
       <View style={commonStyles.container}>
+        <Stack.Screen options={{ title: 'Episode Not Found' }} />
         <Text style={commonStyles.text}>Episode not found</Text>
       </View>
     );
@@ -121,8 +124,6 @@ export default function EpisodeHub() {
       <Stack.Screen
         options={{
           title: `S${episode.seasonNumber}E${episode.episodeNumber}`,
-          headerBackTitle: 'Back',
-          headerTintColor: colors.text,
         }}
       />
       <View style={commonStyles.container}>

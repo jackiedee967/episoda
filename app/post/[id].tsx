@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,32 +16,38 @@ import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
-import { mockPosts, mockComments, currentUser } from '@/data/mockData';
+import { mockComments, currentUser } from '@/data/mockData';
 import { Comment, Reply } from '@/types';
 import CommentCard from '@/components/CommentCard';
 import * as ImagePicker from 'expo-image-picker';
+import { useData } from '@/contexts/DataContext';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const post = mockPosts.find((p) => p.id === id);
+  const { getPost, likePost, unlikePost, repostPost, unrepostPost, updateCommentCount } = useData();
+  const post = getPost(id as string);
 
   const [comments, setComments] = useState<Comment[]>(
     mockComments.filter((c) => c.postId === id)
   );
   const [commentText, setCommentText] = useState('');
   const [commentImage, setCommentImage] = useState<string | undefined>();
-  const [isLiked, setIsLiked] = useState(post?.isLiked || false);
-  const [likes, setLikes] = useState(post?.likes || 0);
-  const [reposts, setReposts] = useState(post?.reposts || 0);
   const [isReposted, setIsReposted] = useState(false);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
   const commentInputRef = useRef<TextInput>(null);
 
+  // Update comment count whenever comments change
+  useEffect(() => {
+    if (post) {
+      updateCommentCount(post.id, comments.length);
+    }
+  }, [comments.length, post?.id]);
+
   if (!post) {
     return (
       <View style={styles.errorContainer}>
-        <Stack.Screen options={{ title: 'Post Not Found' }} />
+        <Stack.Screen options={{ title: 'Post Not Found', headerShown: true }} />
         <Text style={styles.errorText}>Post not found</Text>
       </View>
     );
@@ -106,17 +112,32 @@ export default function PostDetail() {
     return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsLiked(!isLiked);
-    setLikes(isLiked ? likes - 1 : likes + 1);
+    try {
+      if (post.isLiked) {
+        await unlikePost(post.id);
+      } else {
+        await likePost(post.id);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
   };
 
-  const handleRepost = () => {
+  const handleRepost = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsReposted(!isReposted);
-    setReposts(isReposted ? reposts - 1 : reposts + 1);
-    console.log('Repost pressed');
+    try {
+      if (isReposted) {
+        await unrepostPost(post.id);
+        setIsReposted(false);
+      } else {
+        await repostPost(post.id);
+        setIsReposted(true);
+      }
+    } catch (error) {
+      console.error('Error toggling repost:', error);
+    }
   };
 
   const handleShare = () => {
@@ -225,8 +246,10 @@ export default function PostDetail() {
       <Stack.Screen
         options={{
           title: 'Post',
+          headerShown: true,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
+          headerBackTitle: 'Back',
         }}
       />
 
@@ -349,11 +372,11 @@ export default function PostDetail() {
             <Pressable style={styles.actionButton} onPress={handleLike}>
               <Heart
                 size={24}
-                color={isLiked ? '#EF4444' : '#6B7280'}
-                fill={isLiked ? '#EF4444' : 'none'}
+                color={post.isLiked ? '#EF4444' : '#6B7280'}
+                fill={post.isLiked ? '#EF4444' : 'none'}
                 strokeWidth={2}
               />
-              <Text style={styles.actionText}>{likes}</Text>
+              <Text style={styles.actionText}>{post.likes}</Text>
             </Pressable>
 
             <Pressable 
@@ -373,7 +396,7 @@ export default function PostDetail() {
                 color={isReposted ? colors.secondary : '#6B7280'} 
                 strokeWidth={2}
               />
-              <Text style={styles.actionText}>{reposts}</Text>
+              <Text style={styles.actionText}>{post.reposts}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleShare}>

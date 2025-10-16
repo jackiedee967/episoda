@@ -52,6 +52,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
   const [fadeAnim] = useState(new Animated.Value(0));
   const inputRef = useRef<TextInput>(null);
+  const customTagInputRef = useRef<TextInput>(null);
 
   // Handle preselected show and episode
   useEffect(() => {
@@ -187,10 +188,15 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   };
 
   const handleAddCustomTag = () => {
-    if (customTag.trim() && !selectedTags.includes(customTag.trim())) {
+    const trimmedTag = customTag.trim();
+    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setSelectedTags([...selectedTags, customTag.trim()]);
+      setSelectedTags([...selectedTags, trimmedTag]);
       setCustomTag('');
+      // Refocus the input after adding tag
+      setTimeout(() => {
+        customTagInputRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -411,21 +417,39 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               </Pressable>
             ))}
           </View>
+          
+          {/* Display selected custom tags */}
+          {selectedTags.filter(tag => !['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].includes(tag)).length > 0 && (
+            <View style={styles.customTagsList}>
+              {selectedTags.filter(tag => !['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].includes(tag)).map((tag, index) => (
+                <View key={index} style={styles.customTagChip}>
+                  <Text style={styles.customTagChipText}>{tag}</Text>
+                  <Pressable onPress={() => handleTagToggle(tag)}>
+                    <IconSymbol name="xmark.circle.fill" size={18} color={colors.textSecondary} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          )}
+          
           <View style={styles.customTagContainer}>
             <TextInput
+              ref={customTagInputRef}
               style={styles.customTagInput}
               placeholder="Add custom tag"
               placeholderTextColor={colors.textSecondary}
               value={customTag}
               onChangeText={setCustomTag}
               onSubmitEditing={handleAddCustomTag}
+              returnKeyType="done"
+              blurOnSubmit={false}
             />
             <Pressable
               style={[styles.addTagButton, !customTag.trim() && styles.addTagButtonDisabled]}
               onPress={handleAddCustomTag}
               disabled={!customTag.trim()}
             >
-              <IconSymbol name="plus" size={20} color={colors.text} />
+              <IconSymbol name="plus" size={20} color={customTag.trim() ? colors.text : colors.textSecondary} />
             </Pressable>
           </View>
         </View>
@@ -706,6 +730,28 @@ const styles = StyleSheet.create({
   },
   tagButtonTextSelected: {
     color: colors.background,
+  },
+  customTagsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  customTagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.highlight,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  customTagChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
   },
   customTagContainer: {
     flexDirection: 'row',

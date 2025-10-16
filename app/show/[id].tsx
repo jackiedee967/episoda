@@ -15,8 +15,9 @@ import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import WatchlistModal from '@/components/WatchlistModal';
-import { mockShows, mockPosts, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
+import { mockShows, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
 import { Episode } from '@/types';
+import { useData } from '@/contexts/DataContext';
 
 type Tab = 'friends' | 'all' | 'episodes';
 type SortBy = 'hot' | 'recent';
@@ -24,6 +25,7 @@ type SortBy = 'hot' | 'recent';
 export default function ShowHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { posts } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('friends');
   const [sortBy, setSortBy] = useState<SortBy>('hot');
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,7 +34,7 @@ export default function ShowHub() {
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | undefined>(undefined);
 
   const show = mockShows.find((s) => s.id === id);
-  const showPosts = mockPosts.filter((p) => p.show.id === id);
+  const showPosts = posts.filter((p) => p.show.id === id);
   const showEpisodes = mockEpisodes.filter((e) => e.showId === id);
 
   // Get friends watching this show (mock data - in real app would come from backend)
@@ -41,6 +43,7 @@ export default function ShowHub() {
   if (!show) {
     return (
       <View style={commonStyles.container}>
+        <Stack.Screen options={{ title: 'Show Not Found' }} />
         <Text style={commonStyles.text}>Show not found</Text>
       </View>
     );
@@ -244,8 +247,6 @@ export default function ShowHub() {
       <Stack.Screen
         options={{
           title: show.title,
-          headerBackTitle: 'Back',
-          headerTintColor: colors.text,
         }}
       />
       <View style={commonStyles.container}>
