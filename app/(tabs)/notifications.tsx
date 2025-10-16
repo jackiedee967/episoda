@@ -16,96 +16,96 @@ import * as Haptics from 'expo-haptics';
 
 type Tab = 'you' | 'friends';
 
-// Mock notifications data
-const mockNotifications: Notification[] = [
-  {
-    id: 'notif-1',
-    type: 'like',
-    actor: mockUsers[0],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    read: false,
-    post: mockPosts[2],
-  },
-  {
-    id: 'notif-2',
-    type: 'comment',
-    actor: mockUsers[1],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-    read: false,
-    post: mockPosts[2],
-  },
-  {
-    id: 'notif-3',
-    type: 'follow',
-    actor: mockUsers[2],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-    targetUser: currentUser,
-  },
-  {
-    id: 'notif-4',
-    type: 'repost',
-    actor: mockUsers[3],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    read: true,
-    post: mockPosts[2],
-  },
-  {
-    id: 'notif-5',
-    type: 'like',
-    actor: mockUsers[4],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
-    read: true,
-    post: mockPosts[2],
-  },
-];
-
-const mockFriendNotifications: Notification[] = [
-  {
-    id: 'friend-notif-1',
-    type: 'friend_post',
-    actor: mockUsers[0],
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-    read: false,
-    post: mockPosts[0],
-  },
-  {
-    id: 'friend-notif-2',
-    type: 'friend_follow',
-    actor: mockUsers[1],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
-    read: false,
-    targetUser: mockUsers[2],
-  },
-  {
-    id: 'friend-notif-3',
-    type: 'friend_like',
-    actor: mockUsers[2],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-    read: true,
-    post: mockPosts[1],
-  },
-  {
-    id: 'friend-notif-4',
-    type: 'friend_comment',
-    actor: mockUsers[3],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
-    read: true,
-    post: mockPosts[0],
-  },
-  {
-    id: 'friend-notif-5',
-    type: 'friend_post',
-    actor: mockUsers[4],
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    read: true,
-    post: mockPosts[3],
-  },
-];
-
 export default function NotificationsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('you');
+
+  // Mock notifications data - created inside component to ensure mockUsers is loaded
+  const mockNotifications: Notification[] = [
+    {
+      id: 'notif-1',
+      type: 'like',
+      actor: mockUsers[0],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+      read: false,
+      post: mockPosts[2],
+    },
+    {
+      id: 'notif-2',
+      type: 'comment',
+      actor: mockUsers[1],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
+      read: false,
+      post: mockPosts[2],
+    },
+    {
+      id: 'notif-3',
+      type: 'follow',
+      actor: mockUsers[2],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+      read: true,
+      targetUser: currentUser,
+    },
+    {
+      id: 'notif-4',
+      type: 'repost',
+      actor: mockUsers[3],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+      read: true,
+      post: mockPosts[2],
+    },
+    {
+      id: 'notif-5',
+      type: 'like',
+      actor: mockUsers[4],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
+      read: true,
+      post: mockPosts[2],
+    },
+  ];
+
+  const mockFriendNotifications: Notification[] = [
+    {
+      id: 'friend-notif-1',
+      type: 'friend_post',
+      actor: mockUsers[0],
+      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
+      read: false,
+      post: mockPosts[0],
+    },
+    {
+      id: 'friend-notif-2',
+      type: 'friend_follow',
+      actor: mockUsers[1],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
+      read: false,
+      targetUser: mockUsers[2],
+    },
+    {
+      id: 'friend-notif-3',
+      type: 'friend_like',
+      actor: mockUsers[2],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
+      read: true,
+      post: mockPosts[1],
+    },
+    {
+      id: 'friend-notif-4',
+      type: 'friend_comment',
+      actor: mockUsers[3],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
+      read: true,
+      post: mockPosts[0],
+    },
+    {
+      id: 'friend-notif-5',
+      type: 'friend_post',
+      actor: mockUsers[4],
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+      read: true,
+      post: mockPosts[3],
+    },
+  ];
 
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
@@ -119,6 +119,11 @@ export default function NotificationsScreen() {
   };
 
   const getNotificationText = (notification: Notification): string => {
+    if (!notification.actor) {
+      console.log('Notification missing actor:', notification);
+      return 'Unknown action';
+    }
+
     switch (notification.type) {
       case 'like':
         return `liked your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
@@ -152,7 +157,7 @@ export default function NotificationsScreen() {
         return notification.post?.show.poster || null;
       case 'follow':
       case 'friend_follow':
-        return notification.targetUser?.avatar || notification.actor.avatar;
+        return notification.targetUser?.avatar || notification.actor?.avatar || null;
       default:
         return null;
     }
@@ -175,7 +180,7 @@ export default function NotificationsScreen() {
       case 'follow':
       case 'friend_follow':
         const userId = notification.type === 'follow' 
-          ? notification.actor.id 
+          ? notification.actor?.id 
           : notification.targetUser?.id;
         if (userId) {
           router.push(`/user/${userId}`);
@@ -185,6 +190,12 @@ export default function NotificationsScreen() {
   };
 
   const renderNotification = (notification: Notification) => {
+    // Safety check for actor
+    if (!notification.actor) {
+      console.log('Skipping notification with missing actor:', notification.id);
+      return null;
+    }
+
     const thumbnail = getThumbnail(notification);
     
     return (
