@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, TextInput } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Comment, Reply } from '@/types';
@@ -19,6 +20,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replyImage, setReplyImage] = useState<string | undefined>();
+  const replyInputRef = useRef<TextInput>(null);
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -57,11 +59,29 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
 
   const handleSubmitReply = () => {
     if (replyText.trim() || replyImage) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onReply?.(replyText, replyImage);
       setReplyText('');
       setReplyImage(undefined);
       setShowReplyInput(false);
     }
+  };
+
+  const handleLikePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onLike?.();
+  };
+
+  const handleReplyPress = () => {
+    setShowReplyInput(!showReplyInput);
+    if (!showReplyInput) {
+      setTimeout(() => replyInputRef.current?.focus(), 100);
+    }
+  };
+
+  const handleReplyLikePress = (replyId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onReplyLike?.(replyId);
   };
 
   if (!comment) {
@@ -99,7 +119,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
         <View style={styles.actions}>
           <Pressable
             style={styles.actionButton}
-            onPress={onLike}
+            onPress={handleLikePress}
           >
             <IconSymbol
               name="flame"
@@ -111,7 +131,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
 
           <Pressable
             style={styles.actionButton}
-            onPress={() => setShowReplyInput(!showReplyInput)}
+            onPress={handleReplyPress}
           >
             <IconSymbol name="arrowshape.turn.up.left" size={16} color={colors.textSecondary} />
             <Text style={styles.actionText}>Reply</Text>
@@ -134,12 +154,16 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
             )}
             <View style={styles.replyInputRow}>
               <TextInput
+                ref={replyInputRef}
                 style={styles.replyInput}
                 placeholder="Write a reply..."
                 placeholderTextColor={colors.textSecondary}
                 value={replyText}
                 onChangeText={setReplyText}
                 multiline
+                returnKeyType="send"
+                onSubmitEditing={handleSubmitReply}
+                blurOnSubmit={false}
               />
               <Pressable onPress={handlePickImage} style={styles.imageButton}>
                 <IconSymbol name="photo" size={20} color={colors.textSecondary} />
@@ -195,7 +219,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
 
                   <Pressable
                     style={styles.replyLikeButton}
-                    onPress={() => onReplyLike?.(reply.id)}
+                    onPress={() => handleReplyLikePress(reply.id)}
                   >
                     <IconSymbol
                       name="flame"

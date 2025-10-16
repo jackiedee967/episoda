@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Show } from '@/types';
@@ -40,8 +41,11 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
   const [newWatchlistName, setNewWatchlistName] = useState('');
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [successAnim] = useState(new Animated.Value(0));
+  const [showSuccess, setShowSuccess] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       // Slide up and fade in
       Animated.parallel([
@@ -55,7 +59,12 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]).start(() => {
+        // Auto-focus the input after animation completes
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      });
     } else {
       // Slide down and fade out
       Animated.parallel([
@@ -73,8 +82,30 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     }
   }, [visible]);
 
+  const showSuccessAnimation = () => {
+    setShowSuccess(true);
+    Animated.sequence([
+      Animated.timing(successAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.delay(800),
+      Animated.timing(successAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowSuccess(false);
+    });
+  };
+
   const handleCreateWatchlist = () => {
     if (newWatchlistName.trim()) {
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
       const newWatchlist: Watchlist = {
         id: `wl-${Date.now()}`,
         name: newWatchlistName.trim(),
@@ -89,9 +120,14 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
         onAddToWatchlist(newWatchlist.id, show.id);
       }
       
-      // Reset the input and close the modal
+      // Show success animation
+      showSuccessAnimation();
+      
+      // Reset the input and close the modal after a brief delay
       setNewWatchlistName('');
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 1000);
     }
   };
 
@@ -101,9 +137,14 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     // Check if show is already in the watchlist
     if (watchlist && watchlist.shows.includes(show.id)) {
       console.log(`${show.title} is already in ${watchlist.name}`);
+      // Haptic feedback for already added
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       onClose();
       return;
     }
+    
+    // Haptic feedback for success
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
     // Update the watchlist to include the show
     setWatchlists(prevWatchlists => 
@@ -121,7 +162,13 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
       onAddToWatchlist(watchlistId, show.id);
     }
     
-    onClose();
+    // Show success animation
+    showSuccessAnimation();
+    
+    // Close modal after brief delay
+    setTimeout(() => {
+      onClose();
+    }, 1000);
   };
 
   const resetModal = () => {
@@ -157,6 +204,27 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
             }
           ]}
         >
+          {/* Success Indicator */}
+          {showSuccess && (
+            <Animated.View 
+              style={[
+                styles.successBanner,
+                {
+                  opacity: successAnim,
+                  transform: [{
+                    translateY: successAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-50, 0],
+                    }),
+                  }],
+                }
+              ]}
+            >
+              <IconSymbol name="checkmark.circle.fill" size={24} color="#10B981" />
+              <Text style={styles.successText}>Added to watchlist!</Text>
+            </Animated.View>
+          )}
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.handle} />
@@ -169,6 +237,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
             {/* Create New Watchlist - Always visible at top */}
             <View style={styles.createContainer}>
               <TextInput
+                ref={inputRef}
                 style={styles.input}
                 placeholder="Create new list"
                 placeholderTextColor={colors.textSecondary}
@@ -176,6 +245,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
                 onChangeText={setNewWatchlistName}
                 returnKeyType="done"
                 onSubmitEditing={handleCreateWatchlist}
+                blurOnSubmit={false}
               />
               <Pressable
                 style={({ pressed }) => [
@@ -241,6 +311,26 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.7,
     paddingBottom: 40,
+  },
+  successBanner: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: '#D1FAE5',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  successText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#065F46',
   },
   header: {
     alignItems: 'center',

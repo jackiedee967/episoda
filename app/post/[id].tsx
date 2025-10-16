@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { mockPosts, mockComments, currentUser } from '@/data/mockData';
@@ -32,6 +33,7 @@ export default function PostDetail() {
   const [isLiked, setIsLiked] = useState(post?.isLiked || false);
   const [likes, setLikes] = useState(post?.likes || 0);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const commentInputRef = useRef<TextInput>(null);
 
   if (!post) {
     return (
@@ -82,15 +84,18 @@ export default function PostDetail() {
   };
 
   const handleLike = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLiked(!isLiked);
     setLikes(isLiked ? likes - 1 : likes + 1);
   };
 
   const handleRepost = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Repost pressed');
   };
 
   const handleShare = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     console.log('Share pressed');
   };
 
@@ -109,6 +114,8 @@ export default function PostDetail() {
 
   const handleSubmitComment = () => {
     if (commentText.trim() || commentImage) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
       const newComment: Comment = {
         id: `comment-${Date.now()}`,
         postId: post.id,
@@ -275,7 +282,10 @@ export default function PostDetail() {
               <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
               <Pressable 
                 style={styles.spoilerButton}
-                onPress={() => setSpoilerRevealed(true)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setSpoilerRevealed(true);
+                }}
               >
                 <IconSymbol name="eye" size={18} color="#FFFFFF" style={styles.spoilerButtonIcon} />
                 <Text style={styles.spoilerButtonText}>Click to reveal</Text>
@@ -334,7 +344,13 @@ export default function PostDetail() {
               <Text style={styles.actionText}>{likes}</Text>
             </Pressable>
 
-            <Pressable style={styles.actionButton}>
+            <Pressable 
+              style={styles.actionButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                commentInputRef.current?.focus();
+              }}
+            >
               <IconSymbol name="message" size={24} color="#6B7280" />
               <Text style={styles.actionText}>{comments.length}</Text>
             </Pressable>
@@ -384,12 +400,16 @@ export default function PostDetail() {
         <View style={styles.inputRow}>
           <Image source={{ uri: currentUser.avatar }} style={styles.inputAvatar} />
           <TextInput
+            ref={commentInputRef}
             style={styles.commentInput}
             placeholder="Add a comment..."
             placeholderTextColor={colors.textSecondary}
             value={commentText}
             onChangeText={setCommentText}
             multiline
+            returnKeyType="send"
+            onSubmitEditing={handleSubmitComment}
+            blurOnSubmit={false}
           />
           <Pressable onPress={handlePickImage} style={styles.imageButton}>
             <IconSymbol name="photo" size={24} color={colors.textSecondary} />

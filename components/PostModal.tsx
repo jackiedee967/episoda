@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,9 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Show, Episode, PostTag } from '@/types';
@@ -43,14 +45,32 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [isPosting, setIsPosting] = useState(false);
+  
+  const searchInputRef = useRef<TextInput>(null);
+  const titleInputRef = useRef<TextInput>(null);
+  const bodyInputRef = useRef<TextInput>(null);
+  const customTagInputRef = useRef<TextInput>(null);
 
   const predefinedTags: PostTag[] = ['spoiler alert', 'fan theory', 'discussion', 'episode recap', 'misc'];
+
+  // Auto-focus inputs when step changes
+  useEffect(() => {
+    if (visible) {
+      if (step === 'selectShow') {
+        setTimeout(() => searchInputRef.current?.focus(), 300);
+      } else if (step === 'postDetails') {
+        setTimeout(() => bodyInputRef.current?.focus(), 300);
+      }
+    }
+  }, [step, visible]);
 
   const filteredShows = mockShows.filter((show) =>
     show.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleShowSelect = (show: Show) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedShow(show);
     
     // Group episodes by season
@@ -77,6 +97,7 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   };
 
   const toggleSeason = (seasonNumber: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSeasons((prev) =>
       prev.map((season) =>
         season.seasonNumber === seasonNumber
@@ -87,6 +108,7 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   };
 
   const handleEpisodeToggle = (episode: Episode) => {
+    Haptics.selectionAsync();
     setSelectedEpisodes((prev) => {
       const exists = prev.find((e) => e.id === episode.id);
       if (exists) {
@@ -97,6 +119,7 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   };
 
   const handleTagToggle = (tag: string) => {
+    Haptics.selectionAsync();
     setSelectedTags((prev) => {
       if (prev.includes(tag)) {
         return prev.filter((t) => t !== tag);
@@ -107,16 +130,21 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
   const handleAddCustomTag = () => {
     if (customTag.trim()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedTags((prev) => [...prev, customTag.trim()]);
       setCustomTag('');
+      customTagInputRef.current?.focus();
     }
   };
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!selectedShow) {
       console.log('No show selected');
       return;
     }
+
+    setIsPosting(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     const newPost = {
       id: `post-${Date.now()}`,
@@ -137,9 +165,13 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
     console.log('Creating new post:', newPost);
     
+    // Simulate posting delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     // Add to mock posts
     mockPosts.unshift(newPost);
     
+    setIsPosting(false);
     onClose();
     resetModal();
   };
@@ -161,11 +193,13 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>Select a Show</Text>
       <TextInput
+        ref={searchInputRef}
         style={styles.searchInput}
         placeholder="Search shows..."
         placeholderTextColor={colors.textSecondary}
         value={searchQuery}
         onChangeText={setSearchQuery}
+        returnKeyType="search"
       />
       <ScrollView style={styles.showList}>
         <View style={styles.showGrid}>
@@ -268,13 +302,17 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
       <Text style={styles.stepTitle}>Post Details</Text>
       <ScrollView style={styles.detailsForm}>
         <TextInput
+          ref={titleInputRef}
           style={styles.titleInput}
           placeholder="Title (optional)"
           placeholderTextColor={colors.textSecondary}
           value={title}
           onChangeText={setTitle}
+          returnKeyType="next"
+          onSubmitEditing={() => bodyInputRef.current?.focus()}
         />
         <TextInput
+          ref={bodyInputRef}
           style={styles.bodyInput}
           placeholder="What do you think?"
           placeholderTextColor={colors.textSecondary}
@@ -287,7 +325,13 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
         <Text style={styles.label}>Rating</Text>
         <View style={styles.ratingContainer}>
           {[1, 2, 3, 4, 5].map((star) => (
-            <Pressable key={star} onPress={() => setRating(star)}>
+            <Pressable 
+              key={star} 
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setRating(star);
+              }}
+            >
               <IconSymbol
                 name={star <= rating ? 'star.fill' : 'star'}
                 size={32}
@@ -319,11 +363,14 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
         <View style={styles.customTagContainer}>
           <TextInput
+            ref={customTagInputRef}
             style={styles.customTagInput}
             placeholder="Add custom tag"
             placeholderTextColor={colors.textSecondary}
             value={customTag}
             onChangeText={setCustomTag}
+            returnKeyType="done"
+            onSubmitEditing={handleAddCustomTag}
           />
           <Pressable style={styles.addTagButton} onPress={handleAddCustomTag}>
             <IconSymbol name="plus" size={20} color={colors.background} />
@@ -346,8 +393,16 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
         )}
       </ScrollView>
 
-      <Pressable style={styles.postButton} onPress={handlePost}>
-        <Text style={styles.postButtonText}>Post</Text>
+      <Pressable 
+        style={[styles.postButton, isPosting && styles.postButtonDisabled]} 
+        onPress={handlePost}
+        disabled={isPosting}
+      >
+        {isPosting ? (
+          <Text style={styles.postButtonText}>Posting...</Text>
+        ) : (
+          <Text style={styles.postButtonText}>Post</Text>
+        )}
       </Pressable>
     </View>
   );
@@ -651,6 +706,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
+  },
+  postButtonDisabled: {
+    opacity: 0.6,
   },
   postButtonText: {
     fontSize: 16,
