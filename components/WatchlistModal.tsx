@@ -27,12 +27,13 @@ interface WatchlistModalProps {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function WatchlistModal({ visible, onClose, show, onAddToWatchlist }: WatchlistModalProps) {
-  const { watchlists, createWatchlist, addShowToWatchlist, isShowInWatchlist } = useData();
+  const { watchlists, createWatchlist, addShowToWatchlist, removeShowFromWatchlist, isShowInWatchlist } = useData();
   const [newWatchlistName, setNewWatchlistName] = useState('');
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
   const [fadeAnim] = useState(new Animated.Value(0));
   const [successAnim] = useState(new Animated.Value(0));
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -72,7 +73,8 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     }
   }, [visible]);
 
-  const showSuccessAnimation = () => {
+  const showSuccessAnimation = (message: string) => {
+    setSuccessMessage(message);
     setShowSuccess(true);
     Animated.sequence([
       Animated.timing(successAnim, {
@@ -107,7 +109,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
         }
         
         // Show success animation
-        showSuccessAnimation();
+        showSuccessAnimation('Added to watchlist!');
         
         // Reset the input and close the modal after a brief delay
         setNewWatchlistName('');
@@ -121,41 +123,53 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     }
   };
 
-  const handleAddToWatchlist = async (watchlistId: string) => {
+  const handleToggleWatchlist = async (watchlistId: string) => {
     const watchlist = watchlists.find(wl => wl.id === watchlistId);
     
     // Check if show is already in the watchlist
     if (isShowInWatchlist(watchlistId, show.id)) {
-      console.log(`${show.title} is already in ${watchlist?.name}`);
-      // Haptic feedback for already added
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      onClose();
-      return;
-    }
-    
-    // Haptic feedback for success
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    try {
-      // Add show to watchlist
-      await addShowToWatchlist(watchlistId, show.id);
-      console.log(`Added ${show.title} to ${watchlist?.name}`);
+      // Remove from watchlist
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
-      // Call the callback if provided
-      if (onAddToWatchlist) {
-        onAddToWatchlist(watchlistId, show.id);
+      try {
+        await removeShowFromWatchlist(watchlistId, show.id);
+        console.log(`Removed ${show.title} from ${watchlist?.name}`);
+        
+        // Show success animation
+        showSuccessAnimation('Removed from watchlist!');
+        
+        // Close modal after brief delay
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } catch (error) {
+        console.error('Error removing from watchlist:', error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
+    } else {
+      // Add to watchlist
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      // Show success animation
-      showSuccessAnimation();
-      
-      // Close modal after brief delay
-      setTimeout(() => {
-        onClose();
-      }, 1000);
-    } catch (error) {
-      console.error('Error adding to watchlist:', error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      try {
+        await addShowToWatchlist(watchlistId, show.id);
+        console.log(`Added ${show.title} to ${watchlist?.name}`);
+        
+        // Call the callback if provided
+        if (onAddToWatchlist) {
+          onAddToWatchlist(watchlistId, show.id);
+        }
+        
+        // Show success animation
+        showSuccessAnimation('Added to watchlist!');
+        
+        // Close modal after brief delay
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } catch (error) {
+        console.error('Error adding to watchlist:', error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     }
   };
 
@@ -209,7 +223,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
               ]}
             >
               <IconSymbol name="checkmark.circle.fill" size={24} color="#10B981" />
-              <Text style={styles.successText}>Added to watchlist!</Text>
+              <Text style={styles.successText}>{successMessage}</Text>
             </Animated.View>
           )}
 
@@ -260,7 +274,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
                       pressed && styles.watchlistItemPressed,
                       isShowInList && styles.watchlistItemAdded,
                     ]}
-                    onPress={() => handleAddToWatchlist(watchlist.id)}
+                    onPress={() => handleToggleWatchlist(watchlist.id)}
                   >
                     <View style={styles.watchlistInfo}>
                       <Text style={styles.watchlistName}>{watchlist.name}</Text>

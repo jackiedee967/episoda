@@ -7,15 +7,16 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { Show } from '@/types';
 import WatchlistModal from '@/components/WatchlistModal';
+import { useData } from '@/contexts/DataContext';
 
 type Genre = 'All' | 'Reality' | 'Drama' | 'Comedy' | 'Thriller' | 'Sci-Fi';
 
 export default function RecommendedTitlesScreen() {
   const router = useRouter();
+  const { watchlists, isShowInWatchlist } = useData();
   const [selectedGenre, setSelectedGenre] = useState<Genre>('All');
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
-  const [showsInWatchlist, setShowsInWatchlist] = useState<Set<string>>(new Set());
 
   const genres: Genre[] = ['All', 'Reality', 'Drama', 'Comedy', 'Thriller', 'Sci-Fi'];
 
@@ -25,6 +26,11 @@ export default function RecommendedTitlesScreen() {
   // Filter by genre (in a real app, shows would have genre property)
   const filteredShows = selectedGenre === 'All' ? sortedShows : sortedShows;
 
+  // Check if show is in any watchlist
+  const isShowSaved = (showId: string) => {
+    return watchlists.some(wl => isShowInWatchlist(wl.id, showId));
+  };
+
   const handleSavePress = (show: Show, e: any) => {
     e.stopPropagation();
     setSelectedShow(show);
@@ -32,7 +38,6 @@ export default function RecommendedTitlesScreen() {
   };
 
   const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    setShowsInWatchlist(prev => new Set(prev).add(showId));
     console.log(`Show ${showId} added to watchlist ${watchlistId}`);
   };
 
@@ -75,7 +80,7 @@ export default function RecommendedTitlesScreen() {
           </ScrollView>
         </View>
 
-        {/* Shows Grid */}
+        {/* Shows Grid - 3 columns */}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.gridContainer}>
             {filteredShows.map((show) => (
@@ -97,7 +102,7 @@ export default function RecommendedTitlesScreen() {
                     onPress={(e) => handleSavePress(show, e)}
                   >
                     <IconSymbol
-                      name={showsInWatchlist.has(show.id) ? 'bookmark.fill' : 'bookmark'}
+                      name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
                       size={16}
                       color="#FFFFFF"
                     />
@@ -175,10 +180,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: 16,
     paddingBottom: 100,
-    gap: 16,
+    gap: 12,
   },
   showCard: {
-    width: '31%',
+    width: '31.5%',
     marginBottom: 8,
   },
   showCardPressed: {

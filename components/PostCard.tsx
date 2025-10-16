@@ -20,12 +20,15 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost, getPost } = useData();
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost, watchlists, isShowInWatchlist } = useData();
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
   const [isReposted, setIsReposted] = useState(false);
   
   // Get the latest post data from context to ensure we have current like/comment counts
   const latestPost = getPost(post.id) || post;
+
+  // Check if show is in any watchlist
+  const isShowSaved = watchlists.some(wl => isShowInWatchlist(wl.id, latestPost.show.id));
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -170,7 +173,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               <Image source={{ uri: latestPost.show.poster }} style={styles.poster} />
             </Pressable>
             <Pressable onPress={handleSavePress} style={styles.saveButton}>
-              <IconSymbol name="bookmark" size={18} color={colors.textSecondary} />
+              <IconSymbol 
+                name={isShowSaved ? 'bookmark.fill' : 'bookmark'} 
+                size={18} 
+                color={colors.text} 
+              />
             </Pressable>
           </View>
 
@@ -337,8 +344,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
     padding: 4,
   },
   watchInfo: {

@@ -5,23 +5,23 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { mockShows, mockUsers } from '@/data/mockData';
-import { Show } from '@/types';
+import { Show, User } from '@/types';
 import WatchlistModal from '@/components/WatchlistModal';
 import { useData } from '@/contexts/DataContext';
 import PostCard from '@/components/PostCard';
+import * as Haptics from 'expo-haptics';
 
 type SearchCategory = 'posts' | 'comments' | 'shows' | 'users';
 
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { posts } = useData();
+  const { posts, watchlists, isShowInWatchlist, followUser, unfollowUser, isFollowing } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('shows');
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
-  const [showsInWatchlist, setShowsInWatchlist] = useState<Set<string>>(new Set());
 
   // Check if there's a pre-selected show filter from params
   const preselectedShowId = params.showId as string | undefined;
@@ -77,7 +77,8 @@ export default function SearchScreen() {
           filteredUsers = mockUsers.filter(
             user =>
               user.displayName.toLowerCase().includes(query) ||
-              user.username.toLowerCase().includes(query)
+              user.username.toLowerCase().includes(query) ||
+              user.bio?.toLowerCase().includes(query)
           );
         }
         return filteredUsers;
@@ -87,7 +88,44 @@ export default function SearchScreen() {
     }
   };
 
+  // Get result counts for each category
+  const getResultCounts = () => {
+    const query = searchQuery.toLowerCase();
+    if (!query) return { posts: 0, comments: 0, shows: 0, users: 0 };
+
+    const postCount = posts.filter(
+      post =>
+        post.title?.toLowerCase().includes(query) ||
+        post.body.toLowerCase().includes(query) ||
+        post.show.title.toLowerCase().includes(query)
+    ).length;
+
+    const showCount = mockShows.filter(show =>
+      show.title.toLowerCase().includes(query)
+    ).length;
+
+    const userCount = mockUsers.filter(
+      user =>
+        user.displayName.toLowerCase().includes(query) ||
+        user.username.toLowerCase().includes(query) ||
+        user.bio?.toLowerCase().includes(query)
+    ).length;
+
+    return {
+      posts: postCount,
+      comments: 0, // Not implemented yet
+      shows: showCount,
+      users: userCount,
+    };
+  };
+
   const filteredResults = getFilteredResults();
+  const resultCounts = getResultCounts();
+
+  // Check if show is in any watchlist
+  const isShowSaved = (showId: string) => {
+    return watchlists.some(wl => isShowInWatchlist(wl.id, showId));
+  };
 
   const handleSavePress = (show: Show, e: any) => {
     e.stopPropagation();
@@ -96,12 +134,26 @@ export default function SearchScreen() {
   };
 
   const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    setShowsInWatchlist(prev => new Set(prev).add(showId));
     console.log(`Show ${showId} added to watchlist ${watchlistId}`);
   };
 
   const handleRemoveShowFilter = () => {
     router.setParams({ showId: undefined });
+  };
+
+  const handleFollowUser = async (userId: string, e: any) => {
+    e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    try {
+      if (isFollowing(userId)) {
+        await unfollowUser(userId);
+      } else {
+        await followUser(userId);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
   };
 
   const renderCategoryTabs = () => (
@@ -111,25 +163,35 @@ export default function SearchScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoryScroll}
       >
-        {categories.map(category => (
-          <Pressable
-            key={category.key}
-            style={[
-              styles.categoryTab,
-              activeCategory === category.key && styles.categoryTabActive,
-            ]}
-            onPress={() => setActiveCategory(category.key)}
-          >
-            <Text
+        {categories.map(category => {
+          const count = resultCounts[category.key];
+          const hasResults = searchQuery.length > 0 && count > 0;
+          
+          return (
+            <Pressable
+              key={category.key}
               style={[
-                styles.categoryTabText,
-                activeCategory === category.key && styles.categoryTabTextActive,
+                styles.categoryTab,
+                activeCategory === category.key && styles.categoryTabActive,
               ]}
+              onPress={() => setActiveCategory(category.key)}
             >
-              {category.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.categoryTabText,
+                  activeCategory === category.key && styles.categoryTabTextActive,
+                ]}
+              >
+                {category.label}
+              </Text>
+              {hasResults && activeCategory !== category.key && (
+                <View style={styles.resultIndicator}>
+                  <Text style={styles.resultIndicatorText}>{count}</Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -185,7 +247,7 @@ export default function SearchScreen() {
                 onPress={e => handleSavePress(show, e)}
               >
                 <IconSymbol
-                  name={showsInWatchlist.has(show.id) ? 'bookmark.fill' : 'bookmark'}
+                  name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
                   size={16}
                   color="#FFFFFF"
                 />
@@ -227,8 +289,25 @@ export default function SearchScreen() {
             <View style={styles.userInfo}>
               <Text style={styles.userDisplayName}>{user.displayName}</Text>
               <Text style={styles.userUsername}>@{user.username}</Text>
-              {user.bio && <Text style={styles.userBio}>{user.bio}</Text>}
+              {user.bio && <Text style={styles.userBio} numberOfLines={2}>{user.bio}</Text>}
             </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.followButton,
+                isFollowing(user.id) && styles.followButtonActive,
+                pressed && styles.followButtonPressed,
+              ]}
+              onPress={(e) => handleFollowUser(user.id, e)}
+            >
+              <Text
+                style={[
+                  styles.followButtonText,
+                  isFollowing(user.id) && styles.followButtonTextActive,
+                ]}
+              >
+                {isFollowing(user.id) ? 'Following' : 'Follow'}
+              </Text>
+            </Pressable>
           </Pressable>
         ));
 
@@ -327,10 +406,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: colors.card,
+    gap: 6,
   },
   categoryTabActive: {
     backgroundColor: colors.secondary,
@@ -341,6 +423,20 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   categoryTabTextActive: {
+    color: colors.background,
+  },
+  resultIndicator: {
+    backgroundColor: colors.secondary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  resultIndicatorText: {
+    fontSize: 11,
+    fontWeight: '700',
     color: colors.background,
   },
   filterChipContainer: {
@@ -491,5 +587,30 @@ const styles = StyleSheet.create({
   userBio: {
     fontSize: 13,
     color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  followButton: {
+    backgroundColor: colors.secondary,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginLeft: 8,
+  },
+  followButtonActive: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  followButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
+  },
+  followButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.background,
+  },
+  followButtonTextActive: {
+    color: colors.text,
   },
 });
