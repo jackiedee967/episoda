@@ -1,3 +1,4 @@
+
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
@@ -85,9 +86,54 @@ export default function RootLayout() {
         >
           <WidgetProvider>
             <GestureHandlerRootView>
-            <Stack>
+            <Stack
+              screenOptions={{
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            >
               {/* Main app with tabs */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+              {/* Show Hub */}
+              <Stack.Screen
+                name="show/[id]"
+                options={{
+                  headerShown: true,
+                  animation: 'slide_from_right',
+                  animationDuration: 300,
+                }}
+              />
+
+              {/* Episode Hub */}
+              <Stack.Screen
+                name="episode/[id]"
+                options={{
+                  headerShown: true,
+                  animation: 'slide_from_right',
+                  animationDuration: 300,
+                }}
+              />
+
+              {/* Post Detail */}
+              <Stack.Screen
+                name="post/[id]"
+                options={{
+                  headerShown: true,
+                  animation: 'slide_from_right',
+                  animationDuration: 300,
+                }}
+              />
+
+              {/* User Profile */}
+              <Stack.Screen
+                name="user/[id]"
+                options={{
+                  headerShown: true,
+                  animation: 'slide_from_right',
+                  animationDuration: 300,
+                }}
+              />
 
               {/* Modal Demo Screens */}
               <Stack.Screen

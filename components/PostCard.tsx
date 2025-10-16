@@ -6,6 +6,7 @@ import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
 import { useRouter } from 'expo-router';
 import WatchlistModal from '@/components/WatchlistModal';
+import * as Haptics from 'expo-haptics';
 
 interface PostCardProps {
   post: Post;
@@ -68,6 +69,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const handleSavePress = (e: any) => {
     e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setWatchlistModalVisible(true);
   };
 
@@ -78,6 +80,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const handleLikePress = (e: any) => {
     e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     // Animate the heart
     Animated.sequence([
@@ -107,6 +110,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const handleRepostPress = (e: any) => {
     e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     const newRepostedState = !isReposted;
     setIsReposted(newRepostedState);
@@ -121,6 +125,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const handleCommentPress = (e: any) => {
     e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onComment) {
       onComment();
     } else {
@@ -130,6 +135,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const handleSharePress = (e: any) => {
     e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onShare) {
       onShare();
     }
@@ -151,7 +157,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     const lowerTag = tag.toLowerCase();
     if (lowerTag.includes('theory')) return 'lightbulb';
     if (lowerTag.includes('discussion')) return 'bubble.left.and.bubble.right';
-    if (lowerTag.includes('spoiler')) return 'exclamationmark.triangle';
+    if (lowerTag.includes('spoiler')) return 'eye.slash';
     if (lowerTag.includes('recap')) return 'list.bullet';
     if (lowerTag.includes('misc')) return 'ellipsis.circle';
     return 'tag';
@@ -159,12 +165,12 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const getTagColor = (tag: string) => {
     const lowerTag = tag.toLowerCase();
-    if (lowerTag.includes('theory')) return { bg: '#D1FAE5', text: '#059669', icon: '#059669' };
-    if (lowerTag.includes('discussion')) return { bg: '#DBEAFE', text: '#2563EB', icon: '#2563EB' };
-    if (lowerTag.includes('spoiler')) return { bg: '#FEE2E2', text: '#DC2626', icon: '#DC2626' };
-    if (lowerTag.includes('recap')) return { bg: '#E0E7FF', text: '#4F46E5', icon: '#4F46E5' };
-    if (lowerTag.includes('misc')) return { bg: '#F3F4F6', text: '#6B7280', icon: '#6B7280' };
-    return { bg: '#F3F4F6', text: '#6B7280', icon: '#6B7280' };
+    if (lowerTag.includes('theory')) return { bg: '#E8F9E0', text: '#5CB85C', border: '#5CB85C' };
+    if (lowerTag.includes('discussion')) return { bg: '#E3F2FD', text: '#5B9FD8', border: '#5B9FD8' };
+    if (lowerTag.includes('spoiler')) return { bg: '#FFE8E8', text: '#E53E3E', border: '#E53E3E' };
+    if (lowerTag.includes('recap')) return { bg: '#FFF4E6', text: '#DD6B20', border: '#DD6B20' };
+    if (lowerTag.includes('misc')) return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
+    return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
   };
 
   // Add safety checks for post data
@@ -267,6 +273,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                       ]}
                       onPress={(e) => {
                         e.stopPropagation();
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         handleEpisodePress(episode.id);
                       }}
                     >
@@ -308,7 +315,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
             {/* Spoiler Alert Handling */}
             {post.isSpoiler && !spoilerRevealed ? (
               <View style={styles.spoilerContainer}>
-                <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
+                <IconSymbol name="eye.slash.fill" size={24} color="#E53E3E" />
                 <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
                 <Pressable 
                   style={({ pressed }) => [
@@ -317,6 +324,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                   ]}
                   onPress={(e) => {
                     e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     setSpoilerRevealed(true);
                   }}
                 >
@@ -338,10 +346,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                       key={index} 
                       style={[
                         styles.tag,
-                        { backgroundColor: tagColor.bg },
+                        { backgroundColor: tagColor.bg, borderColor: tagColor.border },
                       ]}
                     >
-                      <IconSymbol name={tagIcon} size={12} color={tagColor.icon} style={styles.tagIcon} />
+                      <IconSymbol name={tagIcon} size={12} color={tagColor.text} style={styles.tagIcon} />
                       <Text style={[styles.tagText, { color: tagColor.text }]}>
                         {tag}
                       </Text>
@@ -364,7 +372,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                   />
                 </Animated.View>
                 <Text style={[styles.actionText, localLiked && styles.actionTextActive]}>
-                  {localLikes || 0}
+                  {localLikes}
                 </Text>
               </Pressable>
 
@@ -373,7 +381,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onPress={handleCommentPress}
               >
                 <IconSymbol name="message" size={20} color="#6B7280" />
-                <Text style={styles.actionText}>{post.comments || 0}</Text>
+                <Text style={styles.actionText}>{post.comments}</Text>
               </Pressable>
 
               <Pressable
@@ -386,7 +394,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                   color={isReposted ? colors.secondary : '#6B7280'} 
                 />
                 <Text style={[styles.actionText, isReposted && styles.actionTextActive]}>
-                  {localReposts || 0}
+                  {localReposts}
                 </Text>
               </Pressable>
 
@@ -512,9 +520,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   episodeTag: {
-    backgroundColor: colors.purpleLight,
+    backgroundColor: '#E8E4FF',
     borderWidth: 1,
-    borderColor: colors.purple,
+    borderColor: '#6B5FD8',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -525,7 +533,7 @@ const styles = StyleSheet.create({
   episodeTagText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.purple,
+    color: '#6B5FD8',
     fontFamily: 'System',
   },
   showTag: {
@@ -561,9 +569,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   spoilerContainer: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#FFE8E8',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: '#E53E3E',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -580,7 +588,7 @@ const styles = StyleSheet.create({
   spoilerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DC2626',
+    backgroundColor: '#E53E3E',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -611,6 +619,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
+    borderWidth: 1,
     gap: 4,
   },
   tagIcon: {
@@ -618,7 +627,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
     fontFamily: 'System',
   },
   actions: {

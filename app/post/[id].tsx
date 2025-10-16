@@ -32,6 +32,8 @@ export default function PostDetail() {
   const [commentImage, setCommentImage] = useState<string | undefined>();
   const [isLiked, setIsLiked] = useState(post?.isLiked || false);
   const [likes, setLikes] = useState(post?.likes || 0);
+  const [reposts, setReposts] = useState(post?.reposts || 0);
+  const [isReposted, setIsReposted] = useState(false);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
   const commentInputRef = useRef<TextInput>(null);
 
@@ -83,6 +85,26 @@ export default function PostDetail() {
     return colors[index];
   };
 
+  const getTagIcon = (tag: string) => {
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag.includes('theory')) return 'lightbulb';
+    if (lowerTag.includes('discussion')) return 'bubble.left.and.bubble.right';
+    if (lowerTag.includes('spoiler')) return 'eye.slash';
+    if (lowerTag.includes('recap')) return 'list.bullet';
+    if (lowerTag.includes('misc')) return 'ellipsis.circle';
+    return 'tag';
+  };
+
+  const getTagColor = (tag: string) => {
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag.includes('theory')) return { bg: '#E8F9E0', text: '#5CB85C', border: '#5CB85C' };
+    if (lowerTag.includes('discussion')) return { bg: '#E3F2FD', text: '#5B9FD8', border: '#5B9FD8' };
+    if (lowerTag.includes('spoiler')) return { bg: '#FFE8E8', text: '#E53E3E', border: '#E53E3E' };
+    if (lowerTag.includes('recap')) return { bg: '#FFF4E6', text: '#DD6B20', border: '#DD6B20' };
+    if (lowerTag.includes('misc')) return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
+    return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
+  };
+
   const handleLike = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLiked(!isLiked);
@@ -91,6 +113,8 @@ export default function PostDetail() {
 
   const handleRepost = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsReposted(!isReposted);
+    setReposts(isReposted ? reposts - 1 : reposts + 1);
     console.log('Repost pressed');
   };
 
@@ -236,7 +260,10 @@ export default function PostDetail() {
                       <Pressable 
                         key={episode.id || index}
                         style={styles.episodeTag}
-                        onPress={() => handleEpisodePress(episode.id)}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          handleEpisodePress(episode.id);
+                        }}
                       >
                         <Text style={styles.episodeTagText}>
                           S{episode.seasonNumber}E{episode.episodeNumber}
@@ -265,7 +292,7 @@ export default function PostDetail() {
                       key={star}
                       name={star <= post.rating! ? 'star.fill' : 'star'}
                       size={18}
-                      color="#000000"
+                      color="#FCD34D"
                     />
                   ))}
                 </View>
@@ -278,7 +305,7 @@ export default function PostDetail() {
           {/* Spoiler Alert Handling */}
           {post.isSpoiler && !spoilerRevealed ? (
             <View style={styles.spoilerContainer}>
-              <IconSymbol name="exclamationmark.triangle.fill" size={32} color="#DC2626" />
+              <IconSymbol name="eye.slash.fill" size={32} color="#E53E3E" />
               <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
               <Pressable 
                 style={styles.spoilerButton}
@@ -297,35 +324,18 @@ export default function PostDetail() {
 
           <View style={styles.tagsContainer}>
             {post.tags.map((tag, index) => {
-              const isTheory = tag.toLowerCase().includes('theory');
-              const isDiscussion = tag.toLowerCase().includes('discussion');
+              const tagColor = getTagColor(tag);
+              const tagIcon = getTagIcon(tag);
               return (
                 <View
                   key={index}
                   style={[
                     styles.tag,
-                    isTheory && styles.tagTheory,
-                    isDiscussion && styles.tagDiscussion,
+                    { backgroundColor: tagColor.bg, borderColor: tagColor.border },
                   ]}
                 >
-                  {isTheory && (
-                    <IconSymbol name="lightbulb" size={12} color="#059669" style={styles.tagIcon} />
-                  )}
-                  {isDiscussion && (
-                    <IconSymbol
-                      name="bubble.left.and.bubble.right"
-                      size={12}
-                      color="#2563EB"
-                      style={styles.tagIcon}
-                    />
-                  )}
-                  <Text
-                    style={[
-                      styles.tagText,
-                      isTheory && styles.tagTheoryText,
-                      isDiscussion && styles.tagDiscussionText,
-                    ]}
-                  >
+                  <IconSymbol name={tagIcon} size={12} color={tagColor.text} style={styles.tagIcon} />
+                  <Text style={[styles.tagText, { color: tagColor.text }]}>
                     {tag}
                   </Text>
                 </View>
@@ -356,8 +366,12 @@ export default function PostDetail() {
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleRepost}>
-              <IconSymbol name="arrow.2.squarepath" size={24} color="#6B7280" />
-              <Text style={styles.actionText}>{post.reposts}</Text>
+              <IconSymbol 
+                name="arrow.2.squarepath" 
+                size={24} 
+                color={isReposted ? colors.secondary : '#6B7280'} 
+              />
+              <Text style={styles.actionText}>{reposts}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleShare}>
@@ -514,9 +528,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   episodeTag: {
-    backgroundColor: colors.purpleLight,
+    backgroundColor: '#E8E4FF',
     borderWidth: 1,
-    borderColor: colors.purple,
+    borderColor: '#6B5FD8',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -524,7 +538,7 @@ const styles = StyleSheet.create({
   episodeTagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.purple,
+    color: '#6B5FD8',
     fontFamily: 'System',
   },
   showTag: {
@@ -557,9 +571,9 @@ const styles = StyleSheet.create({
     fontFamily: 'System',
   },
   spoilerContainer: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: '#FFE8E8',
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: '#E53E3E',
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -576,7 +590,7 @@ const styles = StyleSheet.create({
   spoilerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#DC2626',
+    backgroundColor: '#E53E3E',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -600,32 +614,19 @@ const styles = StyleSheet.create({
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+    borderWidth: 1,
     gap: 4,
-  },
-  tagTheory: {
-    backgroundColor: '#D1FAE5',
-  },
-  tagDiscussion: {
-    backgroundColor: '#DBEAFE',
   },
   tagIcon: {
     marginRight: 2,
   },
   tagText: {
     fontSize: 13,
-    color: colors.text,
-    fontWeight: '500',
+    fontWeight: '600',
     fontFamily: 'System',
-  },
-  tagTheoryText: {
-    color: '#059669',
-  },
-  tagDiscussionText: {
-    color: '#2563EB',
   },
   postActions: {
     flexDirection: 'row',
