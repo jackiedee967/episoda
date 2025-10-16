@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
   StyleSheet,
   Animated,
+  LayoutChangeEvent,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,10 +24,8 @@ interface FloatingTabBarProps {
 export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
-
-  const handleTabPress = (route: string) => {
-    router.push(route);
-  };
+  const [containerWidth, setContainerWidth] = useState(0);
+  const animatedValue = useRef(new Animated.Value(0)).current;
 
   const isActive = (route: string) => {
     if (route === '/(home)') {
@@ -35,16 +34,70 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
     return pathname.includes(route);
   };
 
+  const getActiveTabIndex = () => {
+    return tabs.findIndex(tab => isActive(tab.route));
+  };
+
+  const activeTabIndex = getActiveTabIndex();
+
+  useEffect(() => {
+    if (activeTabIndex >= 0 && containerWidth > 0) {
+      Animated.spring(animatedValue, {
+        toValue: activeTabIndex,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 150,
+        mass: 1,
+      }).start();
+    }
+  }, [activeTabIndex, containerWidth]);
+
+  const handleTabPress = (route: string) => {
+    router.push(route);
+  };
+
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const { width } = event.nativeEvent.layout;
+    setContainerWidth(width);
+  };
+
+  const getIndicatorStyle = () => {
+    if (containerWidth === 0) {
+      return { opacity: 0 };
+    }
+
+    const tabWidth = (containerWidth - 24) / tabs.length; // Account for container padding
+    const translateX = animatedValue.interpolate({
+      inputRange: tabs.map((_, i) => i),
+      outputRange: tabs.map((_, i) => 12 + i * tabWidth), // Start at 12px (padding)
+    });
+
+    return {
+      position: 'absolute' as const,
+      left: 0,
+      top: 8,
+      bottom: 8,
+      width: tabWidth,
+      backgroundColor: '#8BFC76',
+      borderRadius: 20,
+      transform: [{ translateX }],
+    };
+  };
+
   return (
     <SafeAreaView edges={['bottom']} style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.pillContainer}>
+        <View 
+          style={styles.pillContainer}
+          onLayout={handleLayout}
+        >
+          <Animated.View style={getIndicatorStyle()} />
           {tabs.map((tab, index) => {
             const active = isActive(tab.route);
             return (
               <TouchableOpacity
                 key={index}
-                style={[styles.tab, active && styles.tabActive]}
+                style={styles.tab}
                 onPress={() => handleTabPress(tab.route)}
               >
                 <IconSymbol
@@ -83,15 +136,14 @@ const styles = StyleSheet.create({
     gap: 8,
     boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
     elevation: 8,
+    position: 'relative',
   },
   tab: {
+    flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabActive: {
-    backgroundColor: '#8BFC76',
+    zIndex: 1,
   },
 });

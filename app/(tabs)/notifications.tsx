@@ -11,7 +11,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { Notification } from '@/types';
-import { mockUsers, mockPosts, mockShows, currentUser } from '@/data/mockData';
+import { mockUsers, mockPosts, mockShows, currentUser, mockComments } from '@/data/mockData';
 import * as Haptics from 'expo-haptics';
 
 type Tab = 'you' | 'friends';
@@ -37,6 +37,7 @@ export default function NotificationsScreen() {
       timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
       read: false,
       post: mockPosts[2],
+      comment: mockComments[0], // Add comment reference
     },
     {
       id: 'notif-3',
@@ -96,6 +97,7 @@ export default function NotificationsScreen() {
       timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
       read: true,
       post: mockPosts[0],
+      comment: mockComments[1],
     },
     {
       id: 'friend-notif-5',
@@ -118,6 +120,12 @@ export default function NotificationsScreen() {
     return `${Math.floor(diffInSeconds / 604800)}w ago`;
   };
 
+  const getEpisodeString = (post: any): string => {
+    if (!post.episodes || post.episodes.length === 0) return '';
+    const episode = post.episodes[0];
+    return `S${episode.seasonNumber}E${episode.episodeNumber}`;
+  };
+
   const getNotificationText = (notification: Notification): string => {
     if (!notification.actor) {
       console.log('Notification missing actor:', notification);
@@ -128,13 +136,29 @@ export default function NotificationsScreen() {
       case 'like':
         return `liked your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
       case 'comment':
-        return `commented on your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
+        // Show comment preview instead of post title
+        const commentPreview = notification.comment?.text 
+          ? notification.comment.text.length > 50 
+            ? notification.comment.text.substring(0, 50) + '...'
+            : notification.comment.text
+          : '';
+        return `commented on your post: ${commentPreview}`;
       case 'follow':
         return 'started following you';
       case 'repost':
         return `reposted your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
       case 'friend_post':
-        return `posted about ${notification.post?.show.title}`;
+        // Show episode info and optionally post title
+        const episodeStr = getEpisodeString(notification.post);
+        const showTitle = notification.post?.show.title || '';
+        const postTitle = notification.post?.title;
+        
+        if (episodeStr) {
+          return postTitle 
+            ? `just watched ${episodeStr} ${showTitle}: "${postTitle}"`
+            : `just watched ${episodeStr} ${showTitle}`;
+        }
+        return `posted about ${showTitle}`;
       case 'friend_follow':
         return `started following ${notification.targetUser?.displayName}`;
       case 'friend_like':
