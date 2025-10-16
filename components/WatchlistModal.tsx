@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Show } from '@/types';
+import { useData } from '@/contexts/DataContext';
 
 interface WatchlistModalProps {
   visible: boolean;
@@ -23,21 +24,10 @@ interface WatchlistModalProps {
   onAddToWatchlist?: (watchlistId: string, showId: string) => void;
 }
 
-interface Watchlist {
-  id: string;
-  name: string;
-  shows: string[];
-}
-
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-// Initial watchlist with only "Shows to Watch" starting with 0 shows
-const initialWatchlists: Watchlist[] = [
-  { id: 'wl-default', name: 'Shows to Watch', shows: [] },
-];
-
 export default function WatchlistModal({ visible, onClose, show, onAddToWatchlist }: WatchlistModalProps) {
-  const [watchlists, setWatchlists] = useState<Watchlist[]>(initialWatchlists);
+  const { watchlists, createWatchlist, addShowToWatchlist, isShowInWatchlist } = useData();
   const [newWatchlistName, setNewWatchlistName] = useState('');
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -101,42 +91,42 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     });
   };
 
-  const handleCreateWatchlist = () => {
+  const handleCreateWatchlist = async () => {
     if (newWatchlistName.trim()) {
       // Haptic feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      const newWatchlist: Watchlist = {
-        id: `wl-${Date.now()}`,
-        name: newWatchlistName.trim(),
-        shows: [show.id], // Automatically add the show to the new watchlist
-      };
-      
-      setWatchlists([...watchlists, newWatchlist]);
-      console.log(`Created new watchlist "${newWatchlist.name}" and added ${show.title}`);
-      
-      // Call the callback if provided
-      if (onAddToWatchlist) {
-        onAddToWatchlist(newWatchlist.id, show.id);
+      try {
+        // Create watchlist with the show automatically added
+        const newWatchlist = await createWatchlist(newWatchlistName, show.id);
+        console.log(`Created new watchlist "${newWatchlist.name}" and added ${show.title}`);
+        
+        // Call the callback if provided
+        if (onAddToWatchlist) {
+          onAddToWatchlist(newWatchlist.id, show.id);
+        }
+        
+        // Show success animation
+        showSuccessAnimation();
+        
+        // Reset the input and close the modal after a brief delay
+        setNewWatchlistName('');
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } catch (error) {
+        console.error('Error creating watchlist:', error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
-      
-      // Show success animation
-      showSuccessAnimation();
-      
-      // Reset the input and close the modal after a brief delay
-      setNewWatchlistName('');
-      setTimeout(() => {
-        onClose();
-      }, 1000);
     }
   };
 
-  const handleAddToWatchlist = (watchlistId: string) => {
+  const handleAddToWatchlist = async (watchlistId: string) => {
     const watchlist = watchlists.find(wl => wl.id === watchlistId);
     
     // Check if show is already in the watchlist
-    if (watchlist && watchlist.shows.includes(show.id)) {
-      console.log(`${show.title} is already in ${watchlist.name}`);
+    if (isShowInWatchlist(watchlistId, show.id)) {
+      console.log(`${show.title} is already in ${watchlist?.name}`);
       // Haptic feedback for already added
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       onClose();
@@ -146,29 +136,27 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     // Haptic feedback for success
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
-    // Update the watchlist to include the show
-    setWatchlists(prevWatchlists => 
-      prevWatchlists.map(wl => 
-        wl.id === watchlistId 
-          ? { ...wl, shows: [...wl.shows, show.id] }
-          : wl
-      )
-    );
-    
-    console.log(`Added ${show.title} to ${watchlist?.name}`);
-    
-    // Call the callback if provided
-    if (onAddToWatchlist) {
-      onAddToWatchlist(watchlistId, show.id);
+    try {
+      // Add show to watchlist
+      await addShowToWatchlist(watchlistId, show.id);
+      console.log(`Added ${show.title} to ${watchlist?.name}`);
+      
+      // Call the callback if provided
+      if (onAddToWatchlist) {
+        onAddToWatchlist(watchlistId, show.id);
+      }
+      
+      // Show success animation
+      showSuccessAnimation();
+      
+      // Close modal after brief delay
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (error) {
+      console.error('Error adding to watchlist:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-    
-    // Show success animation
-    showSuccessAnimation();
-    
-    // Close modal after brief delay
-    setTimeout(() => {
-      onClose();
-    }, 1000);
   };
 
   const resetModal = () => {
@@ -263,7 +251,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
             {/* Existing Watchlists */}
             <View style={styles.watchlistsContainer}>
               {watchlists.map((watchlist) => {
-                const isShowInList = watchlist.shows.includes(show.id);
+                const isShowInList = isShowInWatchlist(watchlist.id, show.id);
                 return (
                   <Pressable
                     key={watchlist.id}

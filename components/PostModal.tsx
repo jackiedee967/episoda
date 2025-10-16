@@ -13,10 +13,11 @@ import {
   Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { IconSymbol } from '@/components/IconSymbol';
+import { mockShows, mockEpisodes } from '@/data/mockData';
 import { colors } from '@/styles/commonStyles';
 import { Show, Episode, PostTag } from '@/types';
-import { mockShows, mockEpisodes, mockPosts, currentUser } from '@/data/mockData';
+import { IconSymbol } from '@/components/IconSymbol';
+import { useData } from '@/contexts/DataContext';
 
 interface PostModalProps {
   visible: boolean;
@@ -35,62 +36,82 @@ interface Season {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostModal({ visible, onClose, preselectedShow }: PostModalProps) {
-  const [step, setStep] = useState<Step>(preselectedShow ? 'selectEpisodes' : 'selectShow');
+  const { createPost, currentUser } = useData();
+  const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
+  const [postTitle, setPostTitle] = useState('');
+  const [postBody, setPostBody] = useState('');
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
-  const [isPosting, setIsPosting] = useState(false);
-  
-  const searchInputRef = useRef<TextInput>(null);
-  const titleInputRef = useRef<TextInput>(null);
-  const bodyInputRef = useRef<TextInput>(null);
-  const customTagInputRef = useRef<TextInput>(null);
 
-  const predefinedTags: PostTag[] = ['spoiler alert', 'fan theory', 'discussion', 'episode recap', 'misc'];
+  const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const inputRef = useRef<TextInput>(null);
 
-  // Auto-focus inputs when step changes
   useEffect(() => {
-    if (visible) {
-      if (step === 'selectShow') {
-        setTimeout(() => searchInputRef.current?.focus(), 300);
-      } else if (step === 'postDetails') {
-        setTimeout(() => bodyInputRef.current?.focus(), 300);
-      }
+    if (step === 'selectShow' && visible) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 300);
     }
   }, [step, visible]);
 
-  const filteredShows = mockShows.filter((show) =>
-    show.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    if (visible) {
+      // Slide up and fade in
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Slide down and fade out
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: SCREEN_HEIGHT,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
 
   const handleShowSelect = (show: Show) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedShow(show);
     
-    // Group episodes by season
-    const showEpisodes = mockEpisodes.filter((ep) => ep.showId === show.id);
+    // Get episodes for this show and organize by season
+    const showEpisodes = mockEpisodes.filter(ep => ep.showId === show.id);
     const seasonMap = new Map<number, Episode[]>();
     
-    showEpisodes.forEach((episode) => {
+    showEpisodes.forEach(episode => {
       if (!seasonMap.has(episode.seasonNumber)) {
         seasonMap.set(episode.seasonNumber, []);
       }
       seasonMap.get(episode.seasonNumber)!.push(episode);
     });
 
-    const seasonsData: Season[] = Array.from(seasonMap.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([seasonNumber, episodes]) => ({
-        seasonNumber,
-        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-        expanded: false,
-      }));
+    const seasonsData: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+      seasonNumber,
+      episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+      expanded: false,
+    }));
 
     setSeasons(seasonsData);
     setStep('selectEpisodes');
@@ -98,124 +119,123 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
   const toggleSeason = (seasonNumber: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSeasons((prev) =>
-      prev.map((season) =>
-        season.seasonNumber === seasonNumber
-          ? { ...season, expanded: !season.expanded }
-          : season
-      )
-    );
+    setSeasons(seasons.map(season => 
+      season.seasonNumber === seasonNumber 
+        ? { ...season, expanded: !season.expanded }
+        : season
+    ));
   };
 
   const handleEpisodeToggle = (episode: Episode) => {
-    Haptics.selectionAsync();
-    setSelectedEpisodes((prev) => {
-      const exists = prev.find((e) => e.id === episode.id);
-      if (exists) {
-        return prev.filter((e) => e.id !== episode.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedEpisodes(prev => {
+      const isSelected = prev.some(ep => ep.id === episode.id);
+      if (isSelected) {
+        return prev.filter(ep => ep.id !== episode.id);
+      } else {
+        return [...prev, episode];
       }
-      return [...prev, episode];
     });
   };
 
   const handleTagToggle = (tag: string) => {
-    Haptics.selectionAsync();
-    setSelectedTags((prev) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedTags(prev => {
       if (prev.includes(tag)) {
-        return prev.filter((t) => t !== tag);
+        return prev.filter(t => t !== tag);
+      } else {
+        return [...prev, tag];
       }
-      return [...prev, tag];
     });
   };
 
   const handleAddCustomTag = () => {
-    if (customTag.trim()) {
+    if (customTag.trim() && !selectedTags.includes(customTag.trim())) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setSelectedTags((prev) => [...prev, customTag.trim()]);
+      setSelectedTags([...selectedTags, customTag.trim()]);
       setCustomTag('');
-      customTagInputRef.current?.focus();
     }
   };
 
   const handlePost = async () => {
-    if (!selectedShow) {
-      console.log('No show selected');
+    if (!selectedShow || !postBody.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
 
-    setIsPosting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    try {
+      await createPost({
+        user: currentUser,
+        show: selectedShow,
+        episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
+        title: postTitle.trim() || undefined,
+        body: postBody.trim(),
+        rating: rating > 0 ? rating : undefined,
+        tags: selectedTags,
+        isSpoiler: selectedTags.some(tag => tag.toLowerCase().includes('spoiler')),
+      });
 
-    const newPost = {
-      id: `post-${Date.now()}`,
-      user: currentUser,
-      show: selectedShow,
-      episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
-      title: title || undefined,
-      body: body || 'Just watched this!',
-      rating: rating || undefined,
-      tags: selectedTags,
-      likes: 0,
-      comments: 0,
-      reposts: 0,
-      timestamp: new Date(),
-      isLiked: false,
-      isSpoiler: selectedTags.includes('spoiler alert'),
-    };
-
-    console.log('Creating new post:', newPost);
-    
-    // Simulate posting delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Add to mock posts
-    mockPosts.unshift(newPost);
-    
-    setIsPosting(false);
-    onClose();
-    resetModal();
+      console.log('Post created successfully');
+      resetModal();
+      onClose();
+    } catch (error) {
+      console.error('Error creating post:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   };
 
   const resetModal = () => {
-    setStep(preselectedShow ? 'selectEpisodes' : 'selectShow');
+    setStep('selectShow');
     setSelectedShow(preselectedShow || null);
     setSelectedEpisodes([]);
-    setSearchQuery('');
-    setTitle('');
-    setBody('');
+    setPostTitle('');
+    setPostBody('');
     setRating(0);
     setSelectedTags([]);
     setCustomTag('');
+    setSearchQuery('');
     setSeasons([]);
   };
 
-  const renderSelectShow = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepTitle}>Select a Show</Text>
-      <TextInput
-        ref={searchInputRef}
-        style={styles.searchInput}
-        placeholder="Search shows..."
-        placeholderTextColor={colors.textSecondary}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        returnKeyType="search"
-      />
-      <ScrollView style={styles.showList}>
-        <View style={styles.showGrid}>
-          {filteredShows.map((show) => (
+  const renderSelectShow = () => {
+    const filteredShows = mockShows.filter(show =>
+      show.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+      <View style={styles.stepContainer}>
+        <Text style={styles.stepTitle}>Select a Show</Text>
+        <TextInput
+          ref={inputRef}
+          style={styles.searchInput}
+          placeholder="Search shows..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
+          {filteredShows.map(show => (
             <Pressable
               key={show.id}
-              style={styles.showGridItem}
+              style={styles.showItem}
               onPress={() => handleShowSelect(show)}
             >
-              <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
+              <Image source={{ uri: show.poster }} style={styles.showPoster} />
+              <View style={styles.showInfo}>
+                <Text style={styles.showTitle}>{show.title}</Text>
+                <Text style={styles.showMeta}>
+                  {show.totalSeasons} Season{show.totalSeasons !== 1 ? 's' : ''} • {show.totalEpisodes} Episodes
+                </Text>
+              </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
             </Pressable>
           ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderSelectEpisodes = () => (
     <View style={styles.stepContainer}>
@@ -223,19 +243,10 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
         <IconSymbol name="chevron.left" size={20} color={colors.text} />
         <Text style={styles.backButtonText}>Back</Text>
       </Pressable>
-
-      <View style={styles.showHeader}>
-        <Image source={{ uri: selectedShow?.poster }} style={styles.showHeaderPoster} />
-        <View style={styles.showHeaderInfo}>
-          <Text style={styles.showHeaderTitle}>{selectedShow?.title}</Text>
-          <Text style={styles.showHeaderMeta}>
-            {selectedShow?.totalSeasons} season{selectedShow?.totalSeasons !== 1 ? 's' : ''} • {selectedShow?.totalEpisodes} episodes
-          </Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.seasonList}>
-        {seasons.map((season) => (
+      <Text style={styles.stepTitle}>Select Episodes (Optional)</Text>
+      <Text style={styles.stepSubtitle}>{selectedShow?.title}</Text>
+      <ScrollView style={styles.episodesList} showsVerticalScrollIndicator={false}>
+        {seasons.map(season => (
           <View key={season.seasonNumber} style={styles.seasonContainer}>
             <Pressable
               style={styles.seasonHeader}
@@ -248,35 +259,32 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
                 color={colors.text}
               />
             </Pressable>
-
             {season.expanded && (
-              <View style={styles.episodeList}>
-                {season.episodes.map((episode) => {
-                  const isSelected = selectedEpisodes.find((e) => e.id === episode.id);
+              <View style={styles.episodesContainer}>
+                {season.episodes.map(episode => {
+                  const isSelected = selectedEpisodes.some(ep => ep.id === episode.id);
                   return (
                     <Pressable
                       key={episode.id}
                       style={[styles.episodeItem, isSelected && styles.episodeItemSelected]}
                       onPress={() => handleEpisodeToggle(episode)}
                     >
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                        {isSelected && (
-                          <IconSymbol name="checkmark" size={16} color="#FFFFFF" />
-                        )}
-                      </View>
-                      <Image
-                        source={{ uri: episode.thumbnail || selectedShow?.poster }}
-                        style={styles.episodeThumbnail}
-                      />
                       <View style={styles.episodeInfo}>
                         <Text style={styles.episodeNumber}>
-                          S{episode.seasonNumber}E{episode.episodeNumber}
+                          E{episode.episodeNumber}
                         </Text>
-                        <Text style={styles.episodeTitle}>{episode.title}</Text>
-                        <Text style={styles.episodeDescription} numberOfLines={2}>
-                          {episode.description}
-                        </Text>
+                        <View style={styles.episodeDetails}>
+                          <Text style={styles.episodeTitle}>{episode.title}</Text>
+                          <Text style={styles.episodeDescription} numberOfLines={2}>
+                            {episode.description}
+                          </Text>
+                        </View>
                       </View>
+                      <IconSymbol
+                        name={isSelected ? 'checkmark.circle.fill' : 'circle'}
+                        size={24}
+                        color={isSelected ? colors.secondary : colors.textSecondary}
+                      />
                     </Pressable>
                   );
                 })}
@@ -285,9 +293,11 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
           </View>
         ))}
       </ScrollView>
-
-      <Pressable style={styles.nextButton} onPress={() => setStep('postDetails')}>
-        <Text style={styles.nextButtonText}>Next</Text>
+      <Pressable
+        style={styles.continueButton}
+        onPress={() => setStep('postDetails')}
+      >
+        <Text style={styles.continueButtonText}>Continue</Text>
       </Pressable>
     </View>
   );
@@ -298,228 +308,245 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
         <IconSymbol name="chevron.left" size={20} color={colors.text} />
         <Text style={styles.backButtonText}>Back</Text>
       </Pressable>
-
       <Text style={styles.stepTitle}>Post Details</Text>
-      <ScrollView style={styles.detailsForm}>
+      <ScrollView style={styles.detailsForm} showsVerticalScrollIndicator={false}>
         <TextInput
-          ref={titleInputRef}
           style={styles.titleInput}
           placeholder="Title (optional)"
           placeholderTextColor={colors.textSecondary}
-          value={title}
-          onChangeText={setTitle}
-          returnKeyType="next"
-          onSubmitEditing={() => bodyInputRef.current?.focus()}
+          value={postTitle}
+          onChangeText={setPostTitle}
         />
         <TextInput
-          ref={bodyInputRef}
           style={styles.bodyInput}
-          placeholder="What do you think?"
+          placeholder="What did you think?"
           placeholderTextColor={colors.textSecondary}
-          value={body}
-          onChangeText={setBody}
+          value={postBody}
+          onChangeText={setPostBody}
           multiline
-          numberOfLines={4}
+          numberOfLines={6}
+          textAlignVertical="top"
         />
-
-        <Text style={styles.label}>Rating</Text>
-        <View style={styles.ratingContainer}>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Pressable 
-              key={star} 
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setRating(star);
-              }}
-            >
-              <IconSymbol
-                name={star <= rating ? 'star.fill' : 'star'}
-                size={32}
-                color={star <= rating ? colors.secondary : colors.textSecondary}
-              />
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.label}>Tags</Text>
-        <View style={styles.tagsContainer}>
-          {predefinedTags.map((tag) => (
-            <Pressable
-              key={tag}
-              style={[styles.tagButton, selectedTags.includes(tag) && styles.tagButtonSelected]}
-              onPress={() => handleTagToggle(tag)}
-            >
-              <Text
-                style={[
-                  styles.tagButtonText,
-                  selectedTags.includes(tag) && styles.tagButtonTextSelected,
-                ]}
+        
+        {/* Rating */}
+        <View style={styles.ratingSection}>
+          <Text style={styles.sectionLabel}>Rating</Text>
+          <View style={styles.starsContainer}>
+            {[1, 2, 3, 4, 5].map(star => (
+              <Pressable
+                key={star}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setRating(star);
+                }}
               >
-                {tag}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={styles.customTagContainer}>
-          <TextInput
-            ref={customTagInputRef}
-            style={styles.customTagInput}
-            placeholder="Add custom tag"
-            placeholderTextColor={colors.textSecondary}
-            value={customTag}
-            onChangeText={setCustomTag}
-            returnKeyType="done"
-            onSubmitEditing={handleAddCustomTag}
-          />
-          <Pressable style={styles.addTagButton} onPress={handleAddCustomTag}>
-            <IconSymbol name="plus" size={20} color={colors.background} />
-          </Pressable>
-        </View>
-
-        {selectedTags.filter((tag) => !predefinedTags.includes(tag as PostTag)).length > 0 && (
-          <View style={styles.customTagsList}>
-            {selectedTags
-              .filter((tag) => !predefinedTags.includes(tag as PostTag))
-              .map((tag, index) => (
-                <View key={index} style={styles.customTagChip}>
-                  <Text style={styles.customTagChipText}>{tag}</Text>
-                  <Pressable onPress={() => handleTagToggle(tag)}>
-                    <IconSymbol name="xmark" size={14} color={colors.text} />
-                  </Pressable>
-                </View>
-              ))}
+                <IconSymbol
+                  name={star <= rating ? 'star.fill' : 'star'}
+                  size={32}
+                  color={star <= rating ? '#FFD700' : colors.textSecondary}
+                />
+              </Pressable>
+            ))}
           </View>
-        )}
-      </ScrollView>
+        </View>
 
-      <Pressable 
-        style={[styles.postButton, isPosting && styles.postButtonDisabled]} 
+        {/* Tags */}
+        <View style={styles.tagsSection}>
+          <Text style={styles.sectionLabel}>Tags</Text>
+          <View style={styles.tagsContainer}>
+            {['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].map(tag => (
+              <Pressable
+                key={tag}
+                style={[
+                  styles.tagButton,
+                  selectedTags.includes(tag) && styles.tagButtonSelected,
+                ]}
+                onPress={() => handleTagToggle(tag)}
+              >
+                <Text
+                  style={[
+                    styles.tagButtonText,
+                    selectedTags.includes(tag) && styles.tagButtonTextSelected,
+                  ]}
+                >
+                  {tag}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.customTagContainer}>
+            <TextInput
+              style={styles.customTagInput}
+              placeholder="Add custom tag"
+              placeholderTextColor={colors.textSecondary}
+              value={customTag}
+              onChangeText={setCustomTag}
+              onSubmitEditing={handleAddCustomTag}
+            />
+            <Pressable
+              style={[styles.addTagButton, !customTag.trim() && styles.addTagButtonDisabled]}
+              onPress={handleAddCustomTag}
+              disabled={!customTag.trim()}
+            >
+              <IconSymbol name="plus" size={20} color={colors.text} />
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+      <Pressable
+        style={[styles.postButton, !postBody.trim() && styles.postButtonDisabled]}
         onPress={handlePost}
-        disabled={isPosting}
+        disabled={!postBody.trim()}
       >
-        {isPosting ? (
-          <Text style={styles.postButtonText}>Posting...</Text>
-        ) : (
-          <Text style={styles.postButtonText}>Post</Text>
-        )}
+        <Text style={styles.postButtonText}>Post</Text>
       </Pressable>
     </View>
   );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Pressable onPress={onClose}>
-            <IconSymbol name="xmark" size={24} color={colors.text} />
-          </Pressable>
-          <Text style={styles.headerTitle}>New Post</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        {step === 'selectShow' && renderSelectShow()}
-        {step === 'selectEpisodes' && renderSelectEpisodes()}
-        {step === 'postDetails' && renderPostDetails()}
-      </View>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+    >
+      <Animated.View 
+        style={[
+          styles.overlay,
+          {
+            opacity: fadeAnim,
+          }
+        ]}
+      >
+        <Pressable style={styles.overlayTouchable} onPress={onClose} />
+        <Animated.View 
+          style={[
+            styles.modalContainer,
+            {
+              transform: [{ translateY: slideAnim }],
+            }
+          ]}
+        >
+          <View style={styles.header}>
+            <View style={styles.handle} />
+            <Pressable style={styles.closeButton} onPress={onClose}>
+              <IconSymbol name="xmark" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+          {step === 'selectShow' && renderSelectShow()}
+          {step === 'selectEpisodes' && renderSelectEpisodes()}
+          {step === 'postDetails' && renderPostDetails()}
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  overlayTouchable: {
+    flex: 1,
+  },
+  modalContainer: {
     backgroundColor: colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: SCREEN_HEIGHT * 0.9,
+    paddingBottom: 40,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    marginBottom: 16,
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 20,
+    top: 20,
   },
   stepContainer: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   stepTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 8,
+  },
+  stepSubtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
     marginBottom: 16,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
     marginBottom: 16,
   },
   backButtonText: {
     fontSize: 16,
     color: colors.text,
-    marginLeft: 4,
   },
   searchInput: {
     backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
     color: colors.text,
     marginBottom: 16,
   },
-  showList: {
+  showsList: {
     flex: 1,
   },
-  showGrid: {
+  showItem: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 12,
-  },
-  showGridItem: {
-    width: '31%',
-  },
-  showGridPoster: {
-    width: '100%',
-    aspectRatio: 2 / 3,
-    borderRadius: 8,
-  },
-  showHeader: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    backgroundColor: colors.card,
     padding: 12,
+    backgroundColor: colors.card,
     borderRadius: 12,
+    marginBottom: 12,
   },
-  showHeaderPoster: {
-    width: 80,
-    height: 120,
+  showPoster: {
+    width: 60,
+    height: 90,
     borderRadius: 8,
-    marginRight: 12,
   },
-  showHeaderInfo: {
+  showInfo: {
     flex: 1,
-    justifyContent: 'center',
   },
-  showHeaderTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+  showTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  showHeaderMeta: {
+  showMeta: {
     fontSize: 14,
     color: colors.textSecondary,
   },
-  seasonList: {
+  episodesList: {
     flex: 1,
   },
   seasonContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   seasonHeader: {
     flexDirection: 'row',
@@ -534,51 +561,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  episodeList: {
+  episodesContainer: {
     marginTop: 8,
+    gap: 8,
   },
   episodeItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    justifyContent: 'space-between',
     backgroundColor: colors.card,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: 12,
+    borderRadius: 12,
   },
   episodeItemSelected: {
-    backgroundColor: colors.highlight,
-    borderWidth: 2,
-    borderColor: colors.secondary,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.border,
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  checkboxSelected: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
-  },
-  episodeThumbnail: {
-    width: 80,
-    height: 45,
-    borderRadius: 6,
-    marginRight: 12,
+    backgroundColor: colors.purpleLight,
+    borderWidth: 1,
+    borderColor: colors.purple,
   },
   episodeInfo: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 12,
   },
   episodeNumber: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  episodeDetails: {
+    flex: 1,
   },
   episodeTitle: {
     fontSize: 14,
@@ -589,51 +600,54 @@ const styles = StyleSheet.create({
   episodeDescription: {
     fontSize: 12,
     color: colors.textSecondary,
-    lineHeight: 16,
   },
-  nextButton: {
+  continueButton: {
     backgroundColor: colors.secondary,
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
-  nextButtonText: {
+  continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.background,
   },
   detailsForm: {
     flex: 1,
   },
   titleInput: {
     backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
     color: colors.text,
     marginBottom: 12,
   },
   bodyInput: {
     backgroundColor: colors.card,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
     color: colors.text,
     marginBottom: 16,
-    minHeight: 100,
-    textAlignVertical: 'top',
+    minHeight: 120,
   },
-  label: {
+  ratingSection: {
+    marginBottom: 24,
+  },
+  sectionLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  ratingContainer: {
+  starsContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 16,
+  },
+  tagsSection: {
+    marginBottom: 24,
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -642,77 +656,61 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   tagButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
     backgroundColor: colors.card,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: colors.border,
   },
   tagButtonSelected: {
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
   tagButtonText: {
     fontSize: 14,
+    fontWeight: '600',
     color: colors.text,
   },
   tagButtonTextSelected: {
-    fontWeight: '600',
+    color: colors.background,
   },
   customTagContainer: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: 12,
   },
   customTagInput: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 14,
     color: colors.text,
   },
   addTagButton: {
-    backgroundColor: colors.text,
+    backgroundColor: colors.secondary,
+    borderRadius: 12,
     width: 44,
     height: 44,
-    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  customTagsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  customTagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.highlight,
-  },
-  customTagChipText: {
-    fontSize: 14,
-    color: colors.text,
+  addTagButtonDisabled: {
+    opacity: 0.5,
   },
   postButton: {
     backgroundColor: colors.secondary,
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 8,
     alignItems: 'center',
     marginTop: 16,
   },
   postButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   postButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.background,
   },
 });

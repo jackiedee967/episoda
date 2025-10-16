@@ -1,25 +1,23 @@
 
-import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import ShowCard from '@/components/ShowCard';
-import PostCard from '@/components/PostCard';
-import PostModal from '@/components/PostModal';
-import PostButton from '@/components/PostButton';
-import { mockPosts, mockShows, mockUsers, currentUser } from '@/data/mockData';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import PostCard from '@/components/PostCard';
+import PostModal from '@/components/PostModal';
+import ShowCard from '@/components/ShowCard';
+import { Stack, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import PostButton from '@/components/PostButton';
+import { mockShows, mockUsers } from '@/data/mockData';
+import { useData } from '@/contexts/DataContext';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [isPostModalVisible, setIsPostModalVisible] = useState(false);
-  const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
+  const { posts, currentUser, followUser, unfollowUser, isFollowing } = useData();
+  const [postModalVisible, setPostModalVisible] = useState(false);
 
   const handleLike = (postId: string) => {
-    setLikedPosts((prev) => ({
-      ...prev,
-      [postId]: !prev[postId],
-    }));
+    console.log('Like post:', postId);
   };
 
   const handleRepost = (postId: string) => {
@@ -30,170 +28,130 @@ export default function HomeScreen() {
     console.log('Share post:', postId);
   };
 
-  const handleFollowUser = (userId: string) => {
-    console.log('Follow user:', userId);
+  const handleFollowUser = async (userId: string) => {
+    try {
+      if (isFollowing(userId)) {
+        await unfollowUser(userId);
+        console.log('Unfollowed user:', userId);
+      } else {
+        await followUser(userId);
+        console.log('Followed user:', userId);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
   };
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      <Image
-        source={require('@/assets/images/37b8ed8a-6d1a-4831-b023-91c2cb1a7f19.png')}
-        style={styles.logo}
-        resizeMode="contain"
+    <View style={styles.headerContainer}>
+      <Stack.Screen
+        options={{
+          headerShown: false,
+        }}
       />
-      <Pressable onPress={() => router.push('/user/' + currentUser.id)}>
-        <Image
-          source={{ uri: currentUser.avatar }}
-          style={styles.profileImage}
-        />
-      </Pressable>
+      <Text style={styles.headerTitle}>Home</Text>
     </View>
   );
 
   const renderRecommendedTitles = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Recommended Titles</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Recommended Titles</Text>
+        <Pressable onPress={() => router.push('/search')}>
+          <Text style={styles.seeAll}>See All</Text>
+        </Pressable>
+      </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.showsContainer}
+        contentContainerStyle={styles.showsScroll}
       >
-        {mockShows.map((show) => {
-          const friends = mockUsers.slice(0, Math.min(3, show.friendsWatching));
-          return <ShowCard key={show.id} show={show} friends={friends} />;
-        })}
+        {mockShows.slice(0, 6).map((show) => (
+          <ShowCard
+            key={show.id}
+            show={show}
+            friends={mockUsers.slice(0, show.friendsWatching)}
+          />
+        ))}
       </ScrollView>
     </View>
   );
 
   const renderYouMayKnow = () => {
-    // Get suggested users based on mutual friends
-    const suggestedUsers = mockUsers.filter(user => {
-      // Don't suggest users we already follow
-      if (currentUser.following?.includes(user.id)) return false;
-      
-      // Check for mutual friends
-      const mutualFriends = user.followers?.filter(followerId => 
-        currentUser.following?.includes(followerId)
-      ) || [];
-      
-      return mutualFriends.length > 0;
-    }).slice(0, 3);
-
-    if (suggestedUsers.length === 0) return null;
+    const suggestedUsers = mockUsers.filter(user => !isFollowing(user.id));
+    
+    if (suggestedUsers.length === 0) {
+      return null;
+    }
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>You May Know</Text>
-        <View style={styles.youMayKnowContainer}>
-          {suggestedUsers.map((user) => {
-            const mutualFriends = user.followers?.filter(followerId => 
-              currentUser.following?.includes(followerId)
-            ) || [];
-            
-            const mutualFriendUsers = mockUsers.filter(u => 
-              mutualFriends.includes(u.id)
-            );
-
-            return (
-              <View key={user.id} style={styles.suggestedUserCard}>
-                <View style={styles.suggestedUserHeader}>
-                  <Pressable 
-                    onPress={() => router.push(`/user/${user.id}`)}
-                    style={styles.suggestedUserInfo}
-                  >
-                    <View style={styles.avatarContainer}>
-                      <Image 
-                        source={{ uri: user.avatar }} 
-                        style={styles.suggestedUserAvatar} 
-                      />
-                      {user.username === 'jackie' || user.username === 'liz' ? (
-                        <View style={styles.verifiedBadge}>
-                          <IconSymbol name="checkmark" size={10} color="#FFFFFF" />
-                        </View>
-                      ) : null}
-                    </View>
-                    <View style={styles.suggestedUserDetails}>
-                      <Text style={styles.suggestedUserName}>{user.displayName}</Text>
-                      <Text style={styles.suggestedUserUsername}>@{user.username}</Text>
-                    </View>
-                  </Pressable>
-                  <Pressable 
-                    style={styles.followButton}
-                    onPress={() => handleFollowUser(user.id)}
-                  >
-                    <Text style={styles.followButtonText}>Follow</Text>
-                  </Pressable>
-                </View>
-                
-                <View style={styles.mutualFriendsContainer}>
-                  <View style={styles.mutualFriendsAvatars}>
-                    {mutualFriendUsers.slice(0, 3).map((friend, index) => (
-                      <Image 
-                        key={friend.id}
-                        source={{ uri: friend.avatar }} 
-                        style={[
-                          styles.mutualFriendAvatar,
-                          index > 0 && { marginLeft: -8 }
-                        ]} 
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.mutualFriendsText}>
-                    Followed by {mutualFriendUsers.length === 1 
-                      ? mutualFriendUsers[0].displayName
-                      : `${mutualFriendUsers[0].displayName} and ${mutualFriendUsers.length - 1} other${mutualFriendUsers.length > 2 ? 's' : ''}`
-                    }
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>You May Know</Text>
         </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.usersScroll}
+        >
+          {suggestedUsers.map((user) => (
+            <View key={user.id} style={styles.userCard}>
+              <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
+              <Text style={styles.userDisplayName}>{user.displayName}</Text>
+              <Text style={styles.userUsername}>@{user.username}</Text>
+              <Pressable
+                style={styles.followButton}
+                onPress={() => handleFollowUser(user.id)}
+              >
+                <Text style={styles.followButtonText}>
+                  {isFollowing(user.id) ? 'Following' : 'Follow'}
+                </Text>
+              </Pressable>
+            </View>
+          ))}
+        </ScrollView>
       </View>
     );
   };
 
   const renderFriendActivity = () => {
-    // Include posts from current user and friends
-    const friendActivity = mockPosts.filter(post => 
-      post.user.id === currentUser.id || mockUsers.some(user => user.id === post.user.id)
+    // Filter posts from users the current user is following
+    const friendPosts = posts.filter(post => 
+      currentUser.following?.includes(post.user.id)
     );
-
-    // Show only first 10 posts
-    const displayedPosts = friendActivity.slice(0, 10);
-    const hasMore = friendActivity.length > 10;
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Friend Activity</Text>
-        {displayedPosts.length > 0 ? (
-          <>
-            {displayedPosts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                onLike={() => handleLike(post.id)}
-                onRepost={() => handleRepost(post.id)}
-                onShare={() => handleShare(post.id)}
-              />
-            ))}
-            {hasMore && (
-              <Pressable 
-                style={styles.viewMoreButton}
-                onPress={() => router.push('/(tabs)/(home)/friend-activity')}
-              >
-                <Text style={styles.viewMoreText}>View More</Text>
-                <IconSymbol name="chevron.right" size={20} color={colors.text} />
-              </Pressable>
-            )}
-          </>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Friend Activity</Text>
+          <Pressable onPress={() => router.push('/(tabs)/(home)/friend-activity')}>
+            <Text style={styles.seeAll}>See All</Text>
+          </Pressable>
+        </View>
+        {friendPosts.length > 0 ? (
+          friendPosts.slice(0, 5).map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onLike={() => handleLike(post.id)}
+              onRepost={() => handleRepost(post.id)}
+              onShare={() => handleShare(post.id)}
+            />
+          ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No activity yet</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Be the first to post or invite friends to see their activity
+            <IconSymbol name="person.2" size={48} color={colors.textSecondary} />
+            <Text style={styles.emptyStateTitle}>No friend activity yet</Text>
+            <Text style={styles.emptyStateText}>
+              Follow friends to see what they&apos;re watching
             </Text>
+            <Pressable
+              style={styles.inviteButton}
+              onPress={() => console.log('Invite friends')}
+            >
+              <IconSymbol name="person.badge.plus" size={20} color={colors.background} />
+              <Text style={styles.inviteButtonText}>Invite Friends</Text>
+            </Pressable>
           </View>
         )}
       </View>
@@ -202,31 +160,29 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      {renderHeader()}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Post Button */}
+        <PostButton onPress={() => setPostModalVisible(true)} />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {renderHeader()}
-
-        <View style={styles.divider} />
-
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Welcome Back, Jacqueline</Text>
-        </View>
-
-        <PostButton onPress={() => setIsPostModalVisible(true)} />
-
+        {/* Recommended Titles */}
         {renderRecommendedTitles()}
+
+        {/* You May Know */}
         {renderYouMayKnow()}
+
+        {/* Friend Activity */}
         {renderFriendActivity()}
       </ScrollView>
 
+      {/* Post Modal */}
       <PostModal
-        visible={isPostModalVisible}
-        onClose={() => setIsPostModalVisible(false)}
+        visible={postModalVisible}
+        onClose={() => setPostModalVisible(false)}
       />
     </View>
   );
@@ -237,183 +193,120 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  headerContainer: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 100,
   },
-  header: {
+  section: {
+    marginBottom: 32,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: colors.card,
-  },
-  logo: {
-    width: 120,
-    height: 24,
-  },
-  profileImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  welcomeSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: colors.card,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    fontFamily: 'FunnelDisplay_700Bold',
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 16,
-    fontFamily: 'FunnelDisplay_700Bold',
   },
-  showsContainer: {
-    gap: 8,
-    paddingRight: 16,
+  seeAll: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.secondary,
   },
-  youMayKnowContainer: {
-    gap: 12,
+  showsScroll: {
+    gap: 16,
+    paddingRight: 20,
   },
-  suggestedUserCard: {
+  usersScroll: {
+    gap: 16,
+    paddingRight: 20,
+  },
+  userCard: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
-  },
-  suggestedUserHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    width: 160,
+  },
+  userAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     marginBottom: 12,
   },
-  suggestedUserInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginRight: 12,
-  },
-  suggestedUserAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  verifiedBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.card,
-  },
-  suggestedUserDetails: {
-    flex: 1,
-  },
-  suggestedUserName: {
+  userDisplayName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    fontFamily: 'System',
+    marginBottom: 4,
   },
-  suggestedUserUsername: {
+  userUsername: {
     fontSize: 14,
     color: colors.textSecondary,
-    fontFamily: 'System',
+    marginBottom: 12,
   },
   followButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    backgroundColor: colors.secondary,
     borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
   },
   followButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
-    fontFamily: 'System',
-  },
-  mutualFriendsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  mutualFriendsAvatars: {
-    flexDirection: 'row',
-  },
-  mutualFriendAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.card,
-  },
-  mutualFriendsText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    flex: 1,
-    fontFamily: 'System',
-  },
-  viewMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 8,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
-  },
-  viewMoreText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'System',
+    color: colors.background,
   },
   emptyState: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
     padding: 32,
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
   },
-  emptyStateText: {
+  emptyStateTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
+    marginTop: 16,
     marginBottom: 8,
   },
-  emptyStateSubtext: {
+  emptyStateText: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  inviteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.secondary,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  inviteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.background,
   },
 });
