@@ -1,19 +1,19 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Stack } from 'expo-router';
 import PostCard from '@/components/PostCard';
-import { mockPosts, mockUsers, currentUser } from '@/data/mockData';
+import { useData } from '@/contexts/DataContext';
 import { colors } from '@/styles/commonStyles';
 
+type SortBy = 'recent' | 'hot';
+
 export default function FriendActivityFeed() {
-  const [likedPosts, setLikedPosts] = useState<{ [key: string]: boolean }>({});
+  const { posts, currentUser } = useData();
+  const [sortBy, setSortBy] = useState<SortBy>('recent');
 
   const handleLike = (postId: string) => {
-    setLikedPosts((prev) => ({
-      ...prev,
-      [postId]: !prev[postId],
-    }));
+    console.log('Like post:', postId);
   };
 
   const handleRepost = (postId: string) => {
@@ -24,10 +24,22 @@ export default function FriendActivityFeed() {
     console.log('Share post:', postId);
   };
 
-  // Include posts from current user and friends
-  const friendActivity = mockPosts.filter(post => 
-    post.user.id === currentUser.id || mockUsers.some(user => user.id === post.user.id)
+  // Filter posts from users the current user is following
+  const friendPosts = posts.filter(post => 
+    currentUser.following?.includes(post.user.id)
   );
+
+  // Sort posts based on selected sort option
+  const sortedPosts = [...friendPosts].sort((a, b) => {
+    if (sortBy === 'recent') {
+      return b.timestamp.getTime() - a.timestamp.getTime();
+    } else {
+      // Hot: sort by engagement (likes + comments + reposts)
+      const engagementA = a.likes + a.comments + a.reposts;
+      const engagementB = b.likes + b.comments + b.reposts;
+      return engagementB - engagementA;
+    }
+  });
 
   return (
     <View style={styles.container}>
@@ -39,10 +51,30 @@ export default function FriendActivityFeed() {
         }}
       />
 
+      {/* Sort Options */}
+      <View style={styles.sortContainer}>
+        <Pressable
+          style={[styles.sortButton, sortBy === 'recent' && styles.sortButtonActive]}
+          onPress={() => setSortBy('recent')}
+        >
+          <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextActive]}>
+            Recent
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.sortButton, sortBy === 'hot' && styles.sortButtonActive]}
+          onPress={() => setSortBy('hot')}
+        >
+          <Text style={[styles.sortText, sortBy === 'hot' && styles.sortTextActive]}>
+            Hot
+          </Text>
+        </Pressable>
+      </View>
+
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          {friendActivity.length > 0 ? (
-            friendActivity.map((post) => (
+          {sortedPosts.length > 0 ? (
+            sortedPosts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
@@ -69,6 +101,31 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sortButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+  },
+  sortButtonActive: {
+    backgroundColor: colors.secondary,
+  },
+  sortText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  sortTextActive: {
+    color: colors.background,
   },
   scrollView: {
     flex: 1,

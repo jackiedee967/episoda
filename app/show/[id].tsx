@@ -18,6 +18,7 @@ import WatchlistModal from '@/components/WatchlistModal';
 import { mockShows, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
 import { Episode } from '@/types';
 import { useData } from '@/contexts/DataContext';
+import { Search } from 'lucide-react-native';
 
 type Tab = 'friends' | 'all' | 'episodes';
 type SortBy = 'hot' | 'recent';
@@ -71,6 +72,14 @@ export default function ShowHub() {
     }, 300);
   };
 
+  const handleSearchInShow = () => {
+    // Navigate to search tab with this show pre-selected
+    router.push({
+      pathname: '/(tabs)/search',
+      params: { showId: show.id },
+    });
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.posterWrapper}>
@@ -87,7 +96,12 @@ export default function ShowHub() {
         </Pressable>
       </View>
       <View style={styles.headerInfo}>
-        <Text style={styles.showTitle}>{show.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.showTitle}>{show.title}</Text>
+          <Pressable style={styles.searchButton} onPress={handleSearchInShow}>
+            <Search size={20} color={colors.text} />
+          </Pressable>
+        </View>
         <Text style={styles.showDescription} numberOfLines={3}>
           {show.description}
         </Text>
@@ -303,11 +317,23 @@ const styles = StyleSheet.create({
   headerInfo: {
     flex: 1,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   showTitle: {
+    flex: 1,
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
+    marginRight: 8,
+  },
+  searchButton: {
+    padding: 8,
+    backgroundColor: colors.highlight,
+    borderRadius: 8,
   },
   showDescription: {
     fontSize: 14,

@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import PostButton from '@/components/PostButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
+import { ChevronRight } from 'lucide-react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -57,8 +58,11 @@ export default function HomeScreen() {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recommended Titles</Text>
-        <Pressable onPress={() => router.push('/search')}>
-          <Text style={styles.seeAll}>See All</Text>
+        <Pressable 
+          onPress={() => router.push('/recommended-titles')}
+          style={styles.seeAllButton}
+        >
+          <ChevronRight size={24} color={colors.secondary} />
         </Pressable>
       </View>
       <ScrollView
@@ -124,8 +128,11 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend Activity</Text>
-          <Pressable onPress={() => router.push('/(tabs)/(home)/friend-activity')}>
-            <Text style={styles.seeAll}>See All</Text>
+          <Pressable 
+            onPress={() => router.push('/(tabs)/(home)/friend-activity')}
+            style={styles.seeAllButton}
+          >
+            <ChevronRight size={24} color={colors.secondary} />
           </Pressable>
         </View>
         {friendPosts.length > 0 ? (
@@ -228,10 +235,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
-  seeAll: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.secondary,
+  seeAllButton: {
+    padding: 4,
   },
   showsScroll: {
     gap: 16,
