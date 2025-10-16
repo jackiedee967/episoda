@@ -40,22 +40,31 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
     console.log(`Show ${showId} added to watchlist ${watchlistId}`);
   };
 
-  const renderFriendAvatars = () => {
+  const renderFriendsWatchingPill = () => {
     const validFriends = friends.filter(f => f && f.id);
     const displayFriends = validFriends.slice(0, 3);
     const remainingCount = Math.max(0, (show?.friendsWatching || 0) - displayFriends.length);
 
     if (displayFriends.length === 0) {
-      return (
-        <View style={styles.friendsContainer}>
-          <Text style={styles.friendsText}>No friends watching</Text>
-        </View>
-      );
+      return null;
+    }
+
+    // Build the text
+    let friendsText = '';
+    if (displayFriends.length > 0) {
+      friendsText = displayFriends[0].displayName || 'Friend';
+      if (remainingCount > 0) {
+        friendsText += ` and ${remainingCount} friend${remainingCount > 1 ? 's' : ''} watching`;
+      } else if (displayFriends.length === 1) {
+        friendsText += ' watching';
+      } else {
+        friendsText += ` and ${displayFriends.length - 1} other${displayFriends.length - 1 > 1 ? 's' : ''} watching`;
+      }
     }
 
     return (
-      <View style={styles.friendsContainer}>
-        <View style={styles.avatarRow}>
+      <View style={styles.friendsPill}>
+        <View style={styles.pillAvatarRow}>
           {displayFriends.map((friend, index) => (
             <Pressable
               key={friend.id}
@@ -64,13 +73,13 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
               {friend.avatar ? (
                 <Image
                   source={{ uri: friend.avatar }}
-                  style={[styles.avatar, { marginLeft: index > 0 ? -8 : 0, zIndex: displayFriends.length - index }]}
+                  style={[styles.pillAvatar, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
                 />
               ) : (
                 <View
-                  style={[styles.avatar, styles.avatarPlaceholder, { marginLeft: index > 0 ? -8 : 0, zIndex: displayFriends.length - index }]}
+                  style={[styles.pillAvatar, styles.pillAvatarPlaceholder, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
                 >
-                  <Text style={styles.avatarPlaceholderText}>
+                  <Text style={styles.pillAvatarPlaceholderText}>
                     {friend.displayName?.charAt(0) || '?'}
                   </Text>
                 </View>
@@ -78,25 +87,8 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
             </Pressable>
           ))}
         </View>
-        <Text style={styles.friendsText} numberOfLines={2}>
-          <Pressable onPress={(e) => handleFriendPress(displayFriends[0].id, e)}>
-            <Text style={styles.friendNameLink}>
-              {displayFriends[0].displayName || 'Friend'}
-            </Text>
-          </Pressable>
-          {remainingCount > 0 && (
-            <Text style={styles.friendsTextNormal}>
-              {' '}and {remainingCount} friend{remainingCount > 1 ? 's' : ''} watching
-            </Text>
-          )}
-          {remainingCount === 0 && displayFriends.length === 1 && (
-            <Text style={styles.friendsTextNormal}> watching</Text>
-          )}
-          {remainingCount === 0 && displayFriends.length > 1 && (
-            <Text style={styles.friendsTextNormal}>
-              {' '}and {displayFriends.length - 1} other{displayFriends.length - 1 > 1 ? 's' : ''} watching
-            </Text>
-          )}
+        <Text style={styles.pillText} numberOfLines={1}>
+          {friendsText}
         </Text>
       </View>
     );
@@ -124,6 +116,8 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
               <Text style={styles.posterPlaceholderText}>{show.title?.charAt(0) || '?'}</Text>
             </View>
           )}
+          
+          {/* Save Icon */}
           <Pressable 
             style={({ pressed }) => [
               styles.saveIcon,
@@ -137,8 +131,10 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
               color="#FFFFFF" 
             />
           </Pressable>
+
+          {/* Friends Watching Pill - Overlaid on poster */}
+          {renderFriendsWatchingPill()}
         </View>
-        {renderFriendAvatars()}
       </Pressable>
 
       <WatchlistModal
@@ -153,18 +149,21 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    width: 120,
+    width: 250,
+    marginRight: 16,
   },
   containerPressed: {
     opacity: 0.8,
   },
   posterWrapper: {
     position: 'relative',
+    width: 250,
+    height: 160,
   },
   poster: {
-    width: 120,
-    height: 180,
-    borderRadius: 8,
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
   },
   posterPlaceholder: {
     backgroundColor: colors.purple,
@@ -178,54 +177,58 @@ const styles = StyleSheet.create({
   },
   saveIcon: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 16,
   },
   saveIconPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
   },
-  friendsContainer: {
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  avatarRow: {
+  // Friends Watching Pill - Overlaid on poster
+  friendsPill: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    gap: 8,
   },
-  avatar: {
+  pillAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pillAvatar: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: '#FFFFFF',
   },
-  avatarPlaceholder: {
+  pillAvatarPlaceholder: {
     backgroundColor: colors.purple,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarPlaceholderText: {
+  pillAvatarPlaceholderText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
   },
-  friendsText: {
+  pillText: {
     fontSize: 12,
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  friendNameLink: {
-    fontWeight: '600',
-    color: colors.text,
-  },
-  friendsTextNormal: {
-    color: colors.textSecondary,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    flex: 1,
   },
 });
