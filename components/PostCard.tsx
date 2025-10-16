@@ -19,6 +19,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   const router = useRouter();
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
 
   const formatTimestamp = (date: Date) => {
     try {
@@ -64,6 +65,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     setWatchlistModalVisible(true);
   };
 
+  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
+    setIsInWatchlist(true);
+    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  };
+
   const getShowTagColor = (showTitle: string) => {
     const colors = [
       { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
@@ -103,7 +109,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               <View style={styles.posterWrapper}>
                 <Image source={{ uri: post.show.poster }} style={styles.poster} />
                 <Pressable style={styles.saveIcon} onPress={handleSavePress}>
-                  <IconSymbol name="bookmark" size={16} color="#FFFFFF" />
+                  <IconSymbol 
+                    name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
+                    size={18} 
+                    color="#FFFFFF" 
+                  />
                 </Pressable>
               </View>
             ) : (
@@ -114,7 +124,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                   </Text>
                 </View>
                 <Pressable style={styles.saveIcon} onPress={handleSavePress}>
-                  <IconSymbol name="bookmark" size={16} color="#FFFFFF" />
+                  <IconSymbol 
+                    name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
+                    size={18} 
+                    color="#FFFFFF" 
+                  />
                 </Pressable>
               </View>
             )}
@@ -288,6 +302,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
         visible={watchlistModalVisible}
         onClose={() => setWatchlistModalVisible(false)}
         show={post.show}
+        onAddToWatchlist={handleAddToWatchlist}
       />
     </>
   );
@@ -331,10 +346,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },

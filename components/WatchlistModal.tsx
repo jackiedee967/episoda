@@ -18,26 +18,24 @@ interface WatchlistModalProps {
   visible: boolean;
   onClose: () => void;
   show: Show;
+  onAddToWatchlist?: (watchlistId: string, showId: string) => void;
 }
 
 interface Watchlist {
   id: string;
   name: string;
-  showCount: number;
+  shows: string[];
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-// Mock watchlists - in a real app, this would come from a database
-const mockWatchlists: Watchlist[] = [
-  { id: 'wl-1', name: 'Want to Watch', showCount: 12 },
-  { id: 'wl-2', name: 'Currently Watching', showCount: 5 },
-  { id: 'wl-3', name: 'Favorites', showCount: 8 },
+// Initial watchlist with only "Shows to Watch" starting with 0 shows
+const initialWatchlists: Watchlist[] = [
+  { id: 'wl-default', name: 'Shows to Watch', shows: [] },
 ];
 
-export default function WatchlistModal({ visible, onClose, show }: WatchlistModalProps) {
-  const [watchlists, setWatchlists] = useState<Watchlist[]>(mockWatchlists);
-  const [isCreatingNew, setIsCreatingNew] = useState(false);
+export default function WatchlistModal({ visible, onClose, show, onAddToWatchlist }: WatchlistModalProps) {
+  const [watchlists, setWatchlists] = useState<Watchlist[]>(initialWatchlists);
   const [newWatchlistName, setNewWatchlistName] = useState('');
 
   const handleCreateWatchlist = () => {
@@ -45,23 +43,37 @@ export default function WatchlistModal({ visible, onClose, show }: WatchlistModa
       const newWatchlist: Watchlist = {
         id: `wl-${Date.now()}`,
         name: newWatchlistName.trim(),
-        showCount: 0,
+        shows: [],
       };
       setWatchlists([...watchlists, newWatchlist]);
       setNewWatchlistName('');
-      setIsCreatingNew(false);
       console.log('Created new watchlist:', newWatchlist.name);
     }
   };
 
   const handleAddToWatchlist = (watchlistId: string) => {
     const watchlist = watchlists.find(wl => wl.id === watchlistId);
+    
+    // Update the watchlist to include the show
+    setWatchlists(prevWatchlists => 
+      prevWatchlists.map(wl => 
+        wl.id === watchlistId 
+          ? { ...wl, shows: [...wl.shows, show.id] }
+          : wl
+      )
+    );
+    
     console.log(`Added ${show.title} to ${watchlist?.name}`);
+    
+    // Call the callback if provided
+    if (onAddToWatchlist) {
+      onAddToWatchlist(watchlistId, show.id);
+    }
+    
     onClose();
   };
 
   const resetModal = () => {
-    setIsCreatingNew(false);
     setNewWatchlistName('');
   };
 
@@ -88,45 +100,23 @@ export default function WatchlistModal({ visible, onClose, show }: WatchlistModa
 
           {/* Content */}
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Create New Watchlist */}
-            {isCreatingNew ? (
-              <View style={styles.createContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Watchlist name"
-                  placeholderTextColor={colors.textSecondary}
-                  value={newWatchlistName}
-                  onChangeText={setNewWatchlistName}
-                  autoFocus
-                />
-                <View style={styles.createActions}>
-                  <Pressable
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      setIsCreatingNew(false);
-                      setNewWatchlistName('');
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.createButton, !newWatchlistName.trim() && styles.createButtonDisabled]}
-                    onPress={handleCreateWatchlist}
-                    disabled={!newWatchlistName.trim()}
-                  >
-                    <Text style={styles.createButtonText}>Create</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ) : (
+            {/* Create New Watchlist - Always visible at top */}
+            <View style={styles.createContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Create new list"
+                placeholderTextColor={colors.textSecondary}
+                value={newWatchlistName}
+                onChangeText={setNewWatchlistName}
+              />
               <Pressable
-                style={styles.newWatchlistButton}
-                onPress={() => setIsCreatingNew(true)}
+                style={[styles.createButton, !newWatchlistName.trim() && styles.createButtonDisabled]}
+                onPress={handleCreateWatchlist}
+                disabled={!newWatchlistName.trim()}
               >
-                <IconSymbol name="plus.circle.fill" size={24} color={colors.secondary} />
-                <Text style={styles.newWatchlistText}>Create New Watchlist</Text>
+                <IconSymbol name="plus" size={20} color={colors.text} />
               </Pressable>
-            )}
+            </View>
 
             {/* Existing Watchlists */}
             <View style={styles.watchlistsContainer}>
@@ -139,10 +129,10 @@ export default function WatchlistModal({ visible, onClose, show }: WatchlistModa
                   <View style={styles.watchlistInfo}>
                     <Text style={styles.watchlistName}>{watchlist.name}</Text>
                     <Text style={styles.watchlistCount}>
-                      {watchlist.showCount} show{watchlist.showCount !== 1 ? 's' : ''}
+                      {watchlist.shows.length} show{watchlist.shows.length !== 1 ? 's' : ''}
                     </Text>
                   </View>
-                  <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                  <IconSymbol name="plus" size={20} color={colors.secondary} />
                 </Pressable>
               ))}
             </View>
@@ -197,64 +187,30 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   createContainer: {
+    flexDirection: 'row',
+    gap: 12,
     marginBottom: 24,
   },
   input: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 12,
-  },
-  createActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
     flex: 1,
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    fontSize: 16,
+    color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
   },
   createButton: {
-    flex: 1,
     backgroundColor: colors.secondary,
     borderRadius: 12,
-    padding: 16,
+    width: 52,
+    height: 52,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   createButtonDisabled: {
     opacity: 0.5,
-  },
-  createButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  newWatchlistButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: colors.highlight,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  newWatchlistText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
   },
   watchlistsContainer: {
     gap: 12,

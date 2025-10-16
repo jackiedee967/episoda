@@ -15,6 +15,7 @@ interface ShowCardProps {
 export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const router = useRouter();
   const [watchlistModalVisible, setWatchlistModalVisible] = React.useState(false);
+  const [isInWatchlist, setIsInWatchlist] = React.useState(false);
 
   const handlePress = () => {
     if (show?.id) {
@@ -32,6 +33,11 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const handleSavePress = (e: any) => {
     e.stopPropagation();
     setWatchlistModalVisible(true);
+  };
+
+  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
+    setIsInWatchlist(true);
+    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
   };
 
   const renderFriendAvatars = () => {
@@ -113,7 +119,11 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
             </View>
           )}
           <Pressable style={styles.saveIcon} onPress={handleSavePress}>
-            <IconSymbol name="bookmark" size={16} color="#FFFFFF" />
+            <IconSymbol 
+              name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
+              size={18} 
+              color="#FFFFFF" 
+            />
           </Pressable>
         </View>
         {renderFriendAvatars()}
@@ -123,6 +133,7 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
         visible={watchlistModalVisible}
         onClose={() => setWatchlistModalVisible(false)}
         show={show}
+        onAddToWatchlist={handleAddToWatchlist}
       />
     </>
   );
@@ -154,10 +165,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },

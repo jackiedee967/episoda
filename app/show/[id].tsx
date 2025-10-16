@@ -27,6 +27,7 @@ export default function ShowHub() {
   const [sortBy, setSortBy] = useState<SortBy>('hot');
   const [modalVisible, setModalVisible] = useState(false);
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
 
   const show = mockShows.find((s) => s.id === id);
   const showPosts = mockPosts.filter((p) => p.show.id === id);
@@ -47,6 +48,11 @@ export default function ShowHub() {
     router.push(`/user/${friendId}`);
   };
 
+  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
+    setIsInWatchlist(true);
+    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.posterWrapper}>
@@ -55,7 +61,11 @@ export default function ShowHub() {
           style={styles.saveIcon} 
           onPress={() => setWatchlistModalVisible(true)}
         >
-          <IconSymbol name="bookmark" size={20} color="#FFFFFF" />
+          <IconSymbol 
+            name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
+            size={20} 
+            color="#FFFFFF" 
+          />
         </Pressable>
       </View>
       <View style={styles.headerInfo}>
@@ -236,6 +246,7 @@ export default function ShowHub() {
         visible={watchlistModalVisible}
         onClose={() => setWatchlistModalVisible(false)}
         show={show}
+        onAddToWatchlist={handleAddToWatchlist}
       />
     </>
   );
@@ -263,8 +274,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 14,
     width: 32,
     height: 32,
     justifyContent: 'center',

@@ -13,6 +13,7 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
+  const [showsInWatchlist, setShowsInWatchlist] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   const filteredShows = searchQuery
@@ -23,6 +24,11 @@ export default function SearchScreen() {
     e.stopPropagation();
     setSelectedShow(show);
     setWatchlistModalVisible(true);
+  };
+
+  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
+    setShowsInWatchlist(prev => new Set(prev).add(showId));
+    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
   };
 
   return (
@@ -57,7 +63,11 @@ export default function SearchScreen() {
                     style={styles.saveIcon} 
                     onPress={(e) => handleSavePress(show, e)}
                   >
-                    <IconSymbol name="bookmark" size={14} color="#FFFFFF" />
+                    <IconSymbol 
+                      name={showsInWatchlist.has(show.id) ? "bookmark.fill" : "bookmark"} 
+                      size={16} 
+                      color="#FFFFFF" 
+                    />
                   </Pressable>
                 </View>
                 <View style={styles.showInfo}>
@@ -90,6 +100,7 @@ export default function SearchScreen() {
             setSelectedShow(null);
           }}
           show={selectedShow}
+          onAddToWatchlist={handleAddToWatchlist}
         />
       )}
     </>
@@ -149,10 +160,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 10,
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
