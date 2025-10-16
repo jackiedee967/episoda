@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { mockPosts, mockComments, currentUser } from '@/data/mockData';
@@ -87,12 +88,12 @@ export default function PostDetail() {
 
   const getTagIcon = (tag: string) => {
     const lowerTag = tag.toLowerCase();
-    if (lowerTag.includes('theory')) return 'lightbulb';
-    if (lowerTag.includes('discussion')) return 'bubble.left.and.bubble.right';
-    if (lowerTag.includes('spoiler')) return 'eye.slash';
-    if (lowerTag.includes('recap')) return 'list.bullet';
-    if (lowerTag.includes('misc')) return 'ellipsis.circle';
-    return 'tag';
+    if (lowerTag.includes('theory')) return Lightbulb;
+    if (lowerTag.includes('discussion')) return MessageCircle;
+    if (lowerTag.includes('spoiler')) return AlertTriangle;
+    if (lowerTag.includes('recap')) return List;
+    if (lowerTag.includes('misc')) return MoreHorizontal;
+    return MoreHorizontal;
   };
 
   const getTagColor = (tag: string) => {
@@ -325,7 +326,7 @@ export default function PostDetail() {
           <View style={styles.tagsContainer}>
             {post.tags.map((tag, index) => {
               const tagColor = getTagColor(tag);
-              const tagIcon = getTagIcon(tag);
+              const TagIcon = getTagIcon(tag);
               return (
                 <View
                   key={index}
@@ -334,7 +335,7 @@ export default function PostDetail() {
                     { backgroundColor: tagColor.bg, borderColor: tagColor.border },
                   ]}
                 >
-                  <IconSymbol name={tagIcon} size={12} color={tagColor.text} style={styles.tagIcon} />
+                  <TagIcon size={16} color={tagColor.text} strokeWidth={2} />
                   <Text style={[styles.tagText, { color: tagColor.text }]}>
                     {tag}
                   </Text>
@@ -346,10 +347,11 @@ export default function PostDetail() {
           {/* Post Actions */}
           <View style={styles.postActions}>
             <Pressable style={styles.actionButton} onPress={handleLike}>
-              <IconSymbol
-                name={isLiked ? 'heart.fill' : 'heart'}
+              <Heart
                 size={24}
                 color={isLiked ? '#EF4444' : '#6B7280'}
+                fill={isLiked ? '#EF4444' : 'none'}
+                strokeWidth={2}
               />
               <Text style={styles.actionText}>{likes}</Text>
             </Pressable>
@@ -361,21 +363,21 @@ export default function PostDetail() {
                 commentInputRef.current?.focus();
               }}
             >
-              <IconSymbol name="message" size={24} color="#6B7280" />
+              <MessageCircle size={24} color="#6B7280" strokeWidth={2} />
               <Text style={styles.actionText}>{comments.length}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleRepost}>
-              <IconSymbol 
-                name="arrow.2.squarepath" 
+              <Repeat 
                 size={24} 
                 color={isReposted ? colors.secondary : '#6B7280'} 
+                strokeWidth={2}
               />
               <Text style={styles.actionText}>{reposts}</Text>
             </Pressable>
 
             <Pressable style={styles.actionButton} onPress={handleShare}>
-              <IconSymbol name="paperplane" size={24} color="#6B7280" />
+              <Share2 size={24} color="#6B7280" strokeWidth={2} />
             </Pressable>
           </View>
         </View>
@@ -618,10 +620,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
     borderWidth: 1,
-    gap: 4,
-  },
-  tagIcon: {
-    marginRight: 2,
+    gap: 6,
   },
   tagText: {
     fontSize: 13,

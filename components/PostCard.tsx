@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, Pressable, Animated } from 'react-native';
+import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
@@ -155,12 +156,12 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const getTagIcon = (tag: string) => {
     const lowerTag = tag.toLowerCase();
-    if (lowerTag.includes('theory')) return 'lightbulb';
-    if (lowerTag.includes('discussion')) return 'bubble.left.and.bubble.right';
-    if (lowerTag.includes('spoiler')) return 'eye.slash';
-    if (lowerTag.includes('recap')) return 'list.bullet';
-    if (lowerTag.includes('misc')) return 'ellipsis.circle';
-    return 'tag';
+    if (lowerTag.includes('theory')) return Lightbulb;
+    if (lowerTag.includes('discussion')) return MessageCircle;
+    if (lowerTag.includes('spoiler')) return AlertTriangle;
+    if (lowerTag.includes('recap')) return List;
+    if (lowerTag.includes('misc')) return MoreHorizontal;
+    return MoreHorizontal;
   };
 
   const getTagColor = (tag: string) => {
@@ -340,7 +341,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               <View style={styles.tagsContainer}>
                 {post.tags.map((tag, index) => {
                   const tagColor = getTagColor(tag);
-                  const tagIcon = getTagIcon(tag);
+                  const TagIcon = getTagIcon(tag);
                   return (
                     <View 
                       key={index} 
@@ -349,7 +350,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                         { backgroundColor: tagColor.bg, borderColor: tagColor.border },
                       ]}
                     >
-                      <IconSymbol name={tagIcon} size={12} color={tagColor.text} style={styles.tagIcon} />
+                      <TagIcon size={16} color={tagColor.text} strokeWidth={2} />
                       <Text style={[styles.tagText, { color: tagColor.text }]}>
                         {tag}
                       </Text>
@@ -365,10 +366,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 onPress={handleLikePress}
               >
                 <Animated.View style={{ transform: [{ scale: likeScale }] }}>
-                  <IconSymbol
-                    name={localLiked ? 'heart.fill' : 'heart'}
-                    size={20}
+                  <Heart
+                    size={22}
                     color={localLiked ? '#EF4444' : '#6B7280'}
+                    fill={localLiked ? '#EF4444' : 'none'}
+                    strokeWidth={2}
                   />
                 </Animated.View>
                 <Text style={[styles.actionText, localLiked && styles.actionTextActive]}>
@@ -380,7 +382,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 style={styles.actionButton}
                 onPress={handleCommentPress}
               >
-                <IconSymbol name="message" size={20} color="#6B7280" />
+                <MessageCircle size={22} color="#6B7280" strokeWidth={2} />
                 <Text style={styles.actionText}>{post.comments}</Text>
               </Pressable>
 
@@ -388,10 +390,10 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 style={styles.actionButton}
                 onPress={handleRepostPress}
               >
-                <IconSymbol 
-                  name="arrow.2.squarepath" 
-                  size={20} 
+                <Repeat 
+                  size={22} 
                   color={isReposted ? colors.secondary : '#6B7280'} 
+                  strokeWidth={2}
                 />
                 <Text style={[styles.actionText, isReposted && styles.actionTextActive]}>
                   {localReposts}
@@ -402,7 +404,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
                 style={styles.actionButton}
                 onPress={handleSharePress}
               >
-                <IconSymbol name="paperplane" size={20} color="#6B7280" />
+                <Share2 size={22} color="#6B7280" strokeWidth={2} />
               </Pressable>
 
               <View style={styles.spacer} />
@@ -620,10 +622,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 10,
     borderWidth: 1,
-    gap: 4,
-  },
-  tagIcon: {
-    marginRight: 2,
+    gap: 6,
   },
   tagText: {
     fontSize: 12,
