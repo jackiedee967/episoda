@@ -1,5 +1,5 @@
 
-import { View, Text, StyleSheet, Image, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import * as Haptics from 'expo-haptics';
@@ -126,11 +126,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
 
   const getShowTagColor = (showTitle: string) => {
     const colors = [
-      { bg: '#E8E4FF', border: '#6B5FD8', text: '#6B5FD8' },
+      { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' },
       { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' },
       { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' },
       { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' },
-      { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' },
+      { bg: '#F3E8FF', border: '#9333EA', text: '#9333EA' },
     ];
     const index = showTitle.length % colors.length;
     return colors[index];
@@ -154,86 +154,115 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
     return { bg: '#F3F4F6', border: '#6B7280', text: '#6B7280' };
   };
 
+  const showTagColor = getShowTagColor(post.show.title);
+
   return (
     <>
       <Pressable style={styles.card} onPress={handlePostPress}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={handleUserPress} style={styles.userInfo}>
-            <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-            <View>
-              <Text style={styles.displayName}>{post.user.displayName}</Text>
-              <Text style={styles.username}>@{post.user.username}</Text>
-            </View>
-          </Pressable>
-          <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
-        </View>
+        {/* Top Section */}
+        <View style={styles.topSection}>
+          {/* Show Poster with Save Icon */}
+          <View style={styles.posterContainer}>
+            <Pressable onPress={handleShowPress}>
+              <Image source={{ uri: post.show.poster }} style={styles.poster} />
+            </Pressable>
+            <Pressable onPress={handleSavePress} style={styles.saveButton}>
+              <IconSymbol name="bookmark" size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
 
-        {/* Show Info */}
-        <Pressable onPress={handleShowPress} style={styles.showInfo}>
-          <Image source={{ uri: post.show.poster }} style={styles.poster} />
-          <View style={styles.showDetails}>
-            <Text style={styles.showTitle}>{post.show.title}</Text>
-            {post.episodes && post.episodes.length > 0 && (
-              <View style={styles.episodesContainer}>
-                {post.episodes.map((episode, index) => (
-                  <Pressable
-                    key={episode.id}
-                    onPress={() => handleEpisodePress(episode.id)}
-                    style={styles.episodeTag}
-                  >
-                    <Text style={styles.episodeTagText}>
-                      S{episode.seasonNumber}E{episode.episodeNumber}
-                    </Text>
-                  </Pressable>
+          {/* User Info and Watch Details */}
+          <View style={styles.watchInfo}>
+            <View style={styles.userRow}>
+              <Pressable onPress={handleUserPress} style={styles.userInfo}>
+                <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+                <Text style={styles.username}>{post.user.displayName}</Text>
+              </Pressable>
+              <Text style={styles.justWatched}>just watched</Text>
+            </View>
+
+            {/* Episode and Show Tags */}
+            <View style={styles.tagsRow}>
+              {post.episodes && post.episodes.length > 0 && (
+                <>
+                  {post.episodes.map((episode, index) => (
+                    <Pressable
+                      key={episode.id}
+                      onPress={() => handleEpisodePress(episode.id)}
+                      style={styles.episodeTag}
+                    >
+                      <Text style={styles.episodeTagText}>
+                        S{episode.seasonNumber}E{episode.episodeNumber}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </>
+              )}
+              <Pressable onPress={handleShowPress}>
+                <View
+                  style={[
+                    styles.showTag,
+                    {
+                      backgroundColor: showTagColor.bg,
+                      borderColor: showTagColor.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.showTagText, { color: showTagColor.text }]}>
+                    {post.show.title}
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+
+            {/* Rating */}
+            {post.rating && (
+              <View style={styles.ratingContainer}>
+                {[...Array(5)].map((_, i) => (
+                  <IconSymbol
+                    key={i}
+                    name={i < post.rating! ? 'star.fill' : 'star'}
+                    size={18}
+                    color={i < post.rating! ? '#000000' : colors.textSecondary}
+                  />
                 ))}
               </View>
             )}
           </View>
-          <Pressable onPress={handleSavePress} style={styles.saveButton}>
-            <IconSymbol name="bookmark" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </Pressable>
+        </View>
 
-        {/* Post Content */}
-        {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-        <Text style={styles.postBody}>{post.body}</Text>
+        {/* Divider - only show if there's post content */}
+        {(post.title || post.body) && <View style={styles.divider} />}
 
-        {/* Rating */}
-        {post.rating && (
-          <View style={styles.ratingContainer}>
-            {[...Array(5)].map((_, i) => (
-              <IconSymbol
-                key={i}
-                name={i < post.rating! ? 'star.fill' : 'star'}
-                size={16}
-                color={i < post.rating! ? '#FFD700' : colors.textSecondary}
-              />
-            ))}
-          </View>
-        )}
+        {/* Bottom Section - Optional Post Content */}
+        {(post.title || post.body) && (
+          <View style={styles.bottomSection}>
+            {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
+            {post.body && <Text style={styles.postBody}>{post.body}</Text>}
 
-        {/* Tags */}
-        {post.tags.length > 0 && (
-          <View style={styles.tagsContainer}>
-            {post.tags.map((tag, index) => {
-              const tagColor = getTagColor(tag);
-              return (
-                <View
-                  key={index}
-                  style={[
-                    styles.tag,
-                    {
-                      backgroundColor: tagColor.bg,
-                      borderColor: tagColor.border,
-                    },
-                  ]}
-                >
-                  {getTagIcon(tag)}
-                  <Text style={[styles.tagText, { color: tagColor.text }]}>{tag}</Text>
-                </View>
-              );
-            })}
+            {/* Post Tags */}
+            {post.tags.length > 0 && (
+              <View style={styles.postTagsContainer}>
+                {post.tags.map((tag, index) => {
+                  const tagColor = getTagColor(tag);
+                  return (
+                    <View
+                      key={index}
+                      style={[
+                        styles.postTag,
+                        {
+                          backgroundColor: tagColor.bg,
+                          borderColor: tagColor.border,
+                        },
+                      ]}
+                    >
+                      {getTagIcon(tag)}
+                      <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 
@@ -288,76 +317,97 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  header: {
+  topSection: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: 12,
     marginBottom: 12,
+  },
+  posterContainer: {
+    position: 'relative',
+  },
+  poster: {
+    width: 80,
+    height: 120,
+    borderRadius: 8,
+  },
+  saveButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  watchInfo: {
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    flexWrap: 'wrap',
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  displayName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   username: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  timestamp: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  showInfo: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  poster: {
-    width: 60,
-    height: 90,
-    borderRadius: 8,
-  },
-  showDetails: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  showTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 8,
   },
-  episodesContainer: {
+  justWatched: {
+    fontSize: 15,
+    color: colors.text,
+    marginLeft: 4,
+  },
+  tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+    marginBottom: 8,
   },
   episodeTag: {
     backgroundColor: '#E8E4FF',
     borderWidth: 1,
     borderColor: '#6B5FD8',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   episodeTagText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B5FD8',
   },
-  saveButton: {
-    padding: 4,
+  showTag: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  showTagText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 12,
+  },
+  bottomSection: {
+    marginBottom: 12,
   },
   postTitle: {
     fontSize: 18,
@@ -371,18 +421,12 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 12,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: 12,
-  },
-  tagsContainer: {
+  postTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
   },
-  tag: {
+  postTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -391,7 +435,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  tagText: {
+  postTagText: {
     fontSize: 13,
     fontWeight: '600',
   },
