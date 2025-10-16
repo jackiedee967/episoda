@@ -176,7 +176,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
               <IconSymbol 
                 name={isShowSaved ? 'bookmark.fill' : 'bookmark'} 
                 size={18} 
-                color={colors.text} 
+                color="#FFFFFF"
               />
             </Pressable>
           </View>

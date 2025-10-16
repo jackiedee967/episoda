@@ -73,3 +73,28 @@ export interface Post {
 }
 
 export type PostTag = 'spoiler alert' | 'fan theory' | 'discussion' | 'episode recap' | 'misc';
+
+export type NotificationType = 
+  | 'like' 
+  | 'comment' 
+  | 'follow' 
+  | 'repost'
+  | 'friend_follow'
+  | 'friend_like'
+  | 'friend_comment'
+  | 'friend_post';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  actor: User; // The person who performed the action
+  timestamp: Date;
+  read: boolean;
+  
+  // Optional fields depending on notification type
+  post?: Post;
+  comment?: Comment;
+  targetUser?: User; // For follow notifications
+  show?: Show;
+  episode?: Episode;
+}
