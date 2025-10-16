@@ -16,6 +16,7 @@ import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import WatchlistModal from '@/components/WatchlistModal';
 import { mockShows, mockPosts, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
+import { Episode } from '@/types';
 
 type Tab = 'friends' | 'all' | 'episodes';
 type SortBy = 'hot' | 'recent';
@@ -28,6 +29,7 @@ export default function ShowHub() {
   const [modalVisible, setModalVisible] = useState(false);
   const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [selectedEpisode, setSelectedEpisode] = useState<Episode | undefined>(undefined);
 
   const show = mockShows.find((s) => s.id === id);
   const showPosts = mockPosts.filter((p) => p.show.id === id);
@@ -51,6 +53,19 @@ export default function ShowHub() {
   const handleAddToWatchlist = (watchlistId: string, showId: string) => {
     setIsInWatchlist(true);
     console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  };
+
+  const handleLogEpisode = (episode: Episode) => {
+    setSelectedEpisode(episode);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    // Reset selected episode after modal closes
+    setTimeout(() => {
+      setSelectedEpisode(undefined);
+    }, 300);
   };
 
   const renderHeader = () => (
@@ -210,7 +225,7 @@ export default function ShowHub() {
                 style={styles.logEpisodeButton}
                 onPress={(e) => {
                   e.stopPropagation();
-                  setModalVisible(true);
+                  handleLogEpisode(episode);
                 }}
               >
                 <Text style={styles.logEpisodeButtonText}>Log</Text>
@@ -241,7 +256,12 @@ export default function ShowHub() {
           {renderFeed()}
         </ScrollView>
       </View>
-      <PostModal visible={modalVisible} onClose={() => setModalVisible(false)} preselectedShow={show} />
+      <PostModal 
+        visible={modalVisible} 
+        onClose={handleCloseModal} 
+        preselectedShow={show}
+        preselectedEpisode={selectedEpisode}
+      />
       <WatchlistModal
         visible={watchlistModalVisible}
         onClose={() => setWatchlistModalVisible(false)}

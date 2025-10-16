@@ -23,6 +23,7 @@ interface PostModalProps {
   visible: boolean;
   onClose: () => void;
   preselectedShow?: Show;
+  preselectedEpisode?: Episode;
 }
 
 type Step = 'selectShow' | 'selectEpisodes' | 'postDetails';
@@ -35,7 +36,7 @@ interface Season {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-export default function PostModal({ visible, onClose, preselectedShow }: PostModalProps) {
+export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode }: PostModalProps) {
   const { createPost, currentUser } = useData();
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
@@ -51,6 +52,42 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
   const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
   const [fadeAnim] = useState(new Animated.Value(0));
   const inputRef = useRef<TextInput>(null);
+
+  // Handle preselected show and episode
+  useEffect(() => {
+    if (visible && preselectedShow) {
+      setSelectedShow(preselectedShow);
+      
+      // Get episodes for this show and organize by season
+      const showEpisodes = mockEpisodes.filter(ep => ep.showId === preselectedShow.id);
+      const seasonMap = new Map<number, Episode[]>();
+      
+      showEpisodes.forEach(episode => {
+        if (!seasonMap.has(episode.seasonNumber)) {
+          seasonMap.set(episode.seasonNumber, []);
+        }
+        seasonMap.get(episode.seasonNumber)!.push(episode);
+      });
+
+      const seasonsData: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+        seasonNumber,
+        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+        expanded: preselectedEpisode ? preselectedEpisode.seasonNumber === seasonNumber : false,
+      }));
+
+      setSeasons(seasonsData);
+
+      // If there's a preselected episode, skip to episode selection with it selected
+      if (preselectedEpisode) {
+        setSelectedEpisodes([preselectedEpisode]);
+        setStep('selectEpisodes');
+      } else {
+        setStep('selectEpisodes');
+      }
+    } else if (visible && !preselectedShow) {
+      setStep('selectShow');
+    }
+  }, [visible, preselectedShow, preselectedEpisode]);
 
   useEffect(() => {
     if (step === 'selectShow' && visible) {
@@ -216,22 +253,20 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
           onChangeText={setSearchQuery}
         />
         <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
-          {filteredShows.map(show => (
-            <Pressable
-              key={show.id}
-              style={styles.showItem}
-              onPress={() => handleShowSelect(show)}
-            >
-              <Image source={{ uri: show.poster }} style={styles.showPoster} />
-              <View style={styles.showInfo}>
-                <Text style={styles.showTitle}>{show.title}</Text>
-                <Text style={styles.showMeta}>
-                  {show.totalSeasons} Season{show.totalSeasons !== 1 ? 's' : ''} • {show.totalEpisodes} Episodes
+          <View style={styles.showsGrid}>
+            {filteredShows.map(show => (
+              <Pressable
+                key={show.id}
+                style={styles.showGridItem}
+                onPress={() => handleShowSelect(show)}
+              >
+                <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
+                <Text style={styles.showGridTitle} numberOfLines={2}>
+                  {show.title}
                 </Text>
-              </View>
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-            </Pressable>
-          ))}
+              </Pressable>
+            ))}
+          </View>
         </ScrollView>
       </View>
     );
@@ -239,10 +274,12 @@ export default function PostModal({ visible, onClose, preselectedShow }: PostMod
 
   const renderSelectEpisodes = () => (
     <View style={styles.stepContainer}>
-      <Pressable style={styles.backButton} onPress={() => setStep('selectShow')}>
-        <IconSymbol name="chevron.left" size={20} color={colors.text} />
-        <Text style={styles.backButtonText}>Back</Text>
-      </Pressable>
+      {!preselectedShow && (
+        <Pressable style={styles.backButton} onPress={() => setStep('selectShow')}>
+          <IconSymbol name="chevron.left" size={20} color={colors.text} />
+          <Text style={styles.backButtonText}>Back</Text>
+        </Pressable>
+      )}
       <Text style={styles.stepTitle}>Select Episodes (Optional)</Text>
       <Text style={styles.stepSubtitle}>{selectedShow?.title}</Text>
       <ScrollView style={styles.episodesList} showsVerticalScrollIndicator={false}>
@@ -515,32 +552,27 @@ const styles = StyleSheet.create({
   showsList: {
     flex: 1,
   },
-  showItem: {
+  showsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 12,
-    padding: 12,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    marginBottom: 12,
   },
-  showPoster: {
-    width: 60,
-    height: 90,
+  showGridItem: {
+    width: '31%',
+    marginBottom: 16,
+  },
+  showGridPoster: {
+    width: '100%',
+    aspectRatio: 2 / 3,
     borderRadius: 8,
+    marginBottom: 8,
   },
-  showInfo: {
-    flex: 1,
-  },
-  showTitle: {
-    fontSize: 16,
+  showGridTitle: {
+    fontSize: 12,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
-  },
-  showMeta: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    textAlign: 'center',
   },
   episodesList: {
     flex: 1,

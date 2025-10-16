@@ -1,6 +1,13 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  TouchableOpacity,
+} from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -18,8 +25,8 @@ export default function EpisodeHub() {
   const [modalVisible, setModalVisible] = useState(false);
 
   const episode = mockEpisodes.find((e) => e.id === id);
-  const show = episode ? mockShows.find((s) => s.id === episode.showId) : null;
-  const episodePosts = mockPosts.filter((p) =>
+  const show = episode ? mockShows.find((s) => s.id === episode.showId) : undefined;
+  const episodePosts = mockPosts.filter((p) => 
     p.episodes?.some((e) => e.id === id)
   );
 
@@ -31,12 +38,15 @@ export default function EpisodeHub() {
     );
   }
 
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
-      <Text style={styles.episodeNumber}>
-        Season {episode.seasonNumber} • Episode {episode.episodeNumber}
+      <Text style={styles.episodeTitle}>
+        S{episode.seasonNumber}E{episode.episodeNumber}: {episode.title}
       </Text>
-      <Text style={styles.episodeTitle}>{episode.title}</Text>
       <Text style={styles.showTitle}>{show.title}</Text>
       <Text style={styles.episodeDescription}>{episode.description}</Text>
       <View style={styles.statsContainer}>
@@ -45,7 +55,7 @@ export default function EpisodeHub() {
           <Text style={styles.statText}>{episode.rating.toFixed(1)}</Text>
         </View>
         <View style={styles.stat}>
-          <IconSymbol name="bubble.left.fill" size={16} color={colors.text} />
+          <IconSymbol name="bubble.left.fill" size={16} color={colors.textSecondary} />
           <Text style={styles.statText}>{episode.postCount} posts</Text>
         </View>
       </View>
@@ -55,7 +65,7 @@ export default function EpisodeHub() {
   const renderPostButton = () => (
     <Pressable style={styles.postButton} onPress={() => setModalVisible(true)}>
       <IconSymbol name="plus.circle.fill" size={24} color={colors.secondary} />
-      <Text style={styles.postButtonText}>Log This Episode</Text>
+      <Text style={styles.postButtonText}>Log Episode</Text>
     </Pressable>
   );
 
@@ -100,17 +110,9 @@ export default function EpisodeHub() {
   const renderFeed = () => (
     <View style={styles.feed}>
       {renderSortOptions()}
-      {episodePosts.length > 0 ? (
-        episodePosts.map((post) => <PostCard key={post.id} post={post} />)
-      ) : (
-        <View style={styles.emptyState}>
-          <IconSymbol name="bubble.left" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateTitle}>No posts yet</Text>
-          <Text style={styles.emptyStateText}>
-            Be the first to share your thoughts about this episode!
-          </Text>
-        </View>
-      )}
+      {episodePosts.map((post) => (
+        <PostCard key={post.id} post={post} />
+      ))}
     </View>
   );
 
@@ -131,7 +133,12 @@ export default function EpisodeHub() {
           {renderFeed()}
         </ScrollView>
       </View>
-      <PostModal visible={modalVisible} onClose={() => setModalVisible(false)} preselectedShow={show} />
+      <PostModal 
+        visible={modalVisible} 
+        onClose={handleCloseModal} 
+        preselectedShow={show}
+        preselectedEpisode={episode}
+      />
     </>
   );
 }
@@ -144,12 +151,6 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: colors.card,
   },
-  episodeNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
   episodeTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -158,14 +159,15 @@ const styles = StyleSheet.create({
   },
   showTitle: {
     fontSize: 16,
+    fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
   },
   episodeDescription: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textSecondary,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   statText: {
     fontSize: 14,
@@ -244,23 +246,5 @@ const styles = StyleSheet.create({
   feed: {
     padding: 16,
     paddingBottom: 100,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
   },
 });
