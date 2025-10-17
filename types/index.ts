@@ -7,6 +7,16 @@ export interface User {
   bio?: string;
   following?: string[];
   followers?: string[];
+  episodesWatchedCount?: number;
+  totalLikesReceived?: number;
+  isOnline?: boolean;
+  lastActiveAt?: Date;
+  socialLinks?: SocialLink[];
+}
+
+export interface SocialLink {
+  platform: 'instagram' | 'tiktok' | 'x' | 'spotify' | 'website';
+  url: string;
 }
 
 export interface Show {
@@ -87,14 +97,40 @@ export type NotificationType =
 export interface Notification {
   id: string;
   type: NotificationType;
-  actor: User; // The person who performed the action
+  actor: User;
   timestamp: Date;
   read: boolean;
-  
-  // Optional fields depending on notification type
   post?: Post;
   comment?: Comment;
-  targetUser?: User; // For follow notifications
+  targetUser?: User;
   show?: Show;
   episode?: Episode;
 }
+
+export interface Playlist {
+  id: string;
+  userId: string;
+  name: string;
+  isPublic: boolean;
+  showCount: number;
+  shows?: string[];
+  createdAt: Date;
+}
+
+export interface NotificationPreferences {
+  newFollower: boolean;
+  postLiked: boolean;
+  postCommented: boolean;
+  commentReplied: boolean;
+  mentioned: boolean;
+  friendPosted: boolean;
+  friendActivity: boolean;
+}
+
+export interface BlockedUser {
+  id: string;
+  blockedUser: User;
+  blockedAt: Date;
+}
+
+export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'impersonation' | 'other';
