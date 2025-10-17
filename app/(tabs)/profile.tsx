@@ -18,7 +18,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { posts, followUser, unfollowUser, isFollowing } = useData();
+  const { posts, followUser, unfollowUser, isFollowing, getUserReposts } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -38,7 +38,17 @@ export default function ProfileScreen() {
 
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
 
+  // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
+  
+  // Get user's reposts
+  const userReposts = getUserReposts();
+  
+  // Combine and sort by timestamp
+  const allUserActivity = [
+    ...userPosts.map(post => ({ post, isRepost: false, timestamp: post.timestamp })),
+    ...userReposts.map(post => ({ post, isRepost: true, timestamp: post.timestamp }))
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -150,8 +160,15 @@ export default function ProfileScreen() {
 
   const renderPostsTab = () => (
     <View style={styles.tabContent}>
-      {userPosts.length > 0 ? (
-        userPosts.map((post) => <PostCard key={post.id} post={post} />)
+      {allUserActivity.length > 0 ? (
+        allUserActivity.map((item, index) => (
+          <PostCard 
+            key={`${item.post.id}-${index}`} 
+            post={item.post}
+            isRepost={item.isRepost}
+            repostedBy={item.isRepost ? { id: currentUser.id, displayName: currentUser.displayName } : undefined}
+          />
+        ))
       ) : (
         <View style={styles.emptyState}>
           <IconSymbol name="bubble.left" size={48} color={colors.textSecondary} />

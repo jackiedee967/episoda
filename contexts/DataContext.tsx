@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Post, Show, User } from '@/types';
 import { mockPosts, mockUsers, currentUser as mockCurrentUser } from '@/data/mockData';
+import { supabase } from '@/app/integrations/supabase/client';
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -11,6 +12,7 @@ const STORAGE_KEYS = {
   USER_DATA: '@app/user_data',
   FOLLOWING: '@app/following',
   COMMENT_COUNTS: '@app/comment_counts',
+  REPOSTS: '@app/reposts',
 };
 
 export interface Watchlist {
@@ -24,6 +26,12 @@ export interface Watchlist {
 interface UserData {
   following: string[];
   followers: string[];
+}
+
+interface RepostData {
+  postId: string;
+  userId: string;
+  timestamp: Date;
 }
 
 interface DataContextType {
@@ -44,6 +52,8 @@ interface DataContextType {
   unrepostPost: (postId: string) => Promise<void>;
   updateCommentCount: (postId: string, count: number) => Promise<void>;
   getPost: (postId: string) => Post | undefined;
+  hasUserReposted: (postId: string) => boolean;
+  getUserReposts: () => Post[];
   
   // User data
   currentUser: User;
@@ -62,8 +72,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<User>(mockCurrentUser);
   const [isLoading, setIsLoading] = useState(true);
+  const [userReposts, setUserReposts] = useState<RepostData[]>([]);
 
-  // Initialize data from AsyncStorage
+  // Initialize data from AsyncStorage and Supabase
   useEffect(() => {
     loadData();
   }, []);
@@ -76,7 +87,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const watchlistsData = await AsyncStorage.getItem(STORAGE_KEYS.WATCHLISTS);
       if (watchlistsData) {
         const parsedWatchlists = JSON.parse(watchlistsData);
-        // Convert date strings back to Date objects
         const watchlistsWithDates = parsedWatchlists.map((wl: any) => ({
           ...wl,
           createdAt: new Date(wl.createdAt),
@@ -85,7 +95,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setWatchlists(watchlistsWithDates);
         console.log('Loaded watchlists from storage:', watchlistsWithDates.length);
       } else {
-        // Initialize with default watchlist
         const defaultWatchlist: Watchlist = {
           id: 'wl-default',
           name: 'Shows to Watch',
@@ -102,7 +111,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const postsData = await AsyncStorage.getItem(STORAGE_KEYS.POSTS);
       if (postsData) {
         const parsedPosts = JSON.parse(postsData);
-        // Convert date strings back to Date objects
         const postsWithDates = parsedPosts.map((post: any) => ({
           ...post,
           timestamp: new Date(post.timestamp),
@@ -110,7 +118,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setPosts(postsWithDates);
         console.log('Loaded posts from storage:', postsWithDates.length);
       } else {
-        // Initialize with mock posts
         setPosts(mockPosts);
         await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(mockPosts));
         console.log('Initialized with mock posts');
@@ -127,7 +134,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
         console.log('Loaded user data from storage');
       } else {
-        // Initialize with mock user data
         const initialUserData: UserData = {
           following: mockCurrentUser.following || [],
           followers: mockCurrentUser.followers || [],
@@ -135,10 +141,59 @@ export function DataProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(initialUserData));
         console.log('Initialized with mock user data');
       }
+
+      // Load reposts from Supabase
+      await loadRepostsFromSupabase();
+      
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadRepostsFromSupabase = async () => {
+    try {
+      // Get current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        console.log('No authenticated user, using mock user ID');
+        // For now, use mock user ID
+        const mockUserId = mockCurrentUser.id;
+        await loadRepostsForUser(mockUserId);
+        return;
+      }
+
+      await loadRepostsForUser(authUser.id);
+    } catch (error) {
+      console.error('Error loading reposts from Supabase:', error);
+    }
+  };
+
+  const loadRepostsForUser = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('reposts')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error fetching reposts:', error);
+        return;
+      }
+
+      if (data) {
+        const repostData: RepostData[] = data.map((r: any) => ({
+          postId: r.original_post_id,
+          userId: r.user_id,
+          timestamp: new Date(r.created_at),
+        }));
+        setUserReposts(repostData);
+        console.log('Loaded reposts from Supabase:', repostData.length);
+      }
+    } catch (error) {
+      console.error('Error in loadRepostsForUser:', error);
     }
   };
 
@@ -261,35 +316,138 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const repostPost = async (postId: string): Promise<void> => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          reposts: post.reposts + 1,
-        };
+    try {
+      console.log('=== REPOST POST START ===');
+      console.log('Post ID:', postId);
+      
+      // Get current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      let userId = mockCurrentUser.id;
+      if (!authError && authUser) {
+        userId = authUser.id;
+        console.log('Using authenticated user ID:', userId);
+      } else {
+        console.log('Using mock user ID:', userId);
       }
-      return post;
-    });
 
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log(`Reposted post ${postId}`);
+      // Check if already reposted
+      const alreadyReposted = userReposts.some(r => r.postId === postId);
+      if (alreadyReposted) {
+        console.log('Already reposted, skipping');
+        return;
+      }
+
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('reposts')
+        .insert({
+          user_id: userId,
+          original_post_id: postId,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error inserting repost into Supabase:', error);
+        throw error;
+      }
+
+      console.log('Repost saved to Supabase:', data);
+
+      // Update local state
+      const newRepost: RepostData = {
+        postId,
+        userId,
+        timestamp: new Date(),
+      };
+      const updatedReposts = [...userReposts, newRepost];
+      setUserReposts(updatedReposts);
+
+      // Update post repost count
+      const updatedPosts = posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            reposts: post.reposts + 1,
+          };
+        }
+        return post;
+      });
+
+      setPosts(updatedPosts);
+      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      
+      console.log('Repost count updated, new count:', updatedPosts.find(p => p.id === postId)?.reposts);
+      console.log('=== REPOST POST END ===');
+    } catch (error) {
+      console.error('Error in repostPost:', error);
+    }
   };
 
   const unrepostPost = async (postId: string): Promise<void> => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          reposts: Math.max(0, post.reposts - 1),
-        };
+    try {
+      console.log('=== UNREPOST POST START ===');
+      console.log('Post ID:', postId);
+      
+      // Get current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      let userId = mockCurrentUser.id;
+      if (!authError && authUser) {
+        userId = authUser.id;
+        console.log('Using authenticated user ID:', userId);
+      } else {
+        console.log('Using mock user ID:', userId);
       }
-      return post;
-    });
 
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log(`Unreposted post ${postId}`);
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('reposts')
+        .delete()
+        .eq('user_id', userId)
+        .eq('original_post_id', postId);
+
+      if (error) {
+        console.error('Error deleting repost from Supabase:', error);
+        throw error;
+      }
+
+      console.log('Repost deleted from Supabase');
+
+      // Update local state
+      const updatedReposts = userReposts.filter(r => r.postId !== postId);
+      setUserReposts(updatedReposts);
+
+      // Update post repost count
+      const updatedPosts = posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            reposts: Math.max(0, post.reposts - 1),
+          };
+        }
+        return post;
+      });
+
+      setPosts(updatedPosts);
+      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      
+      console.log('Repost count updated, new count:', updatedPosts.find(p => p.id === postId)?.reposts);
+      console.log('=== UNREPOST POST END ===');
+    } catch (error) {
+      console.error('Error in unrepostPost:', error);
+    }
+  };
+
+  const hasUserReposted = (postId: string): boolean => {
+    return userReposts.some(r => r.postId === postId);
+  };
+
+  const getUserReposts = (): Post[] => {
+    // Get all posts that the user has reposted
+    const repostedPostIds = userReposts.map(r => r.postId);
+    return posts.filter(post => repostedPostIds.includes(post.id));
   };
 
   const updateCommentCount = async (postId: string, count: number): Promise<void> => {
@@ -371,6 +529,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     unrepostPost,
     updateCommentCount,
     getPost,
+    hasUserReposted,
+    getUserReposts,
     
     // User data
     currentUser,

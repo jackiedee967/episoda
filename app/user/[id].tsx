@@ -61,7 +61,14 @@ export default function UserProfile() {
   ]);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
+  
+  // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === id);
+  
+  // For now, we can't get other users' reposts from Supabase without their auth
+  // So we'll only show original posts for other users
+  // When viewing your own profile, reposts are shown via the profile.tsx component
+  
   const isCurrentUser = id === currentUser.id;
   const following = isFollowing(id as string);
 
@@ -130,10 +137,7 @@ export default function UserProfile() {
       }
 
       console.log('Report submitted successfully:', data);
-      
-      // Note: Reports are typically private and should NOT show up on public feeds
-      // If you want to track your own reports, you could create a separate "my reports" section
-      // in settings or profile, but they should not be public posts
+      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
       
     } catch (error) {
       console.error('Error in handleReport:', error);
@@ -171,9 +175,7 @@ export default function UserProfile() {
 
   const handlePlaylistPress = (playlist: Playlist) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Navigate to playlist detail screen (to be implemented)
     console.log('Opening playlist:', playlist.name);
-    // For now, show an alert with the shows in the playlist
     const playlistShows = mockShows.filter(show => playlist.shows?.includes(show.id));
     const showTitles = playlistShows.map(show => show.title).join('\n');
     Alert.alert(

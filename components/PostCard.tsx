@@ -22,12 +22,14 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare, isRepost, repostedBy }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost, getPost, watchlists, isShowInWatchlist } = useData();
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost, watchlists, isShowInWatchlist, hasUserReposted } = useData();
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
-  const [isReposted, setIsReposted] = useState(false);
   
   // Get the latest post data from context to ensure we have current like/comment counts
   const latestPost = getPost(post.id) || post;
+  
+  // Check if user has reposted this post
+  const isReposted = hasUserReposted(latestPost.id);
 
   // Check if show is in any watchlist
   const isShowSaved = watchlists.some(wl => isShowInWatchlist(wl.id, latestPost.show.id));
@@ -99,12 +101,14 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
+      console.log('Repost button clicked, current state:', isReposted);
+      
       if (isReposted) {
+        console.log('Unreposting...');
         await unrepostPost(latestPost.id);
-        setIsReposted(false);
       } else {
+        console.log('Reposting...');
         await repostPost(latestPost.id);
-        setIsReposted(true);
       }
       
       if (onRepost) {
@@ -308,6 +312,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
             <Repeat
               size={20}
               color={isReposted ? '#10B981' : colors.textSecondary}
+              fill={isReposted ? '#10B981' : 'none'}
             />
             <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
               {latestPost.reposts}
