@@ -18,7 +18,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { posts, followUser, unfollowUser, isFollowing, getUserReposts } = useData();
+  const { posts, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -41,10 +41,11 @@ export default function ProfileScreen() {
   // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
   
-  // Get user's reposts
-  const userReposts = getUserReposts();
+  // Get all reposts and filter for current user's reposts
+  const allReposts = getAllReposts();
+  const userReposts = allReposts.filter(repost => repost.repostedBy.id === currentUser.id);
   
-  // Combine and sort by timestamp
+  // Combine and sort by timestamp (using repost timestamp for reposts, not original post timestamp)
   const allUserActivity = [
     ...userPosts.map(post => ({ 
       post, 
@@ -52,10 +53,10 @@ export default function ProfileScreen() {
       timestamp: post.timestamp,
       repostedBy: undefined
     })),
-    ...userReposts.map(post => ({ 
-      post, 
+    ...userReposts.map(repost => ({ 
+      post: repost.post, 
       isRepost: true, 
-      timestamp: post.timestamp,
+      timestamp: repost.timestamp, // Use the repost timestamp, not the original post timestamp
       repostedBy: { id: currentUser.id, displayName: currentUser.displayName }
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());

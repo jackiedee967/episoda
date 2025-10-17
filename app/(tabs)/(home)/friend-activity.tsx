@@ -38,7 +38,7 @@ export default function FriendActivityFeed() {
     currentUser.following?.includes(repost.repostedBy.id)
   );
 
-  // Combine original posts and reposts
+  // Combine original posts and reposts (using repost timestamp for reposts, not original post timestamp)
   const allActivity = [
     ...friendPosts.map(post => ({
       post,
@@ -50,13 +50,14 @@ export default function FriendActivityFeed() {
       post: repost.post,
       isRepost: true,
       repostedBy: { id: repost.repostedBy.id, displayName: repost.repostedBy.displayName },
-      timestamp: repost.timestamp,
+      timestamp: repost.timestamp, // Use the repost timestamp, not the original post timestamp
     })),
   ];
 
   // Sort posts based on selected sort option
   const sortedActivity = [...allActivity].sort((a, b) => {
     if (sortBy === 'recent') {
+      // Sort by the activity timestamp (repost time for reposts, post time for original posts)
       return b.timestamp.getTime() - a.timestamp.getTime();
     } else {
       // Hot: sort by engagement (likes + comments + reposts)
