@@ -22,13 +22,14 @@ import { useData } from '@/contexts/DataContext';
 import { User, Playlist, ReportReason } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe, BanIcon } from 'lucide-react-native';
+import { supabase } from '@/app/integrations/supabase/client';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function UserProfile() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { posts, followUser, unfollowUser, isFollowing } = useData();
+  const { posts, followUser, unfollowUser, isFollowing, currentUser: contextCurrentUser } = useData();
 
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -96,8 +97,48 @@ export default function UserProfile() {
     }
   };
 
-  const handleReport = (reason: ReportReason, details: string) => {
-    console.log('Report submitted:', { userId: id, reason, details });
+  const handleReport = async (reason: ReportReason, details: string) => {
+    try {
+      console.log('Submitting report:', { userId: id, reason, details });
+      
+      // Get the current authenticated user
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        console.error('Error getting authenticated user:', authError);
+        Alert.alert('Error', 'You must be logged in to report users.');
+        return;
+      }
+
+      // Insert the report into the database
+      const { data, error } = await supabase
+        .from('reports')
+        .insert({
+          reporter_id: authUser.id,
+          reported_user_id: id as string,
+          reason: reason,
+          details: details || null,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error submitting report:', error);
+        Alert.alert('Error', 'Failed to submit report. Please try again.');
+        return;
+      }
+
+      console.log('Report submitted successfully:', data);
+      
+      // Note: Reports are typically private and should NOT show up on public feeds
+      // If you want to track your own reports, you could create a separate "my reports" section
+      // in settings or profile, but they should not be public posts
+      
+    } catch (error) {
+      console.error('Error in handleReport:', error);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    }
   };
 
   const handleShowFollowers = () => {
