@@ -16,9 +16,11 @@ interface PostCardProps {
   onComment?: () => void;
   onRepost?: () => void;
   onShare?: () => void;
+  isRepost?: boolean;
+  repostedBy?: { id: string; displayName: string };
 }
 
-export default function PostCard({ post, onLike, onComment, onRepost, onShare }: PostCardProps) {
+export default function PostCard({ post, onLike, onComment, onRepost, onShare, isRepost, repostedBy }: PostCardProps) {
   const router = useRouter();
   const { likePost, unlikePost, repostPost, unrepostPost, getPost, watchlists, isShowInWatchlist } = useData();
   const [showWatchlistModal, setShowWatchlistModal] = useState(false);
@@ -165,6 +167,14 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare }:
   return (
     <>
       <Pressable style={styles.card} onPress={handlePostPress}>
+        {/* Repost Header */}
+        {isRepost && repostedBy && (
+          <View style={styles.repostHeader}>
+            <Repeat size={14} color={colors.textSecondary} />
+            <Text style={styles.repostText}>{repostedBy.displayName} reposted</Text>
+          </View>
+        )}
+
         {/* Top Section */}
         <View style={styles.topSection}>
           {/* Show Poster with Save Icon */}
@@ -326,6 +336,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+  },
+  repostHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
+  repostText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   topSection: {
     flexDirection: 'row',

@@ -21,7 +21,7 @@ import { mockUsers, currentUser, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { User, Playlist, ReportReason } from '@/types';
 import * as Haptics from 'expo-haptics';
-import { Instagram, Music, Globe, Shield, Flag, X as XIcon } from 'lucide-react-native';
+import { Instagram, Music, Globe, BanIcon } from 'lucide-react-native';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -35,7 +35,6 @@ export default function UserProfile() {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
   const [showBlockReportModal, setShowBlockReportModal] = useState(false);
-  const [blockReportType, setBlockReportType] = useState<'block' | 'report'>('block');
   const [isBlocked, setIsBlocked] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
   const [showsPrivate, setShowsPrivate] = useState(false);
@@ -129,6 +128,20 @@ export default function UserProfile() {
     Alert.alert('Share Playlist', 'Deep link copied to clipboard!');
   };
 
+  const handlePlaylistPress = (playlist: Playlist) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Navigate to playlist detail screen (to be implemented)
+    console.log('Opening playlist:', playlist.name);
+    // For now, show an alert with the shows in the playlist
+    const playlistShows = mockShows.filter(show => playlist.shows?.includes(show.id));
+    const showTitles = playlistShows.map(show => show.title).join('\n');
+    Alert.alert(
+      playlist.name,
+      showTitles || 'No shows in this playlist yet',
+      [{ text: 'OK' }]
+    );
+  };
+
   const renderOnlineStatus = () => {
     if (isCurrentUser) return null;
 
@@ -151,20 +164,14 @@ export default function UserProfile() {
         <Pressable
           style={[styles.actionButton, isBlocked && styles.actionButtonBlocked]}
           onPress={() => {
-            setBlockReportType('block');
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setShowBlockReportModal(true);
           }}
         >
-          <Shield size={20} color={isBlocked ? '#FF3B30' : colors.text} />
-        </Pressable>
-        <Pressable
-          style={styles.actionButton}
-          onPress={() => {
-            setBlockReportType('report');
-            setShowBlockReportModal(true);
-          }}
-        >
-          <Flag size={20} color={colors.text} />
+          <Image 
+            source={require('@/assets/images/6301ea24-0c77-488f-9baa-c180e58d5023.png')} 
+            style={styles.prohibitionIcon}
+          />
         </Pressable>
       </View>
     );
@@ -222,7 +229,7 @@ export default function UserProfile() {
             >
               {link.platform === 'instagram' && <Instagram size={24} color={colors.text} />}
               {link.platform === 'tiktok' && <Music size={24} color={colors.text} />}
-              {link.platform === 'x' && <XIcon size={24} color={colors.text} />}
+              {link.platform === 'x' && <IconSymbol name="xmark" size={24} color={colors.text} />}
               {link.platform === 'spotify' && <Music size={24} color={colors.text} />}
               {link.platform === 'website' && <Globe size={24} color={colors.text} />}
             </Pressable>
@@ -408,7 +415,11 @@ export default function UserProfile() {
       {playlists.length > 0 ? (
         <>
           {playlists.map((playlist) => (
-            <View key={playlist.id} style={styles.playlistItem}>
+            <Pressable
+              key={playlist.id}
+              style={styles.playlistItem}
+              onPress={() => handlePlaylistPress(playlist)}
+            >
               <View style={styles.playlistInfo}>
                 <Text style={styles.playlistName}>{playlist.name}</Text>
                 <Text style={styles.playlistCount}>{playlist.showCount} shows</Text>
@@ -417,7 +428,10 @@ export default function UserProfile() {
                 <View style={styles.playlistActions}>
                   <Pressable
                     style={styles.playlistActionButton}
-                    onPress={() => handlePlaylistToggle(playlist.id)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handlePlaylistToggle(playlist.id);
+                    }}
                   >
                     <Text style={styles.playlistActionText}>
                       {playlist.isPublic ? 'Public' : 'Private'}
@@ -425,13 +439,17 @@ export default function UserProfile() {
                   </Pressable>
                   <Pressable
                     style={styles.playlistActionButton}
-                    onPress={() => handleSharePlaylist(playlist.id)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleSharePlaylist(playlist.id);
+                    }}
                   >
                     <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
                   </Pressable>
                 </View>
               )}
-            </View>
+              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+            </Pressable>
           ))}
           {isCurrentUser && (
             <Pressable style={styles.addPlaylistButton}>
@@ -495,7 +513,6 @@ export default function UserProfile() {
       <BlockReportModal
         visible={showBlockReportModal}
         onClose={() => setShowBlockReportModal(false)}
-        type={blockReportType}
         username={user.username}
         onBlock={handleBlock}
         onReport={handleReport}
@@ -549,7 +566,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 16,
-    gap: 8,
   },
   actionButton: {
     width: 40,
@@ -564,6 +580,11 @@ const styles = StyleSheet.create({
   actionButtonBlocked: {
     backgroundColor: '#FF3B3020',
     borderColor: '#FF3B30',
+  },
+  prohibitionIcon: {
+    width: 24,
+    height: 24,
+    tintColor: colors.text,
   },
   avatar: {
     width: 100,
@@ -659,6 +680,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
   },
   followingButton: {
     backgroundColor: colors.card,
@@ -840,6 +863,7 @@ const styles = StyleSheet.create({
   playlistActions: {
     flexDirection: 'row',
     gap: 8,
+    marginRight: 8,
   },
   playlistActionButton: {
     paddingHorizontal: 12,

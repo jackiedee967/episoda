@@ -73,7 +73,6 @@ export default function ProfileScreen() {
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
-        <Text style={styles.title}>Profile</Text>
         <Pressable
           style={styles.settingsButton}
           onPress={() => {
@@ -235,13 +234,8 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginBottom: 24,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
   },
   settingsButton: {
     padding: 8,

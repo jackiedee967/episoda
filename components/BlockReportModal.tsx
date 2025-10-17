@@ -16,11 +16,11 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { ReportReason } from '@/types';
 import * as Haptics from 'expo-haptics';
+import { Shield, Flag } from 'lucide-react-native';
 
 interface BlockReportModalProps {
   visible: boolean;
   onClose: () => void;
-  type: 'block' | 'report';
   username: string;
   onBlock: () => void;
   onReport: (reason: ReportReason, details: string) => void;
@@ -31,12 +31,12 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 export default function BlockReportModal({
   visible,
   onClose,
-  type,
   username,
   onBlock,
   onReport,
 }: BlockReportModalProps) {
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const [selectedAction, setSelectedAction] = useState<'block' | 'report' | null>(null);
   const [selectedReason, setSelectedReason] = useState<ReportReason>('spam');
   const [details, setDetails] = useState('');
 
@@ -54,8 +54,12 @@ export default function BlockReportModal({
         duration: 250,
         useNativeDriver: true,
       }).start();
-      setDetails('');
-      setSelectedReason('spam');
+      // Reset state when modal closes
+      setTimeout(() => {
+        setSelectedAction(null);
+        setDetails('');
+        setSelectedReason('spam');
+      }, 300);
     }
   }, [visible]);
 
@@ -79,12 +83,10 @@ export default function BlockReportModal({
   };
 
   const handleReport = () => {
-    if (type === 'report') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onReport(selectedReason, details);
-      onClose();
-      Alert.alert('Report Submitted', 'Thank you for helping keep our community safe.');
-    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onReport(selectedReason, details);
+    onClose();
+    Alert.alert('Report Submitted', 'Thank you for helping keep our community safe.');
   };
 
   const reportReasons: { value: ReportReason; label: string }[] = [
@@ -94,6 +96,139 @@ export default function BlockReportModal({
     { value: 'impersonation', label: 'Impersonation' },
     { value: 'other', label: 'Other' },
   ];
+
+  const renderActionSelection = () => (
+    <View style={styles.content}>
+      <Text style={styles.description}>What would you like to do?</Text>
+      
+      <Pressable
+        style={styles.actionOption}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setSelectedAction('block');
+        }}
+      >
+        <View style={styles.actionIconContainer}>
+          <Shield size={24} color="#FF3B30" />
+        </View>
+        <View style={styles.actionTextContainer}>
+          <Text style={styles.actionTitle}>Block @{username}</Text>
+          <Text style={styles.actionSubtitle}>
+            They won&apos;t be able to see your profile or posts
+          </Text>
+        </View>
+        <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+      </Pressable>
+
+      <Pressable
+        style={styles.actionOption}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setSelectedAction('report');
+        }}
+      >
+        <View style={styles.actionIconContainer}>
+          <Flag size={24} color={colors.text} />
+        </View>
+        <View style={styles.actionTextContainer}>
+          <Text style={styles.actionTitle}>Report @{username}</Text>
+          <Text style={styles.actionSubtitle}>
+            Report inappropriate behavior or content
+          </Text>
+        </View>
+        <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+      </Pressable>
+    </View>
+  );
+
+  const renderBlockScreen = () => (
+    <View style={styles.content}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setSelectedAction(null);
+        }}
+      >
+        <IconSymbol name="chevron.left" size={20} color={colors.text} />
+        <Text style={styles.backButtonText}>Back</Text>
+      </Pressable>
+
+      <Text style={styles.description}>
+        Blocking @{username} will:
+      </Text>
+      <View style={styles.bulletList}>
+        <Text style={styles.bulletItem}>• Remove them from your followers</Text>
+        <Text style={styles.bulletItem}>• Hide all their content from you</Text>
+        <Text style={styles.bulletItem}>• Hide your content from them</Text>
+        <Text style={styles.bulletItem}>• Prevent them from following you</Text>
+      </View>
+      <Pressable style={styles.blockButton} onPress={handleBlock}>
+        <Text style={styles.blockButtonText}>Block @{username}</Text>
+      </Pressable>
+    </View>
+  );
+
+  const renderReportScreen = () => (
+    <View style={styles.content}>
+      <Pressable
+        style={styles.backButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setSelectedAction(null);
+        }}
+      >
+        <IconSymbol name="chevron.left" size={20} color={colors.text} />
+        <Text style={styles.backButtonText}>Back</Text>
+      </Pressable>
+
+      <Text style={styles.description}>
+        Why are you reporting @{username}?
+      </Text>
+      <View style={styles.reasonsList}>
+        {reportReasons.map((reason) => (
+          <Pressable
+            key={reason.value}
+            style={[
+              styles.reasonItem,
+              selectedReason === reason.value && styles.selectedReasonItem,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSelectedReason(reason.value);
+            }}
+          >
+            <View
+              style={[
+                styles.radioButton,
+                selectedReason === reason.value && styles.radioButtonSelected,
+              ]}
+            >
+              {selectedReason === reason.value && (
+                <View style={styles.radioButtonInner} />
+              )}
+            </View>
+            <Text style={styles.reasonLabel}>{reason.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.label}>Additional Details (Optional)</Text>
+      <TextInput
+        style={styles.textArea}
+        value={details}
+        onChangeText={setDetails}
+        placeholder="Provide more information about this report..."
+        placeholderTextColor={colors.textSecondary}
+        multiline
+        numberOfLines={4}
+      />
+
+      <Pressable style={styles.reportButton} onPress={handleReport}>
+        <Text style={styles.reportButtonText}>Submit Report</Text>
+      </Pressable>
+    </View>
+  );
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -109,7 +244,11 @@ export default function BlockReportModal({
         >
           <View style={styles.header}>
             <Text style={styles.title}>
-              {type === 'block' ? 'Block User' : 'Report User'}
+              {selectedAction === 'block' 
+                ? 'Block User' 
+                : selectedAction === 'report' 
+                ? 'Report User' 
+                : 'User Actions'}
             </Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
               <IconSymbol name="xmark" size={24} color={colors.text} />
@@ -117,70 +256,9 @@ export default function BlockReportModal({
           </View>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            {type === 'block' ? (
-              <View style={styles.content}>
-                <Text style={styles.description}>
-                  Blocking @{username} will:
-                </Text>
-                <View style={styles.bulletList}>
-                  <Text style={styles.bulletItem}>• Remove them from your followers</Text>
-                  <Text style={styles.bulletItem}>• Hide all their content from you</Text>
-                  <Text style={styles.bulletItem}>• Hide your content from them</Text>
-                  <Text style={styles.bulletItem}>• Prevent them from following you</Text>
-                </View>
-                <Pressable style={styles.blockButton} onPress={handleBlock}>
-                  <Text style={styles.blockButtonText}>Block @{username}</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.content}>
-                <Text style={styles.description}>
-                  Why are you reporting @{username}?
-                </Text>
-                <View style={styles.reasonsList}>
-                  {reportReasons.map((reason) => (
-                    <Pressable
-                      key={reason.value}
-                      style={[
-                        styles.reasonItem,
-                        selectedReason === reason.value && styles.selectedReasonItem,
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setSelectedReason(reason.value);
-                      }}
-                    >
-                      <View
-                        style={[
-                          styles.radioButton,
-                          selectedReason === reason.value && styles.radioButtonSelected,
-                        ]}
-                      >
-                        {selectedReason === reason.value && (
-                          <View style={styles.radioButtonInner} />
-                        )}
-                      </View>
-                      <Text style={styles.reasonLabel}>{reason.label}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <Text style={styles.label}>Additional Details (Optional)</Text>
-                <TextInput
-                  style={styles.textArea}
-                  value={details}
-                  onChangeText={setDetails}
-                  placeholder="Provide more information about this report..."
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                  numberOfLines={4}
-                />
-
-                <Pressable style={styles.reportButton} onPress={handleReport}>
-                  <Text style={styles.reportButtonText}>Submit Report</Text>
-                </Pressable>
-              </View>
-            )}
+            {!selectedAction && renderActionSelection()}
+            {selectedAction === 'block' && renderBlockScreen()}
+            {selectedAction === 'report' && renderReportScreen()}
           </ScrollView>
         </Animated.View>
       </View>
@@ -230,6 +308,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginBottom: 16,
+    fontWeight: '600',
+  },
+  actionOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  actionTextContainer: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: colors.text,
+    marginLeft: 4,
   },
   bulletList: {
     marginBottom: 24,
