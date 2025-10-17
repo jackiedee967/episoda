@@ -46,9 +46,23 @@ export default function ProfileScreen() {
   
   // Combine and sort by timestamp
   const allUserActivity = [
-    ...userPosts.map(post => ({ post, isRepost: false, timestamp: post.timestamp })),
-    ...userReposts.map(post => ({ post, isRepost: true, timestamp: post.timestamp }))
+    ...userPosts.map(post => ({ 
+      post, 
+      isRepost: false, 
+      timestamp: post.timestamp,
+      repostedBy: undefined
+    })),
+    ...userReposts.map(post => ({ 
+      post, 
+      isRepost: true, 
+      timestamp: post.timestamp,
+      repostedBy: { id: currentUser.id, displayName: currentUser.displayName }
+    }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+  console.log('Profile - User posts:', userPosts.length);
+  console.log('Profile - User reposts:', userReposts.length);
+  console.log('Profile - Total activity:', allUserActivity.length);
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -163,10 +177,10 @@ export default function ProfileScreen() {
       {allUserActivity.length > 0 ? (
         allUserActivity.map((item, index) => (
           <PostCard 
-            key={`${item.post.id}-${index}`} 
+            key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} 
             post={item.post}
             isRepost={item.isRepost}
-            repostedBy={item.isRepost ? { id: currentUser.id, displayName: currentUser.displayName } : undefined}
+            repostedBy={item.repostedBy}
           />
         ))
       ) : (

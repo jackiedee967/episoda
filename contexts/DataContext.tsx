@@ -54,6 +54,7 @@ interface DataContextType {
   getPost: (postId: string) => Post | undefined;
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
+  getAllReposts: () => Array<{ post: Post; repostedBy: User; timestamp: Date }>;
   
   // User data
   currentUser: User;
@@ -73,6 +74,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User>(mockCurrentUser);
   const [isLoading, setIsLoading] = useState(true);
   const [userReposts, setUserReposts] = useState<RepostData[]>([]);
+  const [allReposts, setAllReposts] = useState<RepostData[]>([]);
 
   // Initialize data from AsyncStorage and Supabase
   useEffect(() => {
@@ -142,8 +144,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.log('Initialized with mock user data');
       }
 
-      // Load reposts from Supabase
+      // Load reposts from both Supabase and AsyncStorage
       await loadRepostsFromSupabase();
+      await loadRepostsFromStorage();
       
     } catch (error) {
       console.error('Error loading data:', error);
@@ -154,46 +157,65 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const loadRepostsFromSupabase = async () => {
     try {
-      // Get current authenticated user
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authUser) {
-        console.log('No authenticated user, using mock user ID');
-        // For now, use mock user ID
-        const mockUserId = mockCurrentUser.id;
-        await loadRepostsForUser(mockUserId);
-        return;
-      }
-
-      await loadRepostsForUser(authUser.id);
-    } catch (error) {
-      console.error('Error loading reposts from Supabase:', error);
-    }
-  };
-
-  const loadRepostsForUser = async (userId: string) => {
-    try {
+      // Try to load all reposts from Supabase
       const { data, error } = await supabase
         .from('reposts')
         .select('*')
-        .eq('user_id', userId);
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching reposts:', error);
+        console.log('Error fetching reposts from Supabase (might not be authenticated):', error.message);
         return;
       }
 
-      if (data) {
+      if (data && data.length > 0) {
         const repostData: RepostData[] = data.map((r: any) => ({
           postId: r.original_post_id,
           userId: r.user_id,
           timestamp: new Date(r.created_at),
         }));
-        setUserReposts(repostData);
-        console.log('Loaded reposts from Supabase:', repostData.length);
+        
+        setAllReposts(repostData);
+        
+        // Filter for current user
+        const currentUserReposts = repostData.filter(r => r.userId === mockCurrentUser.id);
+        setUserReposts(currentUserReposts);
+        
+        console.log('Loaded reposts from Supabase - Total:', repostData.length, 'User:', currentUserReposts.length);
       }
     } catch (error) {
-      console.error('Error in loadRepostsForUser:', error);
+      console.log('Error in loadRepostsFromSupabase:', error);
+    }
+  };
+
+  const loadRepostsFromStorage = async () => {
+    try {
+      const repostsData = await AsyncStorage.getItem(STORAGE_KEYS.REPOSTS);
+      if (repostsData) {
+        const parsedReposts = JSON.parse(repostsData);
+        const repostsWithDates = parsedReposts.map((r: any) => ({
+          ...r,
+          timestamp: new Date(r.timestamp),
+        }));
+        
+        // Only use storage reposts if we don't have Supabase data
+        if (allReposts.length === 0) {
+          setAllReposts(repostsWithDates);
+          const currentUserReposts = repostsWithDates.filter((r: RepostData) => r.userId === mockCurrentUser.id);
+          setUserReposts(currentUserReposts);
+          console.log('Loaded reposts from storage - Total:', repostsWithDates.length, 'User:', currentUserReposts.length);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading reposts from storage:', error);
+    }
+  };
+
+  const saveRepostsToStorage = async (reposts: RepostData[]) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.REPOSTS, JSON.stringify(reposts));
+    } catch (error) {
+      console.error('Error saving reposts to storage:', error);
     }
   };
 
@@ -320,16 +342,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('=== REPOST POST START ===');
       console.log('Post ID:', postId);
       
-      // Get current authenticated user
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      let userId = mockCurrentUser.id;
-      if (!authError && authUser) {
-        userId = authUser.id;
-        console.log('Using authenticated user ID:', userId);
-      } else {
-        console.log('Using mock user ID:', userId);
-      }
+      const userId = mockCurrentUser.id;
+      console.log('User ID:', userId);
 
       // Check if already reposted
       const alreadyReposted = userReposts.some(r => r.postId === postId);
@@ -338,31 +352,43 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('reposts')
-        .insert({
-          user_id: userId,
-          original_post_id: postId,
-        })
-        .select()
-        .single();
+      // Try to insert into Supabase first
+      let supabaseSuccess = false;
+      try {
+        const { data, error } = await supabase
+          .from('reposts')
+          .insert({
+            user_id: userId,
+            original_post_id: postId,
+          })
+          .select()
+          .single();
 
-      if (error) {
-        console.error('Error inserting repost into Supabase:', error);
-        throw error;
+        if (!error && data) {
+          console.log('✅ Repost saved to Supabase:', data);
+          supabaseSuccess = true;
+        } else {
+          console.log('⚠️ Supabase insert failed (might not be authenticated):', error?.message);
+        }
+      } catch (supabaseError) {
+        console.log('⚠️ Supabase error:', supabaseError);
       }
 
-      console.log('Repost saved to Supabase:', data);
-
-      // Update local state
+      // Always save to local state regardless of Supabase success
       const newRepost: RepostData = {
         postId,
         userId,
         timestamp: new Date(),
       };
-      const updatedReposts = [...userReposts, newRepost];
-      setUserReposts(updatedReposts);
+      
+      const updatedUserReposts = [...userReposts, newRepost];
+      const updatedAllReposts = [...allReposts, newRepost];
+      
+      setUserReposts(updatedUserReposts);
+      setAllReposts(updatedAllReposts);
+      
+      // Save to AsyncStorage
+      await saveRepostsToStorage(updatedAllReposts);
 
       // Update post repost count
       const updatedPosts = posts.map(post => {
@@ -378,10 +404,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setPosts(updatedPosts);
       await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
       
-      console.log('Repost count updated, new count:', updatedPosts.find(p => p.id === postId)?.reposts);
+      console.log('✅ Repost saved locally');
+      console.log('New repost count:', updatedPosts.find(p => p.id === postId)?.reposts);
+      console.log('User reposts:', updatedUserReposts.length);
       console.log('=== REPOST POST END ===');
     } catch (error) {
-      console.error('Error in repostPost:', error);
+      console.error('❌ Error in repostPost:', error);
     }
   };
 
@@ -390,34 +418,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('=== UNREPOST POST START ===');
       console.log('Post ID:', postId);
       
-      // Get current authenticated user
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      const userId = mockCurrentUser.id;
+      console.log('User ID:', userId);
+
+      // Try to delete from Supabase
+      try {
+        const { error } = await supabase
+          .from('reposts')
+          .delete()
+          .eq('user_id', userId)
+          .eq('original_post_id', postId);
+
+        if (!error) {
+          console.log('✅ Repost deleted from Supabase');
+        } else {
+          console.log('⚠️ Supabase delete failed:', error.message);
+        }
+      } catch (supabaseError) {
+        console.log('⚠️ Supabase error:', supabaseError);
+      }
+
+      // Always update local state
+      const updatedUserReposts = userReposts.filter(r => r.postId !== postId);
+      const updatedAllReposts = allReposts.filter(r => !(r.postId === postId && r.userId === userId));
       
-      let userId = mockCurrentUser.id;
-      if (!authError && authUser) {
-        userId = authUser.id;
-        console.log('Using authenticated user ID:', userId);
-      } else {
-        console.log('Using mock user ID:', userId);
-      }
-
-      // Delete from Supabase
-      const { error } = await supabase
-        .from('reposts')
-        .delete()
-        .eq('user_id', userId)
-        .eq('original_post_id', postId);
-
-      if (error) {
-        console.error('Error deleting repost from Supabase:', error);
-        throw error;
-      }
-
-      console.log('Repost deleted from Supabase');
-
-      // Update local state
-      const updatedReposts = userReposts.filter(r => r.postId !== postId);
-      setUserReposts(updatedReposts);
+      setUserReposts(updatedUserReposts);
+      setAllReposts(updatedAllReposts);
+      
+      // Save to AsyncStorage
+      await saveRepostsToStorage(updatedAllReposts);
 
       // Update post repost count
       const updatedPosts = posts.map(post => {
@@ -433,21 +462,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setPosts(updatedPosts);
       await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
       
-      console.log('Repost count updated, new count:', updatedPosts.find(p => p.id === postId)?.reposts);
+      console.log('✅ Repost removed locally');
+      console.log('New repost count:', updatedPosts.find(p => p.id === postId)?.reposts);
+      console.log('User reposts:', updatedUserReposts.length);
       console.log('=== UNREPOST POST END ===');
     } catch (error) {
-      console.error('Error in unrepostPost:', error);
+      console.error('❌ Error in unrepostPost:', error);
     }
   };
 
   const hasUserReposted = (postId: string): boolean => {
-    return userReposts.some(r => r.postId === postId);
+    const result = userReposts.some(r => r.postId === postId);
+    return result;
   };
 
   const getUserReposts = (): Post[] => {
     // Get all posts that the user has reposted
     const repostedPostIds = userReposts.map(r => r.postId);
     return posts.filter(post => repostedPostIds.includes(post.id));
+  };
+
+  const getAllReposts = (): Array<{ post: Post; repostedBy: User; timestamp: Date }> => {
+    // Get all reposts with full post and user data
+    const result: Array<{ post: Post; repostedBy: User; timestamp: Date }> = [];
+    
+    for (const repost of allReposts) {
+      const post = posts.find(p => p.id === repost.postId);
+      const user = mockUsers.find(u => u.id === repost.userId) || mockCurrentUser;
+      
+      if (post) {
+        result.push({
+          post,
+          repostedBy: user,
+          timestamp: repost.timestamp,
+        });
+      }
+    }
+    
+    return result.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   };
 
   const updateCommentCount = async (postId: string, count: number): Promise<void> => {
@@ -531,6 +583,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getPost,
     hasUserReposted,
     getUserReposts,
+    getAllReposts,
     
     // User data
     currentUser,

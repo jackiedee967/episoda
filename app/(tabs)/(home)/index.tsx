@@ -14,7 +14,7 @@ import { ChevronRight } from 'lucide-react-native';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
 
   const handleLike = (postId: string) => {
@@ -119,10 +119,34 @@ export default function HomeScreen() {
   };
 
   const renderFriendActivity = () => {
-    // Filter posts from users the current user is following
+    // Get all reposts
+    const allReposts = getAllReposts();
+    
+    // Filter posts from users the current user is following (original posts)
     const friendPosts = posts.filter(post => 
       currentUser.following?.includes(post.user.id)
     );
+
+    // Filter reposts from friends
+    const friendReposts = allReposts.filter(repost =>
+      currentUser.following?.includes(repost.repostedBy.id)
+    );
+
+    // Combine original posts and reposts
+    const allActivity = [
+      ...friendPosts.map(post => ({
+        post,
+        isRepost: false,
+        repostedBy: undefined,
+        timestamp: post.timestamp,
+      })),
+      ...friendReposts.map(repost => ({
+        post: repost.post,
+        isRepost: true,
+        repostedBy: { id: repost.repostedBy.id, displayName: repost.repostedBy.displayName },
+        timestamp: repost.timestamp,
+      })),
+    ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
       <View style={styles.section}>
@@ -135,14 +159,16 @@ export default function HomeScreen() {
             <ChevronRight size={24} color={colors.secondary} />
           </Pressable>
         </View>
-        {friendPosts.length > 0 ? (
-          friendPosts.slice(0, 5).map((post) => (
+        {allActivity.length > 0 ? (
+          allActivity.slice(0, 5).map((item, index) => (
             <PostCard
-              key={post.id}
-              post={post}
-              onLike={() => handleLike(post.id)}
-              onRepost={() => handleRepost(post.id)}
-              onShare={() => handleShare(post.id)}
+              key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`}
+              post={item.post}
+              onLike={() => handleLike(item.post.id)}
+              onRepost={() => handleRepost(item.post.id)}
+              onShare={() => handleShare(item.post.id)}
+              isRepost={item.isRepost}
+              repostedBy={item.repostedBy}
             />
           ))
         ) : (

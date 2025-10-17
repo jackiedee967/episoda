@@ -5,11 +5,12 @@ import { Stack } from 'expo-router';
 import PostCard from '@/components/PostCard';
 import { useData } from '@/contexts/DataContext';
 import { colors } from '@/styles/commonStyles';
+import { Post } from '@/types';
 
 type SortBy = 'recent' | 'hot';
 
 export default function FriendActivityFeed() {
-  const { posts, currentUser } = useData();
+  const { posts, currentUser, getAllReposts } = useData();
   const [sortBy, setSortBy] = useState<SortBy>('recent');
 
   const handleLike = (postId: string) => {
@@ -24,22 +25,50 @@ export default function FriendActivityFeed() {
     console.log('Share post:', postId);
   };
 
-  // Filter posts from users the current user is following
+  // Get all reposts
+  const allReposts = getAllReposts();
+  
+  // Filter posts from users the current user is following (original posts)
   const friendPosts = posts.filter(post => 
     currentUser.following?.includes(post.user.id)
   );
 
+  // Filter reposts from friends
+  const friendReposts = allReposts.filter(repost =>
+    currentUser.following?.includes(repost.repostedBy.id)
+  );
+
+  // Combine original posts and reposts
+  const allActivity = [
+    ...friendPosts.map(post => ({
+      post,
+      isRepost: false,
+      repostedBy: undefined,
+      timestamp: post.timestamp,
+    })),
+    ...friendReposts.map(repost => ({
+      post: repost.post,
+      isRepost: true,
+      repostedBy: { id: repost.repostedBy.id, displayName: repost.repostedBy.displayName },
+      timestamp: repost.timestamp,
+    })),
+  ];
+
   // Sort posts based on selected sort option
-  const sortedPosts = [...friendPosts].sort((a, b) => {
+  const sortedActivity = [...allActivity].sort((a, b) => {
     if (sortBy === 'recent') {
       return b.timestamp.getTime() - a.timestamp.getTime();
     } else {
       // Hot: sort by engagement (likes + comments + reposts)
-      const engagementA = a.likes + a.comments + a.reposts;
-      const engagementB = b.likes + b.comments + b.reposts;
+      const engagementA = a.post.likes + a.post.comments + a.post.reposts;
+      const engagementB = b.post.likes + b.post.comments + b.post.reposts;
       return engagementB - engagementA;
     }
   });
+
+  console.log('Friend Activity - Original posts:', friendPosts.length);
+  console.log('Friend Activity - Reposts:', friendReposts.length);
+  console.log('Friend Activity - Total:', sortedActivity.length);
 
   return (
     <View style={styles.container}>
@@ -73,14 +102,16 @@ export default function FriendActivityFeed() {
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          {sortedPosts.length > 0 ? (
-            sortedPosts.map((post) => (
+          {sortedActivity.length > 0 ? (
+            sortedActivity.map((item, index) => (
               <PostCard
-                key={post.id}
-                post={post}
-                onLike={() => handleLike(post.id)}
-                onRepost={() => handleRepost(post.id)}
-                onShare={() => handleShare(post.id)}
+                key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`}
+                post={item.post}
+                onLike={() => handleLike(item.post.id)}
+                onRepost={() => handleRepost(item.post.id)}
+                onShare={() => handleShare(item.post.id)}
+                isRepost={item.isRepost}
+                repostedBy={item.repostedBy}
               />
             ))
           ) : (
