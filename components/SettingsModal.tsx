@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,14 @@ import {
   Alert,
   Dimensions,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { NotificationPreferences, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe } from 'lucide-react-native';
+import { supabase } from '@/app/integrations/supabase/client';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -42,6 +44,14 @@ interface SettingsModalProps {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
+// Platform base URLs
+const PLATFORM_URLS = {
+  instagram: 'https://instagram.com/',
+  tiktok: 'https://tiktok.com/@',
+  x: 'https://x.com/',
+  spotify: 'https://open.spotify.com/user/',
+};
+
 export default function SettingsModal({
   visible,
   onClose,
@@ -65,6 +75,18 @@ export default function SettingsModal({
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>(initialSocialLinks);
   const [notificationPreferences, setNotificationPreferences] = useState(initialNotificationPreferences);
 
+  // Username validation states
+  const [usernameError, setUsernameError] = useState<string>('');
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(true);
+
+  // Social link input states (store just the username part)
+  const [instagramUsername, setInstagramUsername] = useState('');
+  const [tiktokUsername, setTiktokUsername] = useState('');
+  const [xUsername, setXUsername] = useState('');
+  const [spotifyUsername, setSpotifyUsername] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+
   React.useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
@@ -73,6 +95,9 @@ export default function SettingsModal({
         tension: 65,
         friction: 11,
       }).start();
+      
+      // Initialize social link inputs from full URLs
+      initializeSocialInputs();
     } else {
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
@@ -82,50 +107,149 @@ export default function SettingsModal({
     }
   }, [visible]);
 
+  // Initialize social inputs by extracting usernames from full URLs
+  const initializeSocialInputs = () => {
+    const instagram = socialLinks.find(link => link.platform === 'instagram');
+    const tiktok = socialLinks.find(link => link.platform === 'tiktok');
+    const x = socialLinks.find(link => link.platform === 'x');
+    const spotify = socialLinks.find(link => link.platform === 'spotify');
+    const website = socialLinks.find(link => link.platform === 'website');
+
+    setInstagramUsername(instagram ? instagram.url.replace(PLATFORM_URLS.instagram, '') : '');
+    setTiktokUsername(tiktok ? tiktok.url.replace(PLATFORM_URLS.tiktok, '') : '');
+    setXUsername(x ? x.url.replace(PLATFORM_URLS.x, '') : '');
+    setSpotifyUsername(spotify ? spotify.url.replace(PLATFORM_URLS.spotify, '') : '');
+    setWebsiteUrl(website ? website.url : '');
+  };
+
+  // Check if username is available in database
+  const checkUsernameAvailability = async (newUsername: string) => {
+    if (newUsername === initialUsername) {
+      setUsernameError('');
+      setUsernameAvailable(true);
+      return;
+    }
+
+    if (newUsername.trim().length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+      setUsernameAvailable(false);
+      return;
+    }
+
+    setIsCheckingUsername(true);
+    setUsernameError('');
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', newUsername.toLowerCase())
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking username:', error);
+        setUsernameError('Error checking username availability');
+        setUsernameAvailable(false);
+      } else if (data) {
+        setUsernameError('Username already taken');
+        setUsernameAvailable(false);
+      } else {
+        setUsernameError('');
+        setUsernameAvailable(true);
+      }
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setUsernameError('Error checking username availability');
+      setUsernameAvailable(false);
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  // Debounced username check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (username && username !== initialUsername) {
+        checkUsernameAvailability(username);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [username]);
+
   const handleSave = () => {
+    // Validate username
+    if (!usernameAvailable) {
+      Alert.alert('Error', 'Please choose an available username');
+      return;
+    }
+
+    // Validate website URL if provided
+    if (websiteUrl && !isValidUrl(websiteUrl)) {
+      Alert.alert('Error', 'Please enter a valid website URL (e.g., https://yourwebsite.com)');
+      return;
+    }
+
+    // Construct full URLs from usernames
+    const updatedSocialLinks: SocialLink[] = [];
+
+    if (instagramUsername.trim()) {
+      updatedSocialLinks.push({
+        platform: 'instagram',
+        url: PLATFORM_URLS.instagram + instagramUsername.trim(),
+      });
+    }
+
+    if (tiktokUsername.trim()) {
+      updatedSocialLinks.push({
+        platform: 'tiktok',
+        url: PLATFORM_URLS.tiktok + tiktokUsername.trim(),
+      });
+    }
+
+    if (xUsername.trim()) {
+      updatedSocialLinks.push({
+        platform: 'x',
+        url: PLATFORM_URLS.x + xUsername.trim(),
+      });
+    }
+
+    if (spotifyUsername.trim()) {
+      updatedSocialLinks.push({
+        platform: 'spotify',
+        url: PLATFORM_URLS.spotify + spotifyUsername.trim(),
+      });
+    }
+
+    if (websiteUrl.trim()) {
+      updatedSocialLinks.push({
+        platform: 'website',
+        url: websiteUrl.trim(),
+      });
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
     onSave({
       displayName,
       username,
       bio,
-      socialLinks,
+      socialLinks: updatedSocialLinks,
       notificationPreferences,
     });
+
+    // Show success message
+    Alert.alert('Success', 'Your settings have been saved successfully!');
     onClose();
   };
 
-  const handleUsernameChange = (text: string) => {
-    if (text !== initialUsername) {
-      Alert.alert(
-        'Change Username',
-        'Changing your username will update it everywhere in the app. Are you sure?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Change', onPress: () => setUsername(text) },
-        ]
-      );
-    } else {
-      setUsername(text);
+  const isValidUrl = (url: string): boolean => {
+    try {
+      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+      return urlPattern.test(url) && (url.startsWith('http://') || url.startsWith('https://'));
+    } catch {
+      return false;
     }
-  };
-
-  const updateSocialLink = (platform: SocialLink['platform'], url: string) => {
-    const existingIndex = socialLinks.findIndex((link) => link.platform === platform);
-    if (existingIndex >= 0) {
-      const newLinks = [...socialLinks];
-      if (url.trim() === '') {
-        newLinks.splice(existingIndex, 1);
-      } else {
-        newLinks[existingIndex] = { platform, url };
-      }
-      setSocialLinks(newLinks);
-    } else if (url.trim() !== '') {
-      setSocialLinks([...socialLinks, { platform, url }]);
-    }
-  };
-
-  const getSocialLinkValue = (platform: SocialLink['platform']) => {
-    return socialLinks.find((link) => link.platform === platform)?.url || '';
   };
 
   const toggleNotification = (key: keyof NotificationPreferences) => {
@@ -177,14 +301,40 @@ export default function SettingsModal({
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Username</Text>
-        <TextInput
-          style={styles.input}
-          value={username}
-          onChangeText={handleUsernameChange}
-          placeholder="Your username"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-        />
+        <View style={styles.usernameContainer}>
+          <TextInput
+            style={[
+              styles.input,
+              usernameError ? styles.inputError : usernameAvailable && username !== initialUsername ? styles.inputSuccess : null
+            ]}
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Your username"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+            editable={true}
+          />
+          {isCheckingUsername && (
+            <View style={styles.usernameIndicator}>
+              <ActivityIndicator size="small" color={colors.secondary} />
+            </View>
+          )}
+          {!isCheckingUsername && username !== initialUsername && (
+            <View style={styles.usernameIndicator}>
+              {usernameAvailable ? (
+                <IconSymbol name="checkmark.circle.fill" size={20} color="#4CAF50" />
+              ) : (
+                <IconSymbol name="xmark.circle.fill" size={20} color="#FF3B30" />
+              )}
+            </View>
+          )}
+        </View>
+        {usernameError && (
+          <Text style={styles.errorText}>{usernameError}</Text>
+        )}
+        {!usernameError && usernameAvailable && username !== initialUsername && (
+          <Text style={styles.successText}>Username is available!</Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
@@ -201,65 +351,114 @@ export default function SettingsModal({
       </View>
 
       <Text style={styles.sectionTitle}>Social Links</Text>
+      <Text style={styles.sectionDescription}>
+        Just enter your username - we&apos;ll handle the rest!
+      </Text>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Instagram</Text>
-        <TextInput
-          style={styles.input}
-          value={getSocialLinkValue('instagram')}
-          onChangeText={(text) => updateSocialLink('instagram', text)}
-          placeholder="https://instagram.com/username"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-        />
+        <View style={styles.socialInputContainer}>
+          <View style={styles.iconContainer}>
+            <Instagram size={20} color={colors.text} />
+          </View>
+          <TextInput
+            style={styles.socialInput}
+            value={instagramUsername}
+            onChangeText={setInstagramUsername}
+            placeholder="username"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+          />
+        </View>
+        {instagramUsername.trim() && (
+          <Text style={styles.urlPreview}>
+            {PLATFORM_URLS.instagram}{instagramUsername}
+          </Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>TikTok</Text>
-        <TextInput
-          style={styles.input}
-          value={getSocialLinkValue('tiktok')}
-          onChangeText={(text) => updateSocialLink('tiktok', text)}
-          placeholder="https://tiktok.com/@username"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-        />
+        <View style={styles.socialInputContainer}>
+          <View style={styles.iconContainer}>
+            <Music size={20} color={colors.text} />
+          </View>
+          <TextInput
+            style={styles.socialInput}
+            value={tiktokUsername}
+            onChangeText={setTiktokUsername}
+            placeholder="username"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+          />
+        </View>
+        {tiktokUsername.trim() && (
+          <Text style={styles.urlPreview}>
+            {PLATFORM_URLS.tiktok}{tiktokUsername}
+          </Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>X (Twitter)</Text>
-        <TextInput
-          style={styles.input}
-          value={getSocialLinkValue('x')}
-          onChangeText={(text) => updateSocialLink('x', text)}
-          placeholder="https://x.com/username"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-        />
+        <View style={styles.socialInputContainer}>
+          <View style={styles.iconContainer}>
+            <Text style={styles.xIcon}>𝕏</Text>
+          </View>
+          <TextInput
+            style={styles.socialInput}
+            value={xUsername}
+            onChangeText={setXUsername}
+            placeholder="username"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+          />
+        </View>
+        {xUsername.trim() && (
+          <Text style={styles.urlPreview}>
+            {PLATFORM_URLS.x}{xUsername}
+          </Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Spotify</Text>
-        <TextInput
-          style={styles.input}
-          value={getSocialLinkValue('spotify')}
-          onChangeText={(text) => updateSocialLink('spotify', text)}
-          placeholder="https://open.spotify.com/user/username"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-        />
+        <View style={styles.socialInputContainer}>
+          <View style={styles.iconContainer}>
+            <Music size={20} color={colors.text} />
+          </View>
+          <TextInput
+            style={styles.socialInput}
+            value={spotifyUsername}
+            onChangeText={setSpotifyUsername}
+            placeholder="username"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+          />
+        </View>
+        {spotifyUsername.trim() && (
+          <Text style={styles.urlPreview}>
+            {PLATFORM_URLS.spotify}{spotifyUsername}
+          </Text>
+        )}
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Website</Text>
-        <TextInput
-          style={styles.input}
-          value={getSocialLinkValue('website')}
-          onChangeText={(text) => updateSocialLink('website', text)}
-          placeholder="https://yourwebsite.com"
-          placeholderTextColor={colors.textSecondary}
-          autoCapitalize="none"
-        />
+        <View style={styles.socialInputContainer}>
+          <View style={styles.iconContainer}>
+            <Globe size={20} color={colors.text} />
+          </View>
+          <TextInput
+            style={styles.socialInput}
+            value={websiteUrl}
+            onChangeText={setWebsiteUrl}
+            placeholder="https://yourwebsite.com"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+            keyboardType="url"
+          />
+        </View>
       </View>
     </View>
   );
@@ -451,8 +650,17 @@ export default function SettingsModal({
             {activeTab === 'security' && renderSecurityTab()}
 
             {activeTab !== 'security' && (
-              <Pressable style={styles.saveButton} onPress={handleSave}>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
+              <Pressable 
+                style={[
+                  styles.saveButton,
+                  (!usernameAvailable || isCheckingUsername) && styles.saveButtonDisabled
+                ]} 
+                onPress={handleSave}
+                disabled={!usernameAvailable || isCheckingUsername}
+              >
+                <Text style={styles.saveButtonText}>
+                  {isCheckingUsername ? 'Checking...' : 'Save Changes'}
+                </Text>
               </Pressable>
             )}
 
@@ -557,9 +765,68 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  inputError: {
+    borderColor: '#FF3B30',
+  },
+  inputSuccess: {
+    borderColor: '#4CAF50',
+  },
   textArea: {
     height: 80,
     textAlignVertical: 'top',
+  },
+  usernameContainer: {
+    position: 'relative',
+  },
+  usernameIndicator: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    marginTop: 4,
+  },
+  successText: {
+    fontSize: 12,
+    color: '#4CAF50',
+    marginTop: 4,
+  },
+  socialInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+  },
+  xIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  socialInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    color: colors.text,
+  },
+  urlPreview: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginLeft: 4,
   },
   notificationItem: {
     flexDirection: 'row',
@@ -649,6 +916,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
     marginHorizontal: 20,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveButtonText: {
     fontSize: 16,
