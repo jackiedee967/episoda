@@ -29,9 +29,9 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 export default function WatchlistModal({ visible, onClose, show, onAddToWatchlist }: WatchlistModalProps) {
   const { watchlists, createWatchlist, addShowToWatchlist, removeShowFromWatchlist, isShowInWatchlist } = useData();
   const [newWatchlistName, setNewWatchlistName] = useState('');
-  const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [successAnim] = useState(new Animated.Value(0));
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const successAnim = useRef(new Animated.Value(0)).current;
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const inputRef = useRef<TextInput>(null);
@@ -71,7 +71,7 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, fadeAnim, slideAnim]);
 
   const showSuccessAnimation = (message: string) => {
     setSuccessMessage(message);

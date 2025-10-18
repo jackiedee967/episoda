@@ -49,8 +49,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [searchQuery, setSearchQuery] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
 
-  const [slideAnim] = useState(new Animated.Value(SCREEN_HEIGHT));
-  const [fadeAnim] = useState(new Animated.Value(0));
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
   const customTagInputRef = useRef<TextInput>(null);
 
@@ -128,7 +128,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, fadeAnim, slideAnim]);
 
   const handleShowSelect = (show: Show) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

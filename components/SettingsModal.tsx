@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -87,7 +87,22 @@ export default function SettingsModal({
   const [spotifyUsername, setSpotifyUsername] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
 
-  React.useEffect(() => {
+  // Initialize social inputs by extracting usernames from full URLs
+  const initializeSocialInputs = useCallback(() => {
+    const instagram = socialLinks.find(link => link.platform === 'instagram');
+    const tiktok = socialLinks.find(link => link.platform === 'tiktok');
+    const x = socialLinks.find(link => link.platform === 'x');
+    const spotify = socialLinks.find(link => link.platform === 'spotify');
+    const website = socialLinks.find(link => link.platform === 'website');
+
+    setInstagramUsername(instagram ? instagram.url.replace(PLATFORM_URLS.instagram, '') : '');
+    setTiktokUsername(tiktok ? tiktok.url.replace(PLATFORM_URLS.tiktok, '') : '');
+    setXUsername(x ? x.url.replace(PLATFORM_URLS.x, '') : '');
+    setSpotifyUsername(spotify ? spotify.url.replace(PLATFORM_URLS.spotify, '') : '');
+    setWebsiteUrl(website ? website.url : '');
+  }, [socialLinks]);
+
+  useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -105,25 +120,10 @@ export default function SettingsModal({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
-
-  // Initialize social inputs by extracting usernames from full URLs
-  const initializeSocialInputs = () => {
-    const instagram = socialLinks.find(link => link.platform === 'instagram');
-    const tiktok = socialLinks.find(link => link.platform === 'tiktok');
-    const x = socialLinks.find(link => link.platform === 'x');
-    const spotify = socialLinks.find(link => link.platform === 'spotify');
-    const website = socialLinks.find(link => link.platform === 'website');
-
-    setInstagramUsername(instagram ? instagram.url.replace(PLATFORM_URLS.instagram, '') : '');
-    setTiktokUsername(tiktok ? tiktok.url.replace(PLATFORM_URLS.tiktok, '') : '');
-    setXUsername(x ? x.url.replace(PLATFORM_URLS.x, '') : '');
-    setSpotifyUsername(spotify ? spotify.url.replace(PLATFORM_URLS.spotify, '') : '');
-    setWebsiteUrl(website ? website.url : '');
-  };
+  }, [visible, slideAnim, initializeSocialInputs]);
 
   // Check if username is available in database
-  const checkUsernameAvailability = async (newUsername: string) => {
+  const checkUsernameAvailability = useCallback(async (newUsername: string) => {
     if (newUsername === initialUsername) {
       setUsernameError('');
       setUsernameAvailable(true);
@@ -164,7 +164,7 @@ export default function SettingsModal({
     } finally {
       setIsCheckingUsername(false);
     }
-  };
+  }, [initialUsername]);
 
   // Debounced username check
   useEffect(() => {
@@ -175,7 +175,7 @@ export default function SettingsModal({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [username]);
+  }, [username, initialUsername, checkUsernameAvailability]);
 
   const handleSave = () => {
     // Validate username
@@ -245,7 +245,7 @@ export default function SettingsModal({
 
   const isValidUrl = (url: string): boolean => {
     try {
-      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+      const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
       return urlPattern.test(url) && (url.startsWith('http://') || url.startsWith('https://'));
     } catch {
       return false;

@@ -50,7 +50,7 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
         mass: 1,
       }).start();
     }
-  }, [activeTabIndex, containerWidth]);
+  }, [activeTabIndex, containerWidth, animatedValue]);
 
   const handleTabPress = (route: string) => {
     router.push(route);

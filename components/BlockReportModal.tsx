@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -40,7 +40,7 @@ export default function BlockReportModal({
   const [selectedReason, setSelectedReason] = useState<ReportReason>('spam');
   const [details, setDetails] = useState('');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -61,7 +61,7 @@ export default function BlockReportModal({
         setSelectedReason('spam');
       }, 300);
     }
-  }, [visible]);
+  }, [visible, slideAnim]);
 
   const handleBlock = () => {
     Alert.alert(

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -41,7 +41,7 @@ export default function FollowersModal({
   const router = useRouter();
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -56,7 +56,7 @@ export default function FollowersModal({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
+  }, [visible, slideAnim]);
 
   const handleUserPress = (userId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

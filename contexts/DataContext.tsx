@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Post, Show, User } from '@/types';
 import { mockPosts, mockUsers, currentUser as mockCurrentUser } from '@/data/mockData';
@@ -54,7 +54,7 @@ interface DataContextType {
   getPost: (postId: string) => Post | undefined;
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
-  getAllReposts: () => Array<{ post: Post; repostedBy: User; timestamp: Date }>;
+  getAllReposts: () => { post: Post; repostedBy: User; timestamp: Date }[];
   
   // User data
   currentUser: User;
@@ -76,12 +76,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [userReposts, setUserReposts] = useState<RepostData[]>([]);
   const [allReposts, setAllReposts] = useState<RepostData[]>([]);
 
-  // Initialize data from AsyncStorage and Supabase
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  // Load data function
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -153,7 +149,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Initialize data from AsyncStorage and Supabase
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const loadRepostsFromSupabase = async () => {
     try {
@@ -482,9 +483,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return posts.filter(post => repostedPostIds.includes(post.id));
   };
 
-  const getAllReposts = (): Array<{ post: Post; repostedBy: User; timestamp: Date }> => {
+  const getAllReposts = (): { post: Post; repostedBy: User; timestamp: Date }[] => {
     // Get all reposts with full post and user data
-    const result: Array<{ post: Post; repostedBy: User; timestamp: Date }> = [];
+    const result: { post: Post; repostedBy: User; timestamp: Date }[] = [];
     
     for (const repost of allReposts) {
       const post = posts.find(p => p.id === repost.postId);

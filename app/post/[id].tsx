@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -42,7 +42,7 @@ export default function PostDetail() {
     if (post) {
       updateCommentCount(post.id, comments.length);
     }
-  }, [comments.length, post?.id]);
+  }, [comments.length, post, updateCommentCount]);
 
   if (!post) {
     return (
