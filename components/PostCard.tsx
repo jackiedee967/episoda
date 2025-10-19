@@ -7,7 +7,7 @@ import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
-import WatchlistModal from '@/components/WatchlistModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 
 interface PostCardProps {
@@ -22,8 +22,8 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare, isRepost, repostedBy }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost, getPost, watchlists, isShowInWatchlist, hasUserReposted } = useData();
-  const [showWatchlistModal, setShowWatchlistModal] = useState(false);
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost, playlists, isShowInPlaylist, hasUserReposted } = useData();
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   
   // Get the latest post data from context to ensure we have current like/comment counts
   const latestPost = getPost(post.id) || post;
@@ -31,8 +31,8 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   // Check if user has reposted this post
   const isReposted = hasUserReposted(latestPost.id);
 
-  // Check if show is in any watchlist
-  const isShowSaved = watchlists.some(wl => isShowInWatchlist(wl.id, latestPost.show.id));
+  // Check if show is in any playlist
+  const isShowSaved = playlists.some(pl => isShowInPlaylist(pl.id, latestPost.show.id));
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -70,11 +70,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   const handleSavePress = (e: any) => {
     e.stopPropagation();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setShowWatchlistModal(true);
+    setShowPlaylistModal(true);
   };
 
-  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    console.log(`Added show ${showId} to watchlist ${watchlistId}`);
+  const handleAddToPlaylist = (playlistId: string, showId: string) => {
+    console.log(`Added show ${showId} to playlist ${playlistId}`);
   };
 
   const handleLikePress = async (e: any) => {
@@ -325,11 +325,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
         </View>
       </Pressable>
 
-      <WatchlistModal
-        visible={showWatchlistModal}
-        onClose={() => setShowWatchlistModal(false)}
+      <PlaylistModal
+        visible={showPlaylistModal}
+        onClose={() => setShowPlaylistModal(false)}
         show={latestPost.show}
-        onAddToWatchlist={handleAddToWatchlist}
+        onAddToPlaylist={handleAddToPlaylist}
       />
     </>
   );

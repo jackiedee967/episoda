@@ -14,7 +14,7 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
-import WatchlistModal from '@/components/WatchlistModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import { mockShows, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
 import { Episode } from '@/types';
 import { useData } from '@/contexts/DataContext';
@@ -30,8 +30,8 @@ export default function ShowHub() {
   const [activeTab, setActiveTab] = useState<Tab>('friends');
   const [sortBy, setSortBy] = useState<SortBy>('hot');
   const [modalVisible, setModalVisible] = useState(false);
-  const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
-  const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
+  const [isInPlaylist, setIsInPlaylist] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | undefined>(undefined);
 
   const show = mockShows.find((s) => s.id === id);
@@ -54,9 +54,9 @@ export default function ShowHub() {
     router.push(`/user/${friendId}`);
   };
 
-  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    setIsInWatchlist(true);
-    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  const handleAddToPlaylist = (playlistId: string, showId: string) => {
+    setIsInPlaylist(true);
+    console.log(`Show ${showId} added to playlist ${playlistId}`);
   };
 
   const handleLogEpisode = (episode: Episode) => {
@@ -86,10 +86,10 @@ export default function ShowHub() {
         <Image source={{ uri: show.poster }} style={styles.headerPoster} />
         <Pressable 
           style={styles.saveIcon} 
-          onPress={() => setWatchlistModalVisible(true)}
+          onPress={() => setPlaylistModalVisible(true)}
         >
           <IconSymbol 
-            name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
+            name={isInPlaylist ? "bookmark.fill" : "bookmark"} 
             size={20} 
             color="#FFFFFF" 
           />
@@ -277,11 +277,11 @@ export default function ShowHub() {
         preselectedShow={show}
         preselectedEpisode={selectedEpisode}
       />
-      <WatchlistModal
-        visible={watchlistModalVisible}
-        onClose={() => setWatchlistModalVisible(false)}
+      <PlaylistModal
+        visible={playlistModalVisible}
+        onClose={() => setPlaylistModalVisible(false)}
         show={show}
-        onAddToWatchlist={handleAddToWatchlist}
+        onAddToPlaylist={handleAddToPlaylist}
       />
     </>
   );

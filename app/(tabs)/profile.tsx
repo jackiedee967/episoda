@@ -1,13 +1,13 @@
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Switch, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import FollowersModal from '@/components/FollowersModal';
-import { currentUser, mockUsers } from '@/data/mockData';
+import { currentUser, mockUsers, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
 import { Settings } from 'lucide-react-native';
@@ -16,12 +16,18 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { posts, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
+  const { posts, followUser, unfollowUser, isFollowing, getAllReposts, playlists, loadPlaylists, updatePlaylistPrivacy } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
+  const [showsPrivate, setShowsPrivate] = useState(false);
+
+  // Load playlists on mount
+  useEffect(() => {
+    loadPlaylists();
+  }, [loadPlaylists]);
 
   // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
@@ -49,6 +55,7 @@ export default function ProfileScreen() {
   console.log('Profile - User posts:', userPosts.length);
   console.log('Profile - User reposts:', userReposts.length);
   console.log('Profile - Total activity:', allUserActivity.length);
+  console.log('Profile - Playlists:', playlists.length);
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -63,6 +70,34 @@ export default function ProfileScreen() {
   const handleSettingsPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/settings');
+  };
+
+  const handlePlaylistToggle = async (playlistId: string, isPublic: boolean) => {
+    try {
+      await updatePlaylistPrivacy(playlistId, isPublic);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.error('Error updating playlist privacy:', error);
+    }
+  };
+
+  const handleSharePlaylist = (playlistId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert('Share Playlist', 'Deep link copied to clipboard!');
+  };
+
+  const handlePlaylistPress = (playlistId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (playlist) {
+      const playlistShows = mockShows.filter(show => playlist.shows?.includes(show.id));
+      const showTitles = playlistShows.map(show => show.title).join('\n');
+      Alert.alert(
+        playlist.name,
+        showTitles || 'No shows in this playlist yet',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const renderHeader = () => (
@@ -166,6 +201,155 @@ export default function ProfileScreen() {
     </View>
   );
 
+  const renderShowsTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.privacyToggle}>
+        <Text style={styles.privacyLabel}>Show publicly</Text>
+        <Switch
+          value={!showsPrivate}
+          onValueChange={(value) => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowsPrivate(!value);
+          }}
+          trackColor={{ false: colors.border, true: colors.secondary }}
+          thumbColor={colors.card}
+        />
+      </View>
+
+      {mockShows.length > 0 ? (
+        <View style={styles.showsGrid}>
+          {mockShows.map((show) => (
+            <Pressable
+              key={show.id}
+              style={styles.showGridItem}
+              onPress={() => router.push(`/show/${show.id}`)}
+            >
+              <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
+            </Pressable>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.emptyState}>
+          <IconSymbol name="tv" size={48} color={colors.textSecondary} />
+          <Text style={styles.emptyStateTitle}>No shows yet</Text>
+          <Text style={styles.emptyStateText}>
+            Start logging shows to see them here!
+          </Text>
+          <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
+            <Text style={styles.logShowButtonText}>Log your first show</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderPlaylistsTab = () => (
+    <View style={styles.tabContent}>
+      {playlists.length > 0 ? (
+        <>
+          {playlists.map((playlist) => (
+            <Pressable
+              key={playlist.id}
+              style={styles.playlistItem}
+              onPress={() => handlePlaylistPress(playlist.id)}
+            >
+              <View style={styles.playlistInfo}>
+                <Text style={styles.playlistName}>{playlist.name}</Text>
+                <Text style={styles.playlistCount}>{playlist.showCount} shows</Text>
+              </View>
+              <View style={styles.playlistActions}>
+                <Switch
+                  value={playlist.isPublic}
+                  onValueChange={(value) => handlePlaylistToggle(playlist.id, value)}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={colors.card}
+                />
+                <Pressable
+                  style={styles.playlistActionButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleSharePlaylist(playlist.id);
+                  }}
+                >
+                  <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
+                </Pressable>
+              </View>
+            </Pressable>
+          ))}
+          <Pressable 
+            style={styles.addPlaylistButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.prompt(
+                'Create Playlist',
+                'Enter a name for your new playlist',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Create',
+                    onPress: async (name) => {
+                      if (name && name.trim()) {
+                        const { createPlaylist } = useData();
+                        try {
+                          await createPlaylist(name.trim());
+                          await loadPlaylists();
+                        } catch (error) {
+                          console.error('Error creating playlist:', error);
+                        }
+                      }
+                    },
+                  },
+                ],
+                'plain-text'
+              );
+            }}
+          >
+            <IconSymbol name="plus" size={20} color={colors.text} />
+            <Text style={styles.addPlaylistText}>Create New Playlist</Text>
+          </Pressable>
+        </>
+      ) : (
+        <View style={styles.emptyState}>
+          <IconSymbol name="list.bullet" size={48} color={colors.textSecondary} />
+          <Text style={styles.emptyStateTitle}>No playlists yet</Text>
+          <Text style={styles.emptyStateText}>
+            Create your first playlist to organize your shows!
+          </Text>
+          <Pressable 
+            style={styles.logShowButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.prompt(
+                'Create Playlist',
+                'Enter a name for your new playlist',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Create',
+                    onPress: async (name) => {
+                      if (name && name.trim()) {
+                        const { createPlaylist } = useData();
+                        try {
+                          await createPlaylist(name.trim());
+                          await loadPlaylists();
+                        } catch (error) {
+                          console.error('Error creating playlist:', error);
+                        }
+                      }
+                    },
+                  },
+                ],
+                'plain-text'
+              );
+            }}
+          >
+            <Text style={styles.logShowButtonText}>Create your first playlist</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -174,6 +358,8 @@ export default function ProfileScreen() {
           {renderHeader()}
           {renderTabs()}
           {activeTab === 'posts' && renderPostsTab()}
+          {activeTab === 'shows' && renderShowsTab()}
+          {activeTab === 'playlists' && renderPlaylistsTab()}
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
@@ -319,5 +505,85 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
+  },
+  privacyToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+  },
+  privacyLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  showsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  showGridItem: {
+    width: '31%',
+    aspectRatio: 2 / 3,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  showGridPoster: {
+    width: '100%',
+    height: '100%',
+  },
+  playlistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  playlistInfo: {
+    flex: 1,
+  },
+  playlistName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  playlistCount: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  playlistActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  playlistActionButton: {
+    padding: 8,
+    backgroundColor: colors.background,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  addPlaylistButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+  },
+  addPlaylistText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginLeft: 8,
   },
 });

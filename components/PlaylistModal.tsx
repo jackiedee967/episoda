@@ -17,18 +17,18 @@ import { colors } from '@/styles/commonStyles';
 import { Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 
-interface WatchlistModalProps {
+interface PlaylistModalProps {
   visible: boolean;
   onClose: () => void;
   show: Show;
-  onAddToWatchlist?: (watchlistId: string, showId: string) => void;
+  onAddToPlaylist?: (playlistId: string, showId: string) => void;
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-export default function WatchlistModal({ visible, onClose, show, onAddToWatchlist }: WatchlistModalProps) {
-  const { watchlists, createWatchlist, addShowToWatchlist, removeShowFromWatchlist, isShowInWatchlist } = useData();
-  const [newWatchlistName, setNewWatchlistName] = useState('');
+export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist }: PlaylistModalProps) {
+  const { playlists, createPlaylist, addShowToPlaylist, removeShowFromPlaylist, isShowInPlaylist } = useData();
+  const [newPlaylistName, setNewPlaylistName] = useState('');
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
@@ -93,88 +93,88 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
     });
   };
 
-  const handleCreateWatchlist = async () => {
-    if (newWatchlistName.trim()) {
+  const handleCreatePlaylist = async () => {
+    if (newPlaylistName.trim()) {
       // Haptic feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       try {
-        // Create watchlist with the show automatically added
-        const newWatchlist = await createWatchlist(newWatchlistName, show.id);
-        console.log(`Created new watchlist "${newWatchlist.name}" and added ${show.title}`);
+        // Create playlist with the show automatically added
+        const newPlaylist = await createPlaylist(newPlaylistName, show.id);
+        console.log(`Created new playlist "${newPlaylist.name}" and added ${show.title}`);
         
         // Call the callback if provided
-        if (onAddToWatchlist) {
-          onAddToWatchlist(newWatchlist.id, show.id);
+        if (onAddToPlaylist) {
+          onAddToPlaylist(newPlaylist.id, show.id);
         }
         
         // Show success animation
-        showSuccessAnimation('Added to watchlist!');
+        showSuccessAnimation('Added to playlist!');
         
         // Reset the input and close the modal after a brief delay
-        setNewWatchlistName('');
+        setNewPlaylistName('');
         setTimeout(() => {
           onClose();
         }, 1000);
       } catch (error) {
-        console.error('Error creating watchlist:', error);
+        console.error('Error creating playlist:', error);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
   };
 
-  const handleToggleWatchlist = async (watchlistId: string) => {
-    const watchlist = watchlists.find(wl => wl.id === watchlistId);
+  const handleTogglePlaylist = async (playlistId: string) => {
+    const playlist = playlists.find(pl => pl.id === playlistId);
     
-    // Check if show is already in the watchlist
-    if (isShowInWatchlist(watchlistId, show.id)) {
-      // Remove from watchlist
+    // Check if show is already in the playlist
+    if (isShowInPlaylist(playlistId, show.id)) {
+      // Remove from playlist
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       try {
-        await removeShowFromWatchlist(watchlistId, show.id);
-        console.log(`Removed ${show.title} from ${watchlist?.name}`);
+        await removeShowFromPlaylist(playlistId, show.id);
+        console.log(`Removed ${show.title} from ${playlist?.name}`);
         
         // Show success animation
-        showSuccessAnimation('Removed from watchlist!');
+        showSuccessAnimation('Removed from playlist!');
         
         // Close modal after brief delay
         setTimeout(() => {
           onClose();
         }, 1000);
       } catch (error) {
-        console.error('Error removing from watchlist:', error);
+        console.error('Error removing from playlist:', error);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } else {
-      // Add to watchlist
+      // Add to playlist
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       try {
-        await addShowToWatchlist(watchlistId, show.id);
-        console.log(`Added ${show.title} to ${watchlist?.name}`);
+        await addShowToPlaylist(playlistId, show.id);
+        console.log(`Added ${show.title} to ${playlist?.name}`);
         
         // Call the callback if provided
-        if (onAddToWatchlist) {
-          onAddToWatchlist(watchlistId, show.id);
+        if (onAddToPlaylist) {
+          onAddToPlaylist(playlistId, show.id);
         }
         
         // Show success animation
-        showSuccessAnimation('Added to watchlist!');
+        showSuccessAnimation('Added to playlist!');
         
         // Close modal after brief delay
         setTimeout(() => {
           onClose();
         }, 1000);
       } catch (error) {
-        console.error('Error adding to watchlist:', error);
+        console.error('Error adding to playlist:', error);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
   };
 
   const resetModal = () => {
-    setNewWatchlistName('');
+    setNewPlaylistName('');
   };
 
   const handleClose = () => {
@@ -230,56 +230,56 @@ export default function WatchlistModal({ visible, onClose, show, onAddToWatchlis
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.handle} />
-            <Text style={styles.title}>Add to Watchlist</Text>
+            <Text style={styles.title}>Add to Playlist</Text>
             <Text style={styles.subtitle}>{show.title}</Text>
           </View>
 
           {/* Content */}
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Create New Watchlist - Always visible at top */}
+            {/* Create New Playlist - Always visible at top */}
             <View style={styles.createContainer}>
               <TextInput
                 ref={inputRef}
                 style={styles.input}
-                placeholder="Create new list"
+                placeholder="Create new playlist"
                 placeholderTextColor={colors.textSecondary}
-                value={newWatchlistName}
-                onChangeText={setNewWatchlistName}
+                value={newPlaylistName}
+                onChangeText={setNewPlaylistName}
                 returnKeyType="done"
-                onSubmitEditing={handleCreateWatchlist}
+                onSubmitEditing={handleCreatePlaylist}
                 blurOnSubmit={false}
               />
               <Pressable
                 style={({ pressed }) => [
                   styles.createButton,
-                  !newWatchlistName.trim() && styles.createButtonDisabled,
-                  pressed && newWatchlistName.trim() && styles.createButtonPressed,
+                  !newPlaylistName.trim() && styles.createButtonDisabled,
+                  pressed && newPlaylistName.trim() && styles.createButtonPressed,
                 ]}
-                onPress={handleCreateWatchlist}
-                disabled={!newWatchlistName.trim()}
+                onPress={handleCreatePlaylist}
+                disabled={!newPlaylistName.trim()}
               >
                 <IconSymbol name="plus" size={20} color={colors.text} />
               </Pressable>
             </View>
 
-            {/* Existing Watchlists */}
-            <View style={styles.watchlistsContainer}>
-              {watchlists.map((watchlist) => {
-                const isShowInList = isShowInWatchlist(watchlist.id, show.id);
+            {/* Existing Playlists */}
+            <View style={styles.playlistsContainer}>
+              {playlists.map((playlist) => {
+                const isShowInList = isShowInPlaylist(playlist.id, show.id);
                 return (
                   <Pressable
-                    key={watchlist.id}
+                    key={playlist.id}
                     style={({ pressed }) => [
-                      styles.watchlistItem,
-                      pressed && styles.watchlistItemPressed,
-                      isShowInList && styles.watchlistItemAdded,
+                      styles.playlistItem,
+                      pressed && styles.playlistItemPressed,
+                      isShowInList && styles.playlistItemAdded,
                     ]}
-                    onPress={() => handleToggleWatchlist(watchlist.id)}
+                    onPress={() => handleTogglePlaylist(playlist.id)}
                   >
-                    <View style={styles.watchlistInfo}>
-                      <Text style={styles.watchlistName}>{watchlist.name}</Text>
-                      <Text style={styles.watchlistCount}>
-                        {watchlist.shows.length} show{watchlist.shows.length !== 1 ? 's' : ''}
+                    <View style={styles.playlistInfo}>
+                      <Text style={styles.playlistName}>{playlist.name}</Text>
+                      <Text style={styles.playlistCount}>
+                        {playlist.showCount} show{playlist.showCount !== 1 ? 's' : ''}
                       </Text>
                     </View>
                     <IconSymbol 
@@ -394,10 +394,10 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     transform: [{ scale: 0.95 }],
   },
-  watchlistsContainer: {
+  playlistsContainer: {
     gap: 12,
   },
-  watchlistItem: {
+  playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -405,25 +405,25 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
-  watchlistItemPressed: {
+  playlistItemPressed: {
     opacity: 0.8,
     transform: [{ scale: 0.98 }],
   },
-  watchlistItemAdded: {
+  playlistItemAdded: {
     backgroundColor: colors.purpleLight,
     borderWidth: 1,
     borderColor: colors.purple,
   },
-  watchlistInfo: {
+  playlistInfo: {
     flex: 1,
   },
-  watchlistName: {
+  playlistName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
-  watchlistCount: {
+  playlistCount: {
     fontSize: 14,
     color: colors.textSecondary,
   },

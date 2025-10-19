@@ -6,7 +6,7 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { Show, User } from '@/types';
-import WatchlistModal from '@/components/WatchlistModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 import PostCard from '@/components/PostCard';
 import * as Haptics from 'expo-haptics';
@@ -16,11 +16,11 @@ type SearchCategory = 'posts' | 'comments' | 'shows' | 'users';
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { posts, watchlists, isShowInWatchlist, followUser, unfollowUser, isFollowing } = useData();
+  const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('shows');
-  const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
+  const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
 
   // Check if there's a pre-selected show filter from params
@@ -122,19 +122,19 @@ export default function SearchScreen() {
   const filteredResults = getFilteredResults();
   const resultCounts = getResultCounts();
 
-  // Check if show is in any watchlist
+  // Check if show is in any playlist
   const isShowSaved = (showId: string) => {
-    return watchlists.some(wl => isShowInWatchlist(wl.id, showId));
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
   };
 
   const handleSavePress = (show: Show, e: any) => {
     e.stopPropagation();
     setSelectedShow(show);
-    setWatchlistModalVisible(true);
+    setPlaylistModalVisible(true);
   };
 
-  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  const handleAddToPlaylist = (playlistId: string, showId: string) => {
+    console.log(`Show ${showId} added to playlist ${playlistId}`);
   };
 
   const handleRemoveShowFilter = () => {
@@ -356,14 +356,14 @@ export default function SearchScreen() {
       </View>
 
       {selectedShow && (
-        <WatchlistModal
-          visible={watchlistModalVisible}
+        <PlaylistModal
+          visible={playlistModalVisible}
           onClose={() => {
-            setWatchlistModalVisible(false);
+            setPlaylistModalVisible(false);
             setSelectedShow(null);
           }}
           show={selectedShow}
-          onAddToWatchlist={handleAddToWatchlist}
+          onAddToPlaylist={handleAddToPlaylist}
         />
       )}
     </>

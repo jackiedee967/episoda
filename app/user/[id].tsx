@@ -9,6 +9,7 @@ import {
   Pressable,
   FlatList,
   Alert,
+  Switch,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -29,7 +30,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 export default function UserProfile() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { posts, followUser, unfollowUser, isFollowing, currentUser: contextCurrentUser } = useData();
+  const { posts, followUser, unfollowUser, isFollowing, currentUser: contextCurrentUser, playlists, loadPlaylists, updatePlaylistPrivacy } = useData();
 
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -39,35 +40,12 @@ export default function UserProfile() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
   const [showsPrivate, setShowsPrivate] = useState(false);
-  const [playlists, setPlaylists] = useState<Playlist[]>([
-    {
-      id: 'playlist-1',
-      userId: currentUser.id,
-      name: 'My Favorites',
-      isPublic: true,
-      showCount: 5,
-      shows: ['show-1', 'show-2', 'show-3', 'show-4', 'show-5'],
-      createdAt: new Date(),
-    },
-    {
-      id: 'playlist-2',
-      userId: currentUser.id,
-      name: 'To Watch',
-      isPublic: false,
-      showCount: 3,
-      shows: ['show-1', 'show-2', 'show-3'],
-      createdAt: new Date(),
-    },
-  ]);
+  const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
   
   // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === id);
-  
-  // For now, we can't get other users' reposts from Supabase without their auth
-  // So we'll only show original posts for other users
-  // When viewing your own profile, reposts are shown via the profile.tsx component
   
   const isCurrentUser = id === currentUser.id;
   const following = isFollowing(id as string);
@@ -78,6 +56,37 @@ export default function UserProfile() {
 
   // Mock mutual followers
   const mutualFollowers = mockUsers.slice(0, 3);
+
+  // Load playlists when component mounts or user changes
+  useEffect(() => {
+    const loadUserPlaylists = async () => {
+      if (isCurrentUser) {
+        // Load all playlists for current user
+        await loadPlaylists();
+        setUserPlaylists(playlists);
+      } else {
+        // Load only public playlists for other users
+        await loadPlaylists(id as string);
+        const publicPlaylists = playlists.filter(p => p.userId === id && p.isPublic);
+        setUserPlaylists(publicPlaylists);
+      }
+    };
+
+    loadUserPlaylists();
+  }, [id, isCurrentUser, loadPlaylists]);
+
+  // Update userPlaylists when playlists change
+  useEffect(() => {
+    if (isCurrentUser) {
+      setUserPlaylists(playlists);
+    } else {
+      const publicPlaylists = playlists.filter(p => p.userId === id && p.isPublic);
+      setUserPlaylists(publicPlaylists);
+    }
+  }, [playlists, id, isCurrentUser]);
+
+  // Determine if we should show the playlists tab
+  const shouldShowPlaylistsTab = userPlaylists.length > 0;
 
   if (!user) {
     return (
@@ -160,12 +169,13 @@ export default function UserProfile() {
     console.log('Opening social link:', platform, url);
   };
 
-  const handlePlaylistToggle = (playlistId: string) => {
-    setPlaylists(
-      playlists.map((p) =>
-        p.id === playlistId ? { ...p, isPublic: !p.isPublic } : p
-      )
-    );
+  const handlePlaylistToggle = async (playlistId: string, isPublic: boolean) => {
+    try {
+      await updatePlaylistPrivacy(playlistId, isPublic);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.error('Error updating playlist privacy:', error);
+    }
   };
 
   const handleSharePlaylist = (playlistId: string) => {
@@ -345,43 +355,57 @@ export default function UserProfile() {
     );
   };
 
-  const renderTabs = () => (
-    <View style={styles.tabs}>
-      <Pressable
-        style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('posts');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-          Posts
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.tab, activeTab === 'shows' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('shows');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-          Shows Watched
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.tab, activeTab === 'playlists' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('playlists');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'playlists' && styles.activeTabText]}>
-          Playlists
-        </Text>
-      </Pressable>
-    </View>
-  );
+  const renderTabs = () => {
+    // Only show tabs that have content or are relevant
+    const tabs = ['posts', 'shows'];
+    if (shouldShowPlaylistsTab) {
+      tabs.push('playlists');
+    }
+
+    return (
+      <View style={styles.tabs}>
+        {tabs.includes('posts') && (
+          <Pressable
+            style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setActiveTab('posts');
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+              Posts
+            </Text>
+          </Pressable>
+        )}
+        {tabs.includes('shows') && (
+          <Pressable
+            style={[styles.tab, activeTab === 'shows' && styles.activeTab]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setActiveTab('shows');
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
+              Shows
+            </Text>
+          </Pressable>
+        )}
+        {tabs.includes('playlists') && (
+          <Pressable
+            style={[styles.tab, activeTab === 'playlists' && styles.activeTab]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setActiveTab('playlists');
+            }}
+          >
+            <Text style={[styles.tabText, activeTab === 'playlists' && styles.activeTabText]}>
+              Playlists
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  };
 
   const renderPostsTab = () => (
     <View style={styles.tabContent}>
@@ -413,15 +437,15 @@ export default function UserProfile() {
       {isCurrentUser && (
         <View style={styles.privacyToggle}>
           <Text style={styles.privacyLabel}>Show publicly</Text>
-          <Pressable
-            style={[styles.toggleButton, !showsPrivate && styles.toggleButtonActive]}
-            onPress={() => {
+          <Switch
+            value={!showsPrivate}
+            onValueChange={(value) => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowsPrivate(!showsPrivate);
+              setShowsPrivate(!value);
             }}
-          >
-            <Text style={styles.toggleButtonText}>{showsPrivate ? 'Private' : 'Public'}</Text>
-          </Pressable>
+            trackColor={{ false: colors.border, true: colors.secondary }}
+            thumbColor={colors.card}
+          />
         </View>
       )}
 
@@ -455,9 +479,9 @@ export default function UserProfile() {
 
   const renderPlaylistsTab = () => (
     <View style={styles.tabContent}>
-      {playlists.length > 0 ? (
+      {userPlaylists.length > 0 ? (
         <>
-          {playlists.map((playlist) => (
+          {userPlaylists.map((playlist) => (
             <Pressable
               key={playlist.id}
               style={styles.playlistItem}
@@ -469,17 +493,12 @@ export default function UserProfile() {
               </View>
               {isCurrentUser && (
                 <View style={styles.playlistActions}>
-                  <Pressable
-                    style={styles.playlistActionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handlePlaylistToggle(playlist.id);
-                    }}
-                  >
-                    <Text style={styles.playlistActionText}>
-                      {playlist.isPublic ? 'Public' : 'Private'}
-                    </Text>
-                  </Pressable>
+                  <Switch
+                    value={playlist.isPublic}
+                    onValueChange={(value) => handlePlaylistToggle(playlist.id, value)}
+                    trackColor={{ false: colors.border, true: colors.secondary }}
+                    thumbColor={colors.card}
+                  />
                   <Pressable
                     style={styles.playlistActionButton}
                     onPress={(e) => {
@@ -491,11 +510,40 @@ export default function UserProfile() {
                   </Pressable>
                 </View>
               )}
-              <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              {!isCurrentUser && (
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              )}
             </Pressable>
           ))}
           {isCurrentUser && (
-            <Pressable style={styles.addPlaylistButton}>
+            <Pressable 
+              style={styles.addPlaylistButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Alert.prompt(
+                  'Create Playlist',
+                  'Enter a name for your new playlist',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Create',
+                      onPress: async (name) => {
+                        if (name && name.trim()) {
+                          const { createPlaylist } = useData();
+                          try {
+                            await createPlaylist(name.trim());
+                            await loadPlaylists();
+                          } catch (error) {
+                            console.error('Error creating playlist:', error);
+                          }
+                        }
+                      },
+                    },
+                  ],
+                  'plain-text'
+                );
+              }}
+            >
               <IconSymbol name="plus" size={20} color={colors.text} />
               <Text style={styles.addPlaylistText}>Create New Playlist</Text>
             </Pressable>
@@ -506,7 +554,34 @@ export default function UserProfile() {
           <IconSymbol name="list.bullet" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
           {isCurrentUser && (
-            <Pressable style={styles.logShowButton}>
+            <Pressable 
+              style={styles.logShowButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Alert.prompt(
+                  'Create Playlist',
+                  'Enter a name for your new playlist',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Create',
+                      onPress: async (name) => {
+                        if (name && name.trim()) {
+                          const { createPlaylist } = useData();
+                          try {
+                            await createPlaylist(name.trim());
+                            await loadPlaylists();
+                          } catch (error) {
+                            console.error('Error creating playlist:', error);
+                          }
+                        }
+                      },
+                    },
+                  ],
+                  'plain-text'
+                );
+              }}
+            >
               <Text style={styles.logShowButtonText}>Create your first playlist</Text>
             </Pressable>
           )}
@@ -849,23 +924,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  toggleButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
-  },
-  toggleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -905,21 +963,15 @@ const styles = StyleSheet.create({
   },
   playlistActions: {
     flexDirection: 'row',
-    gap: 8,
-    marginRight: 8,
+    gap: 12,
+    alignItems: 'center',
   },
   playlistActionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    padding: 8,
     backgroundColor: colors.background,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-  },
-  playlistActionText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
   },
   addPlaylistButton: {
     flexDirection: 'row',

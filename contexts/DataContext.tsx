@@ -1,27 +1,18 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Post, Show, User } from '@/types';
+import { Post, Show, User, Playlist } from '@/types';
 import { mockPosts, mockUsers, currentUser as mockCurrentUser } from '@/data/mockData';
 import { supabase } from '@/app/integrations/supabase/client';
 
 // Storage keys
 const STORAGE_KEYS = {
-  WATCHLISTS: '@app/watchlists',
   POSTS: '@app/posts',
   USER_DATA: '@app/user_data',
   FOLLOWING: '@app/following',
   COMMENT_COUNTS: '@app/comment_counts',
   REPOSTS: '@app/reposts',
 };
-
-export interface Watchlist {
-  id: string;
-  name: string;
-  shows: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface UserData {
   following: string[];
@@ -35,13 +26,15 @@ interface RepostData {
 }
 
 interface DataContextType {
-  // Watchlists
-  watchlists: Watchlist[];
-  createWatchlist: (name: string, showId?: string) => Promise<Watchlist>;
-  addShowToWatchlist: (watchlistId: string, showId: string) => Promise<void>;
-  removeShowFromWatchlist: (watchlistId: string, showId: string) => Promise<void>;
-  deleteWatchlist: (watchlistId: string) => Promise<void>;
-  isShowInWatchlist: (watchlistId: string, showId: string) => boolean;
+  // Playlists
+  playlists: Playlist[];
+  createPlaylist: (name: string, showId?: string) => Promise<Playlist>;
+  addShowToPlaylist: (playlistId: string, showId: string) => Promise<void>;
+  removeShowFromPlaylist: (playlistId: string, showId: string) => Promise<void>;
+  deletePlaylist: (playlistId: string) => Promise<void>;
+  isShowInPlaylist: (playlistId: string, showId: string) => boolean;
+  updatePlaylistPrivacy: (playlistId: string, isPublic: boolean) => Promise<void>;
+  loadPlaylists: (userId?: string) => Promise<void>;
   
   // Posts
   posts: Post[];
@@ -69,41 +62,96 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<User>(mockCurrentUser);
   const [isLoading, setIsLoading] = useState(true);
   const [userReposts, setUserReposts] = useState<RepostData[]>([]);
   const [allReposts, setAllReposts] = useState<RepostData[]>([]);
 
+  // Load playlists from Supabase
+  const loadPlaylists = useCallback(async (userId?: string) => {
+    try {
+      console.log('Loading playlists from Supabase...');
+      
+      // Get the authenticated user
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser) {
+        console.log('No authenticated user, using mock user ID');
+        // Use mock user ID for development
+        const targetUserId = userId || mockCurrentUser.id;
+        
+        // For now, load from local state only if no auth
+        // In production, you'd want to handle this differently
+        return;
+      }
+
+      const targetUserId = userId || authUser.id;
+      
+      // Fetch playlists from Supabase
+      let query = supabase
+        .from('playlists')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error loading playlists:', error);
+        return;
+      }
+
+      if (data) {
+        // Fetch playlist shows for each playlist
+        const playlistsWithShows = await Promise.all(
+          data.map(async (playlist) => {
+            const { data: showsData, error: showsError } = await supabase
+              .from('playlist_shows')
+              .select('show_id')
+              .eq('playlist_id', playlist.id);
+
+            if (showsError) {
+              console.error('Error loading playlist shows:', showsError);
+              return {
+                id: playlist.id,
+                userId: playlist.user_id,
+                name: playlist.name,
+                isPublic: playlist.is_public,
+                showCount: playlist.show_count || 0,
+                shows: [],
+                createdAt: new Date(playlist.created_at),
+              };
+            }
+
+            return {
+              id: playlist.id,
+              userId: playlist.user_id,
+              name: playlist.name,
+              isPublic: playlist.is_public,
+              showCount: showsData?.length || 0,
+              shows: showsData?.map((s) => s.show_id) || [],
+              createdAt: new Date(playlist.created_at),
+            };
+          })
+        );
+
+        setPlaylists(playlistsWithShows);
+        console.log('Loaded playlists from Supabase:', playlistsWithShows.length);
+      }
+    } catch (error) {
+      console.error('Error in loadPlaylists:', error);
+    }
+  }, []);
+
   // Load data function
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       
-      // Load watchlists
-      const watchlistsData = await AsyncStorage.getItem(STORAGE_KEYS.WATCHLISTS);
-      if (watchlistsData) {
-        const parsedWatchlists = JSON.parse(watchlistsData);
-        const watchlistsWithDates = parsedWatchlists.map((wl: any) => ({
-          ...wl,
-          createdAt: new Date(wl.createdAt),
-          updatedAt: new Date(wl.updatedAt),
-        }));
-        setWatchlists(watchlistsWithDates);
-        console.log('Loaded watchlists from storage:', watchlistsWithDates.length);
-      } else {
-        const defaultWatchlist: Watchlist = {
-          id: 'wl-default',
-          name: 'Shows to Watch',
-          shows: [],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        setWatchlists([defaultWatchlist]);
-        await AsyncStorage.setItem(STORAGE_KEYS.WATCHLISTS, JSON.stringify([defaultWatchlist]));
-        console.log('Created default watchlist');
-      }
+      // Load playlists from Supabase
+      await loadPlaylists();
 
       // Load posts
       const postsData = await AsyncStorage.getItem(STORAGE_KEYS.POSTS);
@@ -149,7 +197,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [loadPlaylists]);
 
   // Initialize data from AsyncStorage and Supabase
   useEffect(() => {
@@ -220,68 +268,238 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Watchlist functions
-  const createWatchlist = async (name: string, showId?: string): Promise<Watchlist> => {
-    const newWatchlist: Watchlist = {
-      id: `wl-${Date.now()}`,
-      name: name.trim(),
-      shows: showId ? [showId] : [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const updatedWatchlists = [...watchlists, newWatchlist];
-    setWatchlists(updatedWatchlists);
-    await AsyncStorage.setItem(STORAGE_KEYS.WATCHLISTS, JSON.stringify(updatedWatchlists));
-    console.log(`Created watchlist: ${name}`, showId ? `with show ${showId}` : '');
-    
-    return newWatchlist;
-  };
-
-  const addShowToWatchlist = async (watchlistId: string, showId: string): Promise<void> => {
-    const updatedWatchlists = watchlists.map(wl => {
-      if (wl.id === watchlistId && !wl.shows.includes(showId)) {
-        return {
-          ...wl,
-          shows: [...wl.shows, showId],
-          updatedAt: new Date(),
+  // Playlist functions
+  const createPlaylist = async (name: string, showId?: string): Promise<Playlist> => {
+    try {
+      console.log('Creating playlist:', name, showId ? `with show ${showId}` : '');
+      
+      // Get the authenticated user
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser) {
+        console.log('No authenticated user, creating local playlist only');
+        // Fallback to local storage for development
+        const newPlaylist: Playlist = {
+          id: `playlist-${Date.now()}`,
+          userId: mockCurrentUser.id,
+          name: name.trim(),
+          isPublic: true,
+          showCount: showId ? 1 : 0,
+          shows: showId ? [showId] : [],
+          createdAt: new Date(),
         };
+        
+        setPlaylists([...playlists, newPlaylist]);
+        return newPlaylist;
       }
-      return wl;
-    });
 
-    setWatchlists(updatedWatchlists);
-    await AsyncStorage.setItem(STORAGE_KEYS.WATCHLISTS, JSON.stringify(updatedWatchlists));
-    console.log(`Added show ${showId} to watchlist ${watchlistId}`);
-  };
+      // Create playlist in Supabase
+      const { data: playlistData, error: playlistError } = await supabase
+        .from('playlists')
+        .insert({
+          user_id: authUser.id,
+          name: name.trim(),
+          is_public: true,
+          show_count: showId ? 1 : 0,
+        })
+        .select()
+        .single();
 
-  const removeShowFromWatchlist = async (watchlistId: string, showId: string): Promise<void> => {
-    const updatedWatchlists = watchlists.map(wl => {
-      if (wl.id === watchlistId) {
-        return {
-          ...wl,
-          shows: wl.shows.filter(id => id !== showId),
-          updatedAt: new Date(),
-        };
+      if (playlistError) {
+        console.error('Error creating playlist:', playlistError);
+        throw playlistError;
       }
-      return wl;
-    });
 
-    setWatchlists(updatedWatchlists);
-    await AsyncStorage.setItem(STORAGE_KEYS.WATCHLISTS, JSON.stringify(updatedWatchlists));
-    console.log(`Removed show ${showId} from watchlist ${watchlistId}`);
+      // If showId provided, add it to the playlist
+      if (showId && playlistData) {
+        const { error: showError } = await supabase
+          .from('playlist_shows')
+          .insert({
+            playlist_id: playlistData.id,
+            show_id: showId,
+          });
+
+        if (showError) {
+          console.error('Error adding show to playlist:', showError);
+        }
+      }
+
+      const newPlaylist: Playlist = {
+        id: playlistData.id,
+        userId: playlistData.user_id,
+        name: playlistData.name,
+        isPublic: playlistData.is_public,
+        showCount: showId ? 1 : 0,
+        shows: showId ? [showId] : [],
+        createdAt: new Date(playlistData.created_at),
+      };
+
+      setPlaylists([...playlists, newPlaylist]);
+      console.log('Created playlist successfully:', newPlaylist.id);
+      
+      return newPlaylist;
+    } catch (error) {
+      console.error('Error in createPlaylist:', error);
+      throw error;
+    }
   };
 
-  const deleteWatchlist = async (watchlistId: string): Promise<void> => {
-    const updatedWatchlists = watchlists.filter(wl => wl.id !== watchlistId);
-    setWatchlists(updatedWatchlists);
-    await AsyncStorage.setItem(STORAGE_KEYS.WATCHLISTS, JSON.stringify(updatedWatchlists));
-    console.log(`Deleted watchlist ${watchlistId}`);
+  const addShowToPlaylist = async (playlistId: string, showId: string): Promise<void> => {
+    try {
+      console.log('Adding show to playlist:', playlistId, showId);
+      
+      // Check if already in playlist
+      const playlist = playlists.find(p => p.id === playlistId);
+      if (playlist?.shows?.includes(showId)) {
+        console.log('Show already in playlist');
+        return;
+      }
+
+      // Add to Supabase
+      const { error } = await supabase
+        .from('playlist_shows')
+        .insert({
+          playlist_id: playlistId,
+          show_id: showId,
+        });
+
+      if (error) {
+        console.error('Error adding show to playlist:', error);
+        // Continue with local update even if Supabase fails
+      }
+
+      // Update show count
+      const { error: updateError } = await supabase
+        .from('playlists')
+        .update({ show_count: (playlist?.showCount || 0) + 1 })
+        .eq('id', playlistId);
+
+      if (updateError) {
+        console.error('Error updating playlist show count:', updateError);
+      }
+
+      // Update local state
+      const updatedPlaylists = playlists.map(p => {
+        if (p.id === playlistId) {
+          return {
+            ...p,
+            shows: [...(p.shows || []), showId],
+            showCount: (p.showCount || 0) + 1,
+          };
+        }
+        return p;
+      });
+
+      setPlaylists(updatedPlaylists);
+      console.log('Added show to playlist successfully');
+    } catch (error) {
+      console.error('Error in addShowToPlaylist:', error);
+    }
   };
 
-  const isShowInWatchlist = (watchlistId: string, showId: string): boolean => {
-    const watchlist = watchlists.find(wl => wl.id === watchlistId);
-    return watchlist ? watchlist.shows.includes(showId) : false;
+  const removeShowFromPlaylist = async (playlistId: string, showId: string): Promise<void> => {
+    try {
+      console.log('Removing show from playlist:', playlistId, showId);
+      
+      // Remove from Supabase
+      const { error } = await supabase
+        .from('playlist_shows')
+        .delete()
+        .eq('playlist_id', playlistId)
+        .eq('show_id', showId);
+
+      if (error) {
+        console.error('Error removing show from playlist:', error);
+        // Continue with local update even if Supabase fails
+      }
+
+      // Update show count
+      const playlist = playlists.find(p => p.id === playlistId);
+      const { error: updateError } = await supabase
+        .from('playlists')
+        .update({ show_count: Math.max(0, (playlist?.showCount || 1) - 1) })
+        .eq('id', playlistId);
+
+      if (updateError) {
+        console.error('Error updating playlist show count:', updateError);
+      }
+
+      // Update local state
+      const updatedPlaylists = playlists.map(p => {
+        if (p.id === playlistId) {
+          return {
+            ...p,
+            shows: (p.shows || []).filter(id => id !== showId),
+            showCount: Math.max(0, (p.showCount || 1) - 1),
+          };
+        }
+        return p;
+      });
+
+      setPlaylists(updatedPlaylists);
+      console.log('Removed show from playlist successfully');
+    } catch (error) {
+      console.error('Error in removeShowFromPlaylist:', error);
+    }
+  };
+
+  const deletePlaylist = async (playlistId: string): Promise<void> => {
+    try {
+      console.log('Deleting playlist:', playlistId);
+      
+      // Delete from Supabase (cascade will handle playlist_shows)
+      const { error } = await supabase
+        .from('playlists')
+        .delete()
+        .eq('id', playlistId);
+
+      if (error) {
+        console.error('Error deleting playlist:', error);
+        // Continue with local update even if Supabase fails
+      }
+
+      // Update local state
+      const updatedPlaylists = playlists.filter(p => p.id !== playlistId);
+      setPlaylists(updatedPlaylists);
+      console.log('Deleted playlist successfully');
+    } catch (error) {
+      console.error('Error in deletePlaylist:', error);
+    }
+  };
+
+  const updatePlaylistPrivacy = async (playlistId: string, isPublic: boolean): Promise<void> => {
+    try {
+      console.log('Updating playlist privacy:', playlistId, isPublic);
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('playlists')
+        .update({ is_public: isPublic })
+        .eq('id', playlistId);
+
+      if (error) {
+        console.error('Error updating playlist privacy:', error);
+        // Continue with local update even if Supabase fails
+      }
+
+      // Update local state
+      const updatedPlaylists = playlists.map(p => {
+        if (p.id === playlistId) {
+          return { ...p, isPublic };
+        }
+        return p;
+      });
+
+      setPlaylists(updatedPlaylists);
+      console.log('Updated playlist privacy successfully');
+    } catch (error) {
+      console.error('Error in updatePlaylistPrivacy:', error);
+    }
+  };
+
+  const isShowInPlaylist = (playlistId: string, showId: string): boolean => {
+    const playlist = playlists.find(p => p.id === playlistId);
+    return playlist ? (playlist.shows || []).includes(showId) : false;
   };
 
   // Post functions
@@ -565,13 +783,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const value: DataContextType = {
-    // Watchlists
-    watchlists,
-    createWatchlist,
-    addShowToWatchlist,
-    removeShowFromWatchlist,
-    deleteWatchlist,
-    isShowInWatchlist,
+    // Playlists
+    playlists,
+    createPlaylist,
+    addShowToPlaylist,
+    removeShowFromPlaylist,
+    deletePlaylist,
+    isShowInPlaylist,
+    updatePlaylistPrivacy,
+    loadPlaylists,
     
     // Posts
     posts,
