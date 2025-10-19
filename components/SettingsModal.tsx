@@ -80,6 +80,10 @@ export default function SettingsModal({
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(true);
 
+  // Save state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   // Social link input states (store just the username part)
   const [instagramUsername, setInstagramUsername] = useState('');
   const [tiktokUsername, setTiktokUsername] = useState('');
@@ -113,6 +117,7 @@ export default function SettingsModal({
       
       // Initialize social link inputs from full URLs
       initializeSocialInputs();
+      setSaveSuccess(false);
     } else {
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
@@ -177,7 +182,7 @@ export default function SettingsModal({
     return () => clearTimeout(timer);
   }, [username, initialUsername, checkUsernameAvailability]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate username
     if (!usernameAvailable) {
       Alert.alert('Error', 'Please choose an available username');
@@ -228,19 +233,157 @@ export default function SettingsModal({
       });
     }
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    onSave({
-      displayName,
-      username,
-      bio,
-      socialLinks: updatedSocialLinks,
-      notificationPreferences,
-    });
+    setIsSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Show success message
-    Alert.alert('Success', 'Your settings have been saved successfully!');
-    onClose();
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('No authenticated user found');
+      }
+
+      console.log('Saving settings for user:', user.id);
+
+      // 1. Update profile data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          display_name: displayName.trim(),
+          username: username.toLowerCase().trim(),
+          bio: bio.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+        throw new Error('Failed to update profile: ' + profileError.message);
+      }
+
+      console.log('Profile updated successfully');
+
+      // 2. Update social links - delete all existing and insert new ones
+      const { error: deleteError } = await supabase
+        .from('social_links')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('Error deleting old social links:', deleteError);
+        throw new Error('Failed to update social links: ' + deleteError.message);
+      }
+
+      if (updatedSocialLinks.length > 0) {
+        const socialLinksToInsert = updatedSocialLinks.map(link => ({
+          user_id: user.id,
+          platform: link.platform,
+          url: link.url,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('social_links')
+          .insert(socialLinksToInsert);
+
+        if (insertError) {
+          console.error('Error inserting social links:', insertError);
+          throw new Error('Failed to save social links: ' + insertError.message);
+        }
+      }
+
+      console.log('Social links updated successfully');
+
+      // 3. Update notification preferences
+      // First check if preferences exist
+      const { data: existingPrefs, error: checkError } = await supabase
+        .from('notification_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking notification preferences:', checkError);
+        throw new Error('Failed to check notification preferences: ' + checkError.message);
+      }
+
+      if (existingPrefs) {
+        // Update existing preferences
+        const { error: updatePrefsError } = await supabase
+          .from('notification_preferences')
+          .update({
+            new_follower: notificationPreferences.newFollower,
+            post_liked: notificationPreferences.postLiked,
+            post_commented: notificationPreferences.postCommented,
+            comment_replied: notificationPreferences.commentReplied,
+            mentioned: notificationPreferences.mentioned,
+            friend_posted: notificationPreferences.friendPosted,
+            friend_activity: notificationPreferences.friendActivity,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
+
+        if (updatePrefsError) {
+          console.error('Error updating notification preferences:', updatePrefsError);
+          throw new Error('Failed to update notification preferences: ' + updatePrefsError.message);
+        }
+      } else {
+        // Insert new preferences
+        const { error: insertPrefsError } = await supabase
+          .from('notification_preferences')
+          .insert({
+            user_id: user.id,
+            new_follower: notificationPreferences.newFollower,
+            post_liked: notificationPreferences.postLiked,
+            post_commented: notificationPreferences.postCommented,
+            comment_replied: notificationPreferences.commentReplied,
+            mentioned: notificationPreferences.mentioned,
+            friend_posted: notificationPreferences.friendPosted,
+            friend_activity: notificationPreferences.friendActivity,
+          });
+
+        if (insertPrefsError) {
+          console.error('Error inserting notification preferences:', insertPrefsError);
+          throw new Error('Failed to save notification preferences: ' + insertPrefsError.message);
+        }
+      }
+
+      console.log('Notification preferences updated successfully');
+
+      // Success!
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSaveSuccess(true);
+      
+      // Call the onSave callback to update local state
+      onSave({
+        displayName,
+        username,
+        bio,
+        socialLinks: updatedSocialLinks,
+        notificationPreferences,
+      });
+
+      // Show success message
+      Alert.alert('Success', 'Your settings have been saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            setSaveSuccess(false);
+            onClose();
+          }
+        }
+      ]);
+
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to save settings. Please try again.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isValidUrl = (url: string): boolean => {
@@ -653,14 +796,26 @@ export default function SettingsModal({
               <Pressable 
                 style={[
                   styles.saveButton,
-                  (!usernameAvailable || isCheckingUsername) && styles.saveButtonDisabled
+                  (!usernameAvailable || isCheckingUsername || isSaving) && styles.saveButtonDisabled
                 ]} 
                 onPress={handleSave}
-                disabled={!usernameAvailable || isCheckingUsername}
+                disabled={!usernameAvailable || isCheckingUsername || isSaving}
               >
-                <Text style={styles.saveButtonText}>
-                  {isCheckingUsername ? 'Checking...' : 'Save Changes'}
-                </Text>
+                {isSaving ? (
+                  <View style={styles.savingContainer}>
+                    <ActivityIndicator size="small" color={colors.text} />
+                    <Text style={[styles.saveButtonText, { marginLeft: 8 }]}>Saving...</Text>
+                  </View>
+                ) : saveSuccess ? (
+                  <View style={styles.savingContainer}>
+                    <IconSymbol name="checkmark.circle.fill" size={20} color="#4CAF50" />
+                    <Text style={[styles.saveButtonText, { marginLeft: 8, color: '#4CAF50' }]}>Saved!</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.saveButtonText}>
+                    {isCheckingUsername ? 'Checking...' : 'Save Changes'}
+                  </Text>
+                )}
               </Pressable>
             )}
 
@@ -924,6 +1079,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+  savingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoutButton: {
     backgroundColor: colors.card,
