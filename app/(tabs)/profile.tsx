@@ -11,6 +11,7 @@ import { currentUser, mockUsers, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
 import { Settings, Eye, EyeOff } from 'lucide-react-native';
+import { Show } from '@/types';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -51,10 +52,40 @@ export default function ProfileScreen() {
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
+  // Get last 4 unique shows from user's posts (rotation)
+  const getMyRotation = (): Show[] => {
+    const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
+    
+    // Sort by timestamp (most recent first)
+    const sortedPosts = [...userShowPosts].sort((a, b) => 
+      b.timestamp.getTime() - a.timestamp.getTime()
+    );
+    
+    // Get unique shows (last 4)
+    const uniqueShows: Show[] = [];
+    const seenShowIds = new Set<string>();
+    
+    for (const post of sortedPosts) {
+      if (!seenShowIds.has(post.show.id)) {
+        uniqueShows.push(post.show);
+        seenShowIds.add(post.show.id);
+        
+        if (uniqueShows.length === 4) {
+          break;
+        }
+      }
+    }
+    
+    return uniqueShows;
+  };
+
+  const myRotation = getMyRotation();
+
   console.log('Profile - User posts:', userPosts.length);
   console.log('Profile - User reposts:', userReposts.length);
   console.log('Profile - Total activity:', allUserActivity.length);
   console.log('Profile - Playlists:', playlists.length);
+  console.log('Profile - My Rotation:', myRotation.length, myRotation.map(s => s.title));
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -135,6 +166,28 @@ export default function ProfileScreen() {
       </View>
     </View>
   );
+
+  const renderMyRotation = () => {
+    // Only show rotation section if there are shows to display
+    if (myRotation.length === 0) return null;
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My Rotation</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rotationScroll}>
+          {myRotation.map((show) => (
+            <Pressable
+              key={show.id}
+              style={styles.rotationPoster}
+              onPress={() => router.push(`/show/${show.id}`)}
+            >
+              <Image source={{ uri: show.poster }} style={styles.posterImage} />
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderTabs = () => (
     <View style={styles.tabs}>
@@ -288,6 +341,7 @@ export default function ProfileScreen() {
       <View style={commonStyles.container}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
+          {renderMyRotation()}
           {renderTabs()}
           {activeTab === 'posts' && renderPostsTab()}
           {activeTab === 'shows' && renderShowsTab()}
@@ -381,6 +435,30 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  section: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  rotationScroll: {
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+  },
+  rotationPoster: {
+    width: 120,
+    height: 180,
+    borderRadius: 12,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  posterImage: {
+    width: '100%',
+    height: '100%',
   },
   tabs: {
     flexDirection: 'row',

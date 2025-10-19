@@ -10,6 +10,7 @@ import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 import PostCard from '@/components/PostCard';
 import * as Haptics from 'expo-haptics';
+import { X } from 'lucide-react-native';
 
 type SearchCategory = 'posts' | 'comments' | 'shows' | 'users';
 
@@ -25,8 +26,9 @@ export default function SearchScreen() {
 
   // Check if there's a pre-selected show filter from params
   const preselectedShowId = params.showId as string | undefined;
-  const preselectedShow = preselectedShowId 
-    ? mockShows.find(s => s.id === preselectedShowId) 
+  const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
+  const preselectedShow = showFilter 
+    ? mockShows.find(s => s.id === showFilter) 
     : null;
 
   const categories: { key: SearchCategory; label: string }[] = [
@@ -138,6 +140,8 @@ export default function SearchScreen() {
   };
 
   const handleRemoveShowFilter = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowFilter(undefined);
     router.setParams({ showId: undefined });
   };
 
@@ -203,8 +207,12 @@ export default function SearchScreen() {
       <View style={styles.filterChipContainer}>
         <View style={styles.filterChip}>
           <Text style={styles.filterChipText}>{preselectedShow.title}</Text>
-          <Pressable onPress={handleRemoveShowFilter} style={styles.filterChipClose}>
-            <IconSymbol name="xmark.circle.fill" size={18} color={colors.textSecondary} />
+          <Pressable 
+            onPress={handleRemoveShowFilter} 
+            style={styles.filterChipClose}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <X size={16} color={colors.text} strokeWidth={2.5} />
           </Pressable>
         </View>
       </View>
@@ -444,17 +452,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.background,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.card,
     borderRadius: 20,
-    paddingLeft: 16,
-    paddingRight: 8,
+    paddingLeft: 14,
+    paddingRight: 10,
     paddingVertical: 8,
     gap: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   filterChipText: {
     fontSize: 14,
@@ -462,7 +473,12 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   filterChipClose: {
-    padding: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,

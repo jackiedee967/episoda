@@ -18,7 +18,7 @@ import FollowersModal from '@/components/FollowersModal';
 import BlockReportModal from '@/components/BlockReportModal';
 import { mockUsers, currentUser, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
-import { User, Playlist, ReportReason } from '@/types';
+import { User, Playlist, ReportReason, Show } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe, Eye, EyeOff } from 'lucide-react-native';
 import { supabase } from '@/app/integrations/supabase/client';
@@ -47,8 +47,34 @@ export default function UserProfile() {
   const isCurrentUser = id === currentUser.id;
   const following = isFollowing(id as string);
 
-  // Mock data for rotation (last 4 shows logged)
-  const myRotation = mockShows.slice(0, 4);
+  // Get last 4 unique shows from user's posts (rotation)
+  const getMyRotation = (): Show[] => {
+    const userShowPosts = posts.filter((p) => p.user.id === id);
+    
+    // Sort by timestamp (most recent first)
+    const sortedPosts = [...userShowPosts].sort((a, b) => 
+      b.timestamp.getTime() - a.timestamp.getTime()
+    );
+    
+    // Get unique shows (last 4)
+    const uniqueShows: Show[] = [];
+    const seenShowIds = new Set<string>();
+    
+    for (const post of sortedPosts) {
+      if (!seenShowIds.has(post.show.id)) {
+        uniqueShows.push(post.show);
+        seenShowIds.add(post.show.id);
+        
+        if (uniqueShows.length === 4) {
+          break;
+        }
+      }
+    }
+    
+    return uniqueShows;
+  };
+
+  const myRotation = getMyRotation();
   const commonShows = isCurrentUser ? [] : mockShows.slice(0, 2);
 
   // Mock mutual followers
@@ -309,35 +335,28 @@ export default function UserProfile() {
   );
 
   const renderMyRotation = () => {
-    if (!isCurrentUser && myRotation.length === 0) return null;
+    // Only show rotation section if there are shows to display
+    if (myRotation.length === 0) return null;
 
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Rotation</Text>
-        {myRotation.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rotationScroll}>
-            {myRotation.map((show) => {
-              const isCommon = commonShows.some((s) => s.id === show.id);
-              return (
-                <Pressable
-                  key={show.id}
-                  style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
-                  onPress={() => router.push(`/show/${show.id}`)}
-                >
-                  <Image source={{ uri: show.poster }} style={styles.posterImage} />
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyRotation}>
-            <IconSymbol name="tv" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyRotationText}>Log your first show</Text>
-            <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-              <Text style={styles.logShowButtonText}>Log Show</Text>
-            </Pressable>
-          </View>
-        )}
+        <Text style={styles.sectionTitle}>
+          {isCurrentUser ? 'My Rotation' : `${user.displayName}'s Rotation`}
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rotationScroll}>
+          {myRotation.map((show) => {
+            const isCommon = commonShows.some((s) => s.id === show.id);
+            return (
+              <Pressable
+                key={show.id}
+                style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
+                onPress={() => router.push(`/show/${show.id}`)}
+              >
+                <Image source={{ uri: show.poster }} style={styles.posterImage} />
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
     );
   };
