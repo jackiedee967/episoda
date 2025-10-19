@@ -1,5 +1,5 @@
 
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity } from 'react-native';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
@@ -11,6 +11,7 @@ import PostButton from '@/components/PostButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function HomeScreen() {
 
   const handleFollowUser = async (userId: string) => {
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (isFollowing(userId)) {
         await unfollowUser(userId);
         console.log('Unfollowed user:', userId);
@@ -41,6 +43,11 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error toggling follow:', error);
     }
+  };
+
+  const handleUserPress = (userId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/user/${userId}`);
   };
 
   const renderHeader = () => (
@@ -99,19 +106,27 @@ export default function HomeScreen() {
           contentContainerStyle={styles.usersScroll}
         >
           {suggestedUsers.map((user) => (
-            <View key={user.id} style={styles.userCard}>
+            <TouchableOpacity
+              key={user.id}
+              style={styles.userCard}
+              onPress={() => handleUserPress(user.id)}
+              activeOpacity={0.7}
+            >
               <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
               <Text style={styles.userDisplayName}>{user.displayName}</Text>
               <Text style={styles.userUsername}>@{user.username}</Text>
               <Pressable
                 style={styles.followButton}
-                onPress={() => handleFollowUser(user.id)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleFollowUser(user.id);
+                }}
               >
                 <Text style={styles.followButtonText}>
                   {isFollowing(user.id) ? 'Following' : 'Follow'}
                 </Text>
               </Pressable>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
@@ -278,6 +293,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     width: 160,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
   },
   userAvatar: {
     width: 80,
