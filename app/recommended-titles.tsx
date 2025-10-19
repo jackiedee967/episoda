@@ -6,16 +6,16 @@ import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { Show } from '@/types';
-import WatchlistModal from '@/components/WatchlistModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 
 type Genre = 'All' | 'Reality' | 'Drama' | 'Comedy' | 'Thriller' | 'Sci-Fi';
 
 export default function RecommendedTitlesScreen() {
   const router = useRouter();
-  const { watchlists, isShowInWatchlist } = useData();
+  const { playlists, isShowInPlaylist } = useData();
   const [selectedGenre, setSelectedGenre] = useState<Genre>('All');
-  const [watchlistModalVisible, setWatchlistModalVisible] = useState(false);
+  const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
 
   const genres: Genre[] = ['All', 'Reality', 'Drama', 'Comedy', 'Thriller', 'Sci-Fi'];
@@ -26,19 +26,19 @@ export default function RecommendedTitlesScreen() {
   // Filter by genre (in a real app, shows would have genre property)
   const filteredShows = selectedGenre === 'All' ? sortedShows : sortedShows;
 
-  // Check if show is in any watchlist
+  // Check if show is in any playlist
   const isShowSaved = (showId: string) => {
-    return watchlists.some(wl => isShowInWatchlist(wl.id, showId));
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
   };
 
   const handleSavePress = (show: Show, e: any) => {
     e.stopPropagation();
     setSelectedShow(show);
-    setWatchlistModalVisible(true);
+    setPlaylistModalVisible(true);
   };
 
-  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  const handleAddToPlaylist = (playlistId: string, showId: string) => {
+    console.log(`Show ${showId} added to playlist ${playlistId}`);
   };
 
   return (
@@ -128,14 +128,14 @@ export default function RecommendedTitlesScreen() {
       </View>
 
       {selectedShow && (
-        <WatchlistModal
-          visible={watchlistModalVisible}
+        <PlaylistModal
+          visible={playlistModalVisible}
           onClose={() => {
-            setWatchlistModalVisible(false);
+            setPlaylistModalVisible(false);
             setSelectedShow(null);
           }}
           show={selectedShow}
-          onAddToWatchlist={handleAddToWatchlist}
+          onAddToPlaylist={handleAddToPlaylist}
         />
       )}
     </>

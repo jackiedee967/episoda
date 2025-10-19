@@ -5,7 +5,7 @@ import { colors } from '@/styles/commonStyles';
 import { Show, User } from '@/types';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
-import WatchlistModal from '@/components/WatchlistModal';
+import PlaylistModal from '@/components/PlaylistModal';
 
 interface ShowCardProps {
   show: Show;
@@ -14,8 +14,8 @@ interface ShowCardProps {
 
 export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const router = useRouter();
-  const [watchlistModalVisible, setWatchlistModalVisible] = React.useState(false);
-  const [isInWatchlist, setIsInWatchlist] = React.useState(false);
+  const [playlistModalVisible, setPlaylistModalVisible] = React.useState(false);
+  const [isInPlaylist, setIsInPlaylist] = React.useState(false);
 
   const handlePress = () => {
     if (show?.id) {
@@ -32,12 +32,12 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
 
   const handleSavePress = (e: any) => {
     e.stopPropagation();
-    setWatchlistModalVisible(true);
+    setPlaylistModalVisible(true);
   };
 
-  const handleAddToWatchlist = (watchlistId: string, showId: string) => {
-    setIsInWatchlist(true);
-    console.log(`Show ${showId} added to watchlist ${watchlistId}`);
+  const handleAddToPlaylist = (playlistId: string, showId: string) => {
+    setIsInPlaylist(true);
+    console.log(`Show ${showId} added to playlist ${playlistId}`);
   };
 
   const renderFriendsWatchingPill = () => {
@@ -126,7 +126,7 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
             onPress={handleSavePress}
           >
             <IconSymbol 
-              name={isInWatchlist ? "bookmark.fill" : "bookmark"} 
+              name={isInPlaylist ? "bookmark.fill" : "bookmark"} 
               size={18} 
               color="#FFFFFF" 
             />
@@ -137,11 +137,11 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
         </View>
       </Pressable>
 
-      <WatchlistModal
-        visible={watchlistModalVisible}
-        onClose={() => setWatchlistModalVisible(false)}
+      <PlaylistModal
+        visible={playlistModalVisible}
+        onClose={() => setPlaylistModalVisible(false)}
         show={show}
-        onAddToWatchlist={handleAddToWatchlist}
+        onAddToPlaylist={handleAddToPlaylist}
       />
     </>
   );

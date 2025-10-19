@@ -145,6 +145,62 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loadRepostsFromSupabase = useCallback(async () => {
+    try {
+      // Try to load all reposts from Supabase
+      const { data, error } = await supabase
+        .from('reposts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.log('Error fetching reposts from Supabase (might not be authenticated):', error.message);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const repostData: RepostData[] = data.map((r: any) => ({
+          postId: r.original_post_id,
+          userId: r.user_id,
+          timestamp: new Date(r.created_at),
+        }));
+        
+        setAllReposts(repostData);
+        
+        // Filter for current user
+        const currentUserReposts = repostData.filter(r => r.userId === mockCurrentUser.id);
+        setUserReposts(currentUserReposts);
+        
+        console.log('Loaded reposts from Supabase - Total:', repostData.length, 'User:', currentUserReposts.length);
+      }
+    } catch (error) {
+      console.log('Error in loadRepostsFromSupabase:', error);
+    }
+  }, []);
+
+  const loadRepostsFromStorage = useCallback(async () => {
+    try {
+      const repostsData = await AsyncStorage.getItem(STORAGE_KEYS.REPOSTS);
+      if (repostsData) {
+        const parsedReposts = JSON.parse(repostsData);
+        const repostsWithDates = parsedReposts.map((r: any) => ({
+          ...r,
+          timestamp: new Date(r.timestamp),
+        }));
+        
+        // Only use storage reposts if we don't have Supabase data
+        if (allReposts.length === 0) {
+          setAllReposts(repostsWithDates);
+          const currentUserReposts = repostsWithDates.filter((r: RepostData) => r.userId === mockCurrentUser.id);
+          setUserReposts(currentUserReposts);
+          console.log('Loaded reposts from storage - Total:', repostsWithDates.length, 'User:', currentUserReposts.length);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading reposts from storage:', error);
+    }
+  }, [allReposts.length]);
+
   // Load data function
   const loadData = useCallback(async () => {
     try {
@@ -197,68 +253,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [loadPlaylists]);
+  }, [loadPlaylists, loadRepostsFromSupabase, loadRepostsFromStorage]);
 
   // Initialize data from AsyncStorage and Supabase
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const loadRepostsFromSupabase = async () => {
-    try {
-      // Try to load all reposts from Supabase
-      const { data, error } = await supabase
-        .from('reposts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.log('Error fetching reposts from Supabase (might not be authenticated):', error.message);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const repostData: RepostData[] = data.map((r: any) => ({
-          postId: r.original_post_id,
-          userId: r.user_id,
-          timestamp: new Date(r.created_at),
-        }));
-        
-        setAllReposts(repostData);
-        
-        // Filter for current user
-        const currentUserReposts = repostData.filter(r => r.userId === mockCurrentUser.id);
-        setUserReposts(currentUserReposts);
-        
-        console.log('Loaded reposts from Supabase - Total:', repostData.length, 'User:', currentUserReposts.length);
-      }
-    } catch (error) {
-      console.log('Error in loadRepostsFromSupabase:', error);
-    }
-  };
-
-  const loadRepostsFromStorage = async () => {
-    try {
-      const repostsData = await AsyncStorage.getItem(STORAGE_KEYS.REPOSTS);
-      if (repostsData) {
-        const parsedReposts = JSON.parse(repostsData);
-        const repostsWithDates = parsedReposts.map((r: any) => ({
-          ...r,
-          timestamp: new Date(r.timestamp),
-        }));
-        
-        // Only use storage reposts if we don't have Supabase data
-        if (allReposts.length === 0) {
-          setAllReposts(repostsWithDates);
-          const currentUserReposts = repostsWithDates.filter((r: RepostData) => r.userId === mockCurrentUser.id);
-          setUserReposts(currentUserReposts);
-          console.log('Loaded reposts from storage - Total:', repostsWithDates.length, 'User:', currentUserReposts.length);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading reposts from storage:', error);
-    }
-  };
 
   const saveRepostsToStorage = async (reposts: RepostData[]) => {
     try {

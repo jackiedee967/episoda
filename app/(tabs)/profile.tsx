@@ -16,7 +16,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { posts, followUser, unfollowUser, isFollowing, getAllReposts, playlists, loadPlaylists, updatePlaylistPrivacy } = useData();
+  const { posts, followUser, unfollowUser, isFollowing, getAllReposts, playlists, loadPlaylists, updatePlaylistPrivacy, createPlaylist } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -98,6 +98,31 @@ export default function ProfileScreen() {
         [{ text: 'OK' }]
       );
     }
+  };
+
+  const handleCreatePlaylist = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.prompt(
+      'Create Playlist',
+      'Enter a name for your new playlist',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Create',
+          onPress: async (name) => {
+            if (name && name.trim()) {
+              try {
+                await createPlaylist(name.trim());
+                await loadPlaylists();
+              } catch (error) {
+                console.error('Error creating playlist:', error);
+              }
+            }
+          },
+        },
+      ],
+      'plain-text'
+    );
   };
 
   const renderHeader = () => (
@@ -278,31 +303,7 @@ export default function ProfileScreen() {
           ))}
           <Pressable 
             style={styles.addPlaylistButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              Alert.prompt(
-                'Create Playlist',
-                'Enter a name for your new playlist',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Create',
-                    onPress: async (name) => {
-                      if (name && name.trim()) {
-                        const { createPlaylist } = useData();
-                        try {
-                          await createPlaylist(name.trim());
-                          await loadPlaylists();
-                        } catch (error) {
-                          console.error('Error creating playlist:', error);
-                        }
-                      }
-                    },
-                  },
-                ],
-                'plain-text'
-              );
-            }}
+            onPress={handleCreatePlaylist}
           >
             <IconSymbol name="plus" size={20} color={colors.text} />
             <Text style={styles.addPlaylistText}>Create New Playlist</Text>
@@ -317,31 +318,7 @@ export default function ProfileScreen() {
           </Text>
           <Pressable 
             style={styles.logShowButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              Alert.prompt(
-                'Create Playlist',
-                'Enter a name for your new playlist',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Create',
-                    onPress: async (name) => {
-                      if (name && name.trim()) {
-                        const { createPlaylist } = useData();
-                        try {
-                          await createPlaylist(name.trim());
-                          await loadPlaylists();
-                        } catch (error) {
-                          console.error('Error creating playlist:', error);
-                        }
-                      }
-                    },
-                  },
-                ],
-                'plain-text'
-              );
-            }}
+            onPress={handleCreatePlaylist}
           >
             <Text style={styles.logShowButtonText}>Create your first playlist</Text>
           </Pressable>
