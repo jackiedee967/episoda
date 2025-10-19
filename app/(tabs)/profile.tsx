@@ -1,16 +1,14 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
-import SettingsModal from '@/components/SettingsModal';
 import FollowersModal from '@/components/FollowersModal';
 import { currentUser, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
-import { NotificationPreferences, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Settings } from 'lucide-react-native';
 
@@ -21,27 +19,9 @@ export default function ProfileScreen() {
   const { posts, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
-
-  // Local state for profile data
-  const [displayName, setDisplayName] = useState(currentUser.displayName);
-  const [username, setUsername] = useState(currentUser.username);
-  const [bio, setBio] = useState(currentUser.bio || '');
-
-  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({
-    newFollower: true,
-    postLiked: true,
-    postCommented: true,
-    commentReplied: true,
-    mentioned: true,
-    friendPosted: true,
-    friendActivity: true,
-  });
-
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
 
   // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
@@ -61,7 +41,7 @@ export default function ProfileScreen() {
     ...userReposts.map(repost => ({ 
       post: repost.post, 
       isRepost: true, 
-      timestamp: repost.timestamp, // Use the repost timestamp, not the original post timestamp
+      timestamp: repost.timestamp,
       repostedBy: { id: currentUser.id, displayName: currentUser.displayName }
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -80,51 +60,9 @@ export default function ProfileScreen() {
     setShowFollowingModal(true);
   };
 
-  const handleSaveSettings = (data: {
-    displayName: string;
-    username: string;
-    bio: string;
-    socialLinks: SocialLink[];
-    notificationPreferences: NotificationPreferences;
-  }) => {
-    console.log('=== PROFILE: Saving settings ===');
-    console.log('Display Name:', data.displayName);
-    console.log('Username:', data.username);
-    console.log('Bio:', data.bio);
-    console.log('Social Links:', data.socialLinks);
-    console.log('Notification Preferences:', data.notificationPreferences);
-
-    // Update local state
-    setDisplayName(data.displayName);
-    setUsername(data.username);
-    setBio(data.bio);
-    setSocialLinks(data.socialLinks);
-    setNotificationPreferences(data.notificationPreferences);
-
-    // Update the currentUser object (this is mock data, so we can mutate it)
-    currentUser.displayName = data.displayName;
-    currentUser.username = data.username;
-    currentUser.bio = data.bio;
-
-    console.log('=== PROFILE: Settings saved successfully ===');
-  };
-
-  const handleDeleteAccount = () => {
-    console.log('Deleting account...');
-    Alert.alert(
-      'Account Deleted',
-      'Your account has been deleted. (This is a demo - no actual deletion occurred)',
-      [{ text: 'OK' }]
-    );
-  };
-
-  const handleLogout = () => {
-    console.log('Logging out...');
-    Alert.alert(
-      'Logged Out',
-      'You have been logged out. (This is a demo - no actual logout occurred)',
-      [{ text: 'OK' }]
-    );
+  const handleSettingsPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/settings');
   };
 
   const renderHeader = () => (
@@ -132,19 +70,16 @@ export default function ProfileScreen() {
       <View style={styles.headerTop}>
         <Pressable
           style={styles.settingsButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowSettingsModal(true);
-          }}
+          onPress={handleSettingsPress}
         >
           <Settings size={24} color={colors.text} />
         </Pressable>
       </View>
 
       <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-      <Text style={styles.displayName}>{displayName}</Text>
-      <Text style={styles.username}>@{username}</Text>
-      {bio && <Text style={styles.bio}>{bio}</Text>}
+      <Text style={styles.displayName}>{currentUser.displayName}</Text>
+      <Text style={styles.username}>@{currentUser.username}</Text>
+      {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
 
       <View style={styles.statsContainer}>
         <Pressable style={styles.statItem} onPress={handleShowFollowers}>
@@ -242,20 +177,6 @@ export default function ProfileScreen() {
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
-
-      <SettingsModal
-        visible={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        displayName={displayName}
-        username={username}
-        bio={bio}
-        socialLinks={socialLinks}
-        notificationPreferences={notificationPreferences}
-        authMethod="apple"
-        onSave={handleSaveSettings}
-        onDeleteAccount={handleDeleteAccount}
-        onLogout={handleLogout}
-      />
 
       <FollowersModal
         visible={showFollowersModal || showFollowingModal}
