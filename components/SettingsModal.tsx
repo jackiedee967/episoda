@@ -118,6 +118,11 @@ export default function SettingsModal({
       // Initialize social link inputs from full URLs
       initializeSocialInputs();
       setSaveSuccess(false);
+      
+      // Reset username validation when modal opens
+      setUsernameError('');
+      setUsernameAvailable(true);
+      setIsCheckingUsername(false);
     } else {
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
@@ -129,13 +134,17 @@ export default function SettingsModal({
 
   // Check if username is available in database
   const checkUsernameAvailability = useCallback(async (newUsername: string) => {
+    console.log('Checking username availability for:', newUsername);
+    
     if (newUsername === initialUsername) {
+      console.log('Username unchanged, skipping check');
       setUsernameError('');
       setUsernameAvailable(true);
       return;
     }
 
     if (newUsername.trim().length < 3) {
+      console.log('Username too short');
       setUsernameError('Username must be at least 3 characters');
       setUsernameAvailable(false);
       return;
@@ -156,9 +165,11 @@ export default function SettingsModal({
         setUsernameError('Error checking username availability');
         setUsernameAvailable(false);
       } else if (data) {
+        console.log('Username taken');
         setUsernameError('Username already taken');
         setUsernameAvailable(false);
       } else {
+        console.log('Username available');
         setUsernameError('');
         setUsernameAvailable(true);
       }
@@ -190,8 +201,14 @@ export default function SettingsModal({
     console.log('Username Available:', usernameAvailable);
     console.log('Is Checking Username:', isCheckingUsername);
 
-    // Validate username
-    if (!usernameAvailable) {
+    // Don't allow save while checking username
+    if (isCheckingUsername) {
+      console.log('Still checking username, please wait');
+      return;
+    }
+
+    // Validate username only if it changed
+    if (username !== initialUsername && !usernameAvailable) {
       console.log('Username not available, showing alert');
       Alert.alert('Error', 'Please choose an available username');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -824,6 +841,9 @@ export default function SettingsModal({
     </View>
   );
 
+  // Determine if save button should be disabled
+  const isSaveDisabled = isCheckingUsername || isSaving || (username !== initialUsername && !usernameAvailable);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -889,10 +909,13 @@ export default function SettingsModal({
                 <Pressable 
                   style={[
                     styles.saveButton,
-                    (!usernameAvailable || isCheckingUsername || isSaving) && styles.saveButtonDisabled
+                    isSaveDisabled && styles.saveButtonDisabled
                   ]} 
-                  onPress={handleSave}
-                  disabled={!usernameAvailable || isCheckingUsername || isSaving}
+                  onPress={() => {
+                    console.log('Save button pressed - calling handleSave');
+                    handleSave();
+                  }}
+                  disabled={isSaveDisabled}
                 >
                   {isSaving ? (
                     <View style={styles.savingContainer}>
@@ -906,10 +929,15 @@ export default function SettingsModal({
                     </View>
                   ) : (
                     <Text style={styles.saveButtonText}>
-                      {isCheckingUsername ? 'Checking...' : 'Save Changes'}
+                      {isCheckingUsername ? 'Checking username...' : 'Save Changes'}
                     </Text>
                   )}
                 </Pressable>
+                {isSaveDisabled && !isSaving && (
+                  <Text style={styles.disabledHint}>
+                    {isCheckingUsername ? 'Checking username availability...' : 'Please fix errors before saving'}
+                  </Text>
+                )}
               </View>
             )}
 
@@ -1169,6 +1197,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    minHeight: 52,
+    justifyContent: 'center',
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -1182,6 +1212,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
   },
   logoutButton: {
     backgroundColor: colors.card,
