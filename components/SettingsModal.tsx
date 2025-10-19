@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -66,7 +66,7 @@ export default function SettingsModal({
   onDeleteAccount,
   onLogout,
 }: SettingsModalProps) {
-  const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const [activeTab, setActiveTab] = useState<'account' | 'notifications' | 'security'>('account');
 
   const [displayName, setDisplayName] = useState(initialDisplayName);
@@ -885,35 +885,39 @@ export default function SettingsModal({
             {activeTab === 'security' && renderSecurityTab()}
 
             {activeTab !== 'security' && (
-              <Pressable 
-                style={[
-                  styles.saveButton,
-                  (!usernameAvailable || isCheckingUsername || isSaving) && styles.saveButtonDisabled
-                ]} 
-                onPress={handleSave}
-                disabled={!usernameAvailable || isCheckingUsername || isSaving}
-              >
-                {isSaving ? (
-                  <View style={styles.savingContainer}>
-                    <ActivityIndicator size="small" color={colors.text} />
-                    <Text style={[styles.saveButtonText, { marginLeft: 8 }]}>Saving...</Text>
-                  </View>
-                ) : saveSuccess ? (
-                  <View style={styles.savingContainer}>
-                    <IconSymbol name="checkmark.circle.fill" size={20} color="#4CAF50" />
-                    <Text style={[styles.saveButtonText, { marginLeft: 8, color: '#4CAF50' }]}>Saved!</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.saveButtonText}>
-                    {isCheckingUsername ? 'Checking...' : 'Save Changes'}
-                  </Text>
-                )}
-              </Pressable>
+              <View style={styles.buttonContainer}>
+                <Pressable 
+                  style={[
+                    styles.saveButton,
+                    (!usernameAvailable || isCheckingUsername || isSaving) && styles.saveButtonDisabled
+                  ]} 
+                  onPress={handleSave}
+                  disabled={!usernameAvailable || isCheckingUsername || isSaving}
+                >
+                  {isSaving ? (
+                    <View style={styles.savingContainer}>
+                      <ActivityIndicator size="small" color={colors.text} />
+                      <Text style={[styles.saveButtonText, { marginLeft: 8 }]}>Saving...</Text>
+                    </View>
+                  ) : saveSuccess ? (
+                    <View style={styles.savingContainer}>
+                      <IconSymbol name="checkmark.circle.fill" size={20} color="#4CAF50" />
+                      <Text style={[styles.saveButtonText, { marginLeft: 8, color: '#4CAF50' }]}>Saved!</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.saveButtonText}>
+                      {isCheckingUsername ? 'Checking...' : 'Save Changes'}
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             )}
 
-            <Pressable style={styles.logoutButton} onPress={onLogout}>
-              <Text style={styles.logoutButtonText}>Log Out</Text>
-            </Pressable>
+            <View style={styles.buttonContainer}>
+              <Pressable style={styles.logoutButton} onPress={onLogout}>
+                <Text style={styles.logoutButtonText}>Log Out</Text>
+              </Pressable>
+            </View>
 
             <View style={{ height: 100 }} />
           </ScrollView>
@@ -1156,13 +1160,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+  buttonContainer: {
+    paddingHorizontal: 20,
+    marginTop: 12,
+  },
   saveButton: {
     backgroundColor: colors.secondary,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 24,
-    marginHorizontal: 20,
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -1184,8 +1190,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 12,
-    marginHorizontal: 20,
   },
   logoutButtonText: {
     fontSize: 16,
