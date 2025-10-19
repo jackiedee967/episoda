@@ -77,6 +77,31 @@ export default function UserProfile() {
   const myRotation = getMyRotation();
   const commonShows = isCurrentUser ? [] : mockShows.slice(0, 2);
 
+  // Get watch history - all unique shows the user has logged, sorted chronologically
+  const getWatchHistory = (): Show[] => {
+    const userShowPosts = posts.filter((p) => p.user.id === id);
+    
+    // Sort by timestamp (most recent first)
+    const sortedPosts = [...userShowPosts].sort((a, b) => 
+      b.timestamp.getTime() - a.timestamp.getTime()
+    );
+    
+    // Get unique shows in chronological order
+    const uniqueShows: Show[] = [];
+    const seenShowIds = new Set<string>();
+    
+    for (const post of sortedPosts) {
+      if (!seenShowIds.has(post.show.id)) {
+        uniqueShows.push(post.show);
+        seenShowIds.add(post.show.id);
+      }
+    }
+    
+    return uniqueShows;
+  };
+
+  const watchHistory = getWatchHistory();
+
   // Mock mutual followers
   const mutualFollowers = mockUsers.slice(0, 3);
 
@@ -100,6 +125,11 @@ export default function UserProfile() {
 
   // Determine if we should show the playlists tab
   const shouldShowPlaylistsTab = userPlaylists.length > 0;
+
+  console.log('UserProfile - User ID:', id);
+  console.log('UserProfile - User posts:', userPosts.length);
+  console.log('UserProfile - My Rotation:', myRotation.length, myRotation.map(s => s.title));
+  console.log('UserProfile - Watch History:', watchHistory.length, watchHistory.map(s => s.title));
 
   if (!user) {
     return (
@@ -440,9 +470,9 @@ export default function UserProfile() {
 
   const renderShowsTab = () => (
     <View style={styles.tabContent}>
-      {mockShows.length > 0 ? (
+      {watchHistory.length > 0 ? (
         <View style={styles.showsGrid}>
-          {mockShows.map((show) => (
+          {watchHistory.map((show) => (
             <Pressable
               key={show.id}
               style={styles.showGridItem}

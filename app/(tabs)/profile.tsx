@@ -81,11 +81,37 @@ export default function ProfileScreen() {
 
   const myRotation = getMyRotation();
 
+  // Get watch history - all unique shows the user has logged, sorted chronologically
+  const getWatchHistory = (): Show[] => {
+    const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
+    
+    // Sort by timestamp (most recent first)
+    const sortedPosts = [...userShowPosts].sort((a, b) => 
+      b.timestamp.getTime() - a.timestamp.getTime()
+    );
+    
+    // Get unique shows in chronological order
+    const uniqueShows: Show[] = [];
+    const seenShowIds = new Set<string>();
+    
+    for (const post of sortedPosts) {
+      if (!seenShowIds.has(post.show.id)) {
+        uniqueShows.push(post.show);
+        seenShowIds.add(post.show.id);
+      }
+    }
+    
+    return uniqueShows;
+  };
+
+  const watchHistory = getWatchHistory();
+
   console.log('Profile - User posts:', userPosts.length);
   console.log('Profile - User reposts:', userReposts.length);
   console.log('Profile - Total activity:', allUserActivity.length);
   console.log('Profile - Playlists:', playlists.length);
   console.log('Profile - My Rotation:', myRotation.length, myRotation.map(s => s.title));
+  console.log('Profile - Watch History:', watchHistory.length, watchHistory.map(s => s.title));
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -255,9 +281,9 @@ export default function ProfileScreen() {
 
   const renderShowsTab = () => (
     <View style={styles.tabContent}>
-      {mockShows.length > 0 ? (
+      {watchHistory.length > 0 ? (
         <View style={styles.showsGrid}>
-          {mockShows.map((show) => (
+          {watchHistory.map((show) => (
             <Pressable
               key={show.id}
               style={styles.showGridItem}
