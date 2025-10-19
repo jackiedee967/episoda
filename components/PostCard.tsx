@@ -388,9 +388,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   username: {
     fontSize: 15,
