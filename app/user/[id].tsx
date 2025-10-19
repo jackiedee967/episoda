@@ -7,9 +7,7 @@ import {
   ScrollView,
   Image,
   Pressable,
-  FlatList,
   Alert,
-  Switch,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
@@ -22,7 +20,7 @@ import { mockUsers, currentUser, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { User, Playlist, ReportReason } from '@/types';
 import * as Haptics from 'expo-haptics';
-import { Instagram, Music, Globe, BanIcon } from 'lucide-react-native';
+import { Instagram, Music, Globe, Eye, EyeOff } from 'lucide-react-native';
 import { supabase } from '@/app/integrations/supabase/client';
 
 type Tab = 'posts' | 'shows' | 'playlists';
@@ -39,7 +37,6 @@ export default function UserProfile() {
   const [showBlockReportModal, setShowBlockReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
-  const [showsPrivate, setShowsPrivate] = useState(false);
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
@@ -182,31 +179,6 @@ export default function UserProfile() {
       playlist.name,
       showTitles || 'No shows in this playlist yet',
       [{ text: 'OK' }]
-    );
-  };
-
-  const handleCreatePlaylist = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.prompt(
-      'Create Playlist',
-      'Enter a name for your new playlist',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Create',
-          onPress: async (name) => {
-            if (name && name.trim()) {
-              try {
-                await createPlaylist(name.trim());
-                await loadPlaylists();
-              } catch (error) {
-                console.error('Error creating playlist:', error);
-              }
-            }
-          },
-        },
-      ],
-      'plain-text'
     );
   };
 
@@ -401,7 +373,7 @@ export default function UserProfile() {
             }}
           >
             <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-              Shows
+              Watch History
             </Text>
           </Pressable>
         )}
@@ -449,21 +421,6 @@ export default function UserProfile() {
 
   const renderShowsTab = () => (
     <View style={styles.tabContent}>
-      {isCurrentUser && (
-        <View style={styles.privacyToggle}>
-          <Text style={styles.privacyLabel}>Show publicly</Text>
-          <Switch
-            value={!showsPrivate}
-            onValueChange={(value) => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowsPrivate(!value);
-            }}
-            trackColor={{ false: colors.border, true: colors.secondary }}
-            thumbColor={colors.card}
-          />
-        </View>
-      )}
-
       {mockShows.length > 0 ? (
         <View style={styles.showsGrid}>
           {mockShows.map((show) => (
@@ -508,12 +465,19 @@ export default function UserProfile() {
               </View>
               {isCurrentUser && (
                 <View style={styles.playlistActions}>
-                  <Switch
-                    value={playlist.isPublic}
-                    onValueChange={(value) => handlePlaylistToggle(playlist.id, value)}
-                    trackColor={{ false: colors.border, true: colors.secondary }}
-                    thumbColor={colors.card}
-                  />
+                  <Pressable
+                    style={styles.eyeIconButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handlePlaylistToggle(playlist.id, !playlist.isPublic);
+                    }}
+                  >
+                    {playlist.isPublic ? (
+                      <Eye size={24} color={colors.text} />
+                    ) : (
+                      <EyeOff size={24} color={colors.textSecondary} />
+                    )}
+                  </Pressable>
                   <Pressable
                     style={styles.playlistActionButton}
                     onPress={(e) => {
@@ -530,28 +494,11 @@ export default function UserProfile() {
               )}
             </Pressable>
           ))}
-          {isCurrentUser && (
-            <Pressable 
-              style={styles.addPlaylistButton}
-              onPress={handleCreatePlaylist}
-            >
-              <IconSymbol name="plus" size={20} color={colors.text} />
-              <Text style={styles.addPlaylistText}>Create New Playlist</Text>
-            </Pressable>
-          )}
         </>
       ) : (
         <View style={styles.emptyState}>
           <IconSymbol name="list.bullet" size={48} color={colors.textSecondary} />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
-          {isCurrentUser && (
-            <Pressable 
-              style={styles.logShowButton}
-              onPress={handleCreatePlaylist}
-            >
-              <Text style={styles.logShowButtonText}>Create your first playlist</Text>
-            </Pressable>
-          )}
         </View>
       )}
     </View>
@@ -877,20 +824,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
-  privacyToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-  },
-  privacyLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -933,28 +866,18 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
   },
-  playlistActionButton: {
+  eyeIconButton: {
     padding: 8,
     backgroundColor: colors.background,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  addPlaylistButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: colors.card,
+  playlistActionButton: {
+    padding: 8,
+    backgroundColor: colors.background,
     borderRadius: 8,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderStyle: 'dashed',
-  },
-  addPlaylistText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginLeft: 8,
   },
 });

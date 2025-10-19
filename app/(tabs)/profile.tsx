@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -10,7 +10,7 @@ import FollowersModal from '@/components/FollowersModal';
 import { currentUser, mockUsers, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { Settings } from 'lucide-react-native';
+import { Settings, Eye, EyeOff } from 'lucide-react-native';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -22,7 +22,6 @@ export default function ProfileScreen() {
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
-  const [showsPrivate, setShowsPrivate] = useState(false);
 
   // Load playlists on mount
   useEffect(() => {
@@ -100,31 +99,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleCreatePlaylist = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.prompt(
-      'Create Playlist',
-      'Enter a name for your new playlist',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Create',
-          onPress: async (name) => {
-            if (name && name.trim()) {
-              try {
-                await createPlaylist(name.trim());
-                await loadPlaylists();
-              } catch (error) {
-                console.error('Error creating playlist:', error);
-              }
-            }
-          },
-        },
-      ],
-      'plain-text'
-    );
-  };
-
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
@@ -183,7 +157,7 @@ export default function ProfileScreen() {
         }}
       >
         <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-          Shows
+          Watch History
         </Text>
       </Pressable>
       <Pressable
@@ -228,19 +202,6 @@ export default function ProfileScreen() {
 
   const renderShowsTab = () => (
     <View style={styles.tabContent}>
-      <View style={styles.privacyToggle}>
-        <Text style={styles.privacyLabel}>Show publicly</Text>
-        <Switch
-          value={!showsPrivate}
-          onValueChange={(value) => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowsPrivate(!value);
-          }}
-          trackColor={{ false: colors.border, true: colors.secondary }}
-          thumbColor={colors.card}
-        />
-      </View>
-
       {mockShows.length > 0 ? (
         <View style={styles.showsGrid}>
           {mockShows.map((show) => (
@@ -283,12 +244,19 @@ export default function ProfileScreen() {
                 <Text style={styles.playlistCount}>{playlist.showCount} shows</Text>
               </View>
               <View style={styles.playlistActions}>
-                <Switch
-                  value={playlist.isPublic}
-                  onValueChange={(value) => handlePlaylistToggle(playlist.id, value)}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
-                  thumbColor={colors.card}
-                />
+                <Pressable
+                  style={styles.eyeIconButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handlePlaylistToggle(playlist.id, !playlist.isPublic);
+                  }}
+                >
+                  {playlist.isPublic ? (
+                    <Eye size={24} color={colors.text} />
+                  ) : (
+                    <EyeOff size={24} color={colors.textSecondary} />
+                  )}
+                </Pressable>
                 <Pressable
                   style={styles.playlistActionButton}
                   onPress={(e) => {
@@ -301,13 +269,6 @@ export default function ProfileScreen() {
               </View>
             </Pressable>
           ))}
-          <Pressable 
-            style={styles.addPlaylistButton}
-            onPress={handleCreatePlaylist}
-          >
-            <IconSymbol name="plus" size={20} color={colors.text} />
-            <Text style={styles.addPlaylistText}>Create New Playlist</Text>
-          </Pressable>
         </>
       ) : (
         <View style={styles.emptyState}>
@@ -316,12 +277,6 @@ export default function ProfileScreen() {
           <Text style={styles.emptyStateText}>
             Create your first playlist to organize your shows!
           </Text>
-          <Pressable 
-            style={styles.logShowButton}
-            onPress={handleCreatePlaylist}
-          >
-            <Text style={styles.logShowButtonText}>Create your first playlist</Text>
-          </Pressable>
         </View>
       )}
     </View>
@@ -483,20 +438,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
   },
-  privacyToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-  },
-  privacyLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -539,28 +480,18 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
   },
-  playlistActionButton: {
+  eyeIconButton: {
     padding: 8,
     backgroundColor: colors.background,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  addPlaylistButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: colors.card,
+  playlistActionButton: {
+    padding: 8,
+    backgroundColor: colors.background,
     borderRadius: 8,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderStyle: 'dashed',
-  },
-  addPlaylistText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginLeft: 8,
   },
 });
