@@ -183,15 +183,26 @@ export default function SettingsModal({
   }, [username, initialUsername, checkUsernameAvailability]);
 
   const handleSave = async () => {
+    console.log('=== SAVE BUTTON CLICKED ===');
+    console.log('Display Name:', displayName);
+    console.log('Username:', username);
+    console.log('Bio:', bio);
+    console.log('Username Available:', usernameAvailable);
+    console.log('Is Checking Username:', isCheckingUsername);
+
     // Validate username
     if (!usernameAvailable) {
+      console.log('Username not available, showing alert');
       Alert.alert('Error', 'Please choose an available username');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     // Validate website URL if provided
     if (websiteUrl && !isValidUrl(websiteUrl)) {
+      console.log('Invalid website URL, showing alert');
       Alert.alert('Error', 'Please enter a valid website URL (e.g., https://yourwebsite.com)');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
@@ -233,38 +244,106 @@ export default function SettingsModal({
       });
     }
 
+    console.log('Updated Social Links:', updatedSocialLinks);
+
     setIsSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Checking for authenticated user...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error('Authentication error: ' + authError.message);
+      }
+
       if (!user) {
-        throw new Error('No authenticated user found');
+        console.log('No authenticated user found - using local save only');
+        
+        // If no authenticated user, just update local state
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSaveSuccess(true);
+        
+        // Call the onSave callback to update local state
+        onSave({
+          displayName,
+          username,
+          bio,
+          socialLinks: updatedSocialLinks,
+          notificationPreferences,
+        });
+
+        // Show success message
+        Alert.alert(
+          'Settings Saved', 
+          'Your settings have been saved locally. Sign in to sync across devices.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                setSaveSuccess(false);
+                onClose();
+              }
+            }
+          ]
+        );
+        return;
       }
 
-      console.log('Saving settings for user:', user.id);
+      console.log('Authenticated user found:', user.id);
+      console.log('Saving settings to database...');
 
-      // 1. Update profile data
-      const { error: profileError } = await supabase
+      // 1. Update or insert profile data
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .update({
-          display_name: displayName.trim(),
-          username: username.toLowerCase().trim(),
-          bio: bio.trim(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
 
-      if (profileError) {
-        console.error('Error updating profile:', profileError);
-        throw new Error('Failed to update profile: ' + profileError.message);
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking profile:', checkError);
+        throw new Error('Failed to check profile: ' + checkError.message);
       }
 
-      console.log('Profile updated successfully');
+      if (existingProfile) {
+        console.log('Updating existing profile...');
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            display_name: displayName.trim(),
+            username: username.toLowerCase().trim(),
+            bio: bio.trim(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+          throw new Error('Failed to update profile: ' + profileError.message);
+        }
+      } else {
+        console.log('Creating new profile...');
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            display_name: displayName.trim(),
+            username: username.toLowerCase().trim(),
+            bio: bio.trim(),
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          throw new Error('Failed to create profile: ' + profileError.message);
+        }
+      }
+
+      console.log('Profile saved successfully');
 
       // 2. Update social links - delete all existing and insert new ones
+      console.log('Deleting old social links...');
       const { error: deleteError } = await supabase
         .from('social_links')
         .delete()
@@ -276,6 +355,7 @@ export default function SettingsModal({
       }
 
       if (updatedSocialLinks.length > 0) {
+        console.log('Inserting new social links...');
         const socialLinksToInsert = updatedSocialLinks.map(link => ({
           user_id: user.id,
           platform: link.platform,
@@ -295,20 +375,20 @@ export default function SettingsModal({
       console.log('Social links updated successfully');
 
       // 3. Update notification preferences
-      // First check if preferences exist
-      const { data: existingPrefs, error: checkError } = await supabase
+      console.log('Checking notification preferences...');
+      const { data: existingPrefs, error: checkPrefsError } = await supabase
         .from('notification_preferences')
         .select('id')
         .eq('user_id', user.id)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error checking notification preferences:', checkError);
-        throw new Error('Failed to check notification preferences: ' + checkError.message);
+      if (checkPrefsError && checkPrefsError.code !== 'PGRST116') {
+        console.error('Error checking notification preferences:', checkPrefsError);
+        throw new Error('Failed to check notification preferences: ' + checkPrefsError.message);
       }
 
       if (existingPrefs) {
-        // Update existing preferences
+        console.log('Updating existing notification preferences...');
         const { error: updatePrefsError } = await supabase
           .from('notification_preferences')
           .update({
@@ -328,7 +408,7 @@ export default function SettingsModal({
           throw new Error('Failed to update notification preferences: ' + updatePrefsError.message);
         }
       } else {
-        // Insert new preferences
+        console.log('Creating new notification preferences...');
         const { error: insertPrefsError } = await supabase
           .from('notification_preferences')
           .insert({
@@ -349,6 +429,7 @@ export default function SettingsModal({
       }
 
       console.log('Notification preferences updated successfully');
+      console.log('=== ALL SETTINGS SAVED SUCCESSFULLY ===');
 
       // Success!
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -375,7 +456,8 @@ export default function SettingsModal({
       ]);
 
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error('=== ERROR SAVING SETTINGS ===');
+      console.error('Error details:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         'Error',
@@ -383,6 +465,7 @@ export default function SettingsModal({
       );
     } finally {
       setIsSaving(false);
+      console.log('Save process completed');
     }
   };
 
@@ -763,7 +846,10 @@ export default function SettingsModal({
           <View style={styles.tabs}>
             <Pressable
               style={[styles.tab, activeTab === 'account' && styles.activeTab]}
-              onPress={() => setActiveTab('account')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setActiveTab('account');
+              }}
             >
               <Text style={[styles.tabText, activeTab === 'account' && styles.activeTabText]}>
                 Account
@@ -771,7 +857,10 @@ export default function SettingsModal({
             </Pressable>
             <Pressable
               style={[styles.tab, activeTab === 'notifications' && styles.activeTab]}
-              onPress={() => setActiveTab('notifications')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setActiveTab('notifications');
+              }}
             >
               <Text style={[styles.tabText, activeTab === 'notifications' && styles.activeTabText]}>
                 Notifications
@@ -779,7 +868,10 @@ export default function SettingsModal({
             </Pressable>
             <Pressable
               style={[styles.tab, activeTab === 'security' && styles.activeTab]}
-              onPress={() => setActiveTab('security')}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setActiveTab('security');
+              }}
             >
               <Text style={[styles.tabText, activeTab === 'security' && styles.activeTabText]}>
                 Security

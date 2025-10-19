@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -25,6 +25,11 @@ export default function ProfileScreen() {
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
+
+  // Local state for profile data
+  const [displayName, setDisplayName] = useState(currentUser.displayName);
+  const [username, setUsername] = useState(currentUser.username);
+  const [bio, setBio] = useState(currentUser.bio || '');
 
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>({
     newFollower: true,
@@ -82,17 +87,44 @@ export default function ProfileScreen() {
     socialLinks: SocialLink[];
     notificationPreferences: NotificationPreferences;
   }) => {
-    console.log('Saving settings:', data);
+    console.log('=== PROFILE: Saving settings ===');
+    console.log('Display Name:', data.displayName);
+    console.log('Username:', data.username);
+    console.log('Bio:', data.bio);
+    console.log('Social Links:', data.socialLinks);
+    console.log('Notification Preferences:', data.notificationPreferences);
+
+    // Update local state
+    setDisplayName(data.displayName);
+    setUsername(data.username);
+    setBio(data.bio);
     setSocialLinks(data.socialLinks);
     setNotificationPreferences(data.notificationPreferences);
+
+    // Update the currentUser object (this is mock data, so we can mutate it)
+    currentUser.displayName = data.displayName;
+    currentUser.username = data.username;
+    currentUser.bio = data.bio;
+
+    console.log('=== PROFILE: Settings saved successfully ===');
   };
 
   const handleDeleteAccount = () => {
     console.log('Deleting account...');
+    Alert.alert(
+      'Account Deleted',
+      'Your account has been deleted. (This is a demo - no actual deletion occurred)',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleLogout = () => {
     console.log('Logging out...');
+    Alert.alert(
+      'Logged Out',
+      'You have been logged out. (This is a demo - no actual logout occurred)',
+      [{ text: 'OK' }]
+    );
   };
 
   const renderHeader = () => (
@@ -110,9 +142,9 @@ export default function ProfileScreen() {
       </View>
 
       <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-      <Text style={styles.displayName}>{currentUser.displayName}</Text>
-      <Text style={styles.username}>@{currentUser.username}</Text>
-      {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
+      <Text style={styles.displayName}>{displayName}</Text>
+      <Text style={styles.username}>@{username}</Text>
+      {bio && <Text style={styles.bio}>{bio}</Text>}
 
       <View style={styles.statsContainer}>
         <Pressable style={styles.statItem} onPress={handleShowFollowers}>
@@ -214,9 +246,9 @@ export default function ProfileScreen() {
       <SettingsModal
         visible={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
-        displayName={currentUser.displayName}
-        username={currentUser.username}
-        bio={currentUser.bio || ''}
+        displayName={displayName}
+        username={username}
+        bio={bio}
         socialLinks={socialLinks}
         notificationPreferences={notificationPreferences}
         authMethod="apple"
