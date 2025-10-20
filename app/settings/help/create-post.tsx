@@ -17,41 +17,20 @@ import { ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/app/integrations/supabase/client';
 import { HelpDeskCategory } from '@/types';
+import { useData } from '@/contexts/DataContext';
 
 export default function CreatePostScreen() {
   const router = useRouter();
+  const { currentUser } = useData();
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
   const [category, setCategory] = useState<HelpDeskCategory>('Feature Request');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentUsername, setCurrentUsername] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    loadCurrentUser();
-  }, []);
-
-  const loadCurrentUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profile) {
-          setCurrentUsername(profile.username);
-          setIsAdmin(profile.username === 'jvckie');
-        }
-      }
-    } catch (error) {
-      console.error('Error loading current user:', error);
-    }
-  };
+  // AUTHENTICATION BYPASSED - Using mock user from DataContext
+  const currentUsername = currentUser.username;
+  const isAdmin = currentUsername === 'jvckie';
 
   const categories: HelpDeskCategory[] = [
     'Feature Request',
@@ -76,17 +55,13 @@ export default function CreatePostScreen() {
       setLoading(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        Alert.alert('Error', 'You must be logged in to create a post.');
-        return;
-      }
+      // AUTHENTICATION BYPASSED - Using mock user
+      const userId = currentUser.id;
 
       const { error } = await supabase
         .from('help_desk_posts')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           username: currentUsername,
           title: title.trim(),
           details: details.trim(),

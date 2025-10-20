@@ -1,14 +1,16 @@
 
 import { User, Show, Episode, Post, Comment, Reply } from '@/types';
 
+// MOCK USER - Always logged in as jvckie for development
 export const currentUser: User = {
-  id: 'user-1',
-  username: 'jacqueline',
+  id: '1',
+  username: 'jvckie',
   displayName: 'Jacqueline',
   avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-  bio: 'TV enthusiast 📺',
+  bio: 'TV enthusiast 📺 | Building Natively',
   following: ['user-2', 'user-3', 'user-4', 'user-5'],
   followers: ['user-2', 'user-3', 'user-4'],
+  isAuthenticated: true,
 };
 
 export const mockUsers: User[] = [
@@ -18,8 +20,8 @@ export const mockUsers: User[] = [
     displayName: 'Jackie',
     avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop',
     bio: 'Reality TV addict 🌴',
-    following: ['user-1', 'user-3'],
-    followers: ['user-1', 'user-4'],
+    following: ['1', 'user-3'],
+    followers: ['1', 'user-4'],
   },
   {
     id: 'user-3',
@@ -27,8 +29,8 @@ export const mockUsers: User[] = [
     displayName: 'Max',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop',
     bio: 'Binge watcher extraordinaire 📺',
-    following: ['user-1', 'user-2', 'user-4'],
-    followers: ['user-1', 'user-2'],
+    following: ['1', 'user-2', 'user-4'],
+    followers: ['1', 'user-2'],
   },
   {
     id: 'user-4',
@@ -36,8 +38,8 @@ export const mockUsers: User[] = [
     displayName: 'Mia',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
     bio: 'Drama lover 💕',
-    following: ['user-1', 'user-5'],
-    followers: ['user-1', 'user-3'],
+    following: ['1', 'user-5'],
+    followers: ['1', 'user-3'],
   },
   {
     id: 'user-5',
@@ -45,8 +47,8 @@ export const mockUsers: User[] = [
     displayName: 'Liz',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop',
     bio: 'TV show theorist 🔍',
-    following: ['user-1', 'user-2', 'user-3'],
-    followers: ['user-1', 'user-4'],
+    following: ['1', 'user-2', 'user-3'],
+    followers: ['1', 'user-4'],
   },
 ];
 

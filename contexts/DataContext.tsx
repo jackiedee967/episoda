@@ -63,20 +63,24 @@ export function useData() {
 export function DataProvider({ children }: { children: ReactNode }) {
   const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [userData, setUserData] = useState<UserData>({
-    following: [],
-    followers: [],
+    following: mockCurrentUser.following || [],
+    followers: mockCurrentUser.followers || [],
   });
   const [reposts, setReposts] = useState<RepostData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  
+  // MOCK USER - Always use jvckie as the current user (authentication bypassed)
   const [currentUser, setCurrentUser] = useState<User>(mockCurrentUser);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load data from storage on mount
   useEffect(() => {
     loadData();
   }, []);
 
-  // Load current user profile from Supabase
+  // AUTHENTICATION BYPASSED - Using mock user for development
+  // Uncomment below to re-enable Supabase authentication
+  /*
   useEffect(() => {
     loadCurrentUserProfile();
   }, []);
@@ -96,14 +100,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error('Error loading profile:', error);
-          // Use mock user if profile doesn't exist
           return;
         }
 
         if (profile) {
           console.log('Profile loaded:', profile);
           
-          // Update current user with profile data
           setCurrentUser({
             id: profile.user_id,
             username: profile.username,
@@ -121,6 +123,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Error loading current user profile:', error);
     }
   };
+  */
 
   const loadData = useCallback(async () => {
     try {
@@ -178,74 +181,103 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const createPlaylist = useCallback(async (name: string, showId?: string): Promise<Playlist> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
+      // AUTHENTICATION BYPASSED - Using mock user ID
+      const userId = currentUser.id;
 
-      const { data, error } = await supabase
-        .from('playlists')
-        .insert({
-          user_id: user.id,
-          name,
-          is_public: true,
-          show_count: showId ? 1 : 0,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (showId && data) {
-        await supabase
-          .from('playlist_shows')
+      // Try to create in Supabase, but don't fail if it doesn't work
+      try {
+        const { data, error } = await supabase
+          .from('playlists')
           .insert({
-            playlist_id: data.id,
-            show_id: showId,
-          });
+            user_id: userId,
+            name,
+            is_public: true,
+            show_count: showId ? 1 : 0,
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          if (showId) {
+            await supabase
+              .from('playlist_shows')
+              .insert({
+                playlist_id: data.id,
+                show_id: showId,
+              });
+          }
+
+          const newPlaylist: Playlist = {
+            id: data.id,
+            name: data.name,
+            userId: data.user_id,
+            shows: showId ? [showId] : [],
+            isPublic: data.is_public,
+            createdAt: new Date(data.created_at),
+          };
+
+          setPlaylists(prev => [...prev, newPlaylist]);
+          await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify([...playlists, newPlaylist]));
+
+          return newPlaylist;
+        }
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
       }
 
+      // Fallback to local-only playlist
       const newPlaylist: Playlist = {
-        id: data.id,
-        name: data.name,
-        userId: data.user_id,
+        id: `playlist_${Date.now()}`,
+        name,
+        userId,
         shows: showId ? [showId] : [],
-        isPublic: data.is_public,
-        createdAt: new Date(data.created_at),
+        isPublic: true,
+        createdAt: new Date(),
       };
 
-      setPlaylists(prev => [...prev, newPlaylist]);
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify([...playlists, newPlaylist]));
+      const updatedPlaylists = [...playlists, newPlaylist];
+      setPlaylists(updatedPlaylists);
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
 
       return newPlaylist;
     } catch (error) {
       console.error('Error creating playlist:', error);
       throw error;
     }
-  }, [playlists]);
+  }, [playlists, currentUser.id]);
 
   const addShowToPlaylist = useCallback(async (playlistId: string, showId: string) => {
     try {
-      await supabase
-        .from('playlist_shows')
-        .insert({
-          playlist_id: playlistId,
-          show_id: showId,
-        });
+      // Try Supabase first
+      try {
+        await supabase
+          .from('playlist_shows')
+          .insert({
+            playlist_id: playlistId,
+            show_id: showId,
+          });
 
-      await supabase
-        .from('playlists')
-        .update({ show_count: supabase.raw('show_count + 1') })
-        .eq('id', playlistId);
+        await supabase
+          .from('playlists')
+          .update({ show_count: supabase.raw('show_count + 1') })
+          .eq('id', playlistId);
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
+      }
 
+      // Update local state
       setPlaylists(prev => prev.map(p => 
         p.id === playlistId 
           ? { ...p, shows: [...p.shows, showId] }
           : p
       ));
 
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
+      const updatedPlaylists = playlists.map(p => 
+        p.id === playlistId 
+          ? { ...p, shows: [...p.shows, showId] }
+          : p
+      );
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('Error adding show to playlist:', error);
       throw error;
@@ -254,24 +286,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const removeShowFromPlaylist = useCallback(async (playlistId: string, showId: string) => {
     try {
-      await supabase
-        .from('playlist_shows')
-        .delete()
-        .eq('playlist_id', playlistId)
-        .eq('show_id', showId);
+      // Try Supabase first
+      try {
+        await supabase
+          .from('playlist_shows')
+          .delete()
+          .eq('playlist_id', playlistId)
+          .eq('show_id', showId);
 
-      await supabase
-        .from('playlists')
-        .update({ show_count: supabase.raw('show_count - 1') })
-        .eq('id', playlistId);
+        await supabase
+          .from('playlists')
+          .update({ show_count: supabase.raw('show_count - 1') })
+          .eq('id', playlistId);
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
+      }
 
+      // Update local state
       setPlaylists(prev => prev.map(p => 
         p.id === playlistId 
           ? { ...p, shows: p.shows.filter(id => id !== showId) }
           : p
       ));
 
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
+      const updatedPlaylists = playlists.map(p => 
+        p.id === playlistId 
+          ? { ...p, shows: p.shows.filter(id => id !== showId) }
+          : p
+      );
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('Error removing show from playlist:', error);
       throw error;
@@ -280,13 +323,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const deletePlaylist = useCallback(async (playlistId: string) => {
     try {
-      await supabase
-        .from('playlists')
-        .delete()
-        .eq('id', playlistId);
+      // Try Supabase first
+      try {
+        await supabase
+          .from('playlists')
+          .delete()
+          .eq('id', playlistId);
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
+      }
 
-      setPlaylists(prev => prev.filter(p => p.id !== playlistId));
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists.filter(p => p.id !== playlistId)));
+      // Update local state
+      const updatedPlaylists = playlists.filter(p => p.id !== playlistId);
+      setPlaylists(updatedPlaylists);
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('Error deleting playlist:', error);
       throw error;
@@ -295,18 +345,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updatePlaylistPrivacy = useCallback(async (playlistId: string, isPublic: boolean) => {
     try {
-      await supabase
-        .from('playlists')
-        .update({ is_public: isPublic })
-        .eq('id', playlistId);
+      // Try Supabase first
+      try {
+        await supabase
+          .from('playlists')
+          .update({ is_public: isPublic })
+          .eq('id', playlistId);
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
+      }
 
-      setPlaylists(prev => prev.map(p => 
+      // Update local state
+      const updatedPlaylists = playlists.map(p => 
         p.id === playlistId 
           ? { ...p, isPublic }
           : p
-      ));
-
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
+      );
+      setPlaylists(updatedPlaylists);
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('Error updating playlist privacy:', error);
       throw error;
@@ -320,38 +376,52 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const loadPlaylists = useCallback(async (userId?: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const targetUserId = userId || user?.id;
+      // AUTHENTICATION BYPASSED - Use mock user ID if no userId provided
+      const targetUserId = userId || currentUser.id;
 
-      if (!targetUserId) return;
+      // Try to load from Supabase
+      try {
+        const { data, error } = await supabase
+          .from('playlists')
+          .select(`
+            *,
+            playlist_shows (
+              show_id
+            )
+          `)
+          .eq('user_id', targetUserId);
 
-      const { data, error } = await supabase
-        .from('playlists')
-        .select(`
-          *,
-          playlist_shows (
-            show_id
-          )
-        `)
-        .eq('user_id', targetUserId);
+        if (!error && data) {
+          const loadedPlaylists: Playlist[] = data.map(p => ({
+            id: p.id,
+            name: p.name,
+            userId: p.user_id,
+            shows: p.playlist_shows.map((ps: any) => ps.show_id),
+            isPublic: p.is_public,
+            createdAt: new Date(p.created_at),
+          }));
 
-      if (error) throw error;
+          setPlaylists(loadedPlaylists);
+          await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(loadedPlaylists));
+          return;
+        }
+      } catch (supabaseError) {
+        console.log('Supabase not available, loading from local storage');
+      }
 
-      const loadedPlaylists: Playlist[] = data.map(p => ({
-        id: p.id,
-        name: p.name,
-        userId: p.user_id,
-        shows: p.playlist_shows.map((ps: any) => ps.show_id),
-        isPublic: p.is_public,
-        createdAt: new Date(p.created_at),
-      }));
-
-      setPlaylists(loadedPlaylists);
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(loadedPlaylists));
+      // Fallback to local storage
+      const playlistsData = await AsyncStorage.getItem(STORAGE_KEYS.PLAYLISTS);
+      if (playlistsData) {
+        const parsedPlaylists = JSON.parse(playlistsData);
+        setPlaylists(parsedPlaylists.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+        })));
+      }
     } catch (error) {
       console.error('Error loading playlists:', error);
     }
-  }, []);
+  }, [currentUser.id]);
 
   const createPost = useCallback(async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
     const newPost: Post = {
@@ -466,19 +536,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const followUser = useCallback(async (userId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
+      // AUTHENTICATION BYPASSED - Using mock user
+      // Try Supabase first
+      try {
+        await supabase
+          .from('follows')
+          .insert({
+            follower_id: currentUser.id,
+            following_id: userId,
+          });
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
       }
 
-      await supabase
-        .from('follows')
-        .insert({
-          follower_id: user.id,
-          following_id: userId,
-        });
-
+      // Update local state
       const updatedUserData = {
         ...userData,
         following: [...userData.following, userId],
@@ -489,22 +560,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Error following user:', error);
       throw error;
     }
-  }, [userData]);
+  }, [userData, currentUser.id]);
 
   const unfollowUser = useCallback(async (userId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('User not authenticated');
+      // AUTHENTICATION BYPASSED - Using mock user
+      // Try Supabase first
+      try {
+        await supabase
+          .from('follows')
+          .delete()
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', userId);
+      } catch (supabaseError) {
+        console.log('Supabase not available, using local storage only');
       }
 
-      await supabase
-        .from('follows')
-        .delete()
-        .eq('follower_id', user.id)
-        .eq('following_id', userId);
-
+      // Update local state
       const updatedUserData = {
         ...userData,
         following: userData.following.filter(id => id !== userId),
@@ -515,7 +587,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Error unfollowing user:', error);
       throw error;
     }
-  }, [userData]);
+  }, [userData, currentUser.id]);
 
   const isFollowing = useCallback((userId: string): boolean => {
     return userData.following.includes(userId);

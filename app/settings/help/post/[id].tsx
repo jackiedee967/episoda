@@ -1,5 +1,4 @@
 
-import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,58 +12,35 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
 import { Heart, MessageCircle, Send } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { colors } from '@/styles/commonStyles';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { HelpDeskPost, HelpDeskComment } from '@/types';
+import { useData } from '@/contexts/DataContext';
 
 export default function HelpDeskPostDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const scrollViewRef = useRef<ScrollView>(null);
-  
+  const { currentUser } = useData();
   const [post, setPost] = useState<HelpDeskPost | null>(null);
   const [comments, setComments] = useState<HelpDeskComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
-  const [submittingComment, setSubmittingComment] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUsername, setCurrentUsername] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const commentInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    loadPost();
-    loadComments();
-    loadCurrentUser();
-  }, [id]);
-
-  const loadCurrentUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        setCurrentUserId(user.id);
-        
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', user.id)
-          .single();
-
-        if (profile) {
-          setCurrentUsername(profile.username);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading current user:', error);
+    if (id) {
+      loadPost();
+      loadComments();
     }
-  };
+  }, [id]);
 
   const loadPost = async () => {
     try {
-      setLoading(true);
-
       const { data, error } = await supabase
         .from('help_desk_posts')
         .select('*')
@@ -73,39 +49,10 @@ export default function HelpDeskPostDetailScreen() {
 
       if (error) throw error;
 
-      // Get user's like status
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { data: likeData } = await supabase
-          .from('help_desk_likes')
-          .select('id')
-          .eq('post_id', id)
-          .eq('user_id', user.id)
-          .single();
-
-        // Get avatar
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('user_id', data.user_id)
-          .single();
-
-        setPost({
-          ...data,
-          isLiked: !!likeData,
-          avatar: profileData?.avatar_url || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-        });
-      } else {
-        setPost({
-          ...data,
-          isLiked: false,
-          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-        });
-      }
+      setPost(data);
     } catch (error) {
       console.error('Error loading post:', error);
-      Alert.alert('Error', 'Failed to load post.');
+      Alert.alert('Error', 'Failed to load post');
     } finally {
       setLoading(false);
     }
@@ -121,129 +68,87 @@ export default function HelpDeskPostDetailScreen() {
 
       if (error) throw error;
 
-      // Get avatars for all commenters
-      const userIds = [...new Set(data.map(c => c.user_id))];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, avatar_url')
-        .in('user_id', userIds);
-
-      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p.avatar_url]) || []);
-
-      setComments(data.map(comment => ({
-        ...comment,
-        avatar: profilesMap.get(comment.user_id) || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-      })));
+      setComments(data || []);
     } catch (error) {
       console.error('Error loading comments:', error);
     }
   };
 
   const handleLike = async () => {
-    if (!post || !currentUserId) return;
+    if (!post) return;
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-      if (post.isLiked) {
-        // Unlike
-        await supabase
-          .from('help_desk_likes')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', currentUserId);
+      const newLikesCount = post.likes_count + 1;
 
-        await supabase
-          .from('help_desk_posts')
-          .update({ likes_count: Math.max(0, post.likes_count - 1) })
-          .eq('id', post.id);
+      const { error } = await supabase
+        .from('help_desk_posts')
+        .update({ likes_count: newLikesCount })
+        .eq('id', post.id);
 
-        setPost({
-          ...post,
-          likes_count: Math.max(0, post.likes_count - 1),
-          isLiked: false,
-        });
-      } else {
-        // Like
-        await supabase
-          .from('help_desk_likes')
-          .insert({
-            post_id: post.id,
-            user_id: currentUserId,
-          });
+      if (error) throw error;
 
-        await supabase
-          .from('help_desk_posts')
-          .update({ likes_count: post.likes_count + 1 })
-          .eq('id', post.id);
-
-        setPost({
-          ...post,
-          likes_count: post.likes_count + 1,
-          isLiked: true,
-        });
-      }
+      setPost({ ...post, likes_count: newLikesCount });
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error('Error liking post:', error);
     }
   };
 
   const handleSubmitComment = async () => {
-    if (!commentText.trim() || !currentUserId || !post) return;
+    if (!commentText.trim() || !post) return;
 
     try {
-      setSubmittingComment(true);
+      setSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      const { error } = await supabase
+      // AUTHENTICATION BYPASSED - Using mock user
+      const userId = currentUser.id;
+      const username = currentUser.username;
+
+      const { data, error } = await supabase
         .from('help_desk_comments')
         .insert({
           post_id: post.id,
-          user_id: currentUserId,
-          username: currentUsername,
-          comment_text: commentText.trim(),
-        });
+          user_id: userId,
+          username,
+          text: commentText.trim(),
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Update comment count
+      // Update comments count
+      const newCommentsCount = post.comments_count + 1;
       await supabase
         .from('help_desk_posts')
-        .update({ comments_count: post.comments_count + 1 })
+        .update({ comments_count: newCommentsCount })
         .eq('id', post.id);
 
-      setPost({
-        ...post,
-        comments_count: post.comments_count + 1,
-      });
-
+      setPost({ ...post, comments_count: newCommentsCount });
+      setComments([...comments, data]);
       setCommentText('');
-      loadComments();
-
-      // Scroll to bottom to show new comment
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      commentInputRef.current?.blur();
     } catch (error) {
       console.error('Error submitting comment:', error);
-      Alert.alert('Error', 'Failed to post comment. Please try again.');
+      Alert.alert('Error', 'Failed to post comment');
     } finally {
-      setSubmittingComment(false);
+      setSubmitting(false);
     }
   };
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
   };
 
@@ -262,7 +167,7 @@ export default function HelpDeskPostDetailScreen() {
     }
   };
 
-  if (loading || !post) {
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.purple} />
@@ -270,7 +175,13 @@ export default function HelpDeskPostDetailScreen() {
     );
   }
 
-  const isAdmin = post.username === 'jvckie';
+  if (!post) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>Post not found</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -288,22 +199,23 @@ export default function HelpDeskPostDetailScreen() {
       />
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={100}
       >
         <ScrollView
-          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
         >
           {/* Post Header */}
           <View style={styles.postHeader}>
-            <Image source={{ uri: post.avatar }} style={styles.avatar} />
+            <Image
+              source={{ uri: currentUser.avatar }}
+              style={styles.avatar}
+            />
             <View style={styles.postHeaderText}>
-              <View style={styles.usernameRow}>
+              <View style={styles.userRow}>
                 <Text style={styles.username}>{post.username}</Text>
-                {isAdmin && (
+                {post.username === 'jvckie' && (
                   <View style={styles.adminBadge}>
                     <Text style={styles.adminBadgeText}>Admin</Text>
                   </View>
@@ -315,81 +227,65 @@ export default function HelpDeskPostDetailScreen() {
 
           {/* Category Tag */}
           <View style={[styles.categoryTag, { backgroundColor: getCategoryColor(post.category) + '20' }]}>
-            <Text style={[styles.categoryText, { color: getCategoryColor(post.category) }]}>
+            <Text style={[styles.categoryTagText, { color: getCategoryColor(post.category) }]}>
               {post.category}
             </Text>
           </View>
 
           {/* Post Content */}
-          <Text style={styles.postTitle}>{post.title}</Text>
-          <Text style={styles.postDetails}>{post.details}</Text>
+          <Text style={styles.title}>{post.title}</Text>
+          <Text style={styles.details}>{post.details}</Text>
 
-          {/* Interaction Buttons */}
-          <View style={styles.interactionRow}>
-            <Pressable style={styles.interactionButton} onPress={handleLike}>
-              <Heart
-                size={22}
-                color={post.isLiked ? colors.error : colors.textSecondary}
-                fill={post.isLiked ? colors.error : 'none'}
-              />
-              <Text style={[styles.interactionText, post.isLiked && { color: colors.error }]}>
-                {post.likes_count}
-              </Text>
+          {/* Post Actions */}
+          <View style={styles.actions}>
+            <Pressable style={styles.actionButton} onPress={handleLike}>
+              <Heart size={20} color={colors.textSecondary} />
+              <Text style={styles.actionText}>{post.likes_count}</Text>
             </Pressable>
-
-            <View style={styles.interactionButton}>
-              <MessageCircle size={22} color={colors.textSecondary} />
-              <Text style={styles.interactionText}>{post.comments_count}</Text>
+            <View style={styles.actionButton}>
+              <MessageCircle size={20} color={colors.textSecondary} />
+              <Text style={styles.actionText}>{post.comments_count}</Text>
             </View>
           </View>
 
           {/* Comments Section */}
           <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>
-              Comments ({comments.length})
-            </Text>
-
-            {comments.length === 0 ? (
-              <Text style={styles.noComments}>
-                No comments yet. Be the first to comment!
-              </Text>
-            ) : (
-              <View style={styles.commentsList}>
-                {comments.map((comment) => {
-                  const isCommentAdmin = comment.username === 'jvckie';
-                  
-                  return (
-                    <View key={comment.id} style={styles.comment}>
-                      <Image source={{ uri: comment.avatar }} style={styles.commentAvatar} />
-                      <View style={styles.commentContent}>
-                        <View style={styles.commentHeader}>
-                          <View style={styles.usernameRow}>
-                            <Text style={styles.commentUsername}>{comment.username}</Text>
-                            {isCommentAdmin && (
-                              <View style={styles.adminBadge}>
-                                <Text style={styles.adminBadgeText}>Admin</Text>
-                              </View>
-                            )}
+            <Text style={styles.commentsTitle}>Comments</Text>
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <View key={comment.id} style={styles.comment}>
+                  <Image
+                    source={{ uri: currentUser.avatar }}
+                    style={styles.commentAvatar}
+                  />
+                  <View style={styles.commentContent}>
+                    <View style={styles.commentHeader}>
+                      <View style={styles.commentUserRow}>
+                        <Text style={styles.commentUsername}>{comment.username}</Text>
+                        {comment.username === 'jvckie' && (
+                          <View style={styles.adminBadgeSmall}>
+                            <Text style={styles.adminBadgeTextSmall}>Admin</Text>
                           </View>
-                          <Text style={styles.commentTimestamp}>
-                            {formatTimestamp(comment.created_at)}
-                          </Text>
-                        </View>
-                        <Text style={styles.commentText}>{comment.comment_text}</Text>
+                        )}
                       </View>
+                      <Text style={styles.commentTimestamp}>
+                        {formatTimestamp(comment.created_at)}
+                      </Text>
                     </View>
-                  );
-                })}
-              </View>
+                    <Text style={styles.commentText}>{comment.text}</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noComments}>No comments yet. Be the first to comment!</Text>
             )}
           </View>
-
-          <View style={{ height: 20 }} />
         </ScrollView>
 
         {/* Comment Input */}
         <View style={styles.commentInputContainer}>
           <TextInput
+            ref={commentInputRef}
             style={styles.commentInput}
             placeholder="Write a comment..."
             placeholderTextColor={colors.textSecondary}
@@ -399,11 +295,11 @@ export default function HelpDeskPostDetailScreen() {
             maxLength={500}
           />
           <Pressable
-            style={[styles.sendButton, (!commentText.trim() || submittingComment) && styles.sendButtonDisabled]}
+            style={[styles.sendButton, (!commentText.trim() || submitting) && styles.sendButtonDisabled]}
             onPress={handleSubmitComment}
-            disabled={!commentText.trim() || submittingComment}
+            disabled={!commentText.trim() || submitting}
           >
-            {submittingComment ? (
+            {submitting ? (
               <ActivityIndicator size="small" color={colors.background} />
             ) : (
               <Send size={20} color={colors.background} />
@@ -426,112 +322,104 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.background,
   },
+  errorText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 100,
   },
   postHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: 12,
     marginBottom: 16,
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    marginRight: 12,
   },
   postHeaderText: {
     flex: 1,
+    gap: 4,
   },
-  usernameRow: {
+  userRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   username: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text,
   },
   adminBadge: {
     backgroundColor: colors.purple,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   adminBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: colors.background,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   timestamp: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
-    marginTop: 2,
   },
   categoryTag: {
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 16,
   },
-  categoryText: {
+  categoryTagText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  postTitle: {
+  title: {
     fontSize: 22,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
-    lineHeight: 30,
   },
-  postDetails: {
-    fontSize: 16,
+  details: {
+    fontSize: 15,
     color: colors.text,
-    lineHeight: 24,
-    marginBottom: 24,
+    lineHeight: 22,
+    marginBottom: 20,
   },
-  interactionRow: {
+  actions: {
     flexDirection: 'row',
-    gap: 24,
-    paddingBottom: 24,
+    gap: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  interactionButton: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
-  interactionText: {
+  actionText: {
     fontSize: 15,
-    fontWeight: '600',
     color: colors.textSecondary,
+    fontWeight: '500',
   },
   commentsSection: {
-    marginTop: 24,
+    marginTop: 20,
+    gap: 16,
   },
   commentsTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 16,
-  },
-  noComments: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingVertical: 32,
-  },
-  commentsList: {
-    gap: 16,
   },
   comment: {
     flexDirection: 'row',
@@ -544,41 +432,61 @@ const styles = StyleSheet.create({
   },
   commentContent: {
     flex: 1,
+    gap: 6,
   },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+  },
+  commentUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   commentUsername: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
   },
+  adminBadgeSmall: {
+    backgroundColor: colors.purple,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  adminBadgeTextSmall: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.background,
+  },
   commentTimestamp: {
     fontSize: 12,
     color: colors.textSecondary,
   },
   commentText: {
-    fontSize: 15,
+    fontSize: 14,
     color: colors.text,
-    lineHeight: 22,
+    lineHeight: 20,
+  },
+  noComments: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
   },
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 12,
-    backgroundColor: colors.background,
+    gap: 12,
+    padding: 16,
+    backgroundColor: colors.card,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    gap: 12,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.background,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -595,6 +503,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    opacity: 0.4,
+    opacity: 0.5,
   },
 });
