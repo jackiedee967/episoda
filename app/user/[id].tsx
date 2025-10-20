@@ -149,8 +149,11 @@ export default function UserProfile() {
 
       // Load follow data
       try {
+        console.log('UserProfile - Loading follow data for user:', id);
         const followersData = await getFollowers(id as string);
         const followingData = await getFollowing(id as string);
+        console.log('UserProfile - Followers:', followersData.length);
+        console.log('UserProfile - Following:', followingData.length);
         setFollowers(followersData);
         setFollowing(followingData);
       } catch (error) {
@@ -179,19 +182,34 @@ export default function UserProfile() {
   }
 
   const handleFollowToggle = async (userId: string) => {
+    console.log('UserProfile - handleFollowToggle called for userId:', userId);
+    console.log('UserProfile - Currently following?', isFollowing(userId));
+    
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
       if (isFollowing(userId)) {
+        console.log('UserProfile - Unfollowing user...');
         await unfollowUser(userId);
       } else {
+        console.log('UserProfile - Following user...');
         await followUser(userId);
       }
+      
+      console.log('UserProfile - Follow action completed, reloading follow data...');
+      
       // Reload follow data
       const followersData = await getFollowers(id as string);
       const followingData = await getFollowing(id as string);
+      console.log('UserProfile - Updated followers:', followersData.length);
+      console.log('UserProfile - Updated following:', followingData.length);
       setFollowers(followersData);
       setFollowing(followingData);
+      
+      console.log('UserProfile - Follow data reloaded successfully');
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      console.error('UserProfile - Error toggling follow:', error);
+      Alert.alert('Error', 'Failed to update follow status. Please try again.');
     }
   };
 
@@ -628,9 +646,7 @@ export default function UserProfile() {
         title={followersType === 'followers' ? 'Followers' : 'Following'}
         currentUserId={currentUser.id}
         followingIds={following.map(u => u.id)}
-        onFollowToggle={async (userId) => {
-          await handleFollowToggle(userId);
-        }}
+        onFollowToggle={handleFollowToggle}
       />
 
       <BlockReportModal

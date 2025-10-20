@@ -65,6 +65,16 @@ export default function FollowersModal({
     router.push(`/user/${userId}`);
   };
 
+  const handleFollowToggle = async (userId: string) => {
+    console.log('FollowersModal - handleFollowToggle called for userId:', userId);
+    try {
+      await onFollowToggle(userId);
+      console.log('FollowersModal - Follow toggle completed successfully');
+    } catch (error) {
+      console.error('FollowersModal - Error in handleFollowToggle:', error);
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -90,28 +100,29 @@ export default function FollowersModal({
               const isCurrentUser = user.id === currentUserId;
 
               return (
-                <Pressable
-                  key={user.id}
-                  style={styles.userItem}
-                  onPress={() => handleUserPress(user.id)}
-                >
-                  <Image source={{ uri: user.avatar }} style={styles.avatar} />
-                  <View style={styles.userInfo}>
-                    <Text style={styles.displayName}>{user.displayName}</Text>
-                    <Text style={styles.username}>@{user.username}</Text>
-                    {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
-                  </View>
+                <View key={user.id} style={styles.userItem}>
+                  <Pressable
+                    style={styles.userPressable}
+                    onPress={() => handleUserPress(user.id)}
+                  >
+                    <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                    <View style={styles.userInfo}>
+                      <Text style={styles.displayName}>{user.displayName}</Text>
+                      <Text style={styles.username}>@{user.username}</Text>
+                      {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
+                    </View>
+                  </Pressable>
                   {!isCurrentUser && (
-                    <View style={styles.buttonWrapper} onStartShouldSetResponder={() => true}>
+                    <View style={styles.buttonWrapper}>
                       <FollowButton
                         userId={user.id}
                         isFollowing={isFollowing}
-                        onPress={onFollowToggle}
+                        onPress={handleFollowToggle}
                         size="small"
                       />
                     </View>
                   )}
-                </Pressable>
+                </View>
               );
             })}
           </ScrollView>
@@ -159,9 +170,15 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  userPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   avatar: {
     width: 50,

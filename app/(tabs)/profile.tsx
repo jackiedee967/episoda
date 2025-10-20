@@ -63,8 +63,11 @@ export default function ProfileScreen() {
 
   const loadFollowData = async () => {
     try {
+      console.log('ProfileScreen - Loading follow data for user:', currentUser.id);
       const followersData = await getFollowers(currentUser.id);
       const followingData = await getFollowing(currentUser.id);
+      console.log('ProfileScreen - Followers:', followersData.length);
+      console.log('ProfileScreen - Following:', followingData.length);
       setFollowers(followersData);
       setFollowing(followingData);
     } catch (error) {
@@ -200,16 +203,29 @@ export default function ProfileScreen() {
   };
 
   const handleFollowToggle = async (userId: string) => {
+    console.log('ProfileScreen - handleFollowToggle called for userId:', userId);
+    console.log('ProfileScreen - Currently following?', isFollowing(userId));
+    
     try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
       if (isFollowing(userId)) {
+        console.log('ProfileScreen - Unfollowing user...');
         await unfollowUser(userId);
       } else {
+        console.log('ProfileScreen - Following user...');
         await followUser(userId);
       }
+      
+      console.log('ProfileScreen - Follow action completed, reloading follow data...');
+      
       // Reload follow data to update the modal
       await loadFollowData();
+      
+      console.log('ProfileScreen - Follow data reloaded successfully');
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      console.error('ProfileScreen - Error toggling follow:', error);
+      Alert.alert('Error', 'Failed to update follow status. Please try again.');
     }
   };
 
