@@ -28,20 +28,45 @@ SplashScreen.preventAutoHideAsync();
 function useProtectedRoute(session: Session | null) {
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
-    if (!navigationState?.key) return;
+    // Wait for navigation to be fully ready
+    if (!navigationState?.key) {
+      console.log('Navigation not ready yet');
+      return;
+    }
+
+    // Prevent multiple navigation attempts
+    if (hasNavigated) {
+      return;
+    }
 
     const inAuthGroup = segments[0] === 'auth';
+    console.log('Protected route check:', { session: !!session, inAuthGroup, segments });
 
-    if (!session && !inAuthGroup) {
-      // Redirect to login if not authenticated
-      router.replace('/auth/login');
-    } else if (session && inAuthGroup) {
-      // Redirect to home if authenticated and trying to access auth screens
-      router.replace('/(tabs)');
-    }
-  }, [session, segments, navigationState]);
+    // Use setTimeout to ensure navigation happens after render
+    const timeoutId = setTimeout(() => {
+      if (!session && !inAuthGroup) {
+        // Redirect to login if not authenticated
+        console.log('Redirecting to login');
+        router.replace('/auth/login');
+        setHasNavigated(true);
+      } else if (session && inAuthGroup) {
+        // Redirect to home if authenticated and trying to access auth screens
+        console.log('Redirecting to home');
+        router.replace('/(tabs)');
+        setHasNavigated(true);
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [session, segments, navigationState?.key, hasNavigated]);
+
+  // Reset hasNavigated when session changes
+  useEffect(() => {
+    setHasNavigated(false);
+  }, [session]);
 }
 
 export default function RootLayout() {
