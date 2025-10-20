@@ -134,3 +134,30 @@ export interface BlockedUser {
 }
 
 export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'impersonation' | 'other';
+
+export type HelpDeskCategory = 'Feature Request' | 'Support' | 'Feedback' | 'Misc' | 'Admin Announcement';
+
+export interface HelpDeskPost {
+  id: string;
+  user_id: string;
+  username: string;
+  avatar?: string;
+  title: string;
+  details: string;
+  category: HelpDeskCategory;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  updated_at: string;
+  isLiked?: boolean;
+}
+
+export interface HelpDeskComment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  username: string;
+  avatar?: string;
+  comment_text: string;
+  created_at: string;
+}
