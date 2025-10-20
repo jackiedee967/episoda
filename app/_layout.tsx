@@ -31,6 +31,10 @@ function useProtectedRoute(session: Session | null) {
   const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
+    // TEMPORARILY DISABLED - Authentication flow bypassed for development
+    // Uncomment the code below to re-enable authentication
+    
+    /*
     // Wait for navigation to be fully ready
     if (!navigationState?.key) {
       console.log('Navigation not ready yet');
@@ -61,6 +65,9 @@ function useProtectedRoute(session: Session | null) {
     }, 0);
 
     return () => clearTimeout(timeoutId);
+    */
+    
+    console.log('Authentication temporarily disabled - app accessible without login');
   }, [session, segments, navigationState?.key, hasNavigated]);
 
   // Reset hasNavigated when session changes
