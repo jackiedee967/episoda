@@ -1,18 +1,9 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Post, Show, User, Playlist } from '@/types';
-import { mockPosts, mockUsers, currentUser as mockCurrentUser } from '@/data/mockData';
 import { supabase } from '@/app/integrations/supabase/client';
-
-// Storage keys
-const STORAGE_KEYS = {
-  POSTS: '@app/posts',
-  USER_DATA: '@app/user_data',
-  FOLLOWING: '@app/following',
-  COMMENT_COUNTS: '@app/comment_counts',
-  REPOSTS: '@app/reposts',
-};
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { mockPosts, mockUsers, currentUser as mockCurrentUser } from '@/data/mockData';
+import { Post, Show, User, Playlist } from '@/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface UserData {
   following: string[];
@@ -26,7 +17,6 @@ interface RepostData {
 }
 
 interface DataContextType {
-  // Playlists
   playlists: Playlist[];
   createPlaylist: (name: string, showId?: string) => Promise<Playlist>;
   addShowToPlaylist: (playlistId: string, showId: string) => Promise<void>;
@@ -35,8 +25,6 @@ interface DataContextType {
   isShowInPlaylist: (playlistId: string, showId: string) => boolean;
   updatePlaylistPrivacy: (playlistId: string, isPublic: boolean) => Promise<void>;
   loadPlaylists: (userId?: string) => Promise<void>;
-  
-  // Posts
   posts: Post[];
   createPost: (post: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>) => Promise<Post>;
   likePost: (postId: string) => Promise<void>;
@@ -48,465 +36,327 @@ interface DataContextType {
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
   getAllReposts: () => { post: Post; repostedBy: User; timestamp: Date }[];
-  
-  // User data
   currentUser: User;
   followUser: (userId: string) => Promise<void>;
   unfollowUser: (userId: string) => Promise<void>;
   isFollowing: (userId: string) => boolean;
-  
-  // Loading state
   isLoading: boolean;
 }
 
+const STORAGE_KEYS = {
+  POSTS: '@natively_posts',
+  USER_DATA: '@natively_user_data',
+  REPOSTS: '@natively_reposts',
+  PLAYLISTS: '@natively_playlists',
+};
+
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+export function useData() {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error('useData must be used within a DataProvider');
+  }
+  return context;
+}
+
 export function DataProvider({ children }: { children: ReactNode }) {
+  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [userData, setUserData] = useState<UserData>({
+    following: [],
+    followers: [],
+  });
+  const [reposts, setReposts] = useState<RepostData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [posts, setPosts] = useState<Post[]>([]);
   const [currentUser, setCurrentUser] = useState<User>(mockCurrentUser);
   const [isLoading, setIsLoading] = useState(true);
-  const [userReposts, setUserReposts] = useState<RepostData[]>([]);
-  const [allReposts, setAllReposts] = useState<RepostData[]>([]);
 
-  // Load playlists from Supabase
-  const loadPlaylists = useCallback(async (userId?: string) => {
-    try {
-      console.log('Loading playlists from Supabase...');
-      
-      // Get the authenticated user
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
-      if (!authUser) {
-        console.log('No authenticated user, using mock user ID');
-        // Use mock user ID for development
-        const targetUserId = userId || mockCurrentUser.id;
-        
-        // For now, load from local state only if no auth
-        // In production, you'd want to handle this differently
-        return;
-      }
-
-      const targetUserId = userId || authUser.id;
-      
-      // Fetch playlists from Supabase
-      let query = supabase
-        .from('playlists')
-        .select('*')
-        .eq('user_id', targetUserId)
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error loading playlists:', error);
-        return;
-      }
-
-      if (data) {
-        // Fetch playlist shows for each playlist
-        const playlistsWithShows = await Promise.all(
-          data.map(async (playlist) => {
-            const { data: showsData, error: showsError } = await supabase
-              .from('playlist_shows')
-              .select('show_id')
-              .eq('playlist_id', playlist.id);
-
-            if (showsError) {
-              console.error('Error loading playlist shows:', showsError);
-              return {
-                id: playlist.id,
-                userId: playlist.user_id,
-                name: playlist.name,
-                isPublic: playlist.is_public,
-                showCount: playlist.show_count || 0,
-                shows: [],
-                createdAt: new Date(playlist.created_at),
-              };
-            }
-
-            return {
-              id: playlist.id,
-              userId: playlist.user_id,
-              name: playlist.name,
-              isPublic: playlist.is_public,
-              showCount: showsData?.length || 0,
-              shows: showsData?.map((s) => s.show_id) || [],
-              createdAt: new Date(playlist.created_at),
-            };
-          })
-        );
-
-        setPlaylists(playlistsWithShows);
-        console.log('Loaded playlists from Supabase:', playlistsWithShows.length);
-      }
-    } catch (error) {
-      console.error('Error in loadPlaylists:', error);
-    }
+  // Load data from storage on mount
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const loadRepostsFromSupabase = useCallback(async () => {
-    try {
-      // Try to load all reposts from Supabase
-      const { data, error } = await supabase
-        .from('reposts')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.log('Error fetching reposts from Supabase (might not be authenticated):', error.message);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const repostData: RepostData[] = data.map((r: any) => ({
-          postId: r.original_post_id,
-          userId: r.user_id,
-          timestamp: new Date(r.created_at),
-        }));
-        
-        setAllReposts(repostData);
-        
-        // Filter for current user
-        const currentUserReposts = repostData.filter(r => r.userId === mockCurrentUser.id);
-        setUserReposts(currentUserReposts);
-        
-        console.log('Loaded reposts from Supabase - Total:', repostData.length, 'User:', currentUserReposts.length);
-      }
-    } catch (error) {
-      console.log('Error in loadRepostsFromSupabase:', error);
-    }
+  // Load current user profile from Supabase
+  useEffect(() => {
+    loadCurrentUserProfile();
   }, []);
 
-  const loadRepostsFromStorage = useCallback(async () => {
+  const loadCurrentUserProfile = async () => {
     try {
-      const repostsData = await AsyncStorage.getItem(STORAGE_KEYS.REPOSTS);
-      if (repostsData) {
-        const parsedReposts = JSON.parse(repostsData);
-        const repostsWithDates = parsedReposts.map((r: any) => ({
-          ...r,
-          timestamp: new Date(r.timestamp),
-        }));
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        console.log('Loading profile for user:', user.id);
         
-        // Only use storage reposts if we don't have Supabase data
-        if (allReposts.length === 0) {
-          setAllReposts(repostsWithDates);
-          const currentUserReposts = repostsWithDates.filter((r: RepostData) => r.userId === mockCurrentUser.id);
-          setUserReposts(currentUserReposts);
-          console.log('Loaded reposts from storage - Total:', repostsWithDates.length, 'User:', currentUserReposts.length);
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error loading profile:', error);
+          // Use mock user if profile doesn't exist
+          return;
+        }
+
+        if (profile) {
+          console.log('Profile loaded:', profile);
+          
+          // Update current user with profile data
+          setCurrentUser({
+            id: profile.user_id,
+            username: profile.username,
+            displayName: profile.display_name,
+            avatar: profile.avatar_url || mockCurrentUser.avatar,
+            bio: profile.bio || '',
+            episodesWatched: profile.episodes_watched_count || 0,
+            totalLikes: profile.total_likes_received || 0,
+            isOnline: profile.is_online || false,
+            lastActive: profile.last_active_at ? new Date(profile.last_active_at) : new Date(),
+          });
         }
       }
     } catch (error) {
-      console.error('Error loading reposts from storage:', error);
+      console.error('Error loading current user profile:', error);
     }
-  }, [allReposts.length]);
+  };
 
-  // Load data function
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      
-      // Load playlists from Supabase
-      await loadPlaylists();
 
       // Load posts
       const postsData = await AsyncStorage.getItem(STORAGE_KEYS.POSTS);
       if (postsData) {
         const parsedPosts = JSON.parse(postsData);
-        const postsWithDates = parsedPosts.map((post: any) => ({
-          ...post,
-          timestamp: new Date(post.timestamp),
-        }));
-        setPosts(postsWithDates);
-        console.log('Loaded posts from storage:', postsWithDates.length);
-      } else {
-        setPosts(mockPosts);
-        await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(mockPosts));
-        console.log('Initialized with mock posts');
+        setPosts(parsedPosts.map((p: any) => ({
+          ...p,
+          timestamp: new Date(p.timestamp),
+        })));
       }
 
       // Load user data
-      const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      if (userData) {
-        const parsedUserData: UserData = JSON.parse(userData);
-        setCurrentUser({
-          ...mockCurrentUser,
-          following: parsedUserData.following,
-          followers: parsedUserData.followers,
-        });
-        console.log('Loaded user data from storage');
-      } else {
-        const initialUserData: UserData = {
-          following: mockCurrentUser.following || [],
-          followers: mockCurrentUser.followers || [],
-        };
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(initialUserData));
-        console.log('Initialized with mock user data');
+      const userDataStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+      if (userDataStr) {
+        setUserData(JSON.parse(userDataStr));
       }
 
-      // Load reposts from both Supabase and AsyncStorage
-      await loadRepostsFromSupabase();
-      await loadRepostsFromStorage();
-      
+      // Load reposts
+      const repostsData = await AsyncStorage.getItem(STORAGE_KEYS.REPOSTS);
+      if (repostsData) {
+        const parsedReposts = JSON.parse(repostsData);
+        setReposts(parsedReposts.map((r: any) => ({
+          ...r,
+          timestamp: new Date(r.timestamp),
+        })));
+      }
+
+      // Load playlists
+      const playlistsData = await AsyncStorage.getItem(STORAGE_KEYS.PLAYLISTS);
+      if (playlistsData) {
+        const parsedPlaylists = JSON.parse(playlistsData);
+        setPlaylists(parsedPlaylists.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+        })));
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [loadPlaylists, loadRepostsFromSupabase, loadRepostsFromStorage]);
-
-  // Initialize data from AsyncStorage and Supabase
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  }, []);
 
   const saveRepostsToStorage = async (reposts: RepostData[]) => {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.REPOSTS, JSON.stringify(reposts));
     } catch (error) {
-      console.error('Error saving reposts to storage:', error);
+      console.error('Error saving reposts:', error);
     }
   };
 
-  // Playlist functions
-  const createPlaylist = async (name: string, showId?: string): Promise<Playlist> => {
+  const createPlaylist = useCallback(async (name: string, showId?: string): Promise<Playlist> => {
     try {
-      console.log('Creating playlist:', name, showId ? `with show ${showId}` : '');
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // Get the authenticated user
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
-      if (!authUser) {
-        console.log('No authenticated user, creating local playlist only');
-        // Fallback to local storage for development
-        const newPlaylist: Playlist = {
-          id: `playlist-${Date.now()}`,
-          userId: mockCurrentUser.id,
-          name: name.trim(),
-          isPublic: true,
-          showCount: showId ? 1 : 0,
-          shows: showId ? [showId] : [],
-          createdAt: new Date(),
-        };
-        
-        setPlaylists([...playlists, newPlaylist]);
-        return newPlaylist;
+      if (!user) {
+        throw new Error('User not authenticated');
       }
 
-      // Create playlist in Supabase
-      const { data: playlistData, error: playlistError } = await supabase
+      const { data, error } = await supabase
         .from('playlists')
         .insert({
-          user_id: authUser.id,
-          name: name.trim(),
+          user_id: user.id,
+          name,
           is_public: true,
           show_count: showId ? 1 : 0,
         })
         .select()
         .single();
 
-      if (playlistError) {
-        console.error('Error creating playlist:', playlistError);
-        throw playlistError;
-      }
+      if (error) throw error;
 
-      // If showId provided, add it to the playlist
-      if (showId && playlistData) {
-        const { error: showError } = await supabase
+      if (showId && data) {
+        await supabase
           .from('playlist_shows')
           .insert({
-            playlist_id: playlistData.id,
+            playlist_id: data.id,
             show_id: showId,
           });
-
-        if (showError) {
-          console.error('Error adding show to playlist:', showError);
-        }
       }
 
       const newPlaylist: Playlist = {
-        id: playlistData.id,
-        userId: playlistData.user_id,
-        name: playlistData.name,
-        isPublic: playlistData.is_public,
-        showCount: showId ? 1 : 0,
+        id: data.id,
+        name: data.name,
+        userId: data.user_id,
         shows: showId ? [showId] : [],
-        createdAt: new Date(playlistData.created_at),
+        isPublic: data.is_public,
+        createdAt: new Date(data.created_at),
       };
 
-      setPlaylists([...playlists, newPlaylist]);
-      console.log('Created playlist successfully:', newPlaylist.id);
-      
+      setPlaylists(prev => [...prev, newPlaylist]);
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify([...playlists, newPlaylist]));
+
       return newPlaylist;
     } catch (error) {
-      console.error('Error in createPlaylist:', error);
+      console.error('Error creating playlist:', error);
       throw error;
     }
-  };
+  }, [playlists]);
 
-  const addShowToPlaylist = async (playlistId: string, showId: string): Promise<void> => {
+  const addShowToPlaylist = useCallback(async (playlistId: string, showId: string) => {
     try {
-      console.log('Adding show to playlist:', playlistId, showId);
-      
-      // Check if already in playlist
-      const playlist = playlists.find(p => p.id === playlistId);
-      if (playlist?.shows?.includes(showId)) {
-        console.log('Show already in playlist');
-        return;
-      }
-
-      // Add to Supabase
-      const { error } = await supabase
+      await supabase
         .from('playlist_shows')
         .insert({
           playlist_id: playlistId,
           show_id: showId,
         });
 
-      if (error) {
-        console.error('Error adding show to playlist:', error);
-        // Continue with local update even if Supabase fails
-      }
-
-      // Update show count
-      const { error: updateError } = await supabase
+      await supabase
         .from('playlists')
-        .update({ show_count: (playlist?.showCount || 0) + 1 })
+        .update({ show_count: supabase.raw('show_count + 1') })
         .eq('id', playlistId);
 
-      if (updateError) {
-        console.error('Error updating playlist show count:', updateError);
-      }
+      setPlaylists(prev => prev.map(p => 
+        p.id === playlistId 
+          ? { ...p, shows: [...p.shows, showId] }
+          : p
+      ));
 
-      // Update local state
-      const updatedPlaylists = playlists.map(p => {
-        if (p.id === playlistId) {
-          return {
-            ...p,
-            shows: [...(p.shows || []), showId],
-            showCount: (p.showCount || 0) + 1,
-          };
-        }
-        return p;
-      });
-
-      setPlaylists(updatedPlaylists);
-      console.log('Added show to playlist successfully');
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
     } catch (error) {
-      console.error('Error in addShowToPlaylist:', error);
+      console.error('Error adding show to playlist:', error);
+      throw error;
     }
-  };
+  }, [playlists]);
 
-  const removeShowFromPlaylist = async (playlistId: string, showId: string): Promise<void> => {
+  const removeShowFromPlaylist = useCallback(async (playlistId: string, showId: string) => {
     try {
-      console.log('Removing show from playlist:', playlistId, showId);
-      
-      // Remove from Supabase
-      const { error } = await supabase
+      await supabase
         .from('playlist_shows')
         .delete()
         .eq('playlist_id', playlistId)
         .eq('show_id', showId);
 
-      if (error) {
-        console.error('Error removing show from playlist:', error);
-        // Continue with local update even if Supabase fails
-      }
-
-      // Update show count
-      const playlist = playlists.find(p => p.id === playlistId);
-      const { error: updateError } = await supabase
+      await supabase
         .from('playlists')
-        .update({ show_count: Math.max(0, (playlist?.showCount || 1) - 1) })
+        .update({ show_count: supabase.raw('show_count - 1') })
         .eq('id', playlistId);
 
-      if (updateError) {
-        console.error('Error updating playlist show count:', updateError);
-      }
+      setPlaylists(prev => prev.map(p => 
+        p.id === playlistId 
+          ? { ...p, shows: p.shows.filter(id => id !== showId) }
+          : p
+      ));
 
-      // Update local state
-      const updatedPlaylists = playlists.map(p => {
-        if (p.id === playlistId) {
-          return {
-            ...p,
-            shows: (p.shows || []).filter(id => id !== showId),
-            showCount: Math.max(0, (p.showCount || 1) - 1),
-          };
-        }
-        return p;
-      });
-
-      setPlaylists(updatedPlaylists);
-      console.log('Removed show from playlist successfully');
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
     } catch (error) {
-      console.error('Error in removeShowFromPlaylist:', error);
+      console.error('Error removing show from playlist:', error);
+      throw error;
     }
-  };
+  }, [playlists]);
 
-  const deletePlaylist = async (playlistId: string): Promise<void> => {
+  const deletePlaylist = useCallback(async (playlistId: string) => {
     try {
-      console.log('Deleting playlist:', playlistId);
-      
-      // Delete from Supabase (cascade will handle playlist_shows)
-      const { error } = await supabase
+      await supabase
         .from('playlists')
         .delete()
         .eq('id', playlistId);
 
-      if (error) {
-        console.error('Error deleting playlist:', error);
-        // Continue with local update even if Supabase fails
-      }
-
-      // Update local state
-      const updatedPlaylists = playlists.filter(p => p.id !== playlistId);
-      setPlaylists(updatedPlaylists);
-      console.log('Deleted playlist successfully');
+      setPlaylists(prev => prev.filter(p => p.id !== playlistId));
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists.filter(p => p.id !== playlistId)));
     } catch (error) {
-      console.error('Error in deletePlaylist:', error);
+      console.error('Error deleting playlist:', error);
+      throw error;
     }
-  };
+  }, [playlists]);
 
-  const updatePlaylistPrivacy = async (playlistId: string, isPublic: boolean): Promise<void> => {
+  const updatePlaylistPrivacy = useCallback(async (playlistId: string, isPublic: boolean) => {
     try {
-      console.log('Updating playlist privacy:', playlistId, isPublic);
-      
-      // Update in Supabase
-      const { error } = await supabase
+      await supabase
         .from('playlists')
         .update({ is_public: isPublic })
         .eq('id', playlistId);
 
-      if (error) {
-        console.error('Error updating playlist privacy:', error);
-        // Continue with local update even if Supabase fails
-      }
+      setPlaylists(prev => prev.map(p => 
+        p.id === playlistId 
+          ? { ...p, isPublic }
+          : p
+      ));
 
-      // Update local state
-      const updatedPlaylists = playlists.map(p => {
-        if (p.id === playlistId) {
-          return { ...p, isPublic };
-        }
-        return p;
-      });
-
-      setPlaylists(updatedPlaylists);
-      console.log('Updated playlist privacy successfully');
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(playlists));
     } catch (error) {
-      console.error('Error in updatePlaylistPrivacy:', error);
+      console.error('Error updating playlist privacy:', error);
+      throw error;
     }
-  };
+  }, [playlists]);
 
-  const isShowInPlaylist = (playlistId: string, showId: string): boolean => {
+  const isShowInPlaylist = useCallback((playlistId: string, showId: string): boolean => {
     const playlist = playlists.find(p => p.id === playlistId);
-    return playlist ? (playlist.shows || []).includes(showId) : false;
-  };
+    return playlist ? playlist.shows.includes(showId) : false;
+  }, [playlists]);
 
-  // Post functions
-  const createPost = async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
+  const loadPlaylists = useCallback(async (userId?: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const targetUserId = userId || user?.id;
+
+      if (!targetUserId) return;
+
+      const { data, error } = await supabase
+        .from('playlists')
+        .select(`
+          *,
+          playlist_shows (
+            show_id
+          )
+        `)
+        .eq('user_id', targetUserId);
+
+      if (error) throw error;
+
+      const loadedPlaylists: Playlist[] = data.map(p => ({
+        id: p.id,
+        name: p.name,
+        userId: p.user_id,
+        shows: p.playlist_shows.map((ps: any) => ps.show_id),
+        isPublic: p.is_public,
+        createdAt: new Date(p.created_at),
+      }));
+
+      setPlaylists(loadedPlaylists);
+      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(loadedPlaylists));
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+    }
+  }, []);
+
+  const createPost = useCallback(async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
     const newPost: Post = {
       ...postData,
-      id: `post-${Date.now()}`,
+      id: `post_${Date.now()}`,
       timestamp: new Date(),
       likes: 0,
       comments: 0,
@@ -517,312 +367,190 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const updatedPosts = [newPost, ...posts];
     setPosts(updatedPosts);
     await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log('Created new post:', newPost.id, 'Total posts:', updatedPosts.length);
-    
+
     return newPost;
-  };
+  }, [posts]);
 
-  const likePost = async (postId: string): Promise<void> => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId && !post.isLiked) {
-        return {
-          ...post,
-          likes: post.likes + 1,
-          isLiked: true,
-        };
-      }
-      return post;
-    });
-
+  const likePost = useCallback(async (postId: string) => {
+    const updatedPosts = posts.map(post =>
+      post.id === postId
+        ? { ...post, likes: post.likes + 1, isLiked: true }
+        : post
+    );
     setPosts(updatedPosts);
     await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log(`Liked post ${postId}`);
-  };
+  }, [posts]);
 
-  const unlikePost = async (postId: string): Promise<void> => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId && post.isLiked) {
-        return {
-          ...post,
-          likes: Math.max(0, post.likes - 1),
-          isLiked: false,
-        };
-      }
-      return post;
-    });
-
+  const unlikePost = useCallback(async (postId: string) => {
+    const updatedPosts = posts.map(post =>
+      post.id === postId
+        ? { ...post, likes: Math.max(0, post.likes - 1), isLiked: false }
+        : post
+    );
     setPosts(updatedPosts);
     await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log(`Unliked post ${postId}`);
-  };
+  }, [posts]);
 
-  const repostPost = async (postId: string): Promise<void> => {
-    try {
-      console.log('=== REPOST POST START ===');
-      console.log('Post ID:', postId);
-      
-      const userId = mockCurrentUser.id;
-      console.log('User ID:', userId);
+  const repostPost = useCallback(async (postId: string) => {
+    const newRepost: RepostData = {
+      postId,
+      userId: currentUser.id,
+      timestamp: new Date(),
+    };
 
-      // Check if already reposted
-      const alreadyReposted = userReposts.some(r => r.postId === postId);
-      if (alreadyReposted) {
-        console.log('Already reposted, skipping');
-        return;
-      }
+    const updatedReposts = [...reposts, newRepost];
+    setReposts(updatedReposts);
+    await saveRepostsToStorage(updatedReposts);
 
-      // Try to insert into Supabase first
-      let supabaseSuccess = false;
-      try {
-        const { data, error } = await supabase
-          .from('reposts')
-          .insert({
-            user_id: userId,
-            original_post_id: postId,
-          })
-          .select()
-          .single();
+    const updatedPosts = posts.map(post =>
+      post.id === postId
+        ? { ...post, reposts: post.reposts + 1 }
+        : post
+    );
+    setPosts(updatedPosts);
+    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+  }, [posts, reposts, currentUser.id]);
 
-        if (!error && data) {
-          console.log('✅ Repost saved to Supabase:', data);
-          supabaseSuccess = true;
-        } else {
-          console.log('⚠️ Supabase insert failed (might not be authenticated):', error?.message);
-        }
-      } catch (supabaseError) {
-        console.log('⚠️ Supabase error:', supabaseError);
-      }
+  const unrepostPost = useCallback(async (postId: string) => {
+    const updatedReposts = reposts.filter(
+      r => !(r.postId === postId && r.userId === currentUser.id)
+    );
+    setReposts(updatedReposts);
+    await saveRepostsToStorage(updatedReposts);
 
-      // Always save to local state regardless of Supabase success
-      const newRepost: RepostData = {
-        postId,
-        userId,
-        timestamp: new Date(),
-      };
-      
-      const updatedUserReposts = [...userReposts, newRepost];
-      const updatedAllReposts = [...allReposts, newRepost];
-      
-      setUserReposts(updatedUserReposts);
-      setAllReposts(updatedAllReposts);
-      
-      // Save to AsyncStorage
-      await saveRepostsToStorage(updatedAllReposts);
+    const updatedPosts = posts.map(post =>
+      post.id === postId
+        ? { ...post, reposts: Math.max(0, post.reposts - 1) }
+        : post
+    );
+    setPosts(updatedPosts);
+    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+  }, [posts, reposts, currentUser.id]);
 
-      // Update post repost count
-      const updatedPosts = posts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            reposts: post.reposts + 1,
-          };
-        }
-        return post;
-      });
+  const hasUserReposted = useCallback((postId: string): boolean => {
+    return reposts.some(r => r.postId === postId && r.userId === currentUser.id);
+  }, [reposts, currentUser.id]);
 
-      setPosts(updatedPosts);
-      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-      
-      console.log('✅ Repost saved locally');
-      console.log('New repost count:', updatedPosts.find(p => p.id === postId)?.reposts);
-      console.log('User reposts:', updatedUserReposts.length);
-      console.log('=== REPOST POST END ===');
-    } catch (error) {
-      console.error('❌ Error in repostPost:', error);
-    }
-  };
+  const getUserReposts = useCallback((): Post[] => {
+    const userRepostIds = reposts
+      .filter(r => r.userId === currentUser.id)
+      .map(r => r.postId);
+    return posts.filter(p => userRepostIds.includes(p.id));
+  }, [posts, reposts, currentUser.id]);
 
-  const unrepostPost = async (postId: string): Promise<void> => {
-    try {
-      console.log('=== UNREPOST POST START ===');
-      console.log('Post ID:', postId);
-      
-      const userId = mockCurrentUser.id;
-      console.log('User ID:', userId);
-
-      // Try to delete from Supabase
-      try {
-        const { error } = await supabase
-          .from('reposts')
-          .delete()
-          .eq('user_id', userId)
-          .eq('original_post_id', postId);
-
-        if (!error) {
-          console.log('✅ Repost deleted from Supabase');
-        } else {
-          console.log('⚠️ Supabase delete failed:', error.message);
-        }
-      } catch (supabaseError) {
-        console.log('⚠️ Supabase error:', supabaseError);
-      }
-
-      // Always update local state
-      const updatedUserReposts = userReposts.filter(r => r.postId !== postId);
-      const updatedAllReposts = allReposts.filter(r => !(r.postId === postId && r.userId === userId));
-      
-      setUserReposts(updatedUserReposts);
-      setAllReposts(updatedAllReposts);
-      
-      // Save to AsyncStorage
-      await saveRepostsToStorage(updatedAllReposts);
-
-      // Update post repost count
-      const updatedPosts = posts.map(post => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            reposts: Math.max(0, post.reposts - 1),
-          };
-        }
-        return post;
-      });
-
-      setPosts(updatedPosts);
-      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-      
-      console.log('✅ Repost removed locally');
-      console.log('New repost count:', updatedPosts.find(p => p.id === postId)?.reposts);
-      console.log('User reposts:', updatedUserReposts.length);
-      console.log('=== UNREPOST POST END ===');
-    } catch (error) {
-      console.error('❌ Error in unrepostPost:', error);
-    }
-  };
-
-  const hasUserReposted = (postId: string): boolean => {
-    const result = userReposts.some(r => r.postId === postId);
-    return result;
-  };
-
-  const getUserReposts = (): Post[] => {
-    // Get all posts that the user has reposted
-    const repostedPostIds = userReposts.map(r => r.postId);
-    return posts.filter(post => repostedPostIds.includes(post.id));
-  };
-
-  const getAllReposts = (): { post: Post; repostedBy: User; timestamp: Date }[] => {
-    // Get all reposts with full post and user data
-    const result: { post: Post; repostedBy: User; timestamp: Date }[] = [];
-    
-    for (const repost of allReposts) {
+  const getAllReposts = useCallback(() => {
+    return reposts.map(repost => {
       const post = posts.find(p => p.id === repost.postId);
-      const user = mockUsers.find(u => u.id === repost.userId) || mockCurrentUser;
-      
-      if (post) {
-        result.push({
-          post,
-          repostedBy: user,
-          timestamp: repost.timestamp,
-        });
-      }
-    }
-    
-    return result.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  };
+      const user = mockUsers.find(u => u.id === repost.userId) || currentUser;
+      return {
+        post: post!,
+        repostedBy: user,
+        timestamp: repost.timestamp,
+      };
+    }).filter(r => r.post);
+  }, [posts, reposts, currentUser]);
 
-  const updateCommentCount = async (postId: string, count: number): Promise<void> => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: count,
-        };
-      }
-      return post;
-    });
-
+  const updateCommentCount = useCallback(async (postId: string, count: number) => {
+    const updatedPosts = posts.map(post =>
+      post.id === postId
+        ? { ...post, comments: count }
+        : post
+    );
     setPosts(updatedPosts);
     await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-    console.log(`Updated comment count for post ${postId} to ${count}`);
-  };
+  }, [posts]);
 
-  const getPost = (postId: string): Post | undefined => {
-    return posts.find(post => post.id === postId);
-  };
+  const getPost = useCallback((postId: string): Post | undefined => {
+    return posts.find(p => p.id === postId);
+  }, [posts]);
 
-  // User functions
-  const followUser = async (userId: string): Promise<void> => {
-    if (!currentUser.following?.includes(userId)) {
-      const updatedFollowing = [...(currentUser.following || []), userId];
-      const updatedUser = {
-        ...currentUser,
-        following: updatedFollowing,
-      };
-      setCurrentUser(updatedUser);
+  const followUser = useCallback(async (userId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
       
-      const userData: UserData = {
-        following: updatedFollowing,
-        followers: currentUser.followers || [],
-      };
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-      console.log(`Followed user ${userId}`);
-    }
-  };
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-  const unfollowUser = async (userId: string): Promise<void> => {
-    if (currentUser.following?.includes(userId)) {
-      const updatedFollowing = currentUser.following.filter(id => id !== userId);
-      const updatedUser = {
-        ...currentUser,
-        following: updatedFollowing,
+      await supabase
+        .from('follows')
+        .insert({
+          follower_id: user.id,
+          following_id: userId,
+        });
+
+      const updatedUserData = {
+        ...userData,
+        following: [...userData.following, userId],
       };
-      setCurrentUser(updatedUser);
+      setUserData(updatedUserData);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+    } catch (error) {
+      console.error('Error following user:', error);
+      throw error;
+    }
+  }, [userData]);
+
+  const unfollowUser = useCallback(async (userId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
       
-      const userData: UserData = {
-        following: updatedFollowing,
-        followers: currentUser.followers || [],
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', userId);
+
+      const updatedUserData = {
+        ...userData,
+        following: userData.following.filter(id => id !== userId),
       };
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
-      console.log(`Unfollowed user ${userId}`);
+      setUserData(updatedUserData);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+    } catch (error) {
+      console.error('Error unfollowing user:', error);
+      throw error;
     }
-  };
+  }, [userData]);
 
-  const isFollowing = (userId: string): boolean => {
-    return currentUser.following?.includes(userId) || false;
-  };
+  const isFollowing = useCallback((userId: string): boolean => {
+    return userData.following.includes(userId);
+  }, [userData.following]);
 
-  const value: DataContextType = {
-    // Playlists
-    playlists,
-    createPlaylist,
-    addShowToPlaylist,
-    removeShowFromPlaylist,
-    deletePlaylist,
-    isShowInPlaylist,
-    updatePlaylistPrivacy,
-    loadPlaylists,
-    
-    // Posts
-    posts,
-    createPost,
-    likePost,
-    unlikePost,
-    repostPost,
-    unrepostPost,
-    updateCommentCount,
-    getPost,
-    hasUserReposted,
-    getUserReposts,
-    getAllReposts,
-    
-    // User data
-    currentUser,
-    followUser,
-    unfollowUser,
-    isFollowing,
-    
-    // Loading state
-    isLoading,
-  };
-
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
-}
-
-export function useData() {
-  const context = useContext(DataContext);
-  if (context === undefined) {
-    throw new Error('useData must be used within a DataProvider');
-  }
-  return context;
+  return (
+    <DataContext.Provider
+      value={{
+        playlists,
+        createPlaylist,
+        addShowToPlaylist,
+        removeShowFromPlaylist,
+        deletePlaylist,
+        isShowInPlaylist,
+        updatePlaylistPrivacy,
+        loadPlaylists,
+        posts,
+        createPost,
+        likePost,
+        unlikePost,
+        repostPost,
+        unrepostPost,
+        updateCommentCount,
+        getPost,
+        hasUserReposted,
+        getUserReposts,
+        getAllReposts,
+        currentUser,
+        followUser,
+        unfollowUser,
+        isFollowing,
+        isLoading,
+      }}
+    >
+      {children}
+    </DataContext.Provider>
+  );
 }

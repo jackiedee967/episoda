@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   Pressable,
   Alert,
   KeyboardAvoidingView,
@@ -18,12 +17,15 @@ import { supabase } from '@/app/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import PhoneInput from 'react-native-phone-number-input';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [formattedPhoneNumber, setFormattedPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
+  const phoneInput = useRef<PhoneInput>(null);
 
   React.useEffect(() => {
     // Check if Apple Sign In is available
@@ -31,15 +33,17 @@ export default function LoginScreen() {
   }, []);
 
   const handlePhoneSignIn = async () => {
-    if (!phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter your phone number');
-      return;
-    }
+    // Get the formatted phone number in E.164 format
+    const checkValid = phoneInput.current?.isValidNumber(phoneNumber);
+    const formattedNumber = phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber;
 
-    // Validate phone number format (basic validation)
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
-      Alert.alert('Error', 'Please enter a valid phone number with country code (e.g., +1234567890)');
+    console.log('Phone validation:', { checkValid, formattedNumber, phoneNumber });
+
+    if (!checkValid || !formattedNumber) {
+      Alert.alert(
+        'Invalid Phone Number',
+        'Please enter a valid phone number with country code.\n\nExample: +1 555 123 4567'
+      );
       return;
     }
 
@@ -47,23 +51,60 @@ export default function LoginScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phoneNumber.replace(/\s/g, ''),
+      console.log('Sending OTP to:', formattedNumber);
+
+      const { data, error } = await supabase.auth.signInWithOtp({
+        phone: formattedNumber,
       });
+
+      console.log('OTP response:', { data, error });
 
       if (error) {
         console.error('Phone sign in error:', error);
-        Alert.alert('Error', error.message);
+        
+        // Provide specific error messages
+        if (error.message.includes('phone_provider_disabled') || error.message.includes('Unsupported phone provider')) {
+          Alert.alert(
+            'Phone Authentication Not Enabled',
+            'Phone authentication is not configured in this app yet.\n\n' +
+            'The administrator needs to:\n' +
+            '1. Enable Phone provider in Supabase Dashboard\n' +
+            '2. Configure an SMS provider (Twilio, MessageBird, or Vonage)\n\n' +
+            'Please contact support or try Apple Sign-In instead.'
+          );
+        } else if (error.message.includes('rate limit')) {
+          Alert.alert(
+            'Too Many Attempts',
+            'You have requested too many codes. Please wait a few minutes and try again.'
+          );
+        } else {
+          Alert.alert('Error', error.message);
+        }
       } else {
-        // Navigate to OTP verification screen
-        router.push({
-          pathname: '/auth/verify-otp',
-          params: { phone: phoneNumber.replace(/\s/g, '') },
-        });
+        // Success - navigate to OTP verification
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert(
+          'Code Sent!',
+          `A 6-digit verification code has been sent to ${formattedNumber}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                router.push({
+                  pathname: '/auth/verify-otp',
+                  params: { phone: formattedNumber },
+                });
+              },
+            },
+          ]
+        );
       }
     } catch (error: any) {
-      console.error('Phone sign in error:', error);
-      Alert.alert('Error', 'Failed to send verification code. Please try again.');
+      console.error('Phone sign in exception:', error);
+      Alert.alert(
+        'Error',
+        'Failed to send verification code. Please check your internet connection and try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -92,9 +133,43 @@ export default function LoginScreen() {
 
         if (error) {
           console.error('Apple sign in error:', error);
-          Alert.alert('Error', error.message);
+          
+          if (error.message.includes('not enabled')) {
+            Alert.alert(
+              'Apple Sign-In Not Configured',
+              'Apple Sign-In is not configured in this app yet.\n\n' +
+              'The administrator needs to configure Apple as an auth provider in Supabase.\n\n' +
+              'Please try phone authentication instead.'
+            );
+          } else {
+            Alert.alert('Error', error.message);
+          }
         } else {
           console.log('Apple sign in successful:', data);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          
+          // Create profile if it doesn't exist
+          if (data.user) {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .upsert({
+                user_id: data.user.id,
+                username: data.user.email?.split('@')[0] || `user_${data.user.id.slice(0, 8)}`,
+                display_name: credential.fullName?.givenName 
+                  ? `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim()
+                  : data.user.email?.split('@')[0] || 'User',
+                avatar_url: null,
+                bio: null,
+              }, {
+                onConflict: 'user_id',
+                ignoreDuplicates: false,
+              });
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+            }
+          }
+          
           // User is now signed in, navigation will be handled by auth state change
         }
       } else {
@@ -143,21 +218,31 @@ export default function LoginScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Sign in with Phone</Text>
             <Text style={styles.sectionDescription}>
-              We'll send you a verification code via SMS
+              We'll send you a 6-digit verification code via SMS
             </Text>
 
-            <View style={styles.inputContainer}>
-              <IconSymbol name="phone.fill" size={20} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="Phone number (e.g., +1234567890)"
-                placeholderTextColor={colors.textSecondary}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
+            <View style={styles.phoneInputContainer}>
+              <PhoneInput
+                ref={phoneInput}
+                defaultValue={phoneNumber}
+                defaultCode="US"
+                layout="first"
+                onChangeText={(text) => {
+                  setPhoneNumber(text);
+                }}
+                onChangeFormattedText={(text) => {
+                  setFormattedPhoneNumber(text);
+                }}
+                withDarkTheme={false}
+                withShadow={false}
+                autoFocus={false}
+                containerStyle={styles.phoneContainer}
+                textContainerStyle={styles.phoneTextContainer}
+                textInputStyle={styles.phoneTextInput}
+                codeTextStyle={styles.phoneCodeText}
+                flagButtonStyle={styles.phoneFlagButton}
+                countryPickerButtonStyle={styles.phoneCountryPicker}
+                disabled={loading}
               />
             </View>
 
@@ -171,10 +256,15 @@ export default function LoginScreen() {
               ) : (
                 <>
                   <IconSymbol name="arrow.right" size={20} color="#FFFFFF" />
-                  <Text style={styles.buttonText}>Continue with Phone</Text>
+                  <Text style={styles.buttonText}>Send Verification Code</Text>
                 </>
               )}
             </Pressable>
+
+            <Text style={styles.helperText}>
+              Enter your phone number with country code.{'\n'}
+              Example: +1 555 123 4567
+            </Text>
           </View>
 
           {/* Divider */}
@@ -201,6 +291,17 @@ export default function LoginScreen() {
           <Text style={styles.infoText}>
             By continuing, you agree to our Terms of Service and Privacy Policy
           </Text>
+
+          {/* Debug Info (remove in production) */}
+          {__DEV__ && (
+            <View style={styles.debugContainer}>
+              <Text style={styles.debugText}>
+                📱 Debug Info:{'\n'}
+                Phone: {phoneNumber}{'\n'}
+                Formatted: {formattedPhoneNumber}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -251,22 +352,36 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 16,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  phoneInputContainer: {
+    marginBottom: 16,
+  },
+  phoneContainer: {
+    width: '100%',
     backgroundColor: colors.card,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  input: {
-    flex: 1,
+  phoneTextContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingVertical: 0,
+  },
+  phoneTextInput: {
     fontSize: 16,
     color: colors.text,
-    marginLeft: 12,
+    height: 50,
+  },
+  phoneCodeText: {
+    fontSize: 16,
+    color: colors.text,
+    height: 50,
+  },
+  phoneFlagButton: {
+    borderRadius: 12,
+  },
+  phoneCountryPicker: {
+    borderRadius: 12,
   },
   button: {
     flexDirection: 'row',
@@ -284,6 +399,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  helperText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   divider: {
     flexDirection: 'row',
@@ -311,5 +433,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 24,
     lineHeight: 18,
+  },
+  debugContainer: {
+    marginTop: 24,
+    padding: 12,
+    backgroundColor: colors.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  debugText: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });

@@ -80,25 +80,81 @@ export default function VerifyOTPScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
+      console.log('Verifying OTP:', { phone, code });
+
       const { data, error } = await supabase.auth.verifyOtp({
         phone: phone,
         token: code,
         type: 'sms',
       });
 
+      console.log('OTP verification response:', { data, error });
+
       if (error) {
         console.error('OTP verification error:', error);
-        Alert.alert('Error', error.message);
+        
+        if (error.message.includes('expired')) {
+          Alert.alert(
+            'Code Expired',
+            'This verification code has expired. Please request a new one.'
+          );
+        } else if (error.message.includes('invalid')) {
+          Alert.alert(
+            'Invalid Code',
+            'The code you entered is incorrect. Please try again.'
+          );
+        } else {
+          Alert.alert('Error', error.message);
+        }
+        
         // Clear OTP inputs on error
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       } else {
         console.log('OTP verification successful:', data);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // User is now signed in, navigation will be handled by auth state change
+        
+        // Create or update user profile
+        if (data.user) {
+          console.log('Creating/updating profile for user:', data.user.id);
+          
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              user_id: data.user.id,
+              username: `user_${data.user.id.slice(0, 8)}`,
+              display_name: phone.slice(-10), // Use last 10 digits as display name initially
+              avatar_url: null,
+              bio: null,
+            }, {
+              onConflict: 'user_id',
+              ignoreDuplicates: false,
+            });
+
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+            // Don't block login if profile creation fails
+          } else {
+            console.log('Profile created/updated successfully');
+          }
+        }
+        
+        // User is now signed in, navigation will be handled by auth state change in _layout.tsx
+        Alert.alert(
+          'Success!',
+          'You have been successfully signed in.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Navigation will be handled automatically by _layout.tsx
+              },
+            },
+          ]
+        );
       }
     } catch (error: any) {
-      console.error('OTP verification error:', error);
+      console.error('OTP verification exception:', error);
       Alert.alert('Error', 'Failed to verify code. Please try again.');
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
@@ -114,6 +170,8 @@ export default function VerifyOTPScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
+      console.log('Resending OTP to:', phone);
+
       const { error } = await supabase.auth.signInWithOtp({
         phone: phone,
       });
@@ -128,7 +186,7 @@ export default function VerifyOTPScreen() {
         inputRefs.current[0]?.focus();
       }
     } catch (error: any) {
-      console.error('Resend OTP error:', error);
+      console.error('Resend OTP exception:', error);
       Alert.alert('Error', 'Failed to resend code. Please try again.');
     } finally {
       setResending(false);
@@ -187,7 +245,7 @@ export default function VerifyOTPScreen() {
         )}
 
         <View style={styles.resendContainer}>
-          <Text style={styles.resendText}>Didn't receive the code?</Text>
+          <Text style={styles.resendText}>Didn&apos;t receive the code?</Text>
           <Pressable
             onPress={handleResendCode}
             disabled={countdown > 0 || resending}
@@ -209,12 +267,17 @@ export default function VerifyOTPScreen() {
         </View>
 
         <Pressable
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, (loading || otp.join('').length !== 6) && styles.buttonDisabled]}
           onPress={() => handleVerifyOtp()}
           disabled={loading || otp.join('').length !== 6}
         >
           <Text style={styles.buttonText}>Verify</Text>
         </Pressable>
+
+        <Text style={styles.helperText}>
+          Enter the 6-digit code sent to your phone.{'\n'}
+          The code expires in 60 seconds.
+        </Text>
       </View>
     </View>
   );
@@ -319,6 +382,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    marginBottom: 16,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -327,5 +391,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  helperText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
