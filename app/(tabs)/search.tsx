@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image } from 
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import FollowButton from '@/components/FollowButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { Show, User } from '@/types';
 import PlaylistModal from '@/components/PlaylistModal';
@@ -17,7 +18,7 @@ type SearchCategory = 'posts' | 'comments' | 'shows' | 'users';
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing } = useData();
+  const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing, currentUser } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<SearchCategory>('shows');
@@ -145,10 +146,7 @@ export default function SearchScreen() {
     router.setParams({ showId: undefined });
   };
 
-  const handleFollowUser = async (userId: string, e: any) => {
-    e.stopPropagation();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+  const handleFollowToggle = async (userId: string) => {
     try {
       if (isFollowing(userId)) {
         await unfollowUser(userId);
@@ -287,37 +285,34 @@ export default function SearchScreen() {
         ));
 
       case 'users':
-        return filteredResults.map((user: any) => (
-          <Pressable
-            key={user.id}
-            style={({ pressed }) => [styles.userCard, pressed && styles.userCardPressed]}
-            onPress={() => router.push(`/user/${user.id}`)}
-          >
-            <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
-            <View style={styles.userInfo}>
-              <Text style={styles.userDisplayName}>{user.displayName}</Text>
-              <Text style={styles.userUsername}>@{user.username}</Text>
-              {user.bio && <Text style={styles.userBio} numberOfLines={2}>{user.bio}</Text>}
-            </View>
+        return filteredResults.map((user: any) => {
+          const isCurrentUserProfile = user.id === currentUser.id;
+          
+          return (
             <Pressable
-              style={({ pressed }) => [
-                styles.followButton,
-                isFollowing(user.id) && styles.followButtonActive,
-                pressed && styles.followButtonPressed,
-              ]}
-              onPress={(e) => handleFollowUser(user.id, e)}
+              key={user.id}
+              style={({ pressed }) => [styles.userCard, pressed && styles.userCardPressed]}
+              onPress={() => router.push(`/user/${user.id}`)}
             >
-              <Text
-                style={[
-                  styles.followButtonText,
-                  isFollowing(user.id) && styles.followButtonTextActive,
-                ]}
-              >
-                {isFollowing(user.id) ? 'Following' : 'Follow'}
-              </Text>
+              <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
+              <View style={styles.userInfo}>
+                <Text style={styles.userDisplayName}>{user.displayName}</Text>
+                <Text style={styles.userUsername}>@{user.username}</Text>
+                {user.bio && <Text style={styles.userBio} numberOfLines={2}>{user.bio}</Text>}
+              </View>
+              {!isCurrentUserProfile && (
+                <View style={styles.followButtonWrapper} onStartShouldSetResponder={() => true}>
+                  <FollowButton
+                    userId={user.id}
+                    isFollowing={isFollowing(user.id)}
+                    onPress={handleFollowToggle}
+                    size="small"
+                  />
+                </View>
+              )}
             </Pressable>
-          </Pressable>
-        ));
+          );
+        });
 
       case 'comments':
         return (
@@ -605,28 +600,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 18,
   },
-  followButton: {
-    backgroundColor: colors.secondary,
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+  followButtonWrapper: {
     marginLeft: 8,
-  },
-  followButtonActive: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  followButtonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.95 }],
-  },
-  followButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.background,
-  },
-  followButtonTextActive: {
-    color: colors.text,
   },
 });

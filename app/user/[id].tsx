@@ -15,6 +15,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import FollowersModal from '@/components/FollowersModal';
+import FollowButton from '@/components/FollowButton';
 import BlockReportModal from '@/components/BlockReportModal';
 import { mockUsers, currentUser, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
@@ -177,21 +178,20 @@ export default function UserProfile() {
     );
   }
 
-  const handleFollowToggle = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (isUserFollowing) {
-      await unfollowUser(id as string);
-    } else {
-      await followUser(id as string);
-    }
-    // Reload follow data
+  const handleFollowToggle = async (userId: string) => {
     try {
+      if (isFollowing(userId)) {
+        await unfollowUser(userId);
+      } else {
+        await followUser(userId);
+      }
+      // Reload follow data
       const followersData = await getFollowers(id as string);
       const followingData = await getFollowing(id as string);
       setFollowers(followersData);
       setFollowing(followingData);
     } catch (error) {
-      console.error('Error reloading follow data:', error);
+      console.error('Error toggling follow:', error);
     }
   };
 
@@ -398,14 +398,14 @@ export default function UserProfile() {
       )}
 
       {!isCurrentUser && (
-        <Pressable
-          style={[styles.followButton, isUserFollowing && styles.followingButton]}
-          onPress={handleFollowToggle}
-        >
-          <Text style={[styles.followButtonText, isUserFollowing && styles.followingButtonText]}>
-            {isUserFollowing ? 'Unfollow' : 'Follow'}
-          </Text>
-        </Pressable>
+        <View style={styles.followButtonContainer}>
+          <FollowButton
+            userId={id as string}
+            isFollowing={isUserFollowing}
+            onPress={handleFollowToggle}
+            size="large"
+          />
+        </View>
       )}
     </View>
   );
@@ -629,20 +629,7 @@ export default function UserProfile() {
         currentUserId={currentUser.id}
         followingIds={following.map(u => u.id)}
         onFollowToggle={async (userId) => {
-          if (isFollowing(userId)) {
-            await unfollowUser(userId);
-          } else {
-            await followUser(userId);
-          }
-          // Reload follow data to update the modal
-          try {
-            const followersData = await getFollowers(id as string);
-            const followingData = await getFollowing(id as string);
-            setFollowers(followersData);
-            setFollowing(followingData);
-          } catch (error) {
-            console.error('Error reloading follow data:', error);
-          }
+          await handleFollowToggle(userId);
         }}
       />
 
@@ -811,26 +798,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
-  followButton: {
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
+  followButtonContainer: {
     width: '100%',
     alignItems: 'center',
-  },
-  followingButton: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  followButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  followingButtonText: {
-    color: colors.textSecondary,
   },
   section: {
     padding: 16,

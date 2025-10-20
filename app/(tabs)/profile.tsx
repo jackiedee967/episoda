@@ -199,6 +199,20 @@ export default function ProfileScreen() {
     }
   };
 
+  const handleFollowToggle = async (userId: string) => {
+    try {
+      if (isFollowing(userId)) {
+        await unfollowUser(userId);
+      } else {
+        await followUser(userId);
+      }
+      // Reload follow data to update the modal
+      await loadFollowData();
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
@@ -429,15 +443,7 @@ export default function ProfileScreen() {
         title={followersType === 'followers' ? 'Followers' : 'Following'}
         currentUserId={currentUser.id}
         followingIds={following.map(u => u.id)}
-        onFollowToggle={async (userId) => {
-          if (isFollowing(userId)) {
-            await unfollowUser(userId);
-          } else {
-            await followUser(userId);
-          }
-          // Reload follow data to update the modal
-          await loadFollowData();
-        }}
+        onFollowToggle={handleFollowToggle}
       />
 
       <PostModal

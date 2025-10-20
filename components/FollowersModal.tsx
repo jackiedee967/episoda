@@ -12,6 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
+import FollowButton from '@/components/FollowButton';
 import { User } from '@/types';
 import { colors } from '@/styles/commonStyles';
 import { useRouter } from 'expo-router';
@@ -24,7 +25,7 @@ interface FollowersModalProps {
   title: string;
   currentUserId: string;
   followingIds: string[];
-  onFollowToggle: (userId: string) => void;
+  onFollowToggle: (userId: string) => Promise<void>;
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -64,12 +65,6 @@ export default function FollowersModal({
     router.push(`/user/${userId}`);
   };
 
-  const handleFollowPress = async (userId: string, e: any) => {
-    e.stopPropagation();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await onFollowToggle(userId);
-  };
-
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -107,14 +102,14 @@ export default function FollowersModal({
                     {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
                   </View>
                   {!isCurrentUser && (
-                    <Pressable
-                      style={[styles.followButton, isFollowing && styles.followingButton]}
-                      onPress={(e) => handleFollowPress(user.id, e)}
-                    >
-                      <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                        {isFollowing ? 'Following' : 'Follow'}
-                      </Text>
-                    </Pressable>
+                    <View style={styles.buttonWrapper} onStartShouldSetResponder={() => true}>
+                      <FollowButton
+                        userId={user.id}
+                        isFollowing={isFollowing}
+                        onPress={onFollowToggle}
+                        size="small"
+                      />
+                    </View>
                   )}
                 </Pressable>
               );
@@ -192,27 +187,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
-  followButton: {
-    backgroundColor: colors.background,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    minWidth: 90,
-    alignItems: 'center',
-  },
-  followingButton: {
-    backgroundColor: colors.secondary,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-  },
-  followButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.secondary,
-  },
-  followingButtonText: {
-    color: colors.text,
+  buttonWrapper: {
+    marginLeft: 8,
   },
 });
