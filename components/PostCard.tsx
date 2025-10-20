@@ -264,7 +264,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
             {latestPost.title && <Text style={styles.postTitle}>{latestPost.title}</Text>}
             {latestPost.body && <Text style={styles.postBody}>{latestPost.body}</Text>}
 
-            {/* Post Tags */}
+            {/* Post Tags - Category tags are NOT clickable, only visual labels */}
             {latestPost.tags.length > 0 && (
               <View style={styles.postTagsContainer}>
                 {latestPost.tags.map((tag, index) => {

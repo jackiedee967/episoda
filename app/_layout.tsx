@@ -11,33 +11,75 @@ import {
 } from "@react-navigation/native";
 import { useColorScheme, Alert } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts } from "expo-font";
 import "react-native-reanimated";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments, useRootNavigationState } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SystemBars } from "react-native-edge-to-edge";
 import { colors } from "@/styles/commonStyles";
+import { supabase } from "@/app/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+function useProtectedRoute(session: Session | null) {
+  const segments = useSegments();
+  const navigationState = useRootNavigationState();
+
+  useEffect(() => {
+    if (!navigationState?.key) return;
+
+    const inAuthGroup = segments[0] === 'auth';
+
+    if (!session && !inAuthGroup) {
+      // Redirect to login if not authenticated
+      router.replace('/auth/login');
+    } else if (session && inAuthGroup) {
+      // Redirect to home if authenticated and trying to access auth screens
+      router.replace('/(tabs)');
+    }
+  }, [session, segments, navigationState]);
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isConnected } = useNetworkState();
+  const [session, setSession] = useState<Session | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
   useEffect(() => {
-    if (loaded) {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session);
+      setSession(session);
+      setIsReady(true);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session);
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (loaded && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, isReady]);
 
-  if (!loaded) {
+  useProtectedRoute(session);
+
+  if (!loaded || !isReady) {
     return null;
   }
 
@@ -60,6 +102,18 @@ export default function RootLayout() {
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen 
+                name="auth/login" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="auth/verify-otp" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
               <Stack.Screen 
                 name="show/[id]" 
                 options={{ 

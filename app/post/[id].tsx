@@ -346,6 +346,7 @@ export default function PostDetail() {
             <Text style={styles.postBody}>{post.body}</Text>
           )}
 
+          {/* Category tags - NOT clickable, only visual labels for categorization */}
           <View style={styles.tagsContainer}>
             {post.tags.map((tag, index) => {
               const tagColor = getTagColor(tag);
