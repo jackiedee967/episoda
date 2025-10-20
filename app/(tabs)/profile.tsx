@@ -17,17 +17,60 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { posts, followUser, unfollowUser, isFollowing, getAllReposts, playlists, loadPlaylists, updatePlaylistPrivacy, createPlaylist } = useData();
+  const { 
+    posts, 
+    followUser, 
+    unfollowUser, 
+    isFollowing, 
+    getAllReposts, 
+    playlists, 
+    loadPlaylists, 
+    updatePlaylistPrivacy, 
+    createPlaylist,
+    getFollowers,
+    getFollowing,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived,
+    currentUser: contextCurrentUser
+  } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
+  const [episodesWatched, setEpisodesWatched] = useState(0);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
 
-  // Load playlists on mount
+  // Load playlists and stats on mount
   useEffect(() => {
     loadPlaylists();
+    loadStats();
+    loadFollowData();
   }, [loadPlaylists]);
+
+  const loadStats = async () => {
+    try {
+      const episodesCount = await getEpisodesWatchedCount(currentUser.id);
+      const likesCount = await getTotalLikesReceived(currentUser.id);
+      setEpisodesWatched(episodesCount);
+      setTotalLikes(likesCount);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const loadFollowData = async () => {
+    try {
+      const followersData = await getFollowers(currentUser.id);
+      const followingData = await getFollowing(currentUser.id);
+      setFollowers(followersData);
+      setFollowing(followingData);
+    } catch (error) {
+      console.error('Error loading follow data:', error);
+    }
+  };
 
   // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
@@ -174,19 +217,19 @@ export default function ProfileScreen() {
 
       <View style={styles.statsContainer}>
         <Pressable style={styles.statItem} onPress={handleShowFollowers}>
-          <Text style={styles.statValue}>{currentUser.followers?.length || 0}</Text>
+          <Text style={styles.statValue}>{followers.length}</Text>
           <Text style={styles.statLabel}>Followers</Text>
         </Pressable>
         <Pressable style={styles.statItem} onPress={handleShowFollowing}>
-          <Text style={styles.statValue}>{currentUser.following?.length || 0}</Text>
+          <Text style={styles.statValue}>{following.length}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </Pressable>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{currentUser.episodesWatchedCount || 0}</Text>
+          <Text style={styles.statValue}>{episodesWatched}</Text>
           <Text style={styles.statLabel}>Episodes</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{currentUser.totalLikesReceived || 0}</Text>
+          <Text style={styles.statValue}>{totalLikes}</Text>
           <Text style={styles.statLabel}>Likes</Text>
         </View>
       </View>
@@ -382,16 +425,18 @@ export default function ProfileScreen() {
           setShowFollowersModal(false);
           setShowFollowingModal(false);
         }}
-        users={mockUsers}
+        users={followersType === 'followers' ? followers : following}
         title={followersType === 'followers' ? 'Followers' : 'Following'}
         currentUserId={currentUser.id}
-        followingIds={currentUser.following || []}
-        onFollowToggle={(userId) => {
+        followingIds={following.map(u => u.id)}
+        onFollowToggle={async (userId) => {
           if (isFollowing(userId)) {
-            unfollowUser(userId);
+            await unfollowUser(userId);
           } else {
-            followUser(userId);
+            await followUser(userId);
           }
+          // Reload follow data to update the modal
+          await loadFollowData();
         }}
       />
 

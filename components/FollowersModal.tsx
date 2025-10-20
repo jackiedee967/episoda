@@ -64,10 +64,10 @@ export default function FollowersModal({
     router.push(`/user/${userId}`);
   };
 
-  const handleFollowPress = (userId: string, e: any) => {
+  const handleFollowPress = async (userId: string, e: any) => {
     e.stopPropagation();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onFollowToggle(userId);
+    await onFollowToggle(userId);
   };
 
   return (
@@ -193,22 +193,26 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   followButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.background,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    minWidth: 90,
+    alignItems: 'center',
   },
   followingButton: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.secondary,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.secondary,
   },
   followButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.secondary,
   },
   followingButtonText: {
-    color: colors.textSecondary,
+    color: colors.text,
   },
 });

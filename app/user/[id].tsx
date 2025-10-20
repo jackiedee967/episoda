@@ -28,7 +28,21 @@ type Tab = 'posts' | 'shows' | 'playlists';
 export default function UserProfile() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { posts, followUser, unfollowUser, isFollowing, currentUser: contextCurrentUser, playlists, loadPlaylists, updatePlaylistPrivacy, createPlaylist } = useData();
+  const { 
+    posts, 
+    followUser, 
+    unfollowUser, 
+    isFollowing, 
+    currentUser: contextCurrentUser, 
+    playlists, 
+    loadPlaylists, 
+    updatePlaylistPrivacy, 
+    createPlaylist,
+    getFollowers,
+    getFollowing,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived
+  } = useData();
 
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showFollowersModal, setShowFollowersModal] = useState(false);
@@ -38,6 +52,10 @@ export default function UserProfile() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
+  const [episodesWatched, setEpisodesWatched] = useState(0);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [followers, setFollowers] = useState<any[]>([]);
+  const [following, setFollowing] = useState<any[]>([]);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
   
@@ -45,7 +63,7 @@ export default function UserProfile() {
   const userPosts = posts.filter((p) => p.user.id === id);
   
   const isCurrentUser = id === currentUser.id;
-  const following = isFollowing(id as string);
+  const isUserFollowing = isFollowing(id as string);
 
   // Get last 4 unique shows from user's posts (rotation)
   const getMyRotation = (): Show[] => {
@@ -105,23 +123,42 @@ export default function UserProfile() {
   // Mock mutual followers
   const mutualFollowers = mockUsers.slice(0, 3);
 
-  // Load playlists when component mounts or user changes
+  // Load playlists and stats when component mounts or user changes
   useEffect(() => {
-    const loadUserPlaylists = async () => {
+    const loadUserData = async () => {
+      // Load playlists
       if (isCurrentUser) {
-        // Load all playlists for current user
         await loadPlaylists();
         setUserPlaylists(playlists);
       } else {
-        // Load only public playlists for other users
         await loadPlaylists(id as string);
         const publicPlaylists = playlists.filter(p => p.userId === id && p.isPublic);
         setUserPlaylists(publicPlaylists);
       }
+
+      // Load stats
+      try {
+        const episodesCount = await getEpisodesWatchedCount(id as string);
+        const likesCount = await getTotalLikesReceived(id as string);
+        setEpisodesWatched(episodesCount);
+        setTotalLikes(likesCount);
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+
+      // Load follow data
+      try {
+        const followersData = await getFollowers(id as string);
+        const followingData = await getFollowing(id as string);
+        setFollowers(followersData);
+        setFollowing(followingData);
+      } catch (error) {
+        console.error('Error loading follow data:', error);
+      }
     };
 
-    loadUserPlaylists();
-  }, [id, isCurrentUser, loadPlaylists, playlists]);
+    loadUserData();
+  }, [id, isCurrentUser, loadPlaylists, playlists, getEpisodesWatchedCount, getTotalLikesReceived, getFollowers, getFollowing]);
 
   // Determine if we should show the playlists tab
   const shouldShowPlaylistsTab = userPlaylists.length > 0;
@@ -140,12 +177,21 @@ export default function UserProfile() {
     );
   }
 
-  const handleFollowToggle = () => {
+  const handleFollowToggle = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (following) {
-      unfollowUser(id as string);
+    if (isUserFollowing) {
+      await unfollowUser(id as string);
     } else {
-      followUser(id as string);
+      await followUser(id as string);
+    }
+    // Reload follow data
+    try {
+      const followersData = await getFollowers(id as string);
+      const followingData = await getFollowing(id as string);
+      setFollowers(followersData);
+      setFollowing(followingData);
+    } catch (error) {
+      console.error('Error reloading follow data:', error);
     }
   };
 
@@ -298,19 +344,19 @@ export default function UserProfile() {
 
       <View style={styles.statsContainer}>
         <Pressable style={styles.statItem} onPress={handleShowFollowers}>
-          <Text style={styles.statValue}>{user.followers?.length || 0}</Text>
+          <Text style={styles.statValue}>{followers.length}</Text>
           <Text style={styles.statLabel}>Followers</Text>
         </Pressable>
         <Pressable style={styles.statItem} onPress={handleShowFollowing}>
-          <Text style={styles.statValue}>{user.following?.length || 0}</Text>
+          <Text style={styles.statValue}>{following.length}</Text>
           <Text style={styles.statLabel}>Following</Text>
         </Pressable>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{user.episodesWatchedCount || 0}</Text>
+          <Text style={styles.statValue}>{episodesWatched}</Text>
           <Text style={styles.statLabel}>Episodes</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={styles.statValue}>{user.totalLikesReceived || 0}</Text>
+          <Text style={styles.statValue}>{totalLikes}</Text>
           <Text style={styles.statLabel}>Likes</Text>
         </View>
       </View>
@@ -353,11 +399,11 @@ export default function UserProfile() {
 
       {!isCurrentUser && (
         <Pressable
-          style={[styles.followButton, following && styles.followingButton]}
+          style={[styles.followButton, isUserFollowing && styles.followingButton]}
           onPress={handleFollowToggle}
         >
-          <Text style={[styles.followButtonText, following && styles.followingButtonText]}>
-            {following ? 'Unfollow' : 'Follow'}
+          <Text style={[styles.followButtonText, isUserFollowing && styles.followingButtonText]}>
+            {isUserFollowing ? 'Unfollow' : 'Follow'}
           </Text>
         </Pressable>
       )}
@@ -578,15 +624,24 @@ export default function UserProfile() {
           setShowFollowersModal(false);
           setShowFollowingModal(false);
         }}
-        users={mockUsers}
+        users={followersType === 'followers' ? followers : following}
         title={followersType === 'followers' ? 'Followers' : 'Following'}
         currentUserId={currentUser.id}
-        followingIds={currentUser.following || []}
-        onFollowToggle={(userId) => {
+        followingIds={following.map(u => u.id)}
+        onFollowToggle={async (userId) => {
           if (isFollowing(userId)) {
-            unfollowUser(userId);
+            await unfollowUser(userId);
           } else {
-            followUser(userId);
+            await followUser(userId);
+          }
+          // Reload follow data to update the modal
+          try {
+            const followersData = await getFollowers(id as string);
+            const followingData = await getFollowing(id as string);
+            setFollowers(followersData);
+            setFollowing(followingData);
+          } catch (error) {
+            console.error('Error reloading follow data:', error);
           }
         }}
       />

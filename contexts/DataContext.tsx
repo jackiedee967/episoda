@@ -40,6 +40,10 @@ interface DataContextType {
   followUser: (userId: string) => Promise<void>;
   unfollowUser: (userId: string) => Promise<void>;
   isFollowing: (userId: string) => boolean;
+  getFollowers: (userId: string) => Promise<User[]>;
+  getFollowing: (userId: string) => Promise<User[]>;
+  getEpisodesWatchedCount: (userId: string) => Promise<number>;
+  getTotalLikesReceived: (userId: string) => Promise<number>;
   isLoading: boolean;
 }
 
@@ -434,6 +438,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
       isLiked: false,
     };
 
+    // Try to save to Supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const episodeIds = postData.episodes?.map(ep => ep.id) || [];
+        
+        const { data, error } = await supabase
+          .from('posts')
+          .insert({
+            user_id: user.id,
+            show_id: postData.show.id,
+            show_title: postData.show.title,
+            show_poster: postData.show.poster,
+            episode_ids: episodeIds,
+            title: postData.title,
+            body: postData.body,
+            rating: postData.rating,
+            tags: postData.tags,
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          // Log episodes to watch_history
+          if (episodeIds.length > 0) {
+            const watchHistoryEntries = episodeIds.map(episodeId => ({
+              user_id: user.id,
+              show_id: postData.show.id,
+              episode_id: episodeId,
+            }));
+
+            await supabase
+              .from('watch_history')
+              .insert(watchHistoryEntries);
+          }
+
+          // Update profile stats
+          await supabase.rpc('update_user_profile_stats', { target_user_id: user.id });
+        }
+      }
+    } catch (error) {
+      console.log('Error saving post to Supabase:', error);
+    }
+
     const updatedPosts = [newPost, ...posts];
     setPosts(updatedPosts);
     await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
@@ -442,6 +491,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [posts]);
 
   const likePost = useCallback(async (postId: string) => {
+    // Try to save to Supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Insert like
+        await supabase
+          .from('post_likes')
+          .insert({
+            post_id: postId,
+            user_id: user.id,
+          });
+
+        // Get the post owner to update their stats
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', postId)
+          .single();
+
+        if (postData) {
+          // Update profile stats for the post owner
+          await supabase.rpc('update_user_profile_stats', { target_user_id: postData.user_id });
+        }
+      }
+    } catch (error) {
+      console.log('Error liking post in Supabase:', error);
+    }
+
     const updatedPosts = posts.map(post =>
       post.id === postId
         ? { ...post, likes: post.likes + 1, isLiked: true }
@@ -452,6 +530,34 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [posts]);
 
   const unlikePost = useCallback(async (postId: string) => {
+    // Try to remove from Supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Delete like
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+
+        // Get the post owner to update their stats
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('user_id')
+          .eq('id', postId)
+          .single();
+
+        if (postData) {
+          // Update profile stats for the post owner
+          await supabase.rpc('update_user_profile_stats', { target_user_id: postData.user_id });
+        }
+      }
+    } catch (error) {
+      console.log('Error unliking post in Supabase:', error);
+    }
+
     const updatedPosts = posts.map(post =>
       post.id === postId
         ? { ...post, likes: Math.max(0, post.likes - 1), isLiked: false }
@@ -593,6 +699,127 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return userData.following.includes(userId);
   }, [userData.following]);
 
+  const getFollowers = useCallback(async (userId: string): Promise<User[]> => {
+    try {
+      // Try to get from Supabase
+      const { data, error } = await supabase
+        .from('follows')
+        .select(`
+          follower_id,
+          profiles!follows_follower_id_fkey (
+            user_id,
+            username,
+            display_name,
+            avatar_url,
+            bio
+          )
+        `)
+        .eq('following_id', userId);
+
+      if (!error && data) {
+        return data.map((follow: any) => ({
+          id: follow.profiles.user_id,
+          username: follow.profiles.username,
+          displayName: follow.profiles.display_name,
+          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          bio: follow.profiles.bio || '',
+          followers: [],
+          following: [],
+        }));
+      }
+    } catch (error) {
+      console.log('Error fetching followers from Supabase:', error);
+    }
+
+    // Fallback to mock data
+    return mockUsers.filter(u => u.following?.includes(userId));
+  }, []);
+
+  const getFollowing = useCallback(async (userId: string): Promise<User[]> => {
+    try {
+      // Try to get from Supabase
+      const { data, error } = await supabase
+        .from('follows')
+        .select(`
+          following_id,
+          profiles!follows_following_id_fkey (
+            user_id,
+            username,
+            display_name,
+            avatar_url,
+            bio
+          )
+        `)
+        .eq('follower_id', userId);
+
+      if (!error && data) {
+        return data.map((follow: any) => ({
+          id: follow.profiles.user_id,
+          username: follow.profiles.username,
+          displayName: follow.profiles.display_name,
+          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          bio: follow.profiles.bio || '',
+          followers: [],
+          following: [],
+        }));
+      }
+    } catch (error) {
+      console.log('Error fetching following from Supabase:', error);
+    }
+
+    // Fallback to mock data
+    const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
+    return mockUsers.filter(u => user.following?.includes(u.id));
+  }, []);
+
+  const getEpisodesWatchedCount = useCallback(async (userId: string): Promise<number> => {
+    try {
+      // Try to get from Supabase
+      const { data, error } = await supabase
+        .from('watch_history')
+        .select('episode_id')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        // Count unique episodes
+        const uniqueEpisodes = new Set(data.map(item => item.episode_id));
+        return uniqueEpisodes.size;
+      }
+    } catch (error) {
+      console.log('Error fetching episodes watched count from Supabase:', error);
+    }
+
+    // Fallback: count from posts (episodes logged)
+    const userPosts = posts.filter(p => p.user.id === userId);
+    const episodeIds = new Set<string>();
+    userPosts.forEach(post => {
+      if (post.episodes && post.episodes.length > 0) {
+        post.episodes.forEach(ep => episodeIds.add(ep.id));
+      }
+    });
+    return episodeIds.size;
+  }, [posts]);
+
+  const getTotalLikesReceived = useCallback(async (userId: string): Promise<number> => {
+    try {
+      // Try to get from Supabase
+      const { data, error } = await supabase
+        .from('posts')
+        .select('likes_count')
+        .eq('user_id', userId);
+
+      if (!error && data) {
+        return data.reduce((sum, post) => sum + (post.likes_count || 0), 0);
+      }
+    } catch (error) {
+      console.log('Error fetching total likes received from Supabase:', error);
+    }
+
+    // Fallback: count from local posts
+    const userPosts = posts.filter(p => p.user.id === userId);
+    return userPosts.reduce((sum, post) => sum + post.likes, 0);
+  }, [posts]);
+
   return (
     <DataContext.Provider
       value={{
@@ -619,6 +846,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         followUser,
         unfollowUser,
         isFollowing,
+        getFollowers,
+        getFollowing,
+        getEpisodesWatchedCount,
+        getTotalLikesReceived,
         isLoading,
       }}
     >
