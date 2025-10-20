@@ -67,6 +67,8 @@ export default function FollowersModal({
 
   const handleFollowToggle = async (userId: string) => {
     console.log('FollowersModal - handleFollowToggle called for userId:', userId);
+    console.log('FollowersModal - Current following state:', followingIds.includes(userId));
+    
     try {
       await onFollowToggle(userId);
       console.log('FollowersModal - Follow toggle completed successfully');
@@ -95,36 +97,46 @@ export default function FollowersModal({
           </View>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            {users.map((user) => {
-              const isFollowing = followingIds.includes(user.id);
-              const isCurrentUser = user.id === currentUserId;
+            {users.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>
+                  {title === 'Followers' ? 'No followers yet' : 'Not following anyone yet'}
+                </Text>
+              </View>
+            ) : (
+              users.map((user) => {
+                const isFollowing = followingIds.includes(user.id);
+                const isCurrentUser = user.id === currentUserId;
 
-              return (
-                <View key={user.id} style={styles.userItem}>
-                  <Pressable
-                    style={styles.userPressable}
-                    onPress={() => handleUserPress(user.id)}
-                  >
-                    <Image source={{ uri: user.avatar }} style={styles.avatar} />
-                    <View style={styles.userInfo}>
-                      <Text style={styles.displayName}>{user.displayName}</Text>
-                      <Text style={styles.username}>@{user.username}</Text>
-                      {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
-                    </View>
-                  </Pressable>
-                  {!isCurrentUser && (
-                    <View style={styles.buttonWrapper}>
-                      <FollowButton
-                        userId={user.id}
-                        isFollowing={isFollowing}
-                        onPress={handleFollowToggle}
-                        size="small"
-                      />
-                    </View>
-                  )}
-                </View>
-              );
-            })}
+                console.log('FollowersModal - Rendering user:', user.username, 'isFollowing:', isFollowing);
+
+                return (
+                  <View key={user.id} style={styles.userItem}>
+                    <Pressable
+                      style={styles.userPressable}
+                      onPress={() => handleUserPress(user.id)}
+                    >
+                      <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                      <View style={styles.userInfo}>
+                        <Text style={styles.displayName}>{user.displayName}</Text>
+                        <Text style={styles.username}>@{user.username}</Text>
+                        {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
+                      </View>
+                    </Pressable>
+                    {!isCurrentUser && (
+                      <View style={styles.buttonWrapper}>
+                        <FollowButton
+                          userId={user.id}
+                          isFollowing={isFollowing}
+                          onPress={handleFollowToggle}
+                          size="small"
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })
+            )}
           </ScrollView>
         </Animated.View>
       </View>
@@ -166,6 +178,16 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   userItem: {
     flexDirection: 'row',
