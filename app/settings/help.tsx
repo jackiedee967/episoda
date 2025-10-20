@@ -125,18 +125,19 @@ export default function HelpDeskScreen() {
   };
 
   const handleCreatePost = () => {
+    console.log('Create Post button pressed');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/settings/help/create-post' as any);
+    router.push('/settings/help/create-post');
   };
 
   const handlePostPress = (postId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/settings/help/post/${postId}` as any);
+    router.push(`/settings/help/post/${postId}`);
   };
 
   const handleProfilePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/profile' as any);
+    router.push('/(tabs)/profile');
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -302,7 +303,11 @@ export default function HelpDeskScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>COMMUNITY POSTS</Text>
-                <Pressable style={styles.createButton} onPress={handleCreatePost}>
+                <Pressable 
+                  style={styles.createButton} 
+                  onPress={handleCreatePost}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Plus size={16} color={colors.background} />
                   <Text style={styles.createButtonText}>Create post</Text>
                 </Pressable>
