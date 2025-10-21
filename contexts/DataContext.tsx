@@ -9,6 +9,8 @@ import { Alert } from 'react-native';
 interface UserData {
   following: string[];
   followers: string[];
+  followerCount: number;
+  followingCount: number;
 }
 
 interface RepostData {
@@ -43,9 +45,12 @@ interface DataContextType {
   isFollowing: (userId: string) => boolean;
   getFollowers: (userId: string) => Promise<User[]>;
   getFollowing: (userId: string) => Promise<User[]>;
+  getFollowerCount: (userId: string) => Promise<number>;
+  getFollowingCount: (userId: string) => Promise<number>;
   getEpisodesWatchedCount: (userId: string) => Promise<number>;
   getTotalLikesReceived: (userId: string) => Promise<number>;
   isLoading: boolean;
+  refreshFollowData: () => Promise<void>;
 }
 
 const STORAGE_KEYS = {
@@ -70,6 +75,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [userData, setUserData] = useState<UserData>({
     following: mockCurrentUser.following || [],
     followers: mockCurrentUser.followers || [],
+    followerCount: 0,
+    followingCount: 0,
   });
   const [reposts, setReposts] = useState<RepostData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -108,7 +115,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Load follow data from Supabase
   const loadFollowDataFromSupabase = async (userId: string) => {
     try {
-      console.log('Loading follow data from Supabase for user:', userId);
+      console.log('📊 Loading follow data from Supabase for user:', userId);
       
       // Get users this user is following
       const { data: followingData, error: followingError } = await supabase
@@ -117,20 +124,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq('follower_id', userId);
 
       if (followingError) {
-        console.error('Error loading following data:', followingError);
+        console.error('❌ Error loading following data:', followingError);
       } else {
         const followingIds = followingData?.map(f => f.following_id) || [];
         console.log('✅ Loaded following from Supabase:', followingIds.length, 'users');
         
+        // Get follower and following counts
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('follower_count, following_count')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileError) {
+          console.error('❌ Error loading profile counts:', profileError);
+        }
+
         setUserData(prev => ({
           ...prev,
           following: followingIds,
+          followerCount: profileData?.follower_count || 0,
+          followingCount: profileData?.following_count || 0,
         }));
       }
     } catch (error) {
-      console.error('Error loading follow data from Supabase:', error);
+      console.error('❌ Error loading follow data from Supabase:', error);
     }
   };
+
+  const refreshFollowData = useCallback(async () => {
+    if (authUserId) {
+      await loadFollowDataFromSupabase(authUserId);
+    }
+  }, [authUserId]);
 
   const loadData = useCallback(async () => {
     try {
@@ -689,7 +715,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [posts]);
 
   const followUser = useCallback(async (userId: string) => {
-    console.log('🔵 followUser called for userId:', userId);
+    console.log('🔵 ========== FOLLOW USER START ==========');
+    console.log('🔵 Target userId:', userId);
+    console.log('🔵 Current authUserId:', authUserId);
     
     try {
       // Check if user is authenticated
@@ -697,26 +725,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.log('⚠️ No authenticated user - cannot follow');
         Alert.alert(
           'Authentication Required',
-          'Please log in to follow users. Your follow will be saved locally for now.',
+          'Please log in to follow users.',
           [{ text: 'OK' }]
         );
-        
-        // Update local state only
-        const updatedUserData = {
-          ...userData,
-          following: [...userData.following, userId],
-        };
-        setUserData(updatedUserData);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
         return;
       }
 
-      // Save to Supabase
-      console.log('💾 Saving follow to Supabase...');
+      // Check if already following
+      if (userData.following.includes(userId)) {
+        console.log('⚠️ Already following this user');
+        return;
+      }
+
+      // STEP 1: DATABASE WRITE
+      console.log('💾 STEP 1: Writing to follows table...');
       console.log('   follower_id:', authUserId);
       console.log('   following_id:', userId);
 
-      const { data, error } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('follows')
         .insert({
           follower_id: authUserId,
@@ -724,23 +750,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         })
         .select();
 
-      if (error) {
-        console.error('❌ Error following user in Supabase:', error);
-        console.error('   Error code:', error.code);
-        console.error('   Error message:', error.message);
-        console.error('   Error details:', error.details);
+      if (insertError) {
+        console.error('❌ DATABASE WRITE FAILED:', insertError);
+        console.error('   Error code:', insertError.code);
+        console.error('   Error message:', insertError.message);
+        console.error('   Error details:', insertError.details);
         
         Alert.alert(
           'Follow Failed',
-          `Could not follow user: ${error.message}`,
+          `Could not follow user: ${insertError.message}`,
           [{ text: 'OK' }]
         );
-        throw error;
+        throw insertError;
       }
 
-      console.log('✅ Follow saved to Supabase:', data);
+      console.log('✅ STEP 1 COMPLETE: Follow saved to database:', insertData);
 
-      // Verify the follow was saved
+      // STEP 2: VERIFY DATABASE WRITE
+      console.log('🔍 STEP 2: Verifying database write...');
       const { data: verifyData, error: verifyError } = await supabase
         .from('follows')
         .select('*')
@@ -748,71 +775,108 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq('following_id', userId);
 
       if (verifyError) {
-        console.error('❌ Error verifying follow:', verifyError);
+        console.error('❌ VERIFICATION FAILED:', verifyError);
       } else {
-        console.log('✅ Follow verified in database:', verifyData);
+        console.log('✅ STEP 2 COMPLETE: Follow verified in database:', verifyData);
+        console.log('   Records found:', verifyData?.length || 0);
       }
 
-      // Update local state
+      // STEP 3: UPDATE COUNTS IN DATABASE (handled by trigger automatically)
+      console.log('⏳ STEP 3: Counts should be updated by database trigger...');
+      
+      // Wait a moment for trigger to execute
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify counts were updated
+      const { data: myProfile, error: myProfileError } = await supabase
+        .from('profiles')
+        .select('following_count')
+        .eq('user_id', authUserId)
+        .single();
+
+      const { data: theirProfile, error: theirProfileError } = await supabase
+        .from('profiles')
+        .select('follower_count')
+        .eq('user_id', userId)
+        .single();
+
+      if (!myProfileError && myProfile) {
+        console.log('✅ My following_count:', myProfile.following_count);
+      }
+      if (!theirProfileError && theirProfile) {
+        console.log('✅ Their follower_count:', theirProfile.follower_count);
+      }
+
+      // STEP 4: UPDATE LOCAL STATE
+      console.log('📱 STEP 4: Updating local state...');
       const updatedUserData = {
         ...userData,
         following: [...userData.following, userId],
+        followingCount: (myProfile?.following_count || userData.followingCount) + 1,
       };
       setUserData(updatedUserData);
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+      console.log('✅ STEP 4 COMPLETE: Local state updated');
 
-      console.log('✅ Follow completed successfully');
+      // STEP 5: REFRESH FOLLOW DATA TO ENSURE SYNC
+      console.log('🔄 STEP 5: Refreshing follow data...');
+      await loadFollowDataFromSupabase(authUserId);
+      console.log('✅ STEP 5 COMPLETE: Follow data refreshed');
+
+      console.log('✅ ========== FOLLOW USER COMPLETE ==========');
     } catch (error) {
-      console.error('❌ Error following user:', error);
+      console.error('❌ ========== FOLLOW USER FAILED ==========');
+      console.error('❌ Error:', error);
       throw error;
     }
-  }, [userData, authUserId]);
+  }, [userData, authUserId, loadFollowDataFromSupabase]);
 
   const unfollowUser = useCallback(async (userId: string) => {
-    console.log('🔴 unfollowUser called for userId:', userId);
+    console.log('🔴 ========== UNFOLLOW USER START ==========');
+    console.log('🔴 Target userId:', userId);
+    console.log('🔴 Current authUserId:', authUserId);
     
     try {
       // Check if user is authenticated
       if (!authUserId) {
         console.log('⚠️ No authenticated user - cannot unfollow');
-        
-        // Update local state only
-        const updatedUserData = {
-          ...userData,
-          following: userData.following.filter(id => id !== userId),
-        };
-        setUserData(updatedUserData);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
         return;
       }
 
-      // Remove from Supabase
-      console.log('💾 Removing follow from Supabase...');
+      // Check if not following
+      if (!userData.following.includes(userId)) {
+        console.log('⚠️ Not following this user');
+        return;
+      }
+
+      // STEP 1: DELETE FROM DATABASE
+      console.log('💾 STEP 1: Deleting from follows table...');
       console.log('   follower_id:', authUserId);
       console.log('   following_id:', userId);
 
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('follows')
         .delete()
         .eq('follower_id', authUserId)
         .eq('following_id', userId);
 
-      if (error) {
-        console.error('❌ Error unfollowing user in Supabase:', error);
-        console.error('   Error code:', error.code);
-        console.error('   Error message:', error.message);
+      if (deleteError) {
+        console.error('❌ DATABASE DELETE FAILED:', deleteError);
+        console.error('   Error code:', deleteError.code);
+        console.error('   Error message:', deleteError.message);
         
         Alert.alert(
           'Unfollow Failed',
-          `Could not unfollow user: ${error.message}`,
+          `Could not unfollow user: ${deleteError.message}`,
           [{ text: 'OK' }]
         );
-        throw error;
+        throw deleteError;
       }
 
-      console.log('✅ Unfollow removed from Supabase');
+      console.log('✅ STEP 1 COMPLETE: Follow deleted from database');
 
-      // Verify the unfollow
+      // STEP 2: VERIFY DATABASE DELETE
+      console.log('🔍 STEP 2: Verifying database delete...');
       const { data: verifyData, error: verifyError } = await supabase
         .from('follows')
         .select('*')
@@ -820,28 +884,68 @@ export function DataProvider({ children }: { children: ReactNode }) {
         .eq('following_id', userId);
 
       if (verifyError) {
-        console.error('❌ Error verifying unfollow:', verifyError);
+        console.error('❌ VERIFICATION FAILED:', verifyError);
       } else {
-        console.log('✅ Unfollow verified - records found:', verifyData?.length || 0);
+        console.log('✅ STEP 2 COMPLETE: Unfollow verified - records found:', verifyData?.length || 0);
+        if (verifyData && verifyData.length > 0) {
+          console.error('⚠️ WARNING: Follow relationship still exists in database!');
+        }
       }
 
-      // Update local state
+      // STEP 3: UPDATE COUNTS (handled by trigger automatically)
+      console.log('⏳ STEP 3: Counts should be updated by database trigger...');
+      
+      // Wait a moment for trigger to execute
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify counts were updated
+      const { data: myProfile, error: myProfileError } = await supabase
+        .from('profiles')
+        .select('following_count')
+        .eq('user_id', authUserId)
+        .single();
+
+      const { data: theirProfile, error: theirProfileError } = await supabase
+        .from('profiles')
+        .select('follower_count')
+        .eq('user_id', userId)
+        .single();
+
+      if (!myProfileError && myProfile) {
+        console.log('✅ My following_count:', myProfile.following_count);
+      }
+      if (!theirProfileError && theirProfile) {
+        console.log('✅ Their follower_count:', theirProfile.follower_count);
+      }
+
+      // STEP 4: UPDATE LOCAL STATE
+      console.log('📱 STEP 4: Updating local state...');
       const updatedUserData = {
         ...userData,
         following: userData.following.filter(id => id !== userId),
+        followingCount: Math.max(0, (myProfile?.following_count || userData.followingCount) - 1),
       };
       setUserData(updatedUserData);
       await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+      console.log('✅ STEP 4 COMPLETE: Local state updated');
 
-      console.log('✅ Unfollow completed successfully');
+      // STEP 5: REFRESH FOLLOW DATA TO ENSURE SYNC
+      console.log('🔄 STEP 5: Refreshing follow data...');
+      await loadFollowDataFromSupabase(authUserId);
+      console.log('✅ STEP 5 COMPLETE: Follow data refreshed');
+
+      console.log('✅ ========== UNFOLLOW USER COMPLETE ==========');
     } catch (error) {
-      console.error('❌ Error unfollowing user:', error);
+      console.error('❌ ========== UNFOLLOW USER FAILED ==========');
+      console.error('❌ Error:', error);
       throw error;
     }
-  }, [userData, authUserId]);
+  }, [userData, authUserId, loadFollowDataFromSupabase]);
 
   const isFollowing = useCallback((userId: string): boolean => {
-    return userData.following.includes(userId);
+    const following = userData.following.includes(userId);
+    console.log('🔍 isFollowing check for', userId, ':', following);
+    return following;
   }, [userData.following]);
 
   const getFollowers = useCallback(async (userId: string): Promise<User[]> => {
@@ -865,15 +969,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       if (!error && data) {
         console.log('✅ Loaded', data.length, 'followers from Supabase');
-        return data.map((follow: any) => ({
-          id: follow.profiles.user_id,
-          username: follow.profiles.username,
-          displayName: follow.profiles.display_name,
-          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
-          bio: follow.profiles.bio || '',
-          followers: [],
-          following: [],
+        
+        // Check for mutual follows
+        const followers = await Promise.all(data.map(async (follow: any) => {
+          const followerId = follow.profiles.user_id;
+          
+          // Check if this is a mutual follow
+          const { data: mutualData } = await supabase
+            .from('follows')
+            .select('id')
+            .eq('follower_id', userId)
+            .eq('following_id', followerId)
+            .single();
+
+          return {
+            id: followerId,
+            username: follow.profiles.username,
+            displayName: follow.profiles.display_name,
+            avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+            bio: follow.profiles.bio || '',
+            followers: [],
+            following: [],
+            isMutual: !!mutualData,
+          };
         }));
+
+        // Sort: mutual follows first, then alphabetically
+        return followers.sort((a, b) => {
+          if (a.isMutual && !b.isMutual) return -1;
+          if (!a.isMutual && b.isMutual) return 1;
+          return a.displayName.localeCompare(b.displayName);
+        });
       }
     } catch (error) {
       console.log('⚠️ Error fetching followers from Supabase:', error);
@@ -905,15 +1031,37 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       if (!error && data) {
         console.log('✅ Loaded', data.length, 'following from Supabase');
-        return data.map((follow: any) => ({
-          id: follow.profiles.user_id,
-          username: follow.profiles.username,
-          displayName: follow.profiles.display_name,
-          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
-          bio: follow.profiles.bio || '',
-          followers: [],
-          following: [],
+        
+        // Check for mutual follows
+        const following = await Promise.all(data.map(async (follow: any) => {
+          const followingId = follow.profiles.user_id;
+          
+          // Check if this is a mutual follow
+          const { data: mutualData } = await supabase
+            .from('follows')
+            .select('id')
+            .eq('follower_id', followingId)
+            .eq('following_id', userId)
+            .single();
+
+          return {
+            id: followingId,
+            username: follow.profiles.username,
+            displayName: follow.profiles.display_name,
+            avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+            bio: follow.profiles.bio || '',
+            followers: [],
+            following: [],
+            isMutual: !!mutualData,
+          };
         }));
+
+        // Sort: mutual follows first, then alphabetically
+        return following.sort((a, b) => {
+          if (a.isMutual && !b.isMutual) return -1;
+          if (!a.isMutual && b.isMutual) return 1;
+          return a.displayName.localeCompare(b.displayName);
+        });
       }
     } catch (error) {
       console.log('⚠️ Error fetching following from Supabase:', error);
@@ -923,6 +1071,75 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log('⚠️ Using mock data for following');
     const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
     return mockUsers.filter(u => user.following?.includes(u.id));
+  }, []);
+
+  const getFollowerCount = useCallback(async (userId: string): Promise<number> => {
+    try {
+      console.log('📊 Getting follower count for user:', userId);
+      
+      // Try to get from Supabase profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('follower_count')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data) {
+        console.log('✅ Follower count from Supabase:', data.follower_count);
+        return data.follower_count || 0;
+      }
+
+      // Fallback: count from follows table
+      const { data: followsData, error: followsError } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact', head: true })
+        .eq('following_id', userId);
+
+      if (!followsError) {
+        console.log('✅ Follower count from follows table:', followsData);
+        return 0; // count is in the response metadata
+      }
+    } catch (error) {
+      console.log('⚠️ Error fetching follower count from Supabase:', error);
+    }
+
+    // Fallback to mock data
+    return mockUsers.filter(u => u.following?.includes(userId)).length;
+  }, []);
+
+  const getFollowingCount = useCallback(async (userId: string): Promise<number> => {
+    try {
+      console.log('📊 Getting following count for user:', userId);
+      
+      // Try to get from Supabase profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('following_count')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && data) {
+        console.log('✅ Following count from Supabase:', data.following_count);
+        return data.following_count || 0;
+      }
+
+      // Fallback: count from follows table
+      const { data: followsData, error: followsError } = await supabase
+        .from('follows')
+        .select('id', { count: 'exact', head: true })
+        .eq('follower_id', userId);
+
+      if (!followsError) {
+        console.log('✅ Following count from follows table:', followsData);
+        return 0; // count is in the response metadata
+      }
+    } catch (error) {
+      console.log('⚠️ Error fetching following count from Supabase:', error);
+    }
+
+    // Fallback to mock data
+    const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
+    return user.following?.length || 0;
   }, []);
 
   const getEpisodesWatchedCount = useCallback(async (userId: string): Promise<number> => {
@@ -1001,9 +1218,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         isFollowing,
         getFollowers,
         getFollowing,
+        getFollowerCount,
+        getFollowingCount,
         getEpisodesWatchedCount,
         getTotalLikesReceived,
         isLoading,
+        refreshFollowData,
       }}
     >
       {children}
