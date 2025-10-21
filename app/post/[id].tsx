@@ -12,104 +12,108 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
-import CommentCard from '@/components/CommentCard';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors, commonStyles } from '@/styles/commonStyles';
 import { mockComments, currentUser } from '@/data/mockData';
-import * as ImagePicker from 'expo-image-picker';
 import { Comment, Reply } from '@/types';
+import CommentCard from '@/components/CommentCard';
+import * as ImagePicker from 'expo-image-picker';
 import { useData } from '@/contexts/DataContext';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { getPost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount } = useData();
-  const [comments, setComments] = useState<Comment[]>(mockComments.filter(c => c.postId === id));
-  const [commentText, setCommentText] = useState('');
-  const [commentImage, setCommentImage] = useState<string | null>(null);
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
-
+  const { getPost, likePost, unlikePost, repostPost, unrepostPost, updateCommentCount } = useData();
   const post = getPost(id as string);
-  const isReposted = post ? hasUserReposted(post.id) : false;
 
+  const [comments, setComments] = useState<Comment[]>(
+    mockComments.filter((c) => c.postId === id)
+  );
+  const [commentText, setCommentText] = useState('');
+  const [commentImage, setCommentImage] = useState<string | undefined>();
+  const [isReposted, setIsReposted] = useState(false);
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
+  const commentInputRef = useRef<TextInput>(null);
+
+  // Update comment count whenever comments change
   useEffect(() => {
-    if (post && comments.length !== post.comments) {
+    if (post) {
       updateCommentCount(post.id, comments.length);
     }
   }, [comments.length, post, updateCommentCount]);
 
   if (!post) {
     return (
-      <View style={commonStyles.container}>
-        <Stack.Screen options={{ title: 'Post Not Found' }} />
-        <Text style={commonStyles.text}>Post not found</Text>
+      <View style={styles.errorContainer}>
+        <Stack.Screen options={{ title: 'Post Not Found', headerShown: true }} />
+        <Text style={styles.errorText}>Post not found</Text>
       </View>
     );
   }
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMs / 3600000);
-    const diffInDays = Math.floor(diffInMs / 86400000);
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
 
-    if (diffInMins < 1) return 'just now';
-    if (diffInMins < 60) return `${diffInMins}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    return `${diffInDays}d ago`;
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return `${days}d`;
   };
 
   const handleShowPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/show/${post.show.id}`);
+    if (post?.show?.id) {
+      router.push(`/show/${post.show.id}`);
+    }
   };
 
   const handleUserPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/user/${post.user.id}`);
+    if (post?.user?.id) {
+      router.push(`/user/${post.user.id}`);
+    }
   };
 
   const handleEpisodePress = (episodeId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/episode/${episodeId}`);
   };
 
   const getShowTagColor = (showTitle: string) => {
     const colors = [
-      { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' },
-      { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' },
-      { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' },
-      { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' },
-      { bg: '#F3E8FF', border: '#9333EA', text: '#9333EA' },
+      { bg: '#FEF3C7', text: '#92400E', border: '#F59E0B' },
+      { bg: '#DBEAFE', text: '#1E40AF', border: '#3B82F6' },
+      { bg: '#FCE7F3', text: '#9F1239', border: '#EC4899' },
+      { bg: '#D1FAE5', text: '#065F46', border: '#10B981' },
     ];
     const index = showTitle.length % colors.length;
     return colors[index];
   };
 
   const getTagIcon = (tag: string) => {
-    const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return <Lightbulb size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('discussion')) return <MessageCircle size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('spoiler')) return <AlertTriangle size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('recap')) return <List size={16} color={getTagColor(tag).text} />;
-    return <MoreHorizontal size={16} color={getTagColor(tag).text} />;
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag.includes('theory')) return Lightbulb;
+    if (lowerTag.includes('discussion')) return MessageCircle;
+    if (lowerTag.includes('spoiler')) return AlertTriangle;
+    if (lowerTag.includes('recap')) return List;
+    if (lowerTag.includes('misc')) return MoreHorizontal;
+    return MoreHorizontal;
   };
 
   const getTagColor = (tag: string) => {
-    const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' };
-    if (tagLower.includes('discussion')) return { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' };
-    if (tagLower.includes('spoiler')) return { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' };
-    if (tagLower.includes('recap')) return { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' };
-    return { bg: '#F3F4F6', border: '#6B7280', text: '#6B7280' };
+    const lowerTag = tag.toLowerCase();
+    if (lowerTag.includes('theory')) return { bg: '#E8F9E0', text: '#5CB85C', border: '#5CB85C' };
+    if (lowerTag.includes('discussion')) return { bg: '#E3F2FD', text: '#5B9FD8', border: '#5B9FD8' };
+    if (lowerTag.includes('spoiler')) return { bg: '#FFE8E8', text: '#E53E3E', border: '#E53E3E' };
+    if (lowerTag.includes('recap')) return { bg: '#FFF4E6', text: '#DD6B20', border: '#DD6B20' };
+    if (lowerTag.includes('misc')) return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
+    return { bg: '#F3F4F6', text: '#6B7280', border: '#6B7280' };
   };
 
   const handleLike = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       if (post.isLiked) {
         await unlikePost(post.id);
@@ -122,12 +126,14 @@ export default function PostDetail() {
   };
 
   const handleRepost = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       if (isReposted) {
         await unrepostPost(post.id);
+        setIsReposted(false);
       } else {
         await repostPost(post.id);
+        setIsReposted(true);
       }
     } catch (error) {
       console.error('Error toggling repost:', error);
@@ -135,431 +141,543 @@ export default function PostDetail() {
   };
 
   const handleShare = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('Share post');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    console.log('Share pressed');
   };
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8,
     });
 
-    if (!result.canceled) {
+    if (!result.canceled && result.assets[0]) {
       setCommentImage(result.assets[0].uri);
     }
   };
 
   const handleSubmitComment = () => {
-    if (!commentText.trim() && !commentImage) return;
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    const newComment: Comment = {
-      id: `comment_${Date.now()}`,
-      postId: post.id,
-      user: currentUser,
-      text: commentText,
-      image: commentImage || undefined,
-      likes: 0,
-      isLiked: false,
-      timestamp: new Date(),
-      replies: [],
-    };
-
-    setComments([...comments, newComment]);
-    setCommentText('');
-    setCommentImage(null);
+    if (commentText.trim() || commentImage) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      const newComment: Comment = {
+        id: `comment-${Date.now()}`,
+        postId: post.id,
+        user: currentUser,
+        text: commentText,
+        image: commentImage,
+        likes: 0,
+        isLiked: false,
+        timestamp: new Date(),
+        replies: [],
+      };
+      setComments([...comments, newComment]);
+      setCommentText('');
+      setCommentImage(undefined);
+    }
   };
 
   const handleCommentLike = (commentId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setComments(comments.map(comment =>
-      comment.id === commentId
-        ? { ...comment, likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1, isLiked: !comment.isLiked }
-        : comment
-    ));
+    setComments(
+      comments.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              isLiked: !comment.isLiked,
+              likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
+            }
+          : comment
+      )
+    );
   };
 
-  const handleReply = (commentId: string, text: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleReply = (commentId: string, text: string, image?: string) => {
     const newReply: Reply = {
-      id: `reply_${Date.now()}`,
+      id: `reply-${Date.now()}`,
       commentId,
       user: currentUser,
       text,
+      image,
       likes: 0,
       isLiked: false,
       timestamp: new Date(),
     };
 
-    setComments(comments.map(comment =>
-      comment.id === commentId
-        ? { ...comment, replies: [...comment.replies, newReply] }
-        : comment
-    ));
+    setComments(
+      comments.map((comment) =>
+        comment.id === commentId
+          ? { ...comment, replies: [...comment.replies, newReply] }
+          : comment
+      )
+    );
   };
 
   const handleReplyLike = (commentId: string, replyId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setComments(comments.map(comment =>
-      comment.id === commentId
-        ? {
-            ...comment,
-            replies: comment.replies.map(reply =>
-              reply.id === replyId
-                ? { ...reply, likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1, isLiked: !reply.isLiked }
-                : reply
-            ),
-          }
-        : comment
-    ));
+    setComments(
+      comments.map((comment) =>
+        comment.id === commentId
+          ? {
+              ...comment,
+              replies: comment.replies.map((reply) =>
+                reply.id === replyId
+                  ? {
+                      ...reply,
+                      isLiked: !reply.isLiked,
+                      likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
+                    }
+                  : reply
+              ),
+            }
+          : comment
+      )
+    );
   };
 
-  const showTagColor = getShowTagColor(post.show.title);
+  const showColor = getShowTagColor(post.show.title);
 
   return (
-    <>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={100}
+    >
       <Stack.Screen
         options={{
           title: 'Post',
+          headerShown: true,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+          headerBackTitle: 'Back',
         }}
       />
-      <KeyboardAvoidingView
-        style={commonStyles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
-      >
-        <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Post Content */}
-          <View style={styles.postContainer}>
-            {/* User Info */}
-            <Pressable onPress={handleUserPress} style={styles.userHeader}>
-              <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-              <View style={styles.userInfo}>
-                <Text style={styles.username}>{post.user.displayName}</Text>
+
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Post Content */}
+        <View style={styles.postContainer}>
+          <View style={styles.postHeader}>
+            <Pressable onPress={handleUserPress} style={styles.userInfo}>
+              {post.user.avatar ? (
+                <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarPlaceholderText}>
+                    {post.user.displayName?.charAt(0) || '?'}
+                  </Text>
+                </View>
+              )}
+              <View>
+                <Text style={styles.displayName}>{post.user.displayName}</Text>
                 <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
               </View>
             </Pressable>
+          </View>
 
-            {/* Show Poster */}
-            <Pressable onPress={handleShowPress}>
-              <Image source={{ uri: post.show.poster }} style={styles.showPoster} />
-            </Pressable>
-
-            {/* Episode and Show Tags - ONLY THESE ARE CLICKABLE */}
-            <View style={styles.tagsRow}>
-              {post.episodes && post.episodes.length > 0 && (
-                <>
-                  {post.episodes.map((episode, index) => (
-                    <Pressable
-                      key={episode.id}
-                      onPress={() => handleEpisodePress(episode.id)}
-                      style={styles.episodeTag}
-                    >
-                      <Text style={styles.episodeTagText}>
-                        S{episode.seasonNumber}E{episode.episodeNumber}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </>
-              )}
-              <Pressable onPress={handleShowPress}>
-                <View
+          <View style={styles.showInfo}>
+            <View style={styles.showDetails}>
+              <View style={styles.showTags}>
+                {/* Show all episode tags */}
+                {post.episodes && post.episodes.length > 0 && (
+                  <View style={styles.episodeTagsContainer}>
+                    {post.episodes.map((episode, index) => (
+                      <Pressable 
+                        key={episode.id || index}
+                        style={styles.episodeTag}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          handleEpisodePress(episode.id);
+                        }}
+                      >
+                        <Text style={styles.episodeTagText}>
+                          S{episode.seasonNumber}E{episode.episodeNumber}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                <Pressable
+                  onPress={handleShowPress}
                   style={[
                     styles.showTag,
-                    {
-                      backgroundColor: showTagColor.bg,
-                      borderColor: showTagColor.border,
-                    },
+                    { backgroundColor: showColor.bg, borderColor: showColor.border },
                   ]}
                 >
-                  <Text style={[styles.showTagText, { color: showTagColor.text }]}>
+                  <Text style={[styles.showTagText, { color: showColor.text }]}>
                     {post.show.title}
                   </Text>
+                </Pressable>
+              </View>
+
+              {post.rating && (
+                <View style={styles.ratingContainer}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <IconSymbol
+                      key={star}
+                      name={star <= post.rating! ? 'star.fill' : 'star'}
+                      size={18}
+                      color="#FCD34D"
+                    />
+                  ))}
                 </View>
-              </Pressable>
-            </View>
-
-            {/* Rating */}
-            {post.rating && (
-              <View style={styles.ratingContainer}>
-                {[...Array(5)].map((_, i) => (
-                  <IconSymbol
-                    key={i}
-                    name={i < post.rating! ? 'star.fill' : 'star'}
-                    size={20}
-                    color={i < post.rating! ? '#000000' : colors.textSecondary}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Post Title and Body */}
-            {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-            {post.body && <Text style={styles.postBody}>{post.body}</Text>}
-
-            {/* Post Tags - Category tags are NOT clickable, only visual labels */}
-            {post.tags.length > 0 && (
-              <View style={styles.postTagsContainer}>
-                {post.tags.map((tag, index) => {
-                  const tagColor = getTagColor(tag);
-                  // Category tags are NOT clickable - just View, no Pressable
-                  return (
-                    <View
-                      key={index}
-                      style={[
-                        styles.postTag,
-                        {
-                          backgroundColor: tagColor.bg,
-                          borderColor: tagColor.border,
-                        },
-                      ]}
-                    >
-                      {getTagIcon(tag)}
-                      <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Actions */}
-            <View style={styles.actions}>
-              <Pressable onPress={handleLike} style={styles.actionButton}>
-                <Heart
-                  size={24}
-                  color={post.isLiked ? '#E53E3E' : colors.textSecondary}
-                  fill={post.isLiked ? '#E53E3E' : 'none'}
-                />
-                <Text style={[styles.actionText, post.isLiked && styles.actionTextActive]}>
-                  {post.likes}
-                </Text>
-              </Pressable>
-
-              <View style={styles.actionButton}>
-                <MessageCircle size={24} color={colors.textSecondary} />
-                <Text style={styles.actionText}>{comments.length}</Text>
-              </View>
-
-              <Pressable onPress={handleRepost} style={styles.actionButton}>
-                <Repeat
-                  size={24}
-                  color={isReposted ? '#10B981' : colors.textSecondary}
-                  fill={isReposted ? '#10B981' : 'none'}
-                />
-                <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
-                  {post.reposts}
-                </Text>
-              </Pressable>
-
-              <Pressable onPress={handleShare} style={styles.actionButton}>
-                <Share2 size={24} color={colors.textSecondary} />
-              </Pressable>
+              )}
             </View>
           </View>
 
-          {/* Comments Section */}
-          <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
-            {comments.map((comment) => (
-              <CommentCard
-                key={comment.id}
-                comment={comment}
-                onLike={() => handleCommentLike(comment.id)}
-                onReply={(text) => handleReply(comment.id, text)}
-                onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
-              />
-            ))}
-          </View>
-        </ScrollView>
-
-        {/* Comment Input */}
-        <View style={styles.commentInputContainer}>
-          {commentImage && (
-            <View style={styles.imagePreview}>
-              <Image source={{ uri: commentImage }} style={styles.previewImage} />
-              <Pressable
-                style={styles.removeImageButton}
-                onPress={() => setCommentImage(null)}
+          {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
+          
+          {/* Spoiler Alert Handling */}
+          {post.isSpoiler && !spoilerRevealed ? (
+            <View style={styles.spoilerContainer}>
+              <IconSymbol name="eye.slash.fill" size={32} color="#E53E3E" />
+              <Text style={styles.spoilerWarning}>This post contains spoilers</Text>
+              <Pressable 
+                style={styles.spoilerButton}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setSpoilerRevealed(true);
+                }}
               >
-                <IconSymbol name="xmark.circle.fill" size={24} color={colors.textSecondary} />
+                <IconSymbol name="eye" size={18} color="#FFFFFF" style={styles.spoilerButtonIcon} />
+                <Text style={styles.spoilerButtonText}>Click to reveal</Text>
               </Pressable>
             </View>
+          ) : (
+            <Text style={styles.postBody}>{post.body}</Text>
           )}
-          <View style={styles.inputRow}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.commentAvatar} />
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Add a comment..."
-              placeholderTextColor={colors.textSecondary}
-              value={commentText}
-              onChangeText={setCommentText}
-              multiline
-            />
-            <Pressable onPress={handlePickImage} style={styles.imageButton}>
-              <IconSymbol name="photo" size={24} color={colors.textSecondary} />
-            </Pressable>
-            <Pressable
-              onPress={handleSubmitComment}
-              style={[
-                styles.sendButton,
-                (!commentText.trim() && !commentImage) && styles.sendButtonDisabled,
-              ]}
-              disabled={!commentText.trim() && !commentImage}
-            >
-              <IconSymbol
-                name="paperplane.fill"
-                size={20}
-                color={(!commentText.trim() && !commentImage) ? colors.textSecondary : colors.secondary}
+
+          {/* Category tags - NOT clickable, only visual labels for categorization */}
+          <View style={styles.tagsContainer}>
+            {post.tags.map((tag, index) => {
+              const tagColor = getTagColor(tag);
+              const TagIcon = getTagIcon(tag);
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.tag,
+                    { backgroundColor: tagColor.bg, borderColor: tagColor.border },
+                  ]}
+                >
+                  <TagIcon size={16} color={tagColor.text} strokeWidth={2} />
+                  <Text style={[styles.tagText, { color: tagColor.text }]}>
+                    {tag}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Post Actions */}
+          <View style={styles.postActions}>
+            <Pressable style={styles.actionButton} onPress={handleLike}>
+              <Heart
+                size={24}
+                color={post.isLiked ? '#EF4444' : '#6B7280'}
+                fill={post.isLiked ? '#EF4444' : 'none'}
+                strokeWidth={2}
               />
+              <Text style={styles.actionText}>{post.likes}</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.actionButton}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                commentInputRef.current?.focus();
+              }}
+            >
+              <MessageCircle size={24} color="#6B7280" strokeWidth={2} />
+              <Text style={styles.actionText}>{comments.length}</Text>
+            </Pressable>
+
+            <Pressable style={styles.actionButton} onPress={handleRepost}>
+              <Repeat 
+                size={24} 
+                color={isReposted ? colors.secondary : '#6B7280'} 
+                strokeWidth={2}
+              />
+              <Text style={styles.actionText}>{post.reposts}</Text>
+            </Pressable>
+
+            <Pressable style={styles.actionButton} onPress={handleShare}>
+              <Share2 size={24} color="#6B7280" strokeWidth={2} />
             </Pressable>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </>
+
+        {/* Comments Section */}
+        <View style={styles.commentsSection}>
+          <Text style={styles.commentsTitle}>
+            Comments ({comments.length})
+          </Text>
+
+          {comments.map((comment) => (
+            <CommentCard
+              key={comment.id}
+              comment={comment}
+              onLike={() => handleCommentLike(comment.id)}
+              onReply={(text, image) => handleReply(comment.id, text, image)}
+              onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
+            />
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Comment Input */}
+      <View style={styles.commentInputContainer}>
+        {commentImage && (
+          <View style={styles.imagePreview}>
+            <Image source={{ uri: commentImage }} style={styles.imagePreviewImage} />
+            <Pressable
+              style={styles.removeImageButton}
+              onPress={() => setCommentImage(undefined)}
+            >
+              <IconSymbol name="xmark.circle.fill" size={24} color="#EF4444" />
+            </Pressable>
+          </View>
+        )}
+        <View style={styles.inputRow}>
+          <Image source={{ uri: currentUser.avatar }} style={styles.inputAvatar} />
+          <TextInput
+            ref={commentInputRef}
+            style={styles.commentInput}
+            placeholder="Add a comment..."
+            placeholderTextColor={colors.textSecondary}
+            value={commentText}
+            onChangeText={setCommentText}
+            multiline
+            returnKeyType="send"
+            onSubmitEditing={handleSubmitComment}
+            blurOnSubmit={false}
+          />
+          <Pressable onPress={handlePickImage} style={styles.imageButton}>
+            <IconSymbol name="photo" size={24} color={colors.textSecondary} />
+          </Pressable>
+          <Pressable
+            onPress={handleSubmitComment}
+            style={[
+              styles.sendButton,
+              (!commentText.trim() && !commentImage) && styles.sendButtonDisabled,
+            ]}
+            disabled={!commentText.trim() && !commentImage}
+          >
+            <IconSymbol
+              name="paperplane.fill"
+              size={20}
+              color={(!commentText.trim() && !commentImage) ? colors.textSecondary : colors.primary}
+            />
+          </Pressable>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   postContainer: {
     backgroundColor: colors.card,
     padding: 16,
-    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  userHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  postHeader: {
     marginBottom: 16,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-  },
   userInfo: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
-  username: {
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  displayName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+    fontFamily: 'System',
   },
   timestamp: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
+    fontFamily: 'System',
   },
-  showPoster: {
-    width: '100%',
-    height: 400,
-    borderRadius: 12,
+  showInfo: {
     marginBottom: 16,
   },
-  tagsRow: {
+  showDetails: {
+    flex: 1,
+  },
+  showTags: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  episodeTagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   episodeTag: {
     backgroundColor: '#E8E4FF',
     borderWidth: 1,
     borderColor: '#6B5FD8',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   episodeTagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#6B5FD8',
+    fontFamily: 'System',
   },
   showTag: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   showTagText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    fontFamily: 'System',
   },
   ratingContainer: {
     flexDirection: 'row',
     gap: 4,
-    marginBottom: 16,
   },
   postTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: 'bold',
     color: colors.text,
     marginBottom: 12,
+    fontFamily: 'System',
   },
   postBody: {
     fontSize: 16,
     color: colors.text,
     lineHeight: 24,
     marginBottom: 16,
+    fontFamily: 'System',
   },
-  postTagsContainer: {
+  spoilerContainer: {
+    backgroundColor: '#FFE8E8',
+    borderWidth: 1,
+    borderColor: '#E53E3E',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  spoilerWarning: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#991B1B',
+    marginTop: 12,
+    marginBottom: 16,
+    fontFamily: 'System',
+  },
+  spoilerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E53E3E',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  spoilerButtonIcon: {
+    marginRight: 2,
+  },
+  spoilerButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+  },
+  tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginBottom: 16,
   },
-  postTag: {
+  tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
+    gap: 6,
   },
-  postTagText: {
-    fontSize: 14,
+  tagText: {
+    fontSize: 13,
     fontWeight: '600',
+    fontFamily: 'System',
   },
-  actions: {
+  postActions: {
     flexDirection: 'row',
-    gap: 32,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    gap: 24,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   actionText: {
     fontSize: 16,
     color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  actionTextActive: {
-    color: '#E53E3E',
-  },
-  actionTextRepost: {
-    color: '#10B981',
+    fontFamily: 'System',
   },
   commentsSection: {
     backgroundColor: colors.card,
     padding: 16,
-    marginBottom: 100,
   },
   commentsTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
+    fontFamily: 'System',
   },
   commentInputContainer: {
     position: 'absolute',
@@ -573,43 +691,48 @@ const styles = StyleSheet.create({
   },
   imagePreview: {
     position: 'relative',
+    width: 100,
+    height: 75,
     marginBottom: 8,
   },
-  previewImage: {
-    width: 100,
-    height: 100,
+  imagePreviewImage: {
+    width: '100%',
+    height: '100%',
     borderRadius: 8,
   },
   removeImageButton: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: -8,
+    right: -8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
   },
   inputRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 8,
   },
-  commentAvatar: {
+  inputAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.background,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     fontSize: 15,
     color: colors.text,
     maxHeight: 100,
+    fontFamily: 'System',
   },
   imageButton: {
-    padding: 8,
+    padding: 4,
   },
   sendButton: {
-    padding: 8,
+    padding: 4,
   },
   sendButtonDisabled: {
     opacity: 0.5,
