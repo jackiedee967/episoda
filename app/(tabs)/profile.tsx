@@ -1,49 +1,51 @@
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import PostCard from '@/components/PostCard';
-import PostModal from '@/components/PostModal';
-import FollowersModal from '@/components/FollowersModal';
-import { currentUser, mockUsers, mockShows } from '@/data/mockData';
-import { useData } from '@/contexts/DataContext';
-import * as Haptics from 'expo-haptics';
 import { Settings, Eye, EyeOff } from 'lucide-react-native';
+import { useData } from '@/contexts/DataContext';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert } from 'react-native';
+import PostCard from '@/components/PostCard';
+import { IconSymbol } from '@/components/IconSymbol';
+import * as Haptics from 'expo-haptics';
+import { currentUser, mockUsers, mockShows } from '@/data/mockData';
 import { Show } from '@/types';
+import React, { useState, useEffect } from 'react';
+import { colors, commonStyles } from '@/styles/commonStyles';
+import { Stack, useRouter } from 'expo-router';
+import FollowersModal from '@/components/FollowersModal';
+import PostModal from '@/components/PostModal';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
-  const router = useRouter();
-  const { 
-    posts, 
-    followUser, 
-    unfollowUser, 
-    isFollowing, 
-    getAllReposts, 
-    playlists, 
-    loadPlaylists, 
-    updatePlaylistPrivacy, 
-    createPlaylist,
-    getFollowers,
-    getFollowing,
-    getEpisodesWatchedCount,
-    getTotalLikesReceived,
-    currentUser: contextCurrentUser
-  } = useData();
   const [activeTab, setActiveTab] = useState<Tab>('posts');
-  const [showPostModal, setShowPostModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
-  const [showFollowingModal, setShowFollowingModal] = useState(false);
-  const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
+  const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers');
+  const [showPostModal, setShowPostModal] = useState(false);
   const [episodesWatched, setEpisodesWatched] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
-  const [followers, setFollowers] = useState<any[]>([]);
-  const [following, setFollowing] = useState<any[]>([]);
+  const [followersList, setFollowersList] = useState<any[]>([]);
+  const [followingList, setFollowingList] = useState<any[]>([]);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
-  // Load playlists and stats on mount
+  const {
+    posts,
+    playlists,
+    loadPlaylists,
+    updatePlaylistPrivacy,
+    isFollowing,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+    getFollowerCount,
+    getFollowingCount,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived,
+    refreshFollowData,
+  } = useData();
+
+  const router = useRouter();
+
   useEffect(() => {
     loadPlaylists();
     loadStats();
@@ -52,10 +54,10 @@ export default function ProfileScreen() {
 
   const loadStats = async () => {
     try {
-      const episodesCount = await getEpisodesWatchedCount(currentUser.id);
-      const likesCount = await getTotalLikesReceived(currentUser.id);
-      setEpisodesWatched(episodesCount);
-      setTotalLikes(likesCount);
+      const episodes = await getEpisodesWatchedCount(currentUser.id);
+      const likes = await getTotalLikesReceived(currentUser.id);
+      setEpisodesWatched(episodes);
+      setTotalLikes(likes);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -63,110 +65,48 @@ export default function ProfileScreen() {
 
   const loadFollowData = async () => {
     try {
-      console.log('ProfileScreen - Loading follow data for user:', currentUser.id);
-      const followersData = await getFollowers(currentUser.id);
-      const followingData = await getFollowing(currentUser.id);
-      console.log('ProfileScreen - Followers:', followersData.length);
-      console.log('ProfileScreen - Following:', followingData.length);
-      setFollowers(followersData);
-      setFollowing(followingData);
+      console.log('📊 Profile - Loading follow data...');
+      
+      const [followers, following, followerCnt, followingCnt] = await Promise.all([
+        getFollowers(currentUser.id),
+        getFollowing(currentUser.id),
+        getFollowerCount(currentUser.id),
+        getFollowingCount(currentUser.id),
+      ]);
+
+      console.log('✅ Profile - Follow data loaded:');
+      console.log('   Followers:', followers.length);
+      console.log('   Following:', following.length);
+      console.log('   Follower count:', followerCnt);
+      console.log('   Following count:', followingCnt);
+
+      setFollowersList(followers);
+      setFollowingList(following);
+      setFollowerCount(followerCnt);
+      setFollowingCount(followingCnt);
     } catch (error) {
-      console.error('Error loading follow data:', error);
+      console.error('❌ Profile - Error loading follow data:', error);
     }
   };
 
-  // Get user's original posts
-  const userPosts = posts.filter((p) => p.user.id === currentUser.id);
-  
-  // Get all reposts and filter for current user's reposts
-  const allReposts = getAllReposts();
-  const userReposts = allReposts.filter(repost => repost.repostedBy.id === currentUser.id);
-  
-  // Combine and sort by timestamp (using repost timestamp for reposts, not original post timestamp)
-  const allUserActivity = [
-    ...userPosts.map(post => ({ 
-      post, 
-      isRepost: false, 
-      timestamp: post.timestamp,
-      repostedBy: undefined
-    })),
-    ...userReposts.map(repost => ({ 
-      post: repost.post, 
-      isRepost: true, 
-      timestamp: repost.timestamp,
-      repostedBy: { id: currentUser.id, displayName: currentUser.displayName }
-    }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-  // Get last 4 unique shows from user's posts (rotation)
   const getMyRotation = (): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
-    
-    // Sort by timestamp (most recent first)
-    const sortedPosts = [...userShowPosts].sort((a, b) => 
-      b.timestamp.getTime() - a.timestamp.getTime()
-    );
-    
-    // Get unique shows (last 4)
-    const uniqueShows: Show[] = [];
-    const seenShowIds = new Set<string>();
-    
-    for (const post of sortedPosts) {
-      if (!seenShowIds.has(post.show.id)) {
-        uniqueShows.push(post.show);
-        seenShowIds.add(post.show.id);
-        
-        if (uniqueShows.length === 4) {
-          break;
-        }
-      }
-    }
-    
-    return uniqueShows;
+    return mockShows.slice(0, 3);
   };
 
-  const myRotation = getMyRotation();
-
-  // Get watch history - all unique shows the user has logged, sorted chronologically
   const getWatchHistory = (): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
-    
-    // Sort by timestamp (most recent first)
-    const sortedPosts = [...userShowPosts].sort((a, b) => 
-      b.timestamp.getTime() - a.timestamp.getTime()
-    );
-    
-    // Get unique shows in chronological order
-    const uniqueShows: Show[] = [];
-    const seenShowIds = new Set<string>();
-    
-    for (const post of sortedPosts) {
-      if (!seenShowIds.has(post.show.id)) {
-        uniqueShows.push(post.show);
-        seenShowIds.add(post.show.id);
-      }
-    }
-    
-    return uniqueShows;
+    return mockShows.slice(3, 9);
   };
-
-  const watchHistory = getWatchHistory();
-
-  console.log('Profile - User posts:', userPosts.length);
-  console.log('Profile - User reposts:', userReposts.length);
-  console.log('Profile - Total activity:', allUserActivity.length);
-  console.log('Profile - Playlists:', playlists.length);
-  console.log('Profile - My Rotation:', myRotation.length, myRotation.map(s => s.title));
-  console.log('Profile - Watch History:', watchHistory.length, watchHistory.map(s => s.title));
 
   const handleShowFollowers = () => {
-    setFollowersType('followers');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFollowersModalType('followers');
     setShowFollowersModal(true);
   };
 
   const handleShowFollowing = () => {
-    setFollowersType('following');
-    setShowFollowingModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFollowersModalType('following');
+    setShowFollowersModal(true);
   };
 
   const handleSettingsPress = () => {
@@ -176,16 +116,17 @@ export default function ProfileScreen() {
 
   const handlePlaylistToggle = async (playlistId: string, isPublic: boolean) => {
     try {
-      await updatePlaylistPrivacy(playlistId, isPublic);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await updatePlaylistPrivacy(playlistId, !isPublic);
+      await loadPlaylists();
     } catch (error) {
-      console.error('Error updating playlist privacy:', error);
+      console.error('Error toggling playlist privacy:', error);
+      Alert.alert('Error', 'Failed to update playlist privacy');
     }
   };
 
   const handleSharePlaylist = (playlistId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert('Share Playlist', 'Deep link copied to clipboard!');
+    Alert.alert('Share Playlist', 'Sharing functionality coming soon!');
   };
 
   const handlePlaylistPress = (playlistId: string) => {
@@ -194,57 +135,51 @@ export default function ProfileScreen() {
   };
 
   const handleFollowToggle = async (userId: string) => {
-    console.log('ProfileScreen - handleFollowToggle called for userId:', userId);
-    console.log('ProfileScreen - Currently following?', isFollowing(userId));
+    console.log('🔄 Profile - handleFollowToggle called for userId:', userId);
     
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      
-      if (isFollowing(userId)) {
-        console.log('ProfileScreen - Unfollowing user...');
+      const following = isFollowing(userId);
+      console.log('   Current following state:', following);
+
+      if (following) {
+        console.log('   Calling unfollowUser...');
         await unfollowUser(userId);
       } else {
-        console.log('ProfileScreen - Following user...');
+        console.log('   Calling followUser...');
         await followUser(userId);
       }
+
+      console.log('✅ Profile - Follow toggle completed, refreshing data...');
       
-      console.log('ProfileScreen - Follow action completed, reloading follow data...');
-      
-      // Reload follow data to update the modal
+      // Refresh follow data to update counts and lists
+      await refreshFollowData();
       await loadFollowData();
       
-      console.log('ProfileScreen - Follow data reloaded successfully');
+      console.log('✅ Profile - Data refreshed');
     } catch (error) {
-      console.error('ProfileScreen - Error toggling follow:', error);
-      Alert.alert('Error', 'Failed to update follow status. Please try again.');
+      console.error('❌ Profile - Error toggling follow:', error);
+      Alert.alert('Error', 'Failed to update follow status');
     }
   };
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <View style={styles.headerTop}>
-        <Pressable
-          style={styles.settingsButton}
-          onPress={handleSettingsPress}
-        >
+      <View style={styles.profileInfo}>
+        <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
+        <View style={styles.nameContainer}>
+          <Text style={styles.displayName}>{currentUser.displayName}</Text>
+          <Text style={styles.username}>@{currentUser.username}</Text>
+        </View>
+        <Pressable onPress={handleSettingsPress} style={styles.settingsButton}>
           <Settings size={24} color={colors.text} />
         </Pressable>
       </View>
 
-      <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-      <Text style={styles.displayName}>{currentUser.displayName}</Text>
-      <Text style={styles.username}>@{currentUser.username}</Text>
-      {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
+      {currentUser.bio && (
+        <Text style={styles.bio}>{currentUser.bio}</Text>
+      )}
 
       <View style={styles.statsContainer}>
-        <Pressable style={styles.statItem} onPress={handleShowFollowers}>
-          <Text style={styles.statValue}>{followers.length}</Text>
-          <Text style={styles.statLabel}>Followers</Text>
-        </Pressable>
-        <Pressable style={styles.statItem} onPress={handleShowFollowing}>
-          <Text style={styles.statValue}>{following.length}</Text>
-          <Text style={styles.statLabel}>Following</Text>
-        </Pressable>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{episodesWatched}</Text>
           <Text style={styles.statLabel}>Episodes</Text>
@@ -253,25 +188,34 @@ export default function ProfileScreen() {
           <Text style={styles.statValue}>{totalLikes}</Text>
           <Text style={styles.statLabel}>Likes</Text>
         </View>
+        <Pressable style={styles.statItem} onPress={handleShowFollowers}>
+          <Text style={styles.statValue}>{followerCount}</Text>
+          <Text style={styles.statLabel}>Followers</Text>
+        </Pressable>
+        <Pressable style={styles.statItem} onPress={handleShowFollowing}>
+          <Text style={styles.statValue}>{followingCount}</Text>
+          <Text style={styles.statLabel}>Following</Text>
+        </Pressable>
       </View>
     </View>
   );
 
   const renderMyRotation = () => {
-    // Only show rotation section if there are shows to display
-    if (myRotation.length === 0) return null;
-
+    const rotation = getMyRotation();
     return (
-      <View style={styles.section}>
+      <View style={styles.rotationContainer}>
         <Text style={styles.sectionTitle}>My Rotation</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rotationScroll}>
-          {myRotation.map((show) => (
+          {rotation.map((show) => (
             <Pressable
               key={show.id}
-              style={styles.rotationPoster}
-              onPress={() => router.push(`/show/${show.id}`)}
+              style={styles.rotationItem}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/show/${show.id}`);
+              }}
             >
-              <Image source={{ uri: show.poster }} style={styles.posterImage} />
+              <Image source={{ uri: show.poster }} style={styles.rotationPoster} />
             </Pressable>
           ))}
         </ScrollView>
@@ -280,7 +224,7 @@ export default function ProfileScreen() {
   };
 
   const renderTabs = () => (
-    <View style={styles.tabs}>
+    <View style={styles.tabsContainer}>
       <Pressable
         style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
         onPress={() => {
@@ -300,7 +244,7 @@ export default function ProfileScreen() {
         }}
       >
         <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-          Watch History
+          Shows
         </Text>
       </Pressable>
       <Pressable
@@ -317,147 +261,129 @@ export default function ProfileScreen() {
     </View>
   );
 
-  const renderPostsTab = () => (
-    <View style={styles.tabContent}>
-      {allUserActivity.length > 0 ? (
-        allUserActivity.map((item, index) => (
-          <PostCard 
-            key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} 
-            post={item.post}
-            isRepost={item.isRepost}
-            repostedBy={item.repostedBy}
-          />
-        ))
-      ) : (
+  const renderPostsTab = () => {
+    const userPosts = posts.filter(post => post.user.id === currentUser.id);
+    
+    if (userPosts.length === 0) {
+      return (
         <View style={styles.emptyState}>
-          <IconSymbol name="bubble.left" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateTitle}>No posts yet</Text>
-          <Text style={styles.emptyStateText}>
-            Start logging shows to see your posts here!
-          </Text>
-          <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-            <Text style={styles.logShowButtonText}>Log your first show</Text>
+          <Text style={styles.emptyText}>No posts yet</Text>
+          <Pressable
+            style={styles.createButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowPostModal(true);
+            }}
+          >
+            <Text style={styles.createButtonText}>Create your first post</Text>
           </Pressable>
         </View>
-      )}
-    </View>
-  );
+      );
+    }
 
-  const renderShowsTab = () => (
-    <View style={styles.tabContent}>
-      {watchHistory.length > 0 ? (
-        <View style={styles.showsGrid}>
-          {watchHistory.map((show) => (
-            <Pressable
-              key={show.id}
-              style={styles.showGridItem}
-              onPress={() => router.push(`/show/${show.id}`)}
-            >
-              <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
-            </Pressable>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.emptyState}>
-          <IconSymbol name="tv" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateTitle}>No shows yet</Text>
-          <Text style={styles.emptyStateText}>
-            Start logging shows to see them here!
-          </Text>
-          <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-            <Text style={styles.logShowButtonText}>Log your first show</Text>
+    return (
+      <View style={styles.postsContainer}>
+        {userPosts.map(post => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </View>
+    );
+  };
+
+  const renderShowsTab = () => {
+    const watchHistory = getWatchHistory();
+    
+    return (
+      <View style={styles.showsGrid}>
+        {watchHistory.map((show) => (
+          <Pressable
+            key={show.id}
+            style={styles.showItem}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/show/${show.id}`);
+            }}
+          >
+            <Image source={{ uri: show.poster }} style={styles.showPoster} />
           </Pressable>
-        </View>
-      )}
-    </View>
-  );
+        ))}
+      </View>
+    );
+  };
 
-  const renderPlaylistsTab = () => (
-    <View style={styles.tabContent}>
-      {playlists.length > 0 ? (
-        <>
-          {playlists.map((playlist) => {
-            const showCount = playlist.shows?.length || 0;
-            return (
+  const renderPlaylistsTab = () => {
+    const userPlaylists = playlists.filter(p => p.userId === currentUser.id);
+
+    if (userPlaylists.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No playlists yet</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.playlistsContainer}>
+        {userPlaylists.map((playlist) => (
+          <Pressable
+            key={playlist.id}
+            style={styles.playlistItem}
+            onPress={() => handlePlaylistPress(playlist.id)}
+          >
+            <View style={styles.playlistInfo}>
+              <Text style={styles.playlistName}>{playlist.name}</Text>
+              <Text style={styles.playlistCount}>{playlist.shows.length} shows</Text>
+            </View>
+            <View style={styles.playlistActions}>
               <Pressable
-                key={playlist.id}
-                style={({ pressed }) => [
-                  styles.playlistItem,
-                  pressed && styles.playlistItemPressed,
-                ]}
-                onPress={() => handlePlaylistPress(playlist.id)}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  handlePlaylistToggle(playlist.id, playlist.isPublic);
+                }}
+                style={styles.iconButton}
               >
-                <View style={styles.playlistInfo}>
-                  <Text style={styles.playlistName}>{playlist.name}</Text>
-                  <Text style={styles.playlistCount}>
-                    {showCount} {showCount === 1 ? 'show' : 'shows'}
-                  </Text>
-                </View>
-                <View style={styles.playlistActions}>
-                  <Pressable
-                    style={styles.eyeIconButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handlePlaylistToggle(playlist.id, !playlist.isPublic);
-                    }}
-                  >
-                    {playlist.isPublic ? (
-                      <Eye size={24} color={colors.text} />
-                    ) : (
-                      <EyeOff size={24} color={colors.textSecondary} />
-                    )}
-                  </Pressable>
-                  <Pressable
-                    style={styles.playlistActionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleSharePlaylist(playlist.id);
-                    }}
-                  >
-                    <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
-                  </Pressable>
-                </View>
+                {playlist.isPublic ? (
+                  <Eye size={20} color={colors.textSecondary} />
+                ) : (
+                  <EyeOff size={20} color={colors.textSecondary} />
+                )}
               </Pressable>
-            );
-          })}
-        </>
-      ) : (
-        <View style={styles.emptyState}>
-          <IconSymbol name="list.bullet" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateTitle}>No playlists yet</Text>
-          <Text style={styles.emptyStateText}>
-            Create your first playlist to organize your shows!
-          </Text>
-        </View>
-      )}
-    </View>
-  );
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleSharePlaylist(playlist.id);
+                }}
+                style={styles.iconButton}
+              >
+                <IconSymbol name="square.and.arrow.up" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          </Pressable>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={commonStyles.container}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {renderHeader()}
-          {renderMyRotation()}
-          {renderTabs()}
-          {activeTab === 'posts' && renderPostsTab()}
-          {activeTab === 'shows' && renderShowsTab()}
-          {activeTab === 'playlists' && renderPlaylistsTab()}
-          <View style={{ height: 100 }} />
-        </ScrollView>
-      </View>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {renderHeader()}
+        {renderMyRotation()}
+        {renderTabs()}
+        {activeTab === 'posts' && renderPostsTab()}
+        {activeTab === 'shows' && renderShowsTab()}
+        {activeTab === 'playlists' && renderPlaylistsTab()}
+      </ScrollView>
 
       <FollowersModal
-        visible={showFollowersModal || showFollowingModal}
-        onClose={() => {
-          setShowFollowersModal(false);
-          setShowFollowingModal(false);
-        }}
-        users={followersType === 'followers' ? followers : following}
-        title={followersType === 'followers' ? 'Followers' : 'Following'}
+        visible={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        users={followersModalType === 'followers' ? followersList : followingList}
+        title={followersModalType === 'followers' ? 'Followers' : 'Following'}
         currentUserId={currentUser.id}
-        followingIds={following.map(u => u.id)}
+        followingIds={followingList.map(u => u.id)}
         onFollowToggle={handleFollowToggle}
       />
 
@@ -470,30 +396,27 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
+  container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   header: {
-    alignItems: 'center',
-    padding: 24,
+    padding: 20,
     paddingTop: 60,
-    backgroundColor: colors.card,
   },
-  headerTop: {
-    width: '100%',
+  profileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginBottom: 24,
-  },
-  settingsButton: {
-    padding: 8,
+    marginBottom: 16,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 16,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginRight: 16,
+  },
+  nameContainer: {
+    flex: 1,
   },
   displayName: {
     fontSize: 24,
@@ -504,17 +427,23 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 8,
+  },
+  settingsButton: {
+    padding: 8,
   },
   bio: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
-    textAlign: 'center',
+    lineHeight: 20,
     marginBottom: 16,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 24,
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.border,
   },
   statItem: {
     alignItems: 'center',
@@ -523,40 +452,38 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
+    marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
   },
-  section: {
-    padding: 16,
+  rotationContainer: {
+    paddingVertical: 20,
+    paddingLeft: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   rotationScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+  },
+  rotationItem: {
+    marginRight: 12,
   },
   rotationPoster: {
-    width: 120,
-    height: 180,
-    borderRadius: 12,
-    marginRight: 12,
-    overflow: 'hidden',
+    width: 100,
+    height: 150,
+    borderRadius: 8,
   },
-  posterImage: {
-    width: '100%',
-    height: '100%',
-  },
-  tabs: {
+  tabsContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.card,
+    paddingHorizontal: 20,
   },
   tab: {
     flex: 1,
@@ -568,72 +495,41 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.secondary,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
   activeTabText: {
-    color: colors.secondary,
-  },
-  tabContent: {
-    padding: 16,
-  },
-  emptyState: {
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: colors.card,
-    borderRadius: 12,
-  },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
   },
-  emptyStateText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  logShowButton: {
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  logShowButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+  postsContainer: {
+    padding: 20,
   },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    padding: 20,
     gap: 12,
   },
-  showGridItem: {
+  showItem: {
     width: '31%',
+  },
+  showPoster: {
+    width: '100%',
     aspectRatio: 2 / 3,
     borderRadius: 8,
-    overflow: 'hidden',
   },
-  showGridPoster: {
-    width: '100%',
-    height: '100%',
+  playlistsContainer: {
+    padding: 20,
   },
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 8,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
     marginBottom: 12,
-  },
-  playlistItemPressed: {
-    opacity: 0.7,
   },
   playlistInfo: {
     flex: 1,
@@ -651,20 +547,28 @@ const styles = StyleSheet.create({
   playlistActions: {
     flexDirection: 'row',
     gap: 12,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  emptyState: {
+    padding: 40,
     alignItems: 'center',
   },
-  eyeIconButton: {
-    padding: 8,
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+  emptyText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 16,
   },
-  playlistActionButton: {
-    padding: 8,
-    backgroundColor: colors.background,
+  createButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: colors.secondary,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+  },
+  createButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.background,
   },
 });
