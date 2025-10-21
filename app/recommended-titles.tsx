@@ -80,7 +80,7 @@ export default function RecommendedTitlesScreen() {
           </ScrollView>
         </View>
 
-        {/* Shows Grid - 3 columns */}
+        {/* Shows Grid - 2 columns */}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.gridContainer}>
             {filteredShows.map((show) => (
@@ -103,7 +103,7 @@ export default function RecommendedTitlesScreen() {
                   >
                     <IconSymbol
                       name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
-                      size={16}
+                      size={18}
                       color="#FFFFFF"
                     />
                   </Pressable>
@@ -113,11 +113,11 @@ export default function RecommendedTitlesScreen() {
                 </Text>
                 <View style={styles.showStats}>
                   <View style={styles.stat}>
-                    <IconSymbol name="star.fill" size={12} color="#FCD34D" />
+                    <IconSymbol name="star.fill" size={14} color="#FCD34D" />
                     <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
                   </View>
                   <View style={styles.stat}>
-                    <IconSymbol name="person.2.fill" size={12} color={colors.text} />
+                    <IconSymbol name="person.2.fill" size={14} color={colors.text} />
                     <Text style={styles.statText}>{show.friendsWatching}</Text>
                   </View>
                 </View>
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     padding: 16,
     paddingBottom: 100,
-    gap: 12,
+    gap: 16,
   },
   showCard: {
-    width: '31.5%',
+    width: 'calc(50% - 8px)',
     marginBottom: 8,
   },
   showCardPressed: {
@@ -200,34 +200,36 @@ const styles = StyleSheet.create({
   },
   saveIcon: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 28,
-    height: 28,
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 16,
   },
   saveIconPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
   },
   showTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   showStats: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 4,
   },
   statText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text,
   },

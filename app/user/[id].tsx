@@ -290,16 +290,9 @@ export default function UserProfile() {
     Alert.alert('Share Playlist', 'Deep link copied to clipboard!');
   };
 
-  const handlePlaylistPress = (playlist: Playlist) => {
+  const handlePlaylistPress = (playlistId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log('Opening playlist:', playlist.name);
-    const playlistShows = mockShows.filter(show => playlist.shows?.includes(show.id));
-    const showTitles = playlistShows.map(show => show.title).join('\n');
-    Alert.alert(
-      playlist.name,
-      showTitles || 'No shows in this playlist yet',
-      [{ text: 'OK' }]
-    );
+    router.push(`/playlist/${playlistId}`);
   };
 
   const renderOnlineStatus = () => {
@@ -566,47 +559,55 @@ export default function UserProfile() {
     <View style={styles.tabContent}>
       {userPlaylists.length > 0 ? (
         <>
-          {userPlaylists.map((playlist) => (
-            <Pressable
-              key={playlist.id}
-              style={styles.playlistItem}
-              onPress={() => handlePlaylistPress(playlist)}
-            >
-              <View style={styles.playlistInfo}>
-                <Text style={styles.playlistName}>{playlist.name}</Text>
-                <Text style={styles.playlistCount}>{playlist.showCount} shows</Text>
-              </View>
-              {isCurrentUser && (
-                <View style={styles.playlistActions}>
-                  <Pressable
-                    style={styles.eyeIconButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handlePlaylistToggle(playlist.id, !playlist.isPublic);
-                    }}
-                  >
-                    {playlist.isPublic ? (
-                      <Eye size={24} color={colors.text} />
-                    ) : (
-                      <EyeOff size={24} color={colors.textSecondary} />
-                    )}
-                  </Pressable>
-                  <Pressable
-                    style={styles.playlistActionButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleSharePlaylist(playlist.id);
-                    }}
-                  >
-                    <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
-                  </Pressable>
+          {userPlaylists.map((playlist) => {
+            const showCount = playlist.shows?.length || 0;
+            return (
+              <Pressable
+                key={playlist.id}
+                style={({ pressed }) => [
+                  styles.playlistItem,
+                  pressed && styles.playlistItemPressed,
+                ]}
+                onPress={() => handlePlaylistPress(playlist.id)}
+              >
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistName}>{playlist.name}</Text>
+                  <Text style={styles.playlistCount}>
+                    {showCount} {showCount === 1 ? 'show' : 'shows'}
+                  </Text>
                 </View>
-              )}
-              {!isCurrentUser && (
-                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
-              )}
-            </Pressable>
-          ))}
+                {isCurrentUser && (
+                  <View style={styles.playlistActions}>
+                    <Pressable
+                      style={styles.eyeIconButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handlePlaylistToggle(playlist.id, !playlist.isPublic);
+                      }}
+                    >
+                      {playlist.isPublic ? (
+                        <Eye size={24} color={colors.text} />
+                      ) : (
+                        <EyeOff size={24} color={colors.textSecondary} />
+                      )}
+                    </Pressable>
+                    <Pressable
+                      style={styles.playlistActionButton}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleSharePlaylist(playlist.id);
+                      }}
+                    >
+                      <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
+                    </Pressable>
+                  </View>
+                )}
+                {!isCurrentUser && (
+                  <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                )}
+              </Pressable>
+            );
+          })}
         </>
       ) : (
         <View style={styles.emptyState}>
@@ -937,6 +938,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  playlistItemPressed: {
+    opacity: 0.7,
   },
   playlistInfo: {
     flex: 1,

@@ -190,16 +190,7 @@ export default function ProfileScreen() {
 
   const handlePlaylistPress = (playlistId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const playlist = playlists.find(p => p.id === playlistId);
-    if (playlist) {
-      const playlistShows = mockShows.filter(show => playlist.shows?.includes(show.id));
-      const showTitles = playlistShows.map(show => show.title).join('\n');
-      Alert.alert(
-        playlist.name,
-        showTitles || 'No shows in this playlist yet',
-        [{ text: 'OK' }]
-      );
-    }
+    router.push(`/playlist/${playlistId}`);
   };
 
   const handleFollowToggle = async (userId: string) => {
@@ -385,42 +376,50 @@ export default function ProfileScreen() {
     <View style={styles.tabContent}>
       {playlists.length > 0 ? (
         <>
-          {playlists.map((playlist) => (
-            <Pressable
-              key={playlist.id}
-              style={styles.playlistItem}
-              onPress={() => handlePlaylistPress(playlist.id)}
-            >
-              <View style={styles.playlistInfo}>
-                <Text style={styles.playlistName}>{playlist.name}</Text>
-                <Text style={styles.playlistCount}>{playlist.showCount} shows</Text>
-              </View>
-              <View style={styles.playlistActions}>
-                <Pressable
-                  style={styles.eyeIconButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handlePlaylistToggle(playlist.id, !playlist.isPublic);
-                  }}
-                >
-                  {playlist.isPublic ? (
-                    <Eye size={24} color={colors.text} />
-                  ) : (
-                    <EyeOff size={24} color={colors.textSecondary} />
-                  )}
-                </Pressable>
-                <Pressable
-                  style={styles.playlistActionButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleSharePlaylist(playlist.id);
-                  }}
-                >
-                  <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
-                </Pressable>
-              </View>
-            </Pressable>
-          ))}
+          {playlists.map((playlist) => {
+            const showCount = playlist.shows?.length || 0;
+            return (
+              <Pressable
+                key={playlist.id}
+                style={({ pressed }) => [
+                  styles.playlistItem,
+                  pressed && styles.playlistItemPressed,
+                ]}
+                onPress={() => handlePlaylistPress(playlist.id)}
+              >
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistName}>{playlist.name}</Text>
+                  <Text style={styles.playlistCount}>
+                    {showCount} {showCount === 1 ? 'show' : 'shows'}
+                  </Text>
+                </View>
+                <View style={styles.playlistActions}>
+                  <Pressable
+                    style={styles.eyeIconButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handlePlaylistToggle(playlist.id, !playlist.isPublic);
+                    }}
+                  >
+                    {playlist.isPublic ? (
+                      <Eye size={24} color={colors.text} />
+                    ) : (
+                      <EyeOff size={24} color={colors.textSecondary} />
+                    )}
+                  </Pressable>
+                  <Pressable
+                    style={styles.playlistActionButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleSharePlaylist(playlist.id);
+                    }}
+                  >
+                    <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
+                  </Pressable>
+                </View>
+              </Pressable>
+            );
+          })}
         </>
       ) : (
         <View style={styles.emptyState}>
@@ -632,6 +631,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  playlistItemPressed: {
+    opacity: 0.7,
   },
   playlistInfo: {
     flex: 1,
