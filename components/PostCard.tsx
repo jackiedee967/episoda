@@ -205,7 +205,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <Text style={styles.justWatched}>just watched</Text>
             </View>
 
-            {/* Episode and Show Tags */}
+            {/* Episode and Show Tags - ONLY THESE ARE CLICKABLE */}
             <View style={styles.tagsRow}>
               {latestPost.episodes && latestPost.episodes.length > 0 && (
                 <>
@@ -269,6 +269,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <View style={styles.postTagsContainer}>
                 {latestPost.tags.map((tag, index) => {
                   const tagColor = getTagColor(tag);
+                  // Category tags are NOT clickable - just View, no Pressable
                   return (
                     <View
                       key={index}
