@@ -1,49 +1,14 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { colors, components, spacing } from '@/styles/commonStyles';
 
 interface PostButtonProps {
   onPress: () => void;
+  pulseAnim: Animated.Value;
 }
 
-export default function PostButton({ onPress }: PostButtonProps) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 1.15,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(opacityAnim, {
-            toValue: 0.6,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [scaleAnim, opacityAnim]);
-
+export default function PostButton({ onPress, pulseAnim }: PostButtonProps) {
   return (
     <Pressable style={styles.container} onPress={onPress}>
       <View style={styles.leftContent}>
@@ -51,8 +16,11 @@ export default function PostButton({ onPress }: PostButtonProps) {
           style={[
             styles.dot,
             {
-              transform: [{ scale: scaleAnim }],
-              opacity: opacityAnim,
+              transform: [{ scale: pulseAnim }],
+              opacity: pulseAnim.interpolate({
+                inputRange: [1, 1.8],
+                outputRange: [1, 0.4],
+              }),
             },
           ]} 
         />

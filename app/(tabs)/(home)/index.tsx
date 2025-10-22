@@ -1,12 +1,12 @@
 
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, ImageBackground, Animated } from 'react-native';
 import { colors, commonStyles, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import ShowCard from '@/components/ShowCard';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PostButton from '@/components/PostButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
@@ -17,6 +17,27 @@ export default function HomeScreen() {
   const router = useRouter();
   const { posts, currentUser, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
+  
+  // Animation for pulsing green dot
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Create pulsing animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.8,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -93,7 +114,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/recommended-titles')}
           style={styles.seeAllButton}
         >
-          <ChevronRight size={18} color={colors.textSecondary} />
+          <ChevronRight size={16} color={colors.textSecondary} />
         </Pressable>
       </View>
       <ScrollView
@@ -191,7 +212,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/(home)/friend-activity')}
             style={styles.seeAllButton}
           >
-            <ChevronRight size={18} color={colors.textSecondary} />
+            <ChevronRight size={16} color={colors.textSecondary} />
           </Pressable>
         </View>
         {allActivity.length > 0 ? (
@@ -239,7 +260,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <PostButton onPress={() => setPostModalVisible(true)} />
+          <PostButton onPress={() => setPostModalVisible(true)} pulseAnim={pulseAnim} />
           {renderRecommendedTitles()}
           {renderYouMayKnow()}
           {renderFriendActivity()}
@@ -262,11 +283,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'rgba(14, 14, 14, 0.85)',
+    backgroundColor: 'rgba(14, 14, 14, 1)',
   },
   headerContainer: {
     paddingTop: 60,
-    paddingBottom: 16,
+    paddingBottom: 20,
     backgroundColor: 'transparent',
   },
   headerContent: {
@@ -274,7 +295,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.pageMargin,
-    paddingBottom: 16,
+    paddingBottom: 20,
   },
   logo: {
     width: 120,
@@ -295,11 +316,11 @@ const styles = StyleSheet.create({
   separator: {
     height: 0.5,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    width: '80%',
+    width: '100%',
   },
   welcomeContainer: {
     paddingHorizontal: spacing.pageMargin,
-    paddingTop: 16,
+    paddingTop: 20,
   },
   welcomeText: {
     fontSize: 14,
