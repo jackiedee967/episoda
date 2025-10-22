@@ -9,7 +9,7 @@ import {
   Theme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useColorScheme, Alert } from "react-native";
+import { useColorScheme, Alert, Platform } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -80,7 +80,7 @@ function useProtectedRoute(session: Session | null) {
   }, [session]);
 }
 
-// Custom dark theme
+// Custom dark theme with proper fonts configuration
 const EpisodaDarkTheme: Theme = {
   dark: true,
   colors: {
@@ -90,6 +90,24 @@ const EpisodaDarkTheme: Theme = {
     text: colors.text,
     border: colors.border,
     notification: colors.accent,
+  },
+  fonts: {
+    regular: {
+      fontFamily: 'FunnelDisplay_400Regular',
+      fontWeight: '400' as const,
+    },
+    medium: {
+      fontFamily: 'FunnelDisplay_400Regular',
+      fontWeight: '500' as const,
+    },
+    bold: {
+      fontFamily: 'FunnelDisplay_700Bold',
+      fontWeight: '700' as const,
+    },
+    heavy: {
+      fontFamily: 'FunnelDisplay_700Bold',
+      fontWeight: '900' as const,
+    },
   },
 };
 
