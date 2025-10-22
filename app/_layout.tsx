@@ -1,7 +1,7 @@
 
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DataProvider } from "@/contexts/DataContext";
-import { Button } from "@/components/button";
+import Button from "@/components/Button";
 import { useNetworkState } from "expo-network";
 import {
   DarkTheme,
