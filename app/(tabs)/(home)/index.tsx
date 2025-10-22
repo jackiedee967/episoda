@@ -64,7 +64,7 @@ export default function HomeScreen() {
       />
       <View style={styles.headerContent}>
         <Image 
-          source={require('@/assets/images/f0aae236-2720-450c-a947-ed57bcf670ec.png')}
+          source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -75,7 +75,9 @@ export default function HomeScreen() {
           />
         </Pressable>
       </View>
-      <View style={styles.separator} />
+      <View style={styles.separatorContainer}>
+        <View style={styles.separator} />
+      </View>
       <View style={styles.welcomeContainer}>
         <Text style={styles.welcomeText}>Welcome back</Text>
         <Text style={styles.userName}>{currentUser.displayName}</Text>
@@ -91,7 +93,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/recommended-titles')}
           style={styles.seeAllButton}
         >
-          <ChevronRight size={24} color={colors.accent} />
+          <ChevronRight size={18} color={colors.textSecondary} />
         </Pressable>
       </View>
       <ScrollView
@@ -189,7 +191,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/(home)/friend-activity')}
             style={styles.seeAllButton}
           >
-            <ChevronRight size={24} color={colors.accent} />
+            <ChevronRight size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
         {allActivity.length > 0 ? (
@@ -226,7 +228,7 @@ export default function HomeScreen() {
 
   return (
     <ImageBackground
-      source={require('@/assets/images/473b5b23-a63c-4cdf-88f7-c09d28793226.jpeg')}
+      source={require('@/assets/images/c5654ae2-c4e4-49f4-be1a-ba15401ecb58.jpeg')}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
@@ -279,19 +281,21 @@ const styles = StyleSheet.create({
     height: 32,
   },
   profileButton: {
-    padding: 2,
+    padding: 0,
   },
   profilePicture: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    borderWidth: 2,
-    borderColor: colors.accent,
+  },
+  separatorContainer: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.pageMargin,
   },
   separator: {
     height: 0.5,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    width: '100%',
+    width: '80%',
   },
   welcomeContainer: {
     paddingHorizontal: spacing.pageMargin,
