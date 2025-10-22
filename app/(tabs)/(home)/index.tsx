@@ -1,5 +1,5 @@
 
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, ImageBackground } from 'react-native';
 import { colors, commonStyles, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
@@ -11,7 +11,6 @@ import PostButton from '@/components/PostButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
@@ -51,6 +50,11 @@ export default function HomeScreen() {
     router.push(`/user/${userId}`);
   };
 
+  const handleProfilePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/profile');
+  };
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       <Stack.Screen
@@ -58,18 +62,23 @@ export default function HomeScreen() {
           headerShown: false,
         }}
       />
-      <LinearGradient
-        colors={['#FF1493', '#FFD700', '#00FF00']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.gradient}
-      />
       <View style={styles.headerContent}>
         <Image 
           source={require('@/assets/images/f0aae236-2720-450c-a947-ed57bcf670ec.png')}
           style={styles.logo}
           resizeMode="contain"
         />
+        <Pressable onPress={handleProfilePress} style={styles.profileButton}>
+          <Image 
+            source={{ uri: currentUser.avatar }}
+            style={styles.profilePicture}
+          />
+        </Pressable>
+      </View>
+      <View style={styles.separator} />
+      <View style={styles.welcomeContainer}>
+        <Text style={styles.welcomeText}>Welcome back</Text>
+        <Text style={styles.userName}>{currentUser.displayName}</Text>
       </View>
     </View>
   );
@@ -216,54 +225,88 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {renderHeader()}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <PostButton onPress={() => setPostModalVisible(true)} />
-        {renderRecommendedTitles()}
-        {renderYouMayKnow()}
-        {renderFriendActivity()}
-      </ScrollView>
+    <ImageBackground
+      source={require('@/assets/images/473b5b23-a63c-4cdf-88f7-c09d28793226.jpeg')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        {renderHeader()}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <PostButton onPress={() => setPostModalVisible(true)} />
+          {renderRecommendedTitles()}
+          {renderYouMayKnow()}
+          {renderFriendActivity()}
+        </ScrollView>
 
-      <PostModal
-        visible={postModalVisible}
-        onClose={() => setPostModalVisible(false)}
-      />
-    </View>
+        <PostModal
+          visible={postModalVisible}
+          onClose={() => setPostModalVisible(false)}
+        />
+      </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'rgba(14, 14, 14, 0.85)',
   },
   headerContainer: {
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: colors.background,
-    position: 'relative',
-  },
-  gradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 120,
+    backgroundColor: 'transparent',
   },
   headerContent: {
-    paddingHorizontal: spacing.pageMargin,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 20,
+    paddingHorizontal: spacing.pageMargin,
+    paddingBottom: 16,
   },
   logo: {
-    width: 150,
+    width: 120,
+    height: 32,
+  },
+  profileButton: {
+    padding: 2,
+  },
+  profilePicture: {
+    width: 40,
     height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  separator: {
+    height: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    width: '100%',
+  },
+  welcomeContainer: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingTop: 16,
+  },
+  welcomeText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
   },
   scrollView: {
     flex: 1,
