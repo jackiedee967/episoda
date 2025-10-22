@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { mockShows, mockEpisodes } from '@/data/mockData';
-import { colors } from '@/styles/commonStyles';
+import { colors, spacing, components } from '@/styles/commonStyles';
 import { Show, Episode, PostTag } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
@@ -54,12 +54,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const inputRef = useRef<TextInput>(null);
   const customTagInputRef = useRef<TextInput>(null);
 
-  // Handle preselected show and episode
   useEffect(() => {
     if (visible && preselectedShow) {
       setSelectedShow(preselectedShow);
       
-      // Get episodes for this show and organize by season
       const showEpisodes = mockEpisodes.filter(ep => ep.showId === preselectedShow.id);
       const seasonMap = new Map<number, Episode[]>();
       
@@ -78,7 +76,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
       setSeasons(seasonsData);
 
-      // If there's a preselected episode, skip to episode selection with it selected
       if (preselectedEpisode) {
         setSelectedEpisodes([preselectedEpisode]);
         setStep('selectEpisodes');
@@ -100,7 +97,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   useEffect(() => {
     if (visible) {
-      // Slide up and fade in
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -114,7 +110,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         }),
       ]).start();
     } else {
-      // Slide down and fade out
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: SCREEN_HEIGHT,
@@ -134,7 +129,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedShow(show);
     
-    // Get episodes for this show and organize by season
     const showEpisodes = mockEpisodes.filter(ep => ep.showId === show.id);
     const seasonMap = new Map<number, Episode[]>();
     
@@ -193,7 +187,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedTags([...selectedTags, trimmedTag]);
       setCustomTag('');
-      // Refocus the input after adding tag
       setTimeout(() => {
         customTagInputRef.current?.focus();
       }, 100);
@@ -326,7 +319,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                       <IconSymbol
                         name={isSelected ? 'checkmark.circle.fill' : 'circle'}
                         size={24}
-                        color={isSelected ? colors.secondary : colors.textSecondary}
+                        color={isSelected ? colors.accent : colors.textSecondary}
                       />
                     </Pressable>
                   );
@@ -371,7 +364,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           textAlignVertical="top"
         />
         
-        {/* Rating */}
         <View style={styles.ratingSection}>
           <Text style={styles.sectionLabel}>Rating</Text>
           <View style={styles.starsContainer}>
@@ -393,7 +385,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           </View>
         </View>
 
-        {/* Tags */}
         <View style={styles.tagsSection}>
           <Text style={styles.sectionLabel}>Tags</Text>
           <View style={styles.tagsContainer}>
@@ -418,7 +409,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             ))}
           </View>
           
-          {/* Display selected custom tags */}
           {selectedTags.filter(tag => !['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].includes(tag)).length > 0 && (
             <View style={styles.customTagsList}>
               {selectedTags.filter(tag => !['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].includes(tag)).map((tag, index) => (
@@ -449,7 +439,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               onPress={handleAddCustomTag}
               disabled={!customTag.trim()}
             >
-              <IconSymbol name="plus" size={20} color={customTag.trim() ? colors.text : colors.textSecondary} />
+              <IconSymbol name="plus" size={20} color={customTag.trim() ? '#000000' : colors.textSecondary} />
             </Pressable>
           </View>
         </View>
@@ -506,7 +496,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   overlayTouchable: {
@@ -521,10 +511,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    paddingTop: spacing.gapMedium,
+    paddingHorizontal: spacing.pageMargin,
+    paddingBottom: spacing.gapLarge,
+    borderBottomWidth: 0.5,
     borderBottomColor: colors.border,
   },
   handle: {
@@ -532,34 +522,34 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: colors.border,
     borderRadius: 2,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   closeButton: {
     position: 'absolute',
-    right: 20,
-    top: 20,
+    right: spacing.pageMargin,
+    top: spacing.pageMargin,
   },
   stepContainer: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: spacing.pageMargin,
+    paddingTop: spacing.pageMargin,
   },
   stepTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.gapSmall,
   },
   stepSubtitle: {
     fontSize: 16,
     color: colors.textSecondary,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.gapSmall,
+    marginBottom: spacing.gapLarge,
   },
   backButtonText: {
     fontSize: 16,
@@ -567,11 +557,13 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: components.borderRadiusButton,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapLarge,
     fontSize: 16,
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   showsList: {
     flex: 1,
@@ -580,17 +572,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: spacing.gapMedium,
   },
   showGridItem: {
     width: '31%',
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   showGridPoster: {
     width: '100%',
     aspectRatio: 2 / 3,
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: spacing.gapSmall,
+    marginBottom: spacing.gapSmall,
   },
   showGridTitle: {
     fontSize: 12,
@@ -602,15 +594,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   seasonContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   seasonHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: colors.card,
-    padding: 16,
-    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapLarge,
+    borderRadius: components.borderRadiusButton,
   },
   seasonTitle: {
     fontSize: 18,
@@ -618,26 +612,28 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   episodesContainer: {
-    marginTop: 8,
-    gap: 8,
+    marginTop: spacing.gapSmall,
+    gap: spacing.gapSmall,
   },
   episodeItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.card,
-    padding: 12,
-    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapMedium,
+    borderRadius: components.borderRadiusButton,
   },
   episodeItemSelected: {
-    backgroundColor: colors.purpleLight,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.purple,
+    borderColor: colors.accent,
   },
   episodeInfo: {
     flex: 1,
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.gapMedium,
   },
   episodeNumber: {
     fontSize: 14,
@@ -658,35 +654,39 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   continueButton: {
-    backgroundColor: colors.secondary,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.accent,
+    borderRadius: components.borderRadiusButton,
+    padding: spacing.gapLarge,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: spacing.gapLarge,
   },
   continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.background,
+    color: '#000000',
   },
   detailsForm: {
     flex: 1,
   },
   titleInput: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: components.borderRadiusButton,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapLarge,
     fontSize: 16,
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   bodyInput: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: components.borderRadiusButton,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapLarge,
     fontSize: 16,
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
     minHeight: 120,
   },
   ratingSection: {
@@ -696,11 +696,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   starsContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.gapSmall,
   },
   tagsSection: {
     marginBottom: 24,
@@ -708,20 +708,20 @@ const styles = StyleSheet.create({
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.gapSmall,
+    marginBottom: spacing.gapMedium,
   },
   tagButton: {
     backgroundColor: colors.card,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingHorizontal: spacing.gapLarge,
+    paddingVertical: spacing.gapSmall,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
   },
   tagButtonSelected: {
-    backgroundColor: colors.secondary,
-    borderColor: colors.secondary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   tagButtonText: {
     fontSize: 14,
@@ -729,24 +729,24 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   tagButtonTextSelected: {
-    color: colors.background,
+    color: '#000000',
   },
   customTagsList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.gapSmall,
+    marginBottom: spacing.gapMedium,
   },
   customTagChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.card,
     borderRadius: 20,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.gapMedium,
     paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
   },
   customTagChipText: {
     fontSize: 14,
@@ -755,19 +755,21 @@ const styles = StyleSheet.create({
   },
   customTagContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.gapMedium,
   },
   customTagInput: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: components.borderRadiusButton,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapMedium,
     fontSize: 14,
     color: colors.text,
   },
   addTagButton: {
-    backgroundColor: colors.secondary,
-    borderRadius: 12,
+    backgroundColor: colors.accent,
+    borderRadius: components.borderRadiusButton,
     width: 44,
     height: 44,
     justifyContent: 'center',
@@ -777,11 +779,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   postButton: {
-    backgroundColor: colors.secondary,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.accent,
+    borderRadius: components.borderRadiusButton,
+    padding: spacing.gapLarge,
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: spacing.gapLarge,
   },
   postButtonDisabled: {
     opacity: 0.5,
@@ -789,6 +791,6 @@ const styles = StyleSheet.create({
   postButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.background,
+    color: '#000000',
   },
 });

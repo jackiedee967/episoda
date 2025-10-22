@@ -14,6 +14,10 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts } from "expo-font";
+import {
+  FunnelDisplay_400Regular,
+  FunnelDisplay_700Bold,
+} from '@expo-google-fonts/funnel-display';
 import "react-native-reanimated";
 import { Stack, router, useSegments, useRootNavigationState } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -76,6 +80,19 @@ function useProtectedRoute(session: Session | null) {
   }, [session]);
 }
 
+// Custom dark theme
+const EpisodaDarkTheme: Theme = {
+  dark: true,
+  colors: {
+    primary: colors.accent,
+    background: colors.background,
+    card: colors.card,
+    text: colors.text,
+    border: colors.border,
+    notification: colors.accent,
+  },
+};
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { isConnected } = useNetworkState();
@@ -84,6 +101,8 @@ export default function RootLayout() {
 
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    FunnelDisplay_400Regular,
+    FunnelDisplay_700Bold,
   });
 
   useEffect(() => {
@@ -117,7 +136,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={EpisodaDarkTheme}>
         <DataProvider>
           <WidgetProvider>
             <Stack
@@ -194,8 +213,8 @@ export default function RootLayout() {
                 }}
               />
             </Stack>
-            <StatusBar style="auto" />
-            <SystemBars style="auto" />
+            <StatusBar style="light" />
+            <SystemBars style="light" />
           </WidgetProvider>
         </DataProvider>
       </ThemeProvider>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { colors } from '@/styles/commonStyles';
+import { colors, components } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
 
 interface FollowButtonProps {
@@ -61,7 +61,7 @@ export default function FollowButton({
       {isLoading ? (
         <ActivityIndicator
           size="small"
-          color={isFollowing ? colors.text : colors.background}
+          color={isFollowing ? colors.text : '#000000'}
         />
       ) : (
         <Text style={textStyle}>
@@ -74,7 +74,7 @@ export default function FollowButton({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 8,
+    borderRadius: components.borderRadiusButton,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 90,
@@ -95,12 +95,13 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
   buttonFollow: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.accent,
     borderWidth: 0,
   },
   buttonFollowing: {
-    backgroundColor: '#E5E5E5',
-    borderWidth: 0,
+    backgroundColor: colors.card,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttonTextFollow: {
-    color: colors.background,
+    color: '#000000',
   },
   buttonTextFollowing: {
     color: colors.text,

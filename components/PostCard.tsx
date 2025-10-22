@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@/styles/commonStyles';
+import { colors, spacing, components } from '@/styles/commonStyles';
 import { Post } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
@@ -25,13 +25,8 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   const { likePost, unlikePost, repostPost, unrepostPost, getPost, playlists, isShowInPlaylist, hasUserReposted } = useData();
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   
-  // Get the latest post data from context to ensure we have current like/comment counts
   const latestPost = getPost(post.id) || post;
-  
-  // Check if user has reposted this post
   const isReposted = hasUserReposted(latestPost.id);
-
-  // Check if show is in any playlist
   const isShowSaved = playlists.some(pl => isShowInPlaylist(pl.id, latestPost.show.id));
 
   const formatTimestamp = (date: Date) => {
@@ -137,15 +132,15 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   };
 
   const getShowTagColor = (showTitle: string) => {
-    const colors = [
-      { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' },
-      { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' },
-      { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' },
-      { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' },
-      { bg: '#F3E8FF', border: '#9333EA', text: '#9333EA' },
+    const tagColors = [
+      { bg: '#2A2A2A', border: '#DD6B20', text: '#DD6B20' },
+      { bg: '#2A2A2A', border: '#E53E3E', text: '#E53E3E' },
+      { bg: '#2A2A2A', border: '#5CB85C', text: '#5CB85C' },
+      { bg: '#2A2A2A', border: '#5B9FD8', text: '#5B9FD8' },
+      { bg: '#2A2A2A', border: '#9333EA', text: '#9333EA' },
     ];
-    const index = showTitle.length % colors.length;
-    return colors[index];
+    const index = showTitle.length % tagColors.length;
+    return tagColors[index];
   };
 
   const getTagIcon = (tag: string) => {
@@ -159,11 +154,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
 
   const getTagColor = (tag: string) => {
     const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' };
-    if (tagLower.includes('discussion')) return { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' };
-    if (tagLower.includes('spoiler')) return { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' };
-    if (tagLower.includes('recap')) return { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' };
-    return { bg: '#F3F4F6', border: '#6B7280', text: '#6B7280' };
+    if (tagLower.includes('theory')) return { bg: '#2A2A2A', border: '#5CB85C', text: '#5CB85C' };
+    if (tagLower.includes('discussion')) return { bg: '#2A2A2A', border: '#5B9FD8', text: '#5B9FD8' };
+    if (tagLower.includes('spoiler')) return { bg: '#2A2A2A', border: '#E53E3E', text: '#E53E3E' };
+    if (tagLower.includes('recap')) return { bg: '#2A2A2A', border: '#DD6B20', text: '#DD6B20' };
+    return { bg: '#2A2A2A', border: '#999999', text: '#999999' };
   };
 
   const showTagColor = getShowTagColor(latestPost.show.title);
@@ -171,7 +166,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   return (
     <>
       <Pressable style={styles.card} onPress={handlePostPress}>
-        {/* Repost Header */}
         {isRepost && repostedBy && (
           <View style={styles.repostHeader}>
             <Repeat size={14} color={colors.textSecondary} />
@@ -179,9 +173,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           </View>
         )}
 
-        {/* Top Section */}
         <View style={styles.topSection}>
-          {/* Show Poster with Save Icon */}
           <View style={styles.posterContainer}>
             <Pressable onPress={handleShowPress}>
               <Image source={{ uri: latestPost.show.poster }} style={styles.poster} />
@@ -190,12 +182,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <IconSymbol 
                 name={isShowSaved ? 'bookmark.fill' : 'bookmark'} 
                 size={18} 
-                color="#FFFFFF"
+                color={colors.accent}
               />
             </Pressable>
           </View>
 
-          {/* User Info and Watch Details */}
           <View style={styles.watchInfo}>
             <View style={styles.userRow}>
               <Pressable onPress={handleUserPress} style={styles.userInfo}>
@@ -205,7 +196,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <Text style={styles.justWatched}>just watched</Text>
             </View>
 
-            {/* Episode and Show Tags - ONLY THESE ARE CLICKABLE */}
             <View style={styles.tagsRow}>
               {latestPost.episodes && latestPost.episodes.length > 0 && (
                 <>
@@ -239,7 +229,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               </Pressable>
             </View>
 
-            {/* Rating */}
             {latestPost.rating && (
               <View style={styles.ratingContainer}>
                 {[...Array(5)].map((_, i) => (
@@ -247,7 +236,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                     key={i}
                     name={i < latestPost.rating! ? 'star.fill' : 'star'}
                     size={18}
-                    color={i < latestPost.rating! ? '#000000' : colors.textSecondary}
+                    color={i < latestPost.rating! ? '#FFD700' : colors.textSecondary}
                   />
                 ))}
               </View>
@@ -255,21 +244,17 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           </View>
         </View>
 
-        {/* Divider - only show if there's post content */}
         {(latestPost.title || latestPost.body) && <View style={styles.divider} />}
 
-        {/* Bottom Section - Optional Post Content */}
         {(latestPost.title || latestPost.body) && (
           <View style={styles.bottomSection}>
             {latestPost.title && <Text style={styles.postTitle}>{latestPost.title}</Text>}
             {latestPost.body && <Text style={styles.postBody}>{latestPost.body}</Text>}
 
-            {/* Post Tags - Category tags are NOT clickable, only visual labels */}
             {latestPost.tags.length > 0 && (
               <View style={styles.postTagsContainer}>
                 {latestPost.tags.map((tag, index) => {
                   const tagColor = getTagColor(tag);
-                  // Category tags are NOT clickable - just View, no Pressable
                   return (
                     <View
                       key={index}
@@ -291,13 +276,12 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           </View>
         )}
 
-        {/* Actions */}
         <View style={styles.actions}>
           <Pressable onPress={handleLikePress} style={styles.actionButton}>
             <Heart
               size={20}
-              color={latestPost.isLiked ? '#E53E3E' : colors.textSecondary}
-              fill={latestPost.isLiked ? '#E53E3E' : 'none'}
+              color={latestPost.isLiked ? colors.error : colors.textSecondary}
+              fill={latestPost.isLiked ? colors.error : 'none'}
             />
             <Text style={[styles.actionText, latestPost.isLiked && styles.actionTextActive]}>
               {latestPost.likes}
@@ -312,8 +296,8 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           <Pressable onPress={handleRepostPress} style={styles.actionButton}>
             <Repeat
               size={20}
-              color={isReposted ? '#10B981' : colors.textSecondary}
-              fill={isReposted ? '#10B981' : 'none'}
+              color={isReposted ? colors.accent : colors.textSecondary}
+              fill={isReposted ? colors.accent : 'none'}
             />
             <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
               {latestPost.reposts}
@@ -339,15 +323,17 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.cardPadding,
+    marginBottom: spacing.gapLarge,
   },
   repostHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   repostText: {
     fontSize: 13,
@@ -356,8 +342,8 @@ const styles = StyleSheet.create({
   },
   topSection: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: spacing.gapMedium,
+    marginBottom: spacing.gapMedium,
   },
   posterContainer: {
     position: 'relative',
@@ -365,13 +351,15 @@ const styles = StyleSheet.create({
   poster: {
     width: 80,
     height: 120,
-    borderRadius: 8,
+    borderRadius: spacing.gapSmall,
   },
   saveButton: {
     position: 'absolute',
     top: 6,
     right: 6,
     padding: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
   },
   watchInfo: {
     flex: 1,
@@ -380,13 +368,13 @@ const styles = StyleSheet.create({
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.gapSmall,
     flexWrap: 'wrap',
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.gapSmall,
   },
   avatar: {
     width: 20,
@@ -407,13 +395,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: spacing.gapSmall,
   },
   episodeTag: {
-    backgroundColor: '#E8E4FF',
+    backgroundColor: '#2A2A2A',
     borderWidth: 1,
     borderColor: '#6B5FD8',
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
@@ -424,7 +412,7 @@ const styles = StyleSheet.create({
   },
   showTag: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
@@ -437,37 +425,37 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   divider: {
-    height: 1,
+    height: 0.5,
     backgroundColor: colors.border,
-    marginVertical: 12,
+    marginVertical: spacing.gapMedium,
   },
   bottomSection: {
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   postTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: spacing.gapSmall,
   },
   postBody: {
     fontSize: 15,
     color: colors.text,
     lineHeight: 22,
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   postTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.gapSmall,
   },
   postTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.gapMedium,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
     borderWidth: 1,
   },
   postTagText: {
@@ -477,8 +465,8 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: 24,
-    paddingTop: 12,
-    borderTopWidth: 1,
+    paddingTop: spacing.gapMedium,
+    borderTopWidth: 0.5,
     borderTopColor: colors.border,
   },
   actionButton: {
@@ -492,9 +480,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionTextActive: {
-    color: '#E53E3E',
+    color: colors.error,
   },
   actionTextRepost: {
-    color: '#10B981',
+    color: colors.accent,
   },
 });

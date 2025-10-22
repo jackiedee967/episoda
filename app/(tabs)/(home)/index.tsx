@@ -1,6 +1,6 @@
 
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity } from 'react-native';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -11,6 +11,7 @@ import PostButton from '@/components/PostButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
@@ -57,7 +58,19 @@ export default function HomeScreen() {
           headerShown: false,
         }}
       />
-      <Text style={styles.headerTitle}>Home</Text>
+      <LinearGradient
+        colors={['#FF1493', '#FFD700', '#00FF00']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.gradient}
+      />
+      <View style={styles.headerContent}>
+        <Image 
+          source={require('@/assets/images/f0aae236-2720-450c-a947-ed57bcf670ec.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
     </View>
   );
 
@@ -69,7 +82,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/recommended-titles')}
           style={styles.seeAllButton}
         >
-          <ChevronRight size={24} color={colors.secondary} />
+          <ChevronRight size={24} color={colors.accent} />
         </Pressable>
       </View>
       <ScrollView
@@ -134,20 +147,16 @@ export default function HomeScreen() {
   };
 
   const renderFriendActivity = () => {
-    // Get all reposts
     const allReposts = getAllReposts();
     
-    // Filter posts from users the current user is following (original posts)
     const friendPosts = posts.filter(post => 
       currentUser.following?.includes(post.user.id)
     );
 
-    // Filter reposts from friends
     const friendReposts = allReposts.filter(repost =>
       currentUser.following?.includes(repost.repostedBy.id)
     );
 
-    // Combine original posts and reposts
     const allActivity = [
       ...friendPosts.map(post => ({
         post,
@@ -171,7 +180,7 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/(home)/friend-activity')}
             style={styles.seeAllButton}
           >
-            <ChevronRight size={24} color={colors.secondary} />
+            <ChevronRight size={24} color={colors.accent} />
           </Pressable>
         </View>
         {allActivity.length > 0 ? (
@@ -197,7 +206,7 @@ export default function HomeScreen() {
               style={styles.inviteButton}
               onPress={() => console.log('Invite friends')}
             >
-              <IconSymbol name="person.badge.plus" size={20} color={colors.background} />
+              <IconSymbol name="person.badge.plus" size={20} color="#000000" />
               <Text style={styles.inviteButtonText}>Invite Friends</Text>
             </Pressable>
           </View>
@@ -214,20 +223,12 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Post Button */}
         <PostButton onPress={() => setPostModalVisible(true)} />
-
-        {/* Recommended Titles */}
         {renderRecommendedTitles()}
-
-        {/* You May Know */}
         {renderYouMayKnow()}
-
-        {/* Friend Activity */}
         {renderFriendActivity()}
       </ScrollView>
 
-      {/* Post Modal */}
       <PostModal
         visible={postModalVisible}
         onClose={() => setPostModalVisible(false)}
@@ -243,33 +244,43 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingTop: 60,
-    paddingHorizontal: 20,
     paddingBottom: 16,
     backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    position: 'relative',
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text,
+  gradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+  headerContent: {
+    paddingHorizontal: spacing.pageMargin,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 20,
+  },
+  logo: {
+    width: 150,
+    height: 40,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: spacing.pageMargin,
+    paddingTop: spacing.pageMargin,
     paddingBottom: 100,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: spacing.sectionSpacing,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   sectionTitle: {
     fontSize: 20,
@@ -280,26 +291,28 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   showsScroll: {
-    gap: 16,
-    paddingRight: 20,
+    gap: spacing.gapLarge,
+    paddingRight: spacing.pageMargin,
   },
   usersScroll: {
-    gap: 16,
-    paddingRight: 20,
+    gap: spacing.gapLarge,
+    paddingRight: spacing.pageMargin,
   },
   userCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.cardPadding,
     alignItems: 'center',
     width: 160,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.3)',
   },
   userAvatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   userDisplayName: {
     fontSize: 16,
@@ -310,10 +323,10 @@ const styles = StyleSheet.create({
   userUsername: {
     fontSize: 14,
     color: colors.textSecondary,
-    marginBottom: 12,
+    marginBottom: spacing.gapMedium,
   },
   followButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.accent,
     borderRadius: 20,
     paddingHorizontal: 24,
     paddingVertical: 8,
@@ -321,39 +334,41 @@ const styles = StyleSheet.create({
   followButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.background,
+    color: '#000000',
   },
   emptyState: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 32,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    padding: spacing.sectionSpacing,
     alignItems: 'center',
   },
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.gapLarge,
+    marginBottom: spacing.gapSmall,
   },
   emptyStateText: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.pageMargin,
   },
   inviteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.secondary,
+    gap: spacing.gapSmall,
+    backgroundColor: colors.accent,
     borderRadius: 24,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: spacing.gapMedium,
   },
   inviteButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.background,
+    color: '#000000',
   },
 });

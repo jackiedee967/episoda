@@ -10,6 +10,7 @@ import {
 import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
+import { colors } from '@/styles/commonStyles';
 
 interface TabBarItem {
   name: string;
@@ -66,10 +67,10 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
       return { opacity: 0 };
     }
 
-    const tabWidth = (containerWidth - 24) / tabs.length; // Account for container padding
+    const tabWidth = (containerWidth - 24) / tabs.length;
     const translateX = animatedValue.interpolate({
       inputRange: tabs.map((_, i) => i),
-      outputRange: tabs.map((_, i) => 12 + i * tabWidth), // Start at 12px (padding)
+      outputRange: tabs.map((_, i) => 12 + i * tabWidth),
     });
 
     return {
@@ -78,7 +79,7 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
       top: 8,
       bottom: 8,
       width: tabWidth,
-      backgroundColor: '#8BFC76',
+      backgroundColor: colors.accent,
       borderRadius: 20,
       transform: [{ translateX }],
     };
@@ -103,7 +104,7 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
                 <IconSymbol
                   name={tab.icon}
                   size={24}
-                  color={active ? '#000000' : '#8BFC76'}
+                  color={active ? '#000000' : colors.text}
                 />
               </TouchableOpacity>
             );
@@ -129,14 +130,16 @@ const styles = StyleSheet.create({
   },
   pillContainer: {
     flexDirection: 'row',
-    backgroundColor: '#000000',
+    backgroundColor: colors.card,
     borderRadius: 30,
     paddingVertical: 8,
     paddingHorizontal: 12,
     gap: 8,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)',
     elevation: 8,
     position: 'relative',
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
   },
   tab: {
     flex: 1,

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
-import { colors } from '@/styles/commonStyles';
+import { colors, components, spacing } from '@/styles/commonStyles';
 
 interface PostButtonProps {
   onPress: () => void;
@@ -51,10 +51,12 @@ export default function PostButton({ onPress }: PostButtonProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000000',
+    backgroundColor: colors.card,
     borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderWidth: 0.5,
+    borderColor: colors.cardStroke,
+    paddingVertical: spacing.gapMedium,
+    paddingHorizontal: spacing.gapLarge,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -70,17 +72,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#8BFC76',
-    marginRight: 12,
+    backgroundColor: colors.accent,
+    marginRight: spacing.gapMedium,
   },
   text: {
     fontSize: 16,
-    color: '#FFFFFF',
-    fontFamily: 'System',
+    color: colors.text,
   },
   button: {
-    backgroundColor: '#8BFC76',
-    paddingHorizontal: 16,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.gapLarge,
     paddingVertical: 10,
     borderRadius: 20,
   },
@@ -88,6 +89,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#000000',
-    fontFamily: 'System',
   },
 });
