@@ -1,0 +1,83 @@
+Components
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-10355&t=ZyTa0yz6LQ3t9O49-1
+
+Text Styles
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-10356&t=ZyTa0yz6LQ3t9O49-1
+
+Color Styles
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-10357&t=ZyTa0yz6LQ3t9O49-1
+
+Homepage
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=316-1125&t=ZyTa0yz6LQ3t9O49-1
+
+Show Hub - Friends Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=330-3165&t=ZyTa0yz6LQ3t9O49-1
+
+Show Hub - Episodes Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-4777&t=ZyTa0yz6LQ3t9O49-1
+
+Episode Hub - Friends Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-5258&t=ZyTa0yz6LQ3t9O49-1
+
+Post page
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-9256&t=ZyTa0yz6LQ3t9O49-1
+
+Explore - Show Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=330-4443&t=ZyTa0yz6LQ3t9O49-1
+
+Explore - Users Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-7469&t=ZyTa0yz6LQ3t9O49-1
+
+Explore - Posts Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-9963&t=ZyTa0yz6LQ3t9O49-1
+
+Explore - Comments Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-10163&t=ZyTa0yz6LQ3t9O49-1
+
+Notifications
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-7735&t=ZyTa0yz6LQ3t9O49-1
+
+Profile - If NOT Yours - Posts Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=321-1736&t=ZyTa0yz6LQ3t9O49-1
+
+Profile - If NOT Yours - Watch History Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-8306&t=ZyTa0yz6LQ3t9O49-1
+
+Profile - If NOT Yours - Playlist Tab
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-8494&t=ZyTa0yz6LQ3t9O49-1
+
+Profile - If Yours
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=342-8698&t=ZyTa0yz6LQ3t9O49-1
+
+Profile - Edit Button Pop Up
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=329-2174&t=ZyTa0yz6LQ3t9O49-1
+
+Log a show / episode flow - pop up 1
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=330-977&t=ZyTa0yz6LQ3t9O49-1
+
+Log a show / episode flow - pop up 2
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=330-1115&t=ZyTa0yz6LQ3t9O49-1
+
+Log a show / episode flow - pop up 3
+
+https://www.figma.com/design/eD8jpyT11QWW7yuDGJ5s1e/EPISODA?node-id=330-1385&t=ZyTa0yz6LQ3t9O49-1
