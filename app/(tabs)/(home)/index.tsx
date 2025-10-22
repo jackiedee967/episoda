@@ -22,17 +22,17 @@ export default function HomeScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Create pulsing animation
+    // Create pulsing animation - faster and more visible
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.8,
-          duration: 800,
+          toValue: 2.2,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 800,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -283,11 +283,11 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'rgba(14, 14, 14, 1)',
+    backgroundColor: 'transparent',
   },
   headerContainer: {
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
     backgroundColor: 'transparent',
   },
   headerContent: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   separatorContainer: {
     alignItems: 'center',
-    paddingHorizontal: spacing.pageMargin,
+    paddingHorizontal: 0,
   },
   separator: {
     height: 0.5,
@@ -321,17 +321,20 @@ const styles = StyleSheet.create({
   welcomeContainer: {
     paddingHorizontal: spacing.pageMargin,
     paddingTop: 20,
+    paddingBottom: 10,
   },
   welcomeText: {
     fontSize: 14,
     fontWeight: '400',
     color: colors.text,
     marginBottom: 4,
+    fontFamily: 'FunnelDisplay_400Regular',
   },
   userName: {
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: '700',
     color: colors.text,
+    fontFamily: 'FunnelDisplay_700Bold',
   },
   scrollView: {
     flex: 1,
@@ -354,6 +357,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: colors.text,
+    fontFamily: 'FunnelDisplay_700Bold',
   },
   seeAllButton: {
     padding: 4,
@@ -386,12 +390,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
+    fontFamily: 'FunnelDisplay_700Bold',
   },
   userUsername: {
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: spacing.gapMedium,
+    fontFamily: 'FunnelDisplay_400Regular',
   },
   followButton: {
     backgroundColor: colors.accent,
@@ -403,6 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#000000',
+    fontFamily: 'FunnelDisplay_700Bold',
   },
   emptyState: {
     backgroundColor: colors.card,
@@ -418,12 +424,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginTop: spacing.gapLarge,
     marginBottom: spacing.gapSmall,
+    fontFamily: 'FunnelDisplay_700Bold',
   },
   emptyStateText: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.pageMargin,
+    fontFamily: 'FunnelDisplay_400Regular',
   },
   inviteButton: {
     flexDirection: 'row',
@@ -438,5 +446,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000000',
+    fontFamily: 'FunnelDisplay_700Bold',
   },
 });

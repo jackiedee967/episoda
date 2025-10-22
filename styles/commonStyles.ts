@@ -56,10 +56,12 @@ export const commonStyles = StyleSheet.create({
   text: {
     color: colors.text,
     lineHeight: typography.lineHeight * 16,
+    fontFamily: typography.fontFamily,
   },
   textSecondary: {
     color: colors.textSecondary,
     lineHeight: typography.lineHeight * 14,
+    fontFamily: typography.fontFamily,
   },
   card: {
     backgroundColor: colors.card,
@@ -78,6 +80,7 @@ export const commonStyles = StyleSheet.create({
     color: '#000000',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: typography.fontFamilyBold,
   },
   input: {
     backgroundColor: colors.inputBackground,
@@ -88,5 +91,6 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 16,
     color: '#000000',
+    fontFamily: typography.fontFamily,
   },
 });

@@ -9,7 +9,7 @@ import {
   Theme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { useColorScheme, Alert, Platform } from "react-native";
+import { useColorScheme, Alert, Platform, Text, TextInput } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -143,6 +143,26 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded && isReady) {
       SplashScreen.hideAsync();
+      
+      // Set default font for all Text and TextInput components
+      const defaultFontFamily = 'FunnelDisplay_400Regular';
+      const defaultBoldFontFamily = 'FunnelDisplay_700Bold';
+      
+      // Apply default font to Text component
+      const TextRender = Text.render;
+      const initialDefaultProps = Text.defaultProps;
+      Text.defaultProps = {
+        ...initialDefaultProps,
+        style: [{ fontFamily: defaultFontFamily }, initialDefaultProps?.style],
+      };
+      
+      // Apply default font to TextInput component
+      const TextInputRender = TextInput.render;
+      const initialTextInputDefaultProps = TextInput.defaultProps;
+      TextInput.defaultProps = {
+        ...initialTextInputDefaultProps,
+        style: [{ fontFamily: defaultFontFamily }, initialTextInputDefaultProps?.style],
+      };
     }
   }, [loaded, isReady]);
 
@@ -168,6 +188,9 @@ export default function RootLayout() {
                 headerBackTitle: "Back",
                 gestureEnabled: true,
                 gestureDirection: "horizontal",
+                headerTitleStyle: {
+                  fontFamily: 'FunnelDisplay_700Bold',
+                },
               }}
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
