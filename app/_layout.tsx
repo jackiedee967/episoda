@@ -113,7 +113,8 @@ const EpisodaDarkTheme: Theme = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const { isConnected } = useNetworkState();
+  const networkState = Platform.OS === 'web' ? { isConnected: true } : useNetworkState();
+  const { isConnected } = networkState;
   const [session, setSession] = useState<Session | null>(null);
   const [isReady, setIsReady] = useState(false);
 
@@ -143,26 +144,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded && isReady) {
       SplashScreen.hideAsync();
-      
-      // Set default font for all Text and TextInput components
-      const defaultFontFamily = 'FunnelDisplay_400Regular';
-      const defaultBoldFontFamily = 'FunnelDisplay_700Bold';
-      
-      // Apply default font to Text component
-      const TextRender = Text.render;
-      const initialDefaultProps = Text.defaultProps;
-      Text.defaultProps = {
-        ...initialDefaultProps,
-        style: [{ fontFamily: defaultFontFamily }, initialDefaultProps?.style],
-      };
-      
-      // Apply default font to TextInput component
-      const TextInputRender = TextInput.render;
-      const initialTextInputDefaultProps = TextInput.defaultProps;
-      TextInput.defaultProps = {
-        ...initialTextInputDefaultProps,
-        style: [{ fontFamily: defaultFontFamily }, initialTextInputDefaultProps?.style],
-      };
     }
   }, [loaded, isReady]);
 

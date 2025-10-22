@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
@@ -17,7 +18,10 @@ import { supabase } from '@/app/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import PhoneInput from 'react-native-phone-number-input';
+let PhoneInput: any = null;
+if (Platform.OS !== 'web') {
+  PhoneInput = require('react-native-phone-number-input').default;
+}
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -34,8 +38,17 @@ export default function LoginScreen() {
 
   const handlePhoneSignIn = async () => {
     // Get the formatted phone number in E.164 format
-    const checkValid = phoneInput.current?.isValidNumber(phoneNumber);
-    const formattedNumber = phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber;
+    let checkValid = false;
+    let formattedNumber = '';
+    
+    if (Platform.OS === 'web') {
+      // Simple validation for web - just check if it starts with + and has digits
+      checkValid = phoneNumber.trim().startsWith('+') && phoneNumber.replace(/\D/g, '').length >= 10;
+      formattedNumber = phoneNumber.trim();
+    } else if (phoneInput.current) {
+      checkValid = phoneInput.current?.isValidNumber(phoneNumber);
+      formattedNumber = phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber;
+    }
 
     console.log('Phone validation:', { checkValid, formattedNumber, phoneNumber });
 
@@ -222,28 +235,44 @@ export default function LoginScreen() {
             </Text>
 
             <View style={styles.phoneInputContainer}>
-              <PhoneInput
-                ref={phoneInput}
-                defaultValue={phoneNumber}
-                defaultCode="US"
-                layout="first"
-                onChangeText={(text) => {
-                  setPhoneNumber(text);
-                }}
-                onChangeFormattedText={(text) => {
-                  setFormattedPhoneNumber(text);
-                }}
-                withDarkTheme={false}
-                withShadow={false}
-                autoFocus={false}
-                containerStyle={styles.phoneContainer}
-                textContainerStyle={styles.phoneTextContainer}
-                textInputStyle={styles.phoneTextInput}
-                codeTextStyle={styles.phoneCodeText}
-                flagButtonStyle={styles.phoneFlagButton}
-                countryPickerButtonStyle={styles.phoneCountryPicker}
-                disabled={loading}
-              />
+              {Platform.OS === 'web' ? (
+                <TextInput
+                  style={styles.webPhoneInput}
+                  placeholder="+1 555 123 4567"
+                  placeholderTextColor={colors.textSecondary}
+                  value={phoneNumber}
+                  onChangeText={(text) => {
+                    setPhoneNumber(text);
+                    setFormattedPhoneNumber(text);
+                  }}
+                  keyboardType="phone-pad"
+                  editable={!loading}
+                  autoComplete="tel"
+                />
+              ) : PhoneInput ? (
+                <PhoneInput
+                  ref={phoneInput}
+                  defaultValue={phoneNumber}
+                  defaultCode="US"
+                  layout="first"
+                  onChangeText={(text) => {
+                    setPhoneNumber(text);
+                  }}
+                  onChangeFormattedText={(text) => {
+                    setFormattedPhoneNumber(text);
+                  }}
+                  withDarkTheme={false}
+                  withShadow={false}
+                  autoFocus={false}
+                  containerStyle={styles.phoneContainer}
+                  textContainerStyle={styles.phoneTextContainer}
+                  textInputStyle={styles.phoneTextInput}
+                  codeTextStyle={styles.phoneCodeText}
+                  flagButtonStyle={styles.phoneFlagButton}
+                  countryPickerButtonStyle={styles.phoneCountryPicker}
+                  disabled={loading}
+                />
+              ) : null}
             </View>
 
             <Pressable
@@ -382,6 +411,18 @@ const styles = StyleSheet.create({
   },
   phoneCountryPicker: {
     borderRadius: 12,
+  },
+  webPhoneInput: {
+    width: '100%',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: colors.text,
+    height: 50,
   },
   button: {
     flexDirection: 'row',
