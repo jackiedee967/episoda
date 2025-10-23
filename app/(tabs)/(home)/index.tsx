@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderRadius: 11,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#3E3E3E',
     backgroundColor: '#282828',
@@ -429,8 +429,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    borderWidth: 0.25,
-    borderColor: '#F4F4F4',
   },
   friendsWatchingTextContainer: {
     height: 20,
