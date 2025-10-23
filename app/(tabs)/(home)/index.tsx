@@ -1,9 +1,7 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, Animated } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, components, typography } from '@/styles/commonStyles';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from 'react-native';
+import { colors, typography } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
-import Button from '@/components/Button';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
@@ -16,7 +14,6 @@ export default function HomeScreen() {
   const { posts, currentUser, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   
-  // Animation for pulsing green dot
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -72,70 +69,56 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <LinearGradient
-      colors={['#9334E9', '#FF5E00']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.headerGradient}
-    >
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
+    <View style={styles.header}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Image 
+        source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
+        style={styles.logo}
+        resizeMode="contain"
       />
-      <View style={styles.headerContent}>
+      <Pressable onPress={handleProfilePress}>
         <Image 
-          source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
-          style={styles.logo}
-          resizeMode="contain"
+          source={{ uri: currentUser.avatar }}
+          style={styles.profilePic}
         />
-        <Pressable onPress={handleProfilePress}>
-          <Image 
-            source={{ uri: currentUser.avatar }}
-            style={styles.profilePicture}
-          />
-        </Pressable>
-      </View>
-    </LinearGradient>
+      </Pressable>
+    </View>
   );
 
-  const renderWelcomeSection = () => (
-    <View style={styles.welcomeContainer}>
-      <Text style={styles.welcomeText}>Welcome back</Text>
+  const renderDivider = () => (
+    <View style={styles.divider} />
+  );
+
+  const renderWelcome = () => (
+    <View style={styles.welcomeSection}>
+      <Text style={styles.welcomeBack}>Welcome back</Text>
       <Text style={styles.userName}>{currentUser.displayName}</Text>
     </View>
   );
 
   const renderPostInput = () => (
-    <View style={styles.postInputCard}>
-      <View style={styles.postInputContent}>
-        <Animated.View 
-          style={[
-            styles.greenDot,
-            {
-              transform: [{ scale: pulseAnim }],
-            },
-          ]}
-        />
-        <Text style={styles.postInputText}>What are you watching?</Text>
-      </View>
-      <Button
-        variant="primary"
-        size="medium"
+    <View style={styles.logShowCard}>
+      <Animated.View 
+        style={[
+          styles.greenCircle,
+          { transform: [{ scale: pulseAnim }] },
+        ]}
+      />
+      <Text style={styles.inputText}>What are you watching?</Text>
+      <Pressable 
+        style={styles.tellFriendsButton}
         onPress={() => setPostModalVisible(true)}
       >
-        Tell your friends
-      </Button>
+        <Text style={styles.buttonLabel}>Tell your friends</Text>
+      </Pressable>
     </View>
   );
 
   const renderRecommendedTitles = () => (
-    <View style={styles.section}>
+    <View style={styles.recommendedSection}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recommended Titles</Text>
-        <Pressable onPress={() => console.log('See all')}>
-          <ChevronRight size={20} color={colors.almostWhite} />
-        </Pressable>
+        <ChevronRight size={9} color="#FFF" strokeWidth={1} />
       </View>
       <ScrollView
         horizontal
@@ -149,13 +132,10 @@ export default function HomeScreen() {
             onPress={() => router.push(`/show/${show.id}`)}
           >
             <Image 
-              source={{ uri: show.poster || 'https://via.placeholder.com/300x400' }}
+              source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
               style={styles.showImage}
             />
-            <Pressable style={styles.bookmarkButton}>
-              <Bookmark size={20} color={colors.almostWhite} />
-            </Pressable>
-            <View style={styles.showOverlay}>
+            <View style={styles.friendsBar}>
               <View style={styles.friendAvatars}>
                 {mockUsers.slice(0, Math.min(3, show.friendsWatching || 0)).map((user, index) => (
                   <Image
@@ -178,33 +158,29 @@ export default function HomeScreen() {
   const renderYouMayKnow = () => {
     const suggestedUsers = mockUsers.filter(user => !isFollowing(user.id)).slice(0, 5);
     
-    if (suggestedUsers.length === 0) {
-      return null;
-    }
+    if (suggestedUsers.length === 0) return null;
 
     return (
-      <View style={styles.section}>
+      <View style={styles.youMayKnowSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>You May Know</Text>
-          <Pressable onPress={() => console.log('See all')}>
-            <ChevronRight size={20} color={colors.almostWhite} />
-          </Pressable>
+          <ChevronRight size={9} color="#FFF" strokeWidth={1} />
         </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.usersScroll}
+          contentContainerStyle={styles.userCardsScroll}
         >
           {suggestedUsers.map((user) => (
-            <TouchableOpacity
+            <Pressable
               key={user.id}
               style={styles.userCard}
               onPress={() => handleUserPress(user.id)}
               activeOpacity={0.7}
             >
-              <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
-              <Text style={styles.userDisplayName} numberOfLines={1}>{user.displayName}</Text>
-              <Text style={styles.userUsername} numberOfLines={1}>@{user.username}</Text>
+              <Image source={{ uri: user.avatar }} style={styles.userProfilePic} />
+              <Text style={styles.userCardName} numberOfLines={1}>{user.displayName}</Text>
+              <Text style={styles.userCardUsername} numberOfLines={1}>@{user.username}</Text>
               {user.mutualFriends && user.mutualFriends > 0 && (
                 <View style={styles.mutualFriendsContainer}>
                   <View style={styles.mutualAvatars}>
@@ -212,27 +188,31 @@ export default function HomeScreen() {
                       <Image
                         key={friend.id}
                         source={{ uri: friend.avatar }}
-                        style={[styles.mutualAvatar, { marginLeft: index > 0 ? -6 : 0 }]}
+                        style={[styles.mutualAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
                       />
                     ))}
                   </View>
-                  <Text style={styles.mutualFriendsText}>
-                    {user.mutualFriends} mutual
-                  </Text>
+                  <Text style={styles.mutualText}>{user.mutualFriends} mutual</Text>
                 </View>
               )}
-              <Button
-                variant={isFollowing(user.id) ? 'secondary' : 'primary'}
-                size="small"
+              <Pressable
+                style={[
+                  styles.followButton,
+                  isFollowing(user.id) && styles.followingButton
+                ]}
                 onPress={(e) => {
-                  e?.stopPropagation?.();
+                  e.stopPropagation();
                   handleFollowUser(user.id);
                 }}
-                fullWidth
               >
-                {isFollowing(user.id) ? 'Following' : 'Follow'}
-              </Button>
-            </TouchableOpacity>
+                <Text style={[
+                  styles.followButtonText,
+                  isFollowing(user.id) && styles.followingButtonText
+                ]}>
+                  {isFollowing(user.id) ? 'Following' : 'Follow'}
+                </Text>
+              </Pressable>
+            </Pressable>
           ))}
         </ScrollView>
       </View>
@@ -266,12 +246,10 @@ export default function HomeScreen() {
     ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return (
-      <View style={styles.section}>
+      <View style={styles.friendActivitySection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend Activity</Text>
-          <Pressable onPress={() => console.log('See all')}>
-            <ChevronRight size={20} color={colors.almostWhite} />
-          </Pressable>
+          <ChevronRight size={9} color="#FFF" strokeWidth={1} />
         </View>
         {allActivity.length > 0 ? (
           allActivity.slice(0, 5).map((item, index) => (
@@ -287,10 +265,8 @@ export default function HomeScreen() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>No friend activity yet</Text>
-            <Text style={styles.emptyStateText}>
-              Follow friends to see what they're watching
-            </Text>
+            <Text style={styles.emptyTitle}>No friend activity yet</Text>
+            <Text style={styles.emptyText}>Follow friends to see what they're watching</Text>
           </View>
         )}
       </View>
@@ -299,13 +275,14 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {renderHeader()}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {renderWelcomeSection()}
+        {renderHeader()}
+        {renderDivider()}
+        {renderWelcome()}
         {renderPostInput()}
         {renderRecommendedTitles()}
         {renderYouMayKnow()}
@@ -325,178 +302,220 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.pageBackground,
   },
-  headerGradient: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: spacing.pageMargin,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 100,
-    height: 24,
-  },
-  profilePicture: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: colors.pureWhite,
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    paddingHorizontal: 20,
     paddingBottom: 100,
   },
-  welcomeContainer: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: spacing.gapLarge,
-    paddingBottom: spacing.gapMedium,
+  
+  // Header - exact Figma specs
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingBottom: 20,
   },
-  welcomeText: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
-    marginBottom: 4,
+  logo: {
+    width: 154,
+    height: 27,
+  },
+  profilePic: {
+    width: 40.318,
+    height: 38,
+    borderRadius: 40.318,
+  },
+  
+  // Divider - exact specs
+  divider: {
+    height: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.30)',
+    marginBottom: 23,
+  },
+  
+  // Welcome section - exact specs
+  welcomeSection: {
+    gap: 7,
+    marginBottom: 29,
+  },
+  welcomeBack: {
+    fontSize: 17,
+    fontWeight: '500',
+    color: '#F4F4F4',
+    lineHeight: 17,
+    fontFamily: 'Funnel Display',
   },
   userName: {
-    ...typography.titleXL,
-    color: colors.pureWhite,
+    fontSize: 43,
+    fontWeight: '700',
+    color: '#FFF',
+    lineHeight: 43,
+    letterSpacing: -0.86,
+    fontFamily: 'Funnel Display',
   },
-  postInputCard: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
+  
+  // Log Show card - exact specs
+  logShowCard: {
+    height: 60,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingLeft: 20,
+    paddingRight: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.cardStroke,
-    marginHorizontal: spacing.pageMargin,
-    marginBottom: spacing.gapLarge,
-    padding: spacing.cardPadding,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.gapMedium,
+    borderColor: '#3E3E3E',
+    backgroundColor: '#282828',
+    marginBottom: 29,
   },
-  postInputContent: {
+  greenCircle: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: '#8BFC76',
+  },
+  inputText: {
     flex: 1,
-    flexDirection: 'row',
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#F4F4F4',
+    lineHeight: 15.6,
+    fontFamily: 'Funnel Display',
+  },
+  tellFriendsButton: {
+    width: 136,
+    paddingVertical: 11,
+    paddingHorizontal: 34,
+    borderRadius: 14,
+    backgroundColor: '#8BFC76',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.gapSmall,
   },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.greenHighlight,
+  buttonLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#000',
+    lineHeight: 24,
+    fontFamily: 'Funnel Display',
   },
-  postInputText: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
-  },
-  section: {
-    marginBottom: spacing.sectionSpacing,
+  
+  // Recommended Titles - exact specs
+  recommendedSection: {
+    gap: 17,
+    marginBottom: 29,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.pageMargin,
-    marginBottom: spacing.gapLarge,
   },
   sectionTitle: {
-    ...typography.titleL,
-    color: colors.pureWhite,
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#F4F4F4',
+    letterSpacing: -0.26,
+    fontFamily: 'Funnel Display',
   },
   showsScroll: {
-    paddingLeft: spacing.pageMargin,
-    paddingRight: spacing.pageMargin,
-    gap: spacing.gapMedium,
+    gap: 9,
+    paddingRight: 20,
   },
   showCard: {
-    width: 160,
-    height: 240,
-    borderRadius: components.borderRadiusCard,
-    overflow: 'hidden',
+    width: 215,
+    height: 280,
     position: 'relative',
   },
   showImage: {
-    width: '100%',
-    height: '100%',
-  },
-  bookmarkButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 32,
-    height: 32,
+    width: 215,
+    height: 280,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.30)',
   },
-  showOverlay: {
+  friendsBar: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
+    left: 12,
+    bottom: 12,
+    width: 191,
+    height: 38,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: '#3E3E3E',
+    backgroundColor: '#282828',
   },
   friendAvatars: {
     flexDirection: 'row',
   },
   friendAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.pureWhite,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 0.25,
+    borderColor: '#F4F4F4',
   },
   friendsWatchingText: {
-    ...typography.p2,
-    color: colors.almostWhite,
+    fontSize: 10,
+    fontWeight: '400',
+    color: '#F4F4F4',
+    fontFamily: 'Funnel Display',
   },
-  usersScroll: {
-    paddingLeft: spacing.pageMargin,
-    paddingRight: spacing.pageMargin,
-    gap: spacing.gapMedium,
+  
+  // You May Know - exact specs
+  youMayKnowSection: {
+    gap: 16,
+    marginBottom: 29,
+  },
+  userCardsScroll: {
+    gap: 10,
+    paddingRight: 20,
   },
   userCard: {
-    width: 140,
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapMedium,
+    width: 114,
+    paddingVertical: 12,
+    paddingHorizontal: 11,
+    gap: 10,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: '#3E3E3E',
+    backgroundColor: '#282828',
     alignItems: 'center',
-    gap: spacing.gapSmall,
   },
-  userAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: spacing.gapSmall,
+  userProfilePic: {
+    width: 92,
+    height: 92,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.30)',
   },
-  userDisplayName: {
-    ...typography.p1Bold,
-    color: colors.pureWhite,
+  userCardName: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#F4F4F4',
+    lineHeight: 15.6,
     textAlign: 'center',
+    fontFamily: 'Funnel Display',
   },
-  userUsername: {
-    ...typography.p2,
-    color: colors.grey1,
+  userCardUsername: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#8BFC76',
+    lineHeight: 10,
     textAlign: 'center',
+    fontFamily: 'Funnel Display',
   },
   mutualFriendsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
   },
   mutualAvatars: {
     flexDirection: 'row',
@@ -505,26 +524,58 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.pureWhite,
+    borderWidth: 0.25,
+    borderColor: '#F4F4F4',
   },
-  mutualFriendsText: {
-    ...typography.p3,
-    color: colors.grey1,
+  mutualText: {
+    fontSize: 8,
+    fontWeight: '400',
+    color: '#A9A9A9',
+    fontFamily: 'Funnel Display',
+  },
+  followButton: {
+    width: '100%',
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#8BFC76',
+    alignItems: 'center',
+  },
+  followingButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#3E3E3E',
+  },
+  followButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#000',
+    fontFamily: 'Funnel Display',
+  },
+  followingButtonText: {
+    color: '#F4F4F4',
+  },
+  
+  // Friend Activity - exact specs
+  friendActivitySection: {
+    gap: 17,
+    marginBottom: 40,
   },
   emptyState: {
     alignItems: 'center',
-    paddingHorizontal: spacing.pageMargin,
-    paddingVertical: spacing.sectionSpacing,
+    paddingVertical: 40,
   },
-  emptyStateTitle: {
-    ...typography.titleL,
-    color: colors.pureWhite,
-    marginBottom: spacing.gapSmall,
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '500',
+    color: '#F4F4F4',
+    marginBottom: 8,
+    fontFamily: 'Funnel Display',
   },
-  emptyStateText: {
-    ...typography.p1,
-    color: colors.grey1,
+  emptyText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#A9A9A9',
     textAlign: 'center',
+    fontFamily: 'Funnel Display',
   },
 });
