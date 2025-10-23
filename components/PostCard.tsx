@@ -131,7 +131,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <Text style={styles.justWatchedText}>
-                {latestPost.user.displayName} just watched
+                <Text style={styles.usernameText}>{latestPost.user.displayName}</Text> just watched
               </Text>
               <View style={styles.tagsRow}>
                 {latestPost.episodes && latestPost.episodes.length > 0 && (
@@ -288,6 +288,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Funnel Display',
     fontSize: 13,
     fontWeight: '400',
+  },
+  usernameText: {
+    color: '#8BFC76',
   },
   tagsRow: {
     flexDirection: 'row',
