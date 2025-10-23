@@ -248,11 +248,7 @@ export default function SearchScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ImageBackground
-        source={require('@/assets/images/app-background.jpg')}
-        style={[commonStyles.container, styles.pageContainer]}
-        resizeMode="cover"
-      >
+      <View style={[commonStyles.container, styles.pageContainer]}>
         <View style={styles.header}>
           <Text style={styles.title}>Search</Text>
           <View style={styles.searchContainer}>
@@ -288,24 +284,32 @@ export default function SearchScreen() {
           <View style={styles.resultsContainer}>{renderResults()}</View>
         </ScrollView>
 
-        {selectedShow && (
-          <PlaylistModal
-            visible={playlistModalVisible}
-            onClose={() => {
-              setPlaylistModalVisible(false);
-              setSelectedShow(null);
-            }}
-            show={selectedShow}
-            onAddToPlaylist={handleAddToPlaylist}
-          />
-        )}
-      </ImageBackground>
+      {selectedShow && (
+        <PlaylistModal
+          visible={playlistModalVisible}
+          onClose={() => {
+            setPlaylistModalVisible(false);
+            setSelectedShow(null);
+          }}
+          show={selectedShow}
+          onAddToPlaylist={handleAddToPlaylist}
+        />
+      )}
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   pageContainer: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,

@@ -396,11 +396,7 @@ export default function ProfileScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <ImageBackground
-        source={require('@/assets/images/app-background.jpg')}
-        style={[commonStyles.container, styles.pageContainer]}
-        resizeMode="cover"
-      >
+      <View style={[commonStyles.container, styles.pageContainer]}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderMyRotation()}
@@ -433,17 +429,25 @@ export default function ProfileScreen() {
         onFollowToggle={handleFollowToggle}
       />
 
-        <PostModal
-          visible={showPostModal}
-          onClose={() => setShowPostModal(false)}
-        />
-      </ImageBackground>
+      <PostModal
+        visible={showPostModal}
+        onClose={() => setShowPostModal(false)}
+      />
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   pageContainer: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,

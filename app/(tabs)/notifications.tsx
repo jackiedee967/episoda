@@ -269,11 +269,7 @@ export default function NotificationsScreen() {
           headerShown: false,
         }}
       />
-      <ImageBackground
-        source={require('@/assets/images/app-background.jpg')}
-        style={[styles.container, styles.pageContainer]}
-        resizeMode="cover"
-      >
+      <View style={[styles.container, styles.pageContainer]}>
         <View style={styles.notificationHeader}>
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
@@ -304,13 +300,21 @@ export default function NotificationsScreen() {
             notifications.map(renderNotification)
           )}
         </ScrollView>
-      </ImageBackground>
+      </View>
     </>
   );
 }
 
 const styles = StyleSheet.create({
   pageContainer: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,

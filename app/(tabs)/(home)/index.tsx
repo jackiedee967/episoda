@@ -272,11 +272,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('@/assets/images/app-background.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -295,18 +291,31 @@ export default function HomeScreen() {
         visible={postModalVisible}
         onClose={() => setPostModalVisible(false)}
       />
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
   },
   backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
     width: '100%',
     height: '100%',
+    zIndex: -1,
   },
   scrollView: {
     flex: 1,
