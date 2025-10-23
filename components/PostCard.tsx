@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
-import { Heart, MessageCircle, RefreshCw } from 'lucide-react-native';
+import { Heart, MessageCircle, RefreshCw, Lightbulb, AlertTriangle, List, HelpCircle } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
 
 interface PostCardProps {
@@ -108,6 +108,16 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     return { bg: '#FAF5FF', border: '#9334E9', text: '#9334E9' };
   };
 
+  const getTagIcon = (tag: string) => {
+    const tagLower = tag.toLowerCase();
+    const tagColor = getTagColor(tag);
+    if (tagLower.includes('theory') || tagLower.includes('fan')) return <Lightbulb size={12} color={tagColor.text} />;
+    if (tagLower.includes('discussion')) return <MessageCircle size={12} color={tagColor.text} />;
+    if (tagLower.includes('spoiler')) return <AlertTriangle size={12} color={tagColor.text} />;
+    if (tagLower.includes('recap')) return <List size={12} color={tagColor.text} />;
+    return <HelpCircle size={12} color={tagColor.text} />;
+  };
+
   const showTagColor = getShowTagColor(latestPost.show.title);
 
   return (
@@ -190,6 +200,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                       },
                     ]}
                   >
+                    {getTagIcon(tag)}
                     <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
                   </View>
                 );
@@ -201,8 +212,8 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
             <Pressable onPress={handleLikePress} style={styles.likes}>
               <Heart
                 size={16}
-                color={latestPost.isLiked ? '#FF5E00' : '#A9A9A9'}
-                fill={latestPost.isLiked ? '#FF5E00' : 'none'}
+                color={latestPost.isLiked ? '#8BFC76' : '#A9A9A9'}
+                fill={latestPost.isLiked ? '#8BFC76' : 'none'}
                 strokeWidth={1.5}
               />
               <Text style={styles.countText}>{latestPost.likes}</Text>
@@ -217,6 +228,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <RefreshCw
                 size={16}
                 color={isReposted ? '#8BFC76' : '#A9A9A9'}
+                fill={isReposted ? '#8BFC76' : 'none'}
                 strokeWidth={1.5}
               />
               <Text style={styles.countText}>{latestPost.reposts}</Text>
@@ -245,7 +257,7 @@ const styles = StyleSheet.create({
     shadowColor: 'rgba(0, 0, 0, 0.07)',
     shadowRadius: 10.9,
     shadowOffset: { width: 0, height: 4 },
-    marginBottom: 17,
+    marginBottom: 10,
   },
   userPostInfo: {
     flexDirection: 'row',
@@ -299,8 +311,8 @@ const styles = StyleSheet.create({
   episodeTagText: {
     color: '#FF3EFF',
     fontFamily: 'Funnel Display',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '400',
   },
   showTag: {
     paddingTop: 8,
@@ -315,15 +327,15 @@ const styles = StyleSheet.create({
   },
   showTagText: {
     fontFamily: 'Funnel Display',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '400',
   },
   starRatings: {
     flexDirection: 'row',
     gap: 1,
   },
   star: {
-    color: '#FFD700',
+    color: '#8BFC76',
     fontSize: 14,
   },
   userProfilePic: {
@@ -358,10 +370,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   postTag: {
-    paddingTop: 8,
-    paddingLeft: 12,
-    paddingBottom: 8,
-    paddingRight: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
     borderTopLeftRadius: 10,

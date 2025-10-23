@@ -1,0 +1,97 @@
+import {useVariants} from 'react-exo/utils';
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface PostTagsProps {
+  prop: typeof PostTagsVariants.prop[number],
+  property1: typeof PostTagsVariants.property1[number],
+  state: typeof PostTagsVariants.state[number],
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export const PostTagsVariants = {
+  prop: ['Small', 'Large'],
+  property1: ['PostTag'],
+  state: ['SE', 'ShowName', 'FanTheory', 'Discussion', 'EpisodeRecap', 'Spoiler', 'Misc', 'Custom'],
+} as const;
+
+export function PostTags(props: PostTagsProps) {
+  const {property1, state, prop} = props;
+  const {vstyles} = useVariants(PostTagsVariants, {property1, state, prop}, styles);
+
+  return (
+    <View testID={props.testID ?? "341:2636"} style={[vstyles.root(), props.style]}>
+      <Text testID="344:45676" style={vstyles.s3E3()}>
+        {`S3 E3`}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  rootProperty1PostTagStateSEPropSmall: {
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
+  },
+  rootProperty1PostTagStateShowNamePropLarge: {
+    borderColor: 'Tab...Stroke',
+    backgroundColor: 'Tab...Back',
+  },
+  rootProperty1PostTagStateFanTheoryPropSmall: {
+    borderColor: 'Tab...Stroke.3',
+    backgroundColor: 'Tab...Back.3',
+  },
+  rootProperty1PostTagStateDiscussionPropSmall: {
+    borderColor: 'Tab...Stroke.4',
+    backgroundColor: 'Tab...Back.4',
+  },
+  rootProperty1PostTagStateSpoilerPropSmall: {
+    borderColor: 'Tab...Stroke.5',
+    backgroundColor: 'Tab...Back.5',
+  },
+  rootProperty1PostTagStateMiscPropSmall: {
+    borderColor: 'Tab...Stroke.6',
+    backgroundColor: 'Tab...Back.6',
+  },
+  rootProperty1PostTagStateCustomPropSmall: {
+    borderColor: 'Grey.3',
+    backgroundColor: 'Almost.White',
+  },
+  s3E3: {
+    color: 'Tab...Stroke.2',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  s3E3Property1PostTagStateSEPropSmall: {
+    fontSize: 10,
+  },
+}));
