@@ -329,13 +329,13 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   logo: {
-    width: 154,
-    height: 27,
+    width: 123.2,
+    height: 21.6,
   },
   profilePic: {
-    width: 40.318,
-    height: 38,
-    borderRadius: 40.318,
+    width: 36.286,
+    height: 34.2,
+    borderRadius: 36.286,
   },
   
   // Divider - exact specs
