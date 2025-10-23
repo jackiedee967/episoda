@@ -437,13 +437,17 @@ const styles = StyleSheet.create({
     color: '#8BFC76',
     lineHeight: 10,
     fontFamily: 'Funnel Display',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   friendsWatchingLabel: {
     fontSize: 10,
     fontWeight: '400',
     color: '#F4F4F4',
-    lineHeight: 10 * 1.2,
+    lineHeight: 10,
     fontFamily: 'Funnel Display',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   
   // You May Know - exact specs
