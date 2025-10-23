@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -284,11 +285,12 @@ export default function HomeScreen() {
   };
 
   return (
-    <ImageBackground 
-      source={require('@/assets/images/app-background.jpg')}
-      style={styles.container}
-      resizeMode="cover"
-    >
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#9333EA', '#FF5E00', '#8BFC76', '#0E0E0E', '#0E0E0E']}
+        locations={[0, 0.15, 0.3, 0.5, 1]}
+        style={styles.backgroundGradient}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -307,7 +309,7 @@ export default function HomeScreen() {
         visible={postModalVisible}
         onClose={() => setPostModalVisible(false)}
       />
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -315,8 +317,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     paddingHorizontal: 20,
