@@ -4,8 +4,8 @@
 Natively (also known as EPISODA) is a social media application focused on TV show discussions and recommendations. Built with Expo and React Native, it allows users to share their TV watching experiences, create playlists, follow other users, and interact through posts, likes, comments, and reposts.
 
 ## Project Status
-- **Last Updated**: October 22, 2025
-- **Current State**: Running in Replit web development environment
+- **Last Updated**: October 23, 2025
+- **Current State**: UI overhaul in progress - Homepage redesigned to match Figma pixel-perfectly
 - **Platform**: Expo React Native (iOS, Android, and Web)
 
 ## Technology Stack
@@ -18,9 +18,33 @@ Natively (also known as EPISODA) is a social media application focused on TV sho
 - **Authentication**: Supabase Auth (phone OTP and Apple Sign-In on native platforms)
 - **Styling**: StyleSheet API with common styles and color constants
 
-## Recent Changes (October 22, 2025)
+## Recent Changes
 
-### Replit Environment Setup
+### UI Redesign (October 23, 2025)
+Pixel-perfect UI overhaul to match Figma designs:
+
+1. **Design System Implementation**
+   - Created comprehensive design system in `styles/commonStyles.ts`
+   - Exact Figma color palette: #0E0E0E background, #8BFC76 green accents, tab colors for pills
+   - Typography system: Funnel Display font (43px Title XL, 25px Title L, 17px Subtitle, etc.)
+   - Spacing constants and component metrics matching Figma specs
+
+2. **Homepage Complete Rebuild**
+   - Purple-to-orange gradient header (#9333EA to #FF5E00) using LinearGradient
+   - EPISODA logo and profile picture in header
+   - Welcome section with user name in large title font
+   - Post input card with pulsing green dot and green "Tell your friends" button
+   - Recommended Titles horizontal scroll with show cards
+   - Show cards display friend avatars and "X friends watching" text
+   - You May Know section with user cards showing mutual friends
+   - Friend Activity feed with properly styled post cards
+
+3. **Component Updates**
+   - Updated Button component with primary/secondary/outline/ghost variants
+   - Updated PostCard to use Figma tab colors for episode and show tags
+   - All components use design system tokens for consistent styling
+
+### Replit Environment Setup (October 22, 2025)
 1. **Configured Expo for web development**
    - Updated package.json scripts to run on port 5000
    - Added `WDS_SOCKET_PORT=0` environment variable for web socket compatibility
