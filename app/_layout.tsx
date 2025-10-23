@@ -17,6 +17,8 @@ import { useFonts } from "expo-font";
 import {
   FunnelDisplay_300Light,
   FunnelDisplay_400Regular,
+  FunnelDisplay_500Medium,
+  FunnelDisplay_600SemiBold,
   FunnelDisplay_700Bold,
 } from '@expo-google-fonts/funnel-display';
 import "react-native-reanimated";
@@ -123,6 +125,8 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     FunnelDisplay_300Light,
     FunnelDisplay_400Regular,
+    FunnelDisplay_500Medium,
+    FunnelDisplay_600SemiBold,
     FunnelDisplay_700Bold,
   });
 

@@ -311,9 +311,8 @@ const styles = StyleSheet.create({
   },
   episodeTagText: {
     color: '#FF3EFF',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 13,
-    fontWeight: '400',
   },
   showTag: {
     paddingTop: 8,
@@ -327,9 +326,8 @@ const styles = StyleSheet.create({
     borderWidth: 0.25,
   },
   showTagText: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 13,
-    fontWeight: '400',
   },
   starRatings: {
     flexDirection: 'row',
@@ -355,9 +353,8 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     color: '#F4F4F4',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 13,
-    fontWeight: '600',
   },
   postBody: {
     color: '#F4F4F4',
@@ -384,9 +381,8 @@ const styles = StyleSheet.create({
     borderWidth: 0.25,
   },
   postTagText: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 10,
-    fontWeight: '600',
   },
   engagementIconsAndCount: {
     flexDirection: 'row',
@@ -409,8 +405,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     color: '#A9A9A9',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,
-    fontWeight: '400',
   },
 });
