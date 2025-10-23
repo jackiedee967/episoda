@@ -409,6 +409,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
     borderRadius: 11,
     borderWidth: 1,
@@ -428,6 +429,7 @@ const styles = StyleSheet.create({
   friendsWatchingText: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   friendsWatchingNumber: {
     fontSize: 10,
