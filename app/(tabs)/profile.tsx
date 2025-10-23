@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, ImageBackground } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -396,24 +396,11 @@ export default function ProfileScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[commonStyles.container, styles.pageContainer]}>
-        {Platform.OS === 'web' && (
-          <View style={styles.backgroundImageContainer}>
-            <img 
-              src="/app-background.jpg" 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-              }}
-              alt=""
-            />
-          </View>
-        )}
+      <ImageBackground
+        source={require('@/assets/images/app-background.jpg')}
+        style={[commonStyles.container, styles.pageContainer]}
+        resizeMode="cover"
+      >
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderMyRotation()}
@@ -432,9 +419,8 @@ export default function ProfileScreen() {
           {activeTab === 'playlists' && renderPlaylistsTab()}
           <View style={{ height: 100 }} />
         </ScrollView>
-      </View>
 
-      <FollowersModal
+        <FollowersModal
         visible={showFollowersModal || showFollowingModal}
         onClose={() => {
           setShowFollowersModal(false);
@@ -447,10 +433,11 @@ export default function ProfileScreen() {
         onFollowToggle={handleFollowToggle}
       />
 
-      <PostModal
-        visible={showPostModal}
-        onClose={() => setShowPostModal(false)}
-      />
+        <PostModal
+          visible={showPostModal}
+          onClose={() => setShowPostModal(false)}
+        />
+      </ImageBackground>
     </>
   );
 }
@@ -458,9 +445,10 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   pageContainer: {
   },
-  backgroundImageContainer: {
+  backgroundImage: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
+    width: '100%',
+    height: '100%',
   },
   scrollView: {
     flex: 1,

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform, ImageBackground } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -272,24 +272,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {Platform.OS === 'web' && (
-        <View style={styles.backgroundImageContainer}>
-          <img 
-            src="/app-background.jpg" 
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-            }}
-            alt=""
-          />
-        </View>
-      )}
+    <ImageBackground
+      source={require('@/assets/images/app-background.jpg')}
+      style={styles.container}
+      resizeMode="cover"
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -308,7 +295,7 @@ export default function HomeScreen() {
         visible={postModalVisible}
         onClose={() => setPostModalVisible(false)}
       />
-    </View>
+    </ImageBackground>
   );
 }
 
@@ -316,9 +303,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backgroundImageContainer: {
+  backgroundImage: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
+    width: '100%',
+    height: '100%',
   },
   scrollView: {
     flex: 1,

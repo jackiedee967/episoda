@@ -7,6 +7,7 @@ import {
   Pressable,
   Image,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, components } from '@/styles/commonStyles';
@@ -268,24 +269,11 @@ export default function NotificationsScreen() {
           headerShown: false,
         }}
       />
-      <View style={[styles.container, styles.pageContainer]}>
-        {Platform.OS === 'web' && (
-          <View style={styles.backgroundImageContainer}>
-            <img 
-              src="/app-background.jpg" 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-              }}
-              alt=""
-            />
-          </View>
-        )}
+      <ImageBackground
+        source={require('@/assets/images/app-background.jpg')}
+        style={[styles.container, styles.pageContainer]}
+        resizeMode="cover"
+      >
         <View style={styles.notificationHeader}>
           <Text style={styles.headerTitle}>Notifications</Text>
         </View>
@@ -316,7 +304,7 @@ export default function NotificationsScreen() {
             notifications.map(renderNotification)
           )}
         </ScrollView>
-      </View>
+      </ImageBackground>
     </>
   );
 }
@@ -324,9 +312,10 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   pageContainer: {
   },
-  backgroundImageContainer: {
+  backgroundImage: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
+    width: '100%',
+    height: '100%',
   },
   notificationHeader: {
     paddingHorizontal: spacing.pageMargin,

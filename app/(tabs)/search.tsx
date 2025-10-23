@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform, ImageBackground } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -248,24 +248,11 @@ export default function SearchScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[commonStyles.container, styles.pageContainer]}>
-        {Platform.OS === 'web' && (
-          <View style={styles.backgroundImageContainer}>
-            <img 
-              src="/app-background.jpg" 
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center',
-              }}
-              alt=""
-            />
-          </View>
-        )}
+      <ImageBackground
+        source={require('@/assets/images/app-background.jpg')}
+        style={[commonStyles.container, styles.pageContainer]}
+        resizeMode="cover"
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Search</Text>
           <View style={styles.searchContainer}>
@@ -300,19 +287,19 @@ export default function SearchScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.resultsContainer}>{renderResults()}</View>
         </ScrollView>
-      </View>
 
-      {selectedShow && (
-        <PlaylistModal
-          visible={playlistModalVisible}
-          onClose={() => {
-            setPlaylistModalVisible(false);
-            setSelectedShow(null);
-          }}
-          show={selectedShow}
-          onAddToPlaylist={handleAddToPlaylist}
-        />
-      )}
+        {selectedShow && (
+          <PlaylistModal
+            visible={playlistModalVisible}
+            onClose={() => {
+              setPlaylistModalVisible(false);
+              setSelectedShow(null);
+            }}
+            show={selectedShow}
+            onAddToPlaylist={handleAddToPlaylist}
+          />
+        )}
+      </ImageBackground>
     </>
   );
 }
@@ -320,9 +307,10 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   pageContainer: {
   },
-  backgroundImageContainer: {
+  backgroundImage: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 0,
+    width: '100%',
+    height: '100%',
   },
   header: {
     paddingHorizontal: spacing.pageMargin,
