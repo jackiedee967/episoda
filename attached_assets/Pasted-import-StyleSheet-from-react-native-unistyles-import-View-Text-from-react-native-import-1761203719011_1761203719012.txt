@@ -1,0 +1,82 @@
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+import {Image} from 'react-exo/image';
+
+import {Button} from '';
+import {ArrowRight} from '';
+import {ArrowLeft} from '';
+
+import greenCircle from './assets/greencircle.png';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface LogAShowProps {
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export function LogAShow(props: LogAShowProps) {
+  return (
+    <View testID={props.testID ?? "348:1932"} style={[styles.root, props.style]}>
+      <Image url={greenCircle} width={9} height={9}/>
+      <Text testID="348:1917" style={styles.whatAreYouWatching}>
+        {`What are you watching?`}
+      </Text>
+      <Button testID="348:1918"
+        style={styles.tellYourFriendsButton}
+        text="Tell your friends"
+        type="Primary"
+        hasLeftIcon={false}
+        hasRightIcon={false}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    flexDirection: 'row',
+    width: 400,
+    height: 60,
+    paddingTop: 8,
+    paddingLeft: 20,
+    paddingBottom: 8,
+    paddingRight: 6,
+    alignItems: 'center',
+    rowGap: 12,
+    columnGap: 12,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  whatAreYouWatching: {
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  tellYourFriendsButton: {
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 11,
+    paddingLeft: 20,
+    paddingBottom: 11,
+    paddingRight: 20,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+    backgroundColor: 'Green.Highlight',
+  },
+}));
