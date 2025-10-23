@@ -1,13 +1,10 @@
-
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, components } from '@/styles/commonStyles';
+import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
-import { IconSymbol } from '@/components/IconSymbol';
-import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
-import PlaylistModal from '@/components/PlaylistModal';
+import { Heart, MessageCircle, RefreshCw } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
 
 interface PostCardProps {
@@ -22,25 +19,10 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare, isRepost, repostedBy }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost, getPost, playlists, isShowInPlaylist, hasUserReposted } = useData();
-  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost, hasUserReposted } = useData();
   
   const latestPost = getPost(post.id) || post;
   const isReposted = hasUserReposted(latestPost.id);
-  const isShowSaved = playlists.some(pl => isShowInPlaylist(pl.id, latestPost.show.id));
-
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMs / 3600000);
-    const diffInDays = Math.floor(diffInMs / 86400000);
-
-    if (diffInMins < 1) return 'just now';
-    if (diffInMins < 60) return `${diffInMins}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    return `${diffInDays}d ago`;
-  };
 
   const handleShowPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -55,21 +37,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   const handlePostPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/post/${latestPost.id}`);
-  };
-
-  const handleEpisodePress = (episodeId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/episode/${episodeId}`);
-  };
-
-  const handleSavePress = (e: any) => {
-    e.stopPropagation();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setShowPlaylistModal(true);
-  };
-
-  const handleAddToPlaylist = (playlistId: string, showId: string) => {
-    console.log(`Added show ${showId} to playlist ${playlistId}`);
   };
 
   const handleLikePress = async (e: any) => {
@@ -96,13 +63,9 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      console.log('Repost button clicked, current state:', isReposted);
-      
       if (isReposted) {
-        console.log('Unreposting...');
         await unrepostPost(latestPost.id);
       } else {
-        console.log('Reposting...');
         await repostPost(latestPost.id);
       }
       
@@ -123,368 +86,316 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     }
   };
 
-  const handleSharePress = (e: any) => {
-    e.stopPropagation();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (onShare) {
-      onShare();
-    }
-  };
-
   const getShowTagColor = (showTitle: string) => {
-    // Using Figma tab colors
     const tagColors = [
-      { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 }, // Orange
-      { bg: colors.tabBack, border: colors.tabStroke, text: colors.tabStroke }, // Purple
-      { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 }, // Blue
-      { bg: colors.tabBack4, border: colors.tabStroke5, text: colors.tabStroke5 }, // Red
-      { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 }, // Green
+      { bg: '#FFF8F3', border: '#FF5E00', text: '#FF5E00' }, // Orange - Love Island
+      { bg: '#FAF5FF', border: '#FF3EFF', text: '#FF3EFF' }, // Purple
+      { bg: '#CEEBFF', border: '#1700C6', text: '#1700C6' }, // Blue
+      { bg: '#FFE2E2', border: '#FF5E00', text: '#FF5E00' }, // Pink/Red
+      { bg: '#DEFFAD', border: '#0F6100', text: '#0F6100' }, // Green
+      { bg: '#FFF8F3', border: '#C20081', text: '#C20081' }, // Magenta
     ];
-    const index = showTitle.length % tagColors.length;
+    const index = Math.abs(showTitle.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % tagColors.length;
     return tagColors[index];
-  };
-
-  const getTagIcon = (tag: string) => {
-    const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return <Lightbulb size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('discussion')) return <MessageCircle size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('spoiler')) return <AlertTriangle size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('recap')) return <List size={16} color={getTagColor(tag).text} />;
-    return <MoreHorizontal size={16} color={getTagColor(tag).text} />;
   };
 
   const getTagColor = (tag: string) => {
     const tagLower = tag.toLowerCase();
-    // Using Figma tab colors for tag styling
-    if (tagLower.includes('theory')) return { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 };
-    if (tagLower.includes('discussion')) return { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 };
-    if (tagLower.includes('spoiler')) return { bg: colors.tabBack4, border: colors.tabStroke5, text: colors.tabStroke5 };
-    if (tagLower.includes('recap')) return { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 };
-    return { bg: colors.tabBack, border: colors.tabStroke2, text: colors.tabStroke2 };
+    if (tagLower.includes('theory') || tagLower.includes('fan')) return { bg: '#DEFFAD', border: '#0F6100', text: '#0F6100' };
+    if (tagLower.includes('discussion')) return { bg: '#CEEBFF', border: '#1700C6', text: '#1700C6' };
+    if (tagLower.includes('spoiler')) return { bg: '#FFE2E2', border: '#FF5E00', text: '#FF5E00' };
+    if (tagLower.includes('recap')) return { bg: '#CEEBFF', border: '#1700C6', text: '#1700C6' };
+    return { bg: '#FAF5FF', border: '#9334E9', text: '#9334E9' };
   };
 
   const showTagColor = getShowTagColor(latestPost.show.title);
 
   return (
-    <>
-      <Pressable style={styles.card} onPress={handlePostPress}>
-        {isRepost && repostedBy && (
-          <View style={styles.repostHeader}>
-            <Repeat size={14} color={colors.textSecondary} />
-            <Text style={styles.repostText}>{repostedBy.displayName} reposted</Text>
-          </View>
-        )}
+    <Pressable style={styles.card} onPress={handlePostPress}>
+      <View style={styles.userPostInfo}>
+        <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
+          <Image source={{ uri: latestPost.show.poster }} style={styles.showPoster} />
+        </Pressable>
 
-        <View style={styles.topSection}>
-          <View style={styles.posterContainer}>
-            <Pressable onPress={handleShowPress}>
-              <Image source={{ uri: latestPost.show.poster }} style={styles.poster} />
-            </Pressable>
-            <Pressable onPress={handleSavePress} style={styles.saveButton}>
-              <IconSymbol 
-                name={isShowSaved ? 'bookmark.fill' : 'bookmark'} 
-                size={18} 
-                color={colors.accent}
-              />
-            </Pressable>
-          </View>
-
-          <View style={styles.watchInfo}>
-            <View style={styles.userRow}>
-              <Pressable onPress={handleUserPress} style={styles.userInfo}>
-                <Image source={{ uri: latestPost.user.avatar }} style={styles.avatar} />
-                <Text style={styles.username}>{latestPost.user.displayName}</Text>
-              </Pressable>
-              <Text style={styles.justWatched}>just watched</Text>
-            </View>
-
-            <View style={styles.tagsRow}>
-              {latestPost.episodes && latestPost.episodes.length > 0 && (
-                <>
-                  {latestPost.episodes.map((episode, index) => (
-                    <Pressable
-                      key={episode.id}
-                      onPress={() => handleEpisodePress(episode.id)}
-                      style={styles.episodeTag}
-                    >
-                      <Text style={styles.episodeTagText}>
-                        S{episode.seasonNumber}E{episode.episodeNumber}
-                      </Text>
-                    </Pressable>
+        <View style={styles.contentContainer}>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.justWatchedText}>
+                {latestPost.user.displayName} just watched
+              </Text>
+              <View style={styles.tagsRow}>
+                {latestPost.episodes && latestPost.episodes.length > 0 && (
+                  <View style={styles.episodeTag}>
+                    <Text style={styles.episodeTagText}>
+                      S{latestPost.episodes[0].seasonNumber}E{latestPost.episodes[0].episodeNumber}
+                    </Text>
+                  </View>
+                )}
+                <Pressable onPress={handleShowPress}>
+                  <View
+                    style={[
+                      styles.showTag,
+                      {
+                        backgroundColor: showTagColor.bg,
+                        borderColor: showTagColor.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.showTagText, { color: showTagColor.text }]}>
+                      {latestPost.show.title}
+                    </Text>
+                  </View>
+                </Pressable>
+              </View>
+              {latestPost.rating && (
+                <View style={styles.starRatings}>
+                  {[...Array(5)].map((_, i) => (
+                    <Text key={i} style={styles.star}>
+                      {i < latestPost.rating! ? '★' : '☆'}
+                    </Text>
                   ))}
-                </>
-              )}
-              <Pressable onPress={handleShowPress}>
-                <View
-                  style={[
-                    styles.showTag,
-                    {
-                      backgroundColor: showTagColor.bg,
-                      borderColor: showTagColor.border,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.showTagText, { color: showTagColor.text }]}>
-                    {latestPost.show.title}
-                  </Text>
                 </View>
-              </Pressable>
+              )}
             </View>
-
-            {latestPost.rating && (
-              <View style={styles.ratingContainer}>
-                {[...Array(5)].map((_, i) => (
-                  <IconSymbol
-                    key={i}
-                    name={i < latestPost.rating! ? 'star.fill' : 'star'}
-                    size={18}
-                    color={i < latestPost.rating! ? '#FFD700' : colors.textSecondary}
-                  />
-                ))}
-              </View>
-            )}
+            <Pressable onPress={handleUserPress}>
+              <Image source={{ uri: latestPost.user.avatar }} style={styles.userProfilePic} />
+            </Pressable>
           </View>
         </View>
+      </View>
 
-        {(latestPost.title || latestPost.body) && <View style={styles.divider} />}
+      {(latestPost.title || latestPost.body) && <View style={styles.divider} />}
 
-        {(latestPost.title || latestPost.body) && (
-          <View style={styles.bottomSection}>
-            {latestPost.title && <Text style={styles.postTitle}>{latestPost.title}</Text>}
-            {latestPost.body && <Text style={styles.postBody}>{latestPost.body}</Text>}
+      {(latestPost.title || latestPost.body) && (
+        <View style={styles.postInfo}>
+          {latestPost.title && (
+            <Text style={styles.postTitle}>{latestPost.title}</Text>
+          )}
+          {latestPost.body && (
+            <Text style={styles.postBody}>{latestPost.body}</Text>
+          )}
+          
+          {latestPost.tags.length > 0 && (
+            <View style={styles.postTagsContainer}>
+              {latestPost.tags.map((tag, index) => {
+                const tagColor = getTagColor(tag);
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.postTag,
+                      {
+                        backgroundColor: tagColor.bg,
+                        borderColor: tagColor.border,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
 
-            {latestPost.tags.length > 0 && (
-              <View style={styles.postTagsContainer}>
-                {latestPost.tags.map((tag, index) => {
-                  const tagColor = getTagColor(tag);
-                  return (
-                    <View
-                      key={index}
-                      style={[
-                        styles.postTag,
-                        {
-                          backgroundColor: tagColor.bg,
-                          borderColor: tagColor.border,
-                        },
-                      ]}
-                    >
-                      {getTagIcon(tag)}
-                      <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
+          <View style={styles.engagementIconsAndCount}>
+            <Pressable onPress={handleLikePress} style={styles.likes}>
+              <Heart
+                size={16}
+                color={latestPost.isLiked ? '#FF5E00' : '#A9A9A9'}
+                fill={latestPost.isLiked ? '#FF5E00' : 'none'}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.countText}>{latestPost.likes}</Text>
+            </Pressable>
+
+            <Pressable onPress={handleCommentPress} style={styles.comments}>
+              <MessageCircle size={16} color="#A9A9A9" strokeWidth={1.5} />
+              <Text style={styles.countText}>{latestPost.comments}</Text>
+            </Pressable>
+
+            <Pressable onPress={handleRepostPress} style={styles.reposts}>
+              <RefreshCw
+                size={16}
+                color={isReposted ? '#8BFC76' : '#A9A9A9'}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.countText}>{latestPost.reposts}</Text>
+            </Pressable>
           </View>
-        )}
-
-        <View style={styles.actions}>
-          <Pressable onPress={handleLikePress} style={styles.actionButton}>
-            <Heart
-              size={20}
-              color={latestPost.isLiked ? colors.error : colors.textSecondary}
-              fill={latestPost.isLiked ? colors.error : 'none'}
-            />
-            <Text style={[styles.actionText, latestPost.isLiked && styles.actionTextActive]}>
-              {latestPost.likes}
-            </Text>
-          </Pressable>
-
-          <Pressable onPress={handleCommentPress} style={styles.actionButton}>
-            <MessageCircle size={20} color={colors.textSecondary} />
-            <Text style={styles.actionText}>{latestPost.comments}</Text>
-          </Pressable>
-
-          <Pressable onPress={handleRepostPress} style={styles.actionButton}>
-            <Repeat
-              size={20}
-              color={isReposted ? colors.accent : colors.textSecondary}
-              fill={isReposted ? colors.accent : 'none'}
-            />
-            <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
-              {latestPost.reposts}
-            </Text>
-          </Pressable>
-
-          <Pressable onPress={handleSharePress} style={styles.actionButton}>
-            <Share2 size={20} color={colors.textSecondary} />
-          </Pressable>
         </View>
-      </Pressable>
-
-      <PlaylistModal
-        visible={showPlaylistModal}
-        onClose={() => setShowPlaylistModal(false)}
-        show={latestPost.show}
-        onAddToPlaylist={handleAddToPlaylist}
-      />
-    </>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.card,
-    borderRadius: components.borderRadiusCard,
+    width: '100%',
+    paddingTop: 16,
+    paddingLeft: 16,
+    paddingBottom: 16,
+    paddingRight: 16,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    padding: spacing.cardPadding,
-    marginBottom: spacing.gapLarge,
+    borderColor: '#3E3E3E',
+    backgroundColor: '#282828',
+    shadowColor: 'rgba(0, 0, 0, 0.07)',
+    shadowRadius: 10.9,
+    shadowOffset: { width: 0, height: 4 },
+    marginBottom: 17,
   },
-  repostHeader: {
+  userPostInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: spacing.gapMedium,
+    gap: 13,
   },
-  repostText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: '500',
+  showPosterContainer: {
+    width: 56,
+    height: 75,
   },
-  topSection: {
-    flexDirection: 'row',
-    gap: spacing.gapMedium,
-    marginBottom: spacing.gapMedium,
+  showPoster: {
+    width: 56,
+    height: 75,
+    borderRadius: 8,
   },
-  posterContainer: {
-    position: 'relative',
-  },
-  poster: {
-    width: 80,
-    height: 120,
-    borderRadius: spacing.gapSmall,
-  },
-  saveButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    padding: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 12,
-  },
-  watchInfo: {
+  contentContainer: {
     flex: 1,
-    justifyContent: 'flex-start',
   },
-  userRow: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.gapSmall,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.gapSmall,
+  headerLeft: {
+    flex: 1,
+    gap: 7,
   },
-  avatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  username: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  justWatched: {
-    fontSize: 15,
-    color: colors.text,
-    marginLeft: 4,
+  justWatchedText: {
+    color: '#F4F4F4',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '400',
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: spacing.gapSmall,
+    gap: 8,
   },
   episodeTag: {
-    backgroundColor: '#2A2A2A',
-    borderWidth: 1,
-    borderColor: '#6B5FD8',
-    borderRadius: components.borderRadiusTag,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderColor: '#9334E9',
+    backgroundColor: '#FAF5FF',
   },
   episodeTagText: {
-    fontSize: 13,
+    color: '#FF3EFF',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
     fontWeight: '600',
-    color: '#6B5FD8',
   },
   showTag: {
-    borderWidth: 1,
-    borderRadius: components.borderRadiusTag,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
   },
   showTagText: {
-    fontSize: 13,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
     fontWeight: '600',
   },
-  ratingContainer: {
+  starRatings: {
     flexDirection: 'row',
-    gap: 2,
+    gap: 1,
+  },
+  star: {
+    color: '#FFD700',
+    fontSize: 14,
+  },
+  userProfilePic: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
   divider: {
     height: 0.5,
-    backgroundColor: colors.border,
-    marginVertical: spacing.gapMedium,
+    backgroundColor: 'rgba(255, 255, 255, 0.30)',
+    marginTop: 15,
+    marginBottom: 15,
   },
-  bottomSection: {
-    marginBottom: spacing.gapMedium,
+  postInfo: {
+    gap: 10,
   },
   postTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: spacing.gapSmall,
+    color: '#F4F4F4',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '600',
   },
   postBody: {
-    fontSize: 15,
-    color: colors.text,
-    lineHeight: 22,
-    marginBottom: spacing.gapMedium,
+    color: '#F4F4F4',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '400',
   },
   postTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.gapSmall,
+    gap: 10,
   },
   postTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: 6,
-    borderRadius: components.borderRadiusTag,
-    borderWidth: 1,
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
   },
   postTagText: {
-    fontSize: 13,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
     fontWeight: '600',
   },
-  actions: {
+  engagementIconsAndCount: {
     flexDirection: 'row',
-    gap: 24,
-    paddingTop: spacing.gapMedium,
-    borderTopWidth: 0.5,
-    borderTopColor: colors.border,
+    gap: 10,
   },
-  actionButton: {
+  likes: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  actionText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '600',
+  comments: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  actionTextActive: {
-    color: colors.error,
+  reposts: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  actionTextRepost: {
-    color: colors.accent,
+  countText: {
+    color: '#A9A9A9',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '400',
   },
 });
