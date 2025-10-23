@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, ImageBackground } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -284,7 +284,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ImageBackground 
+      source={require('@/assets/images/app-background.jpg')}
+      style={styles.container}
+      resizeMode="cover"
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -303,14 +307,13 @@ export default function HomeScreen() {
         visible={postModalVisible}
         onClose={() => setPostModalVisible(false)}
       />
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.pageBackground,
   },
   scrollView: {
     flex: 1,
