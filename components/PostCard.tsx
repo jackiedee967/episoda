@@ -285,9 +285,8 @@ const styles = StyleSheet.create({
   },
   justWatchedText: {
     color: '#F4F4F4',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 13,
-    fontWeight: '400',
   },
   usernameText: {
     color: '#8BFC76',
