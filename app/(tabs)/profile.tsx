@@ -2,11 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import FollowersModal from '@/components/FollowersModal';
+import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
+import Button from '@/components/Button';
 import { currentUser, mockUsers, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
@@ -43,7 +45,6 @@ export default function ProfileScreen() {
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
 
-  // Load playlists and stats on mount
   useEffect(() => {
     loadPlaylists();
     loadStats();
@@ -75,14 +76,11 @@ export default function ProfileScreen() {
     }
   };
 
-  // Get user's original posts
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
   
-  // Get all reposts and filter for current user's reposts
   const allReposts = getAllReposts();
   const userReposts = allReposts.filter(repost => repost.repostedBy.id === currentUser.id);
   
-  // Combine and sort by timestamp (using repost timestamp for reposts, not original post timestamp)
   const allUserActivity = [
     ...userPosts.map(post => ({ 
       post, 
@@ -98,16 +96,13 @@ export default function ProfileScreen() {
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-  // Get last 4 unique shows from user's posts (rotation)
   const getMyRotation = (): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
     
-    // Sort by timestamp (most recent first)
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
     
-    // Get unique shows (last 4)
     const uniqueShows: Show[] = [];
     const seenShowIds = new Set<string>();
     
@@ -127,16 +122,13 @@ export default function ProfileScreen() {
 
   const myRotation = getMyRotation();
 
-  // Get watch history - all unique shows the user has logged, sorted chronologically
   const getWatchHistory = (): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
     
-    // Sort by timestamp (most recent first)
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
     
-    // Get unique shows in chronological order
     const uniqueShows: Show[] = [];
     const seenShowIds = new Set<string>();
     
@@ -210,7 +202,6 @@ export default function ProfileScreen() {
       
       console.log('ProfileScreen - Follow action completed, reloading follow data...');
       
-      // Reload follow data to update the modal
       await loadFollowData();
       
       console.log('ProfileScreen - Follow data reloaded successfully');
@@ -220,15 +211,23 @@ export default function ProfileScreen() {
     }
   };
 
+  const tabs: TabSelectorTab[] = [
+    { key: 'posts', label: 'Posts' },
+    { key: 'shows', label: 'Shows' },
+    { key: 'playlists', label: 'Playlists' },
+  ];
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
-        <Pressable
-          style={styles.settingsButton}
+        <Button
+          variant="ghost"
+          size="small"
           onPress={handleSettingsPress}
+          style={styles.settingsButton}
         >
-          <Settings size={24} color={colors.text} />
-        </Pressable>
+          <Settings size={20} color={colors.almostWhite} />
+        </Button>
       </View>
 
       <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
@@ -258,7 +257,6 @@ export default function ProfileScreen() {
   );
 
   const renderMyRotation = () => {
-    // Only show rotation section if there are shows to display
     if (myRotation.length === 0) return null;
 
     return (
@@ -279,44 +277,6 @@ export default function ProfileScreen() {
     );
   };
 
-  const renderTabs = () => (
-    <View style={styles.tabs}>
-      <Pressable
-        style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('posts');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-          Posts
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.tab, activeTab === 'shows' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('shows');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-          Watch History
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.tab, activeTab === 'playlists' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('playlists');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'playlists' && styles.activeTabText]}>
-          Playlists
-        </Text>
-      </Pressable>
-    </View>
-  );
-
   const renderPostsTab = () => (
     <View style={styles.tabContent}>
       {allUserActivity.length > 0 ? (
@@ -330,14 +290,14 @@ export default function ProfileScreen() {
         ))
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="bubble.left" size={48} color={colors.textSecondary} />
+          <IconSymbol name="bubble.left" size={48} color={colors.grey1} />
           <Text style={styles.emptyStateTitle}>No posts yet</Text>
           <Text style={styles.emptyStateText}>
             Start logging shows to see your posts here!
           </Text>
-          <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-            <Text style={styles.logShowButtonText}>Log your first show</Text>
-          </Pressable>
+          <Button variant="primary" onPress={() => setShowPostModal(true)}>
+            Log your first show
+          </Button>
         </View>
       )}
     </View>
@@ -359,14 +319,14 @@ export default function ProfileScreen() {
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="tv" size={48} color={colors.textSecondary} />
+          <IconSymbol name="tv" size={48} color={colors.grey1} />
           <Text style={styles.emptyStateTitle}>No shows yet</Text>
           <Text style={styles.emptyStateText}>
             Start logging shows to see them here!
           </Text>
-          <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-            <Text style={styles.logShowButtonText}>Log your first show</Text>
-          </Pressable>
+          <Button variant="primary" onPress={() => setShowPostModal(true)}>
+            Log your first show
+          </Button>
         </View>
       )}
     </View>
@@ -395,26 +355,26 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.playlistActions}>
                   <Pressable
-                    style={styles.eyeIconButton}
+                    style={styles.iconButton}
                     onPress={(e) => {
                       e.stopPropagation();
                       handlePlaylistToggle(playlist.id, !playlist.isPublic);
                     }}
                   >
                     {playlist.isPublic ? (
-                      <Eye size={24} color={colors.text} />
+                      <Eye size={20} color={colors.almostWhite} />
                     ) : (
-                      <EyeOff size={24} color={colors.textSecondary} />
+                      <EyeOff size={20} color={colors.grey1} />
                     )}
                   </Pressable>
                   <Pressable
-                    style={styles.playlistActionButton}
+                    style={styles.iconButton}
                     onPress={(e) => {
                       e.stopPropagation();
                       handleSharePlaylist(playlist.id);
                     }}
                   >
-                    <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
+                    <IconSymbol name="square.and.arrow.up" size={20} color={colors.almostWhite} />
                   </Pressable>
                 </View>
               </Pressable>
@@ -423,7 +383,7 @@ export default function ProfileScreen() {
         </>
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="list.bullet" size={48} color={colors.textSecondary} />
+          <IconSymbol name="list.bullet" size={48} color={colors.grey1} />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
           <Text style={styles.emptyStateText}>
             Create your first playlist to organize your shows!
@@ -440,7 +400,16 @@ export default function ProfileScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderMyRotation()}
-          {renderTabs()}
+          
+          <View style={styles.tabSelectorContainer}>
+            <TabSelector
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={(tabKey) => setActiveTab(tabKey as Tab)}
+              variant="default"
+            />
+          </View>
+
           {activeTab === 'posts' && renderPostsTab()}
           {activeTab === 'shows' && renderShowsTab()}
           {activeTab === 'playlists' && renderPlaylistsTab()}
@@ -475,148 +444,120 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.pageMargin,
     paddingTop: 60,
-    backgroundColor: colors.card,
+    backgroundColor: colors.cardBackground,
   },
   headerTop: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginBottom: 24,
+    marginBottom: spacing.gapLarge,
   },
   settingsButton: {
-    padding: 8,
+    padding: 0,
+    minHeight: 0,
   },
   avatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   displayName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapSmall,
   },
   username: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 8,
+    ...typography.subtitle,
+    color: colors.grey1,
+    marginBottom: spacing.gapSmall,
   },
   bio: {
-    fontSize: 14,
-    color: colors.text,
+    ...typography.p1,
+    color: colors.almostWhite,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
+    paddingHorizontal: spacing.pageMargin,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 24,
+    gap: spacing.gapXLarge,
+    marginTop: spacing.gapMedium,
   },
   statItem: {
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
+    ...typography.titleL,
+    color: colors.almostWhite,
   },
   statLabel: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.smallSubtitle,
+    color: colors.grey1,
+    marginTop: spacing.gapSmall,
   },
   section: {
-    padding: 16,
+    padding: spacing.pageMargin,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapLarge,
   },
   rotationScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+    marginHorizontal: -spacing.pageMargin,
+    paddingHorizontal: spacing.pageMargin,
   },
   rotationPoster: {
     width: 120,
     height: 180,
-    borderRadius: 12,
-    marginRight: 12,
+    borderRadius: components.borderRadiusButton,
+    marginRight: spacing.gapMedium,
     overflow: 'hidden',
   },
   posterImage: {
     width: '100%',
     height: '100%',
   },
-  tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.secondary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  activeTabText: {
-    color: colors.secondary,
+  tabSelectorContainer: {
+    paddingHorizontal: spacing.pageMargin,
+    marginBottom: spacing.gapLarge,
   },
   tabContent: {
-    padding: 16,
+    paddingHorizontal: spacing.pageMargin,
   },
   emptyState: {
     alignItems: 'center',
-    padding: 32,
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    padding: spacing.sectionSpacing,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    ...typography.subtitle,
+    color: colors.almostWhite,
+    marginTop: spacing.gapLarge,
+    marginBottom: spacing.gapSmall,
   },
   emptyStateText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.grey1,
     textAlign: 'center',
-    marginBottom: 16,
-  },
-  logShowButton: {
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  logShowButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    marginBottom: spacing.gapLarge,
   },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.gapMedium,
   },
   showGridItem: {
     width: '31%',
     aspectRatio: 2 / 3,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
     overflow: 'hidden',
   },
   showGridPoster: {
@@ -627,10 +568,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    marginBottom: 12,
+    padding: spacing.cardPadding,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    marginBottom: spacing.gapMedium,
   },
   playlistItemPressed: {
     opacity: 0.7,
@@ -639,32 +582,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playlistName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
+    ...typography.subtitle,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapSmall,
   },
   playlistCount: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.grey1,
   },
   playlistActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.gapMedium,
     alignItems: 'center',
   },
-  eyeIconButton: {
-    padding: 8,
-    backgroundColor: colors.background,
-    borderRadius: 8,
+  iconButton: {
+    padding: spacing.gapSmall,
+    backgroundColor: colors.pageBackground,
+    borderRadius: components.borderRadiusTag,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  playlistActionButton: {
-    padding: 8,
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardStroke,
   },
 });

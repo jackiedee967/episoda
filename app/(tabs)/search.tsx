@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import FollowButton from '@/components/FollowButton';
+import TabSelector, { Tab } from '@/components/TabSelector';
+import UserCard from '@/components/UserCard';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { Show, User } from '@/types';
 import PlaylistModal from '@/components/PlaylistModal';
@@ -13,7 +13,7 @@ import PostCard from '@/components/PostCard';
 import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
 
-type SearchCategory = 'posts' | 'comments' | 'shows' | 'users';
+type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -32,11 +32,11 @@ export default function SearchScreen() {
     ? mockShows.find(s => s.id === showFilter) 
     : null;
 
-  const categories: { key: SearchCategory; label: string }[] = [
-    { key: 'posts', label: 'Posts' },
-    { key: 'comments', label: 'Comments' },
+  const tabs: Tab[] = [
     { key: 'shows', label: 'Shows' },
     { key: 'users', label: 'Users' },
+    { key: 'posts', label: 'Posts' },
+    { key: 'comments', label: 'Comments' },
   ];
 
   // Filter based on search query and category
@@ -91,39 +91,7 @@ export default function SearchScreen() {
     }
   };
 
-  // Get result counts for each category
-  const getResultCounts = () => {
-    const query = searchQuery.toLowerCase();
-    if (!query) return { posts: 0, comments: 0, shows: 0, users: 0 };
-
-    const postCount = posts.filter(
-      post =>
-        post.title?.toLowerCase().includes(query) ||
-        post.body.toLowerCase().includes(query) ||
-        post.show.title.toLowerCase().includes(query)
-    ).length;
-
-    const showCount = mockShows.filter(show =>
-      show.title.toLowerCase().includes(query)
-    ).length;
-
-    const userCount = mockUsers.filter(
-      user =>
-        user.displayName.toLowerCase().includes(query) ||
-        user.username.toLowerCase().includes(query) ||
-        user.bio?.toLowerCase().includes(query)
-    ).length;
-
-    return {
-      posts: postCount,
-      comments: 0, // Not implemented yet
-      shows: showCount,
-      users: userCount,
-    };
-  };
-
   const filteredResults = getFilteredResults();
-  const resultCounts = getResultCounts();
 
   // Check if show is in any playlist
   const isShowSaved = (showId: string) => {
@@ -158,46 +126,6 @@ export default function SearchScreen() {
     }
   };
 
-  const renderCategoryTabs = () => (
-    <View style={styles.categoryContainer}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryScroll}
-      >
-        {categories.map(category => {
-          const count = resultCounts[category.key];
-          const hasResults = searchQuery.length > 0 && count > 0;
-          
-          return (
-            <Pressable
-              key={category.key}
-              style={[
-                styles.categoryTab,
-                activeCategory === category.key && styles.categoryTabActive,
-              ]}
-              onPress={() => setActiveCategory(category.key)}
-            >
-              <Text
-                style={[
-                  styles.categoryTabText,
-                  activeCategory === category.key && styles.categoryTabTextActive,
-                ]}
-              >
-                {category.label}
-              </Text>
-              {hasResults && activeCategory !== category.key && (
-                <View style={styles.resultIndicator}>
-                  <Text style={styles.resultIndicatorText}>{count}</Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-
   const renderShowFilter = () => {
     if (!preselectedShow) return null;
 
@@ -221,7 +149,7 @@ export default function SearchScreen() {
     if (filteredResults.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <IconSymbol name="magnifyingglass" size={48} color={colors.textSecondary} />
+          <IconSymbol name="magnifyingglass" size={48} color={colors.grey1} />
           <Text style={styles.emptyStateText}>No results found</Text>
           <Text style={styles.emptyStateSubtext}>
             Try searching for something else or change category
@@ -240,7 +168,7 @@ export default function SearchScreen() {
         return filteredResults.map((show: any) => (
           <Pressable
             key={show.id}
-            style={({ pressed }) => [styles.showCard, pressed && styles.showCardPressed]}
+            style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
             onPress={() => router.push(`/show/${show.id}`)}
           >
             <View style={styles.posterWrapper}>
@@ -255,7 +183,7 @@ export default function SearchScreen() {
                 <IconSymbol
                   name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
                   size={16}
-                  color="#FFFFFF"
+                  color={colors.pureWhite}
                 />
               </Pressable>
             </View>
@@ -270,11 +198,11 @@ export default function SearchScreen() {
                   <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
                 </View>
                 <View style={styles.stat}>
-                  <IconSymbol name="person.2.fill" size={14} color={colors.text} />
+                  <IconSymbol name="person.2.fill" size={14} color={colors.grey1} />
                   <Text style={styles.statText}>{show.friendsWatching} friends</Text>
                 </View>
                 <View style={styles.stat}>
-                  <IconSymbol name="tv" size={14} color={colors.text} />
+                  <IconSymbol name="tv" size={14} color={colors.grey1} />
                   <Text style={styles.statText}>
                     {show.totalSeasons} season{show.totalSeasons > 1 ? 's' : ''}
                   </Text>
@@ -289,28 +217,18 @@ export default function SearchScreen() {
           const isCurrentUserProfile = user.id === currentUser.id;
           
           return (
-            <Pressable
-              key={user.id}
-              style={({ pressed }) => [styles.userCard, pressed && styles.userCardPressed]}
-              onPress={() => router.push(`/user/${user.id}`)}
-            >
-              <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
-              <View style={styles.userInfo}>
-                <Text style={styles.userDisplayName}>{user.displayName}</Text>
-                <Text style={styles.userUsername}>@{user.username}</Text>
-                {user.bio && <Text style={styles.userBio} numberOfLines={2}>{user.bio}</Text>}
-              </View>
-              {!isCurrentUserProfile && (
-                <View style={styles.followButtonWrapper} onStartShouldSetResponder={() => true}>
-                  <FollowButton
-                    userId={user.id}
-                    isFollowing={isFollowing(user.id)}
-                    onPress={handleFollowToggle}
-                    size="small"
-                  />
-                </View>
-              )}
-            </Pressable>
+            <View key={user.id} style={styles.userCardWrapper}>
+              <UserCard
+                username={user.username}
+                displayName={user.displayName}
+                bio={user.bio}
+                avatar={user.avatar}
+                isFollowing={isFollowing(user.id)}
+                onPress={() => router.push(`/user/${user.id}`)}
+                onFollowPress={() => handleFollowToggle(user.id)}
+                showFollowButton={!isCurrentUserProfile}
+              />
+            </View>
           );
         });
 
@@ -333,24 +251,32 @@ export default function SearchScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Search</Text>
           <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={colors.textSecondary} />
+            <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
             <TextInput
               style={styles.searchInput}
               placeholder={`Search ${activeCategory}...`}
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.grey1}
               value={searchQuery}
               onChangeText={setSearchQuery}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery('')}>
-                <IconSymbol name="xmark.circle.fill" size={20} color={colors.textSecondary} />
+                <IconSymbol name="xmark.circle.fill" size={20} color={colors.grey1} />
               </Pressable>
             )}
           </View>
         </View>
 
-        {renderCategoryTabs()}
+        <View style={styles.tabSelectorWrapper}>
+          <TabSelector
+            tabs={tabs}
+            activeTab={activeCategory}
+            onTabChange={(tabKey) => setActiveCategory(tabKey as SearchCategory)}
+            variant="default"
+          />
+        </View>
+
         {renderShowFilter()}
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -375,103 +301,64 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.pageMargin,
     paddingTop: 60,
-    paddingBottom: 16,
+    paddingBottom: spacing.gapLarge,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
+    ...typography.titleXL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapLarge,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    gap: 8,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusButton,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    paddingHorizontal: spacing.gapMedium,
+    gap: spacing.gapSmall,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
-    color: colors.text,
-    paddingVertical: 12,
+    ...typography.subtitle,
+    color: colors.almostWhite,
+    paddingVertical: spacing.gapMedium,
   },
-  categoryContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: 8,
-  },
-  categoryScroll: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  categoryTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-    gap: 6,
-  },
-  categoryTabActive: {
-    backgroundColor: colors.secondary,
-  },
-  categoryTabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  categoryTabTextActive: {
-    color: colors.background,
-  },
-  resultIndicator: {
-    backgroundColor: colors.secondary,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-  },
-  resultIndicatorText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.background,
+  tabSelectorWrapper: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.gapMedium,
   },
   filterChipContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.gapMedium,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    borderBottomColor: colors.cardStroke,
+    backgroundColor: colors.pageBackground,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    paddingLeft: 14,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusTag * 2.5,
+    paddingLeft: spacing.gapMedium + 2,
     paddingRight: 10,
-    paddingVertical: 8,
-    gap: 8,
+    paddingVertical: spacing.gapSmall,
+    gap: spacing.gapSmall,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardStroke,
   },
   filterChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.p1Bold,
+    color: colors.almostWhite,
   },
   filterChipClose: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -479,8 +366,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultsContainer: {
-    padding: 16,
+    padding: spacing.pageMargin,
     paddingBottom: 100,
+    gap: spacing.gapMedium,
   },
   emptyState: {
     alignItems: 'center',
@@ -488,37 +376,36 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginTop: spacing.gapLarge,
   },
   emptyStateSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 8,
+    ...typography.p1,
+    color: colors.grey1,
+    marginTop: spacing.gapSmall,
     textAlign: 'center',
   },
   showCard: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    padding: spacing.gapMedium,
+    marginBottom: spacing.gapMedium,
   },
-  showCardPressed: {
-    opacity: 0.95,
+  pressed: {
+    opacity: 0.8,
   },
   posterWrapper: {
     position: 'relative',
-    marginRight: 12,
+    marginRight: spacing.gapMedium,
   },
   showPoster: {
     width: 80,
     height: 120,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
   },
   saveIcon: {
     position: 'absolute',
@@ -537,20 +424,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   showTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.subtitle,
+    color: colors.almostWhite,
     marginBottom: 4,
   },
   showDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.grey1,
     lineHeight: 20,
-    marginBottom: 8,
+    marginBottom: spacing.gapSmall,
   },
   showStats: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.gapMedium,
   },
   stat: {
     flexDirection: 'row',
@@ -558,49 +444,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.p2Bold,
+    color: colors.grey1,
   },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
-    elevation: 2,
-  },
-  userCardPressed: {
-    opacity: 0.95,
-  },
-  userAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 12,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userDisplayName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  userUsername: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  userBio: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  followButtonWrapper: {
-    marginLeft: 8,
+  userCardWrapper: {
+    marginBottom: spacing.gapMedium,
   },
 });

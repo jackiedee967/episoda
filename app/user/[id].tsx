@@ -10,12 +10,13 @@ import {
   Alert,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import FollowersModal from '@/components/FollowersModal';
-import FollowButton from '@/components/FollowButton';
+import Button from '@/components/Button';
+import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import BlockReportModal from '@/components/BlockReportModal';
 import { mockUsers, currentUser, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
@@ -410,12 +411,14 @@ export default function UserProfile() {
 
       {!isCurrentUser && (
         <View style={styles.followButtonContainer}>
-          <FollowButton
-            userId={id as string}
-            isFollowing={isUserFollowing}
-            onPress={handleFollowToggle}
+          <Button
+            variant={isUserFollowing ? 'secondary' : 'primary'}
             size="large"
-          />
+            onPress={() => handleFollowToggle(id as string)}
+            fullWidth
+          >
+            {isUserFollowing ? 'Following' : 'Follow'}
+          </Button>
         </View>
       )}
     </View>
@@ -449,53 +452,23 @@ export default function UserProfile() {
   };
 
   const renderTabs = () => {
-    // Only show tabs that have content or are relevant
-    const tabs = ['posts', 'shows'];
+    const tabs: TabType[] = [
+      { key: 'posts', label: 'Posts' },
+      { key: 'shows', label: 'Watch History' },
+    ];
+    
     if (shouldShowPlaylistsTab) {
-      tabs.push('playlists');
+      tabs.push({ key: 'playlists', label: 'Playlists' });
     }
 
     return (
-      <View style={styles.tabs}>
-        {tabs.includes('posts') && (
-          <Pressable
-            style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setActiveTab('posts');
-            }}
-          >
-            <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-              Posts
-            </Text>
-          </Pressable>
-        )}
-        {tabs.includes('shows') && (
-          <Pressable
-            style={[styles.tab, activeTab === 'shows' && styles.activeTab]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setActiveTab('shows');
-            }}
-          >
-            <Text style={[styles.tabText, activeTab === 'shows' && styles.activeTabText]}>
-              Watch History
-            </Text>
-          </Pressable>
-        )}
-        {tabs.includes('playlists') && (
-          <Pressable
-            style={[styles.tab, activeTab === 'playlists' && styles.activeTab]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setActiveTab('playlists');
-            }}
-          >
-            <Text style={[styles.tabText, activeTab === 'playlists' && styles.activeTabText]}>
-              Playlists
-            </Text>
-          </Pressable>
-        )}
+      <View style={styles.tabsWrapper}>
+        <TabSelector
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(tabKey) => setActiveTab(tabKey as Tab)}
+          variant="default"
+        />
       </View>
     );
   };
@@ -672,8 +645,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: colors.card,
+    padding: spacing.gapXLarge,
+    backgroundColor: colors.cardBackground,
     position: 'relative',
   },
   blockedProfile: {
@@ -681,45 +654,44 @@ const styles = StyleSheet.create({
   },
   onlineStatus: {
     position: 'absolute',
-    top: 16,
-    left: 16,
+    top: spacing.gapLarge,
+    left: spacing.gapLarge,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${colors.secondary}20`,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    backgroundColor: `${colors.greenHighlight}20`,
+    paddingHorizontal: spacing.gapMedium,
+    paddingVertical: spacing.gapSmall,
+    borderRadius: components.borderRadiusButton,
   },
   onlineDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.secondary,
-    marginRight: 6,
+    backgroundColor: colors.greenHighlight,
+    marginRight: spacing.gapSmall,
   },
   onlineText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.secondary,
+    ...typography.p2Bold,
+    color: colors.greenHighlight,
   },
   profileActions: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: spacing.gapLarge,
+    right: spacing.gapLarge,
   },
   actionButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardStroke,
   },
   actionButtonBlocked: {
-    backgroundColor: '#FF3B3020',
-    borderColor: '#FF3B30',
+    backgroundColor: `${colors.error}20`,
+    borderColor: colors.error,
   },
   prohibitionIcon: {
     width: 24,
@@ -730,118 +702,115 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   displayName: {
-    fontSize: 24,
-    fontWeight: '700',
+    ...typography.titleL,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.gapSmall,
   },
   username: {
-    fontSize: 16,
+    ...typography.subtitle,
     color: colors.textSecondary,
-    marginBottom: 8,
+    marginBottom: spacing.gapMedium,
   },
   bio: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginBottom: spacing.gapLarge,
+    paddingHorizontal: spacing.gapLarge,
   },
   blockedBadge: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.error,
+    paddingHorizontal: spacing.gapMedium,
+    paddingVertical: spacing.gapSmall,
+    borderRadius: components.borderRadiusButton,
+    marginBottom: spacing.gapLarge,
   },
   blockedBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    ...typography.p2Bold,
+    color: colors.pureWhite,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 24,
-    marginBottom: 16,
+    gap: spacing.gapXLarge,
+    marginBottom: spacing.gapLarge,
   },
   statItem: {
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...typography.titleL,
     color: colors.text,
   },
   statLabel: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
   },
   socialLinks: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
+    gap: spacing.gapLarge,
+    marginBottom: spacing.gapLarge,
   },
   socialIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardStroke,
   },
   mutualFollowers: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    marginBottom: spacing.gapLarge,
+    paddingHorizontal: spacing.gapLarge,
   },
   mutualAvatars: {
     flexDirection: 'row',
-    marginRight: 8,
+    marginRight: spacing.gapSmall,
   },
   mutualAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.card,
+    borderColor: colors.cardBackground,
   },
   mutualText: {
-    fontSize: 12,
+    ...typography.p2,
     color: colors.textSecondary,
   },
   followButtonContainer: {
     width: '100%',
     alignItems: 'center',
+    paddingHorizontal: spacing.pageMargin,
   },
   section: {
-    padding: 16,
+    padding: spacing.gapLarge,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...typography.titleL,
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   rotationScroll: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+    marginHorizontal: -spacing.gapLarge,
+    paddingHorizontal: spacing.gapLarge,
   },
   rotationPoster: {
     width: 120,
     height: 180,
-    borderRadius: 12,
-    marginRight: 12,
+    borderRadius: components.borderRadiusButton,
+    marginRight: spacing.gapMedium,
     overflow: 'hidden',
   },
   commonShowPoster: {
     borderWidth: 3,
-    borderColor: colors.secondary,
+    borderColor: colors.greenHighlight,
   },
   posterImage: {
     width: '100%',
@@ -849,81 +818,59 @@ const styles = StyleSheet.create({
   },
   emptyRotation: {
     alignItems: 'center',
-    padding: 32,
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    padding: spacing.sectionSpacing,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusCard,
   },
   emptyRotationText: {
-    fontSize: 16,
+    ...typography.subtitle,
     color: colors.textSecondary,
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: spacing.gapMedium,
+    marginBottom: spacing.gapLarge,
   },
   logShowButton: {
-    backgroundColor: colors.secondary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: colors.greenHighlight,
+    paddingHorizontal: spacing.gapXLarge,
+    paddingVertical: spacing.gapMedium,
+    borderRadius: components.borderRadiusButton,
   },
   logShowButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.p1Bold,
+    color: colors.black,
   },
-  tabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.secondary,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  activeTabText: {
-    color: colors.secondary,
+  tabsWrapper: {
+    padding: spacing.gapLarge,
   },
   tabContent: {
-    padding: 16,
+    padding: spacing.gapLarge,
   },
   emptyState: {
     alignItems: 'center',
-    padding: 32,
-    backgroundColor: colors.card,
-    borderRadius: 12,
+    padding: spacing.sectionSpacing,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusCard,
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.gapLarge,
+    marginBottom: spacing.gapSmall,
   },
   emptyStateText: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.gapMedium,
   },
   showGridItem: {
     width: '31%',
     aspectRatio: 2 / 3,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
     overflow: 'hidden',
   },
   showGridPoster: {
@@ -934,10 +881,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: colors.card,
-    borderRadius: 8,
-    marginBottom: 12,
+    padding: spacing.cardPadding,
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusButton,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    marginBottom: spacing.gapMedium,
   },
   playlistItemPressed: {
     opacity: 0.7,
@@ -946,32 +895,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playlistName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.p1Bold,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: spacing.gapSmall,
   },
   playlistCount: {
-    fontSize: 14,
+    ...typography.p2,
     color: colors.textSecondary,
   },
   playlistActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.gapMedium,
     alignItems: 'center',
   },
   eyeIconButton: {
-    padding: 8,
-    backgroundColor: colors.background,
-    borderRadius: 8,
+    padding: spacing.gapSmall,
+    backgroundColor: colors.pageBackground,
+    borderRadius: components.borderRadiusTag,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardStroke,
   },
   playlistActionButton: {
-    padding: 8,
-    backgroundColor: colors.background,
-    borderRadius: 8,
+    padding: spacing.gapSmall,
+    backgroundColor: colors.pageBackground,
+    borderRadius: components.borderRadiusTag,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardStroke,
   },
 });

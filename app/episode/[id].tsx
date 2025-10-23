@@ -5,24 +5,34 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Pressable,
-  TouchableOpacity,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
+import TabSelector, { Tab } from '@/components/TabSelector';
+import Button from '@/components/Button';
 import { mockEpisodes, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 
-type Tab = 'friends' | 'all';
+type TabKey = 'friends' | 'all';
 type SortBy = 'hot' | 'recent';
+
+const FEED_TABS: Tab[] = [
+  { key: 'friends', label: 'Friends' },
+  { key: 'all', label: 'All' },
+];
+
+const SORT_TABS: Tab[] = [
+  { key: 'hot', label: 'Hot' },
+  { key: 'recent', label: 'Recent' },
+];
 
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
   const { posts } = useData();
-  const [activeTab, setActiveTab] = useState<Tab>('friends');
+  const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortBy>('hot');
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -54,11 +64,11 @@ export default function EpisodeHub() {
       <Text style={styles.episodeDescription}>{episode.description}</Text>
       <View style={styles.statsContainer}>
         <View style={styles.stat}>
-          <IconSymbol name="star.fill" size={16} color={colors.secondary} />
+          <IconSymbol name="star.fill" size={16} color={colors.greenHighlight} />
           <Text style={styles.statText}>{episode.rating.toFixed(1)}</Text>
         </View>
         <View style={styles.stat}>
-          <IconSymbol name="bubble.left.fill" size={16} color={colors.textSecondary} />
+          <IconSymbol name="bubble.left.fill" size={16} color={colors.grey1} />
           <Text style={styles.statText}>{episode.postCount} posts</Text>
         </View>
       </View>
@@ -66,56 +76,46 @@ export default function EpisodeHub() {
   );
 
   const renderPostButton = () => (
-    <Pressable style={styles.postButton} onPress={() => setModalVisible(true)}>
-      <IconSymbol name="plus.circle.fill" size={24} color={colors.secondary} />
-      <Text style={styles.postButtonText}>Log Episode</Text>
-    </Pressable>
+    <View style={styles.buttonContainer}>
+      <Button 
+        variant="primary" 
+        size="large"
+        fullWidth
+        onPress={() => setModalVisible(true)}
+      >
+        Log Episode
+      </Button>
+    </View>
   );
 
   const renderTabs = () => (
-    <View style={styles.tabsContainer}>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'friends' && styles.tabActive]}
-        onPress={() => setActiveTab('friends')}
-      >
-        <Text style={[styles.tabText, activeTab === 'friends' && styles.tabTextActive]}>
-          Friends
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-        onPress={() => setActiveTab('all')}
-      >
-        <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>All</Text>
-      </TouchableOpacity>
+    <View style={styles.tabsWrapper}>
+      <TabSelector
+        tabs={FEED_TABS}
+        activeTab={activeTab}
+        onTabChange={(tabKey) => setActiveTab(tabKey as TabKey)}
+      />
     </View>
   );
 
   const renderSortOptions = () => (
-    <View style={styles.sortContainer}>
-      <TouchableOpacity
-        style={[styles.sortButton, sortBy === 'hot' && styles.sortButtonActive]}
-        onPress={() => setSortBy('hot')}
-      >
-        <Text style={[styles.sortText, sortBy === 'hot' && styles.sortTextActive]}>Hot</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.sortButton, sortBy === 'recent' && styles.sortButtonActive]}
-        onPress={() => setSortBy('recent')}
-      >
-        <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextActive]}>
-          Recent
-        </Text>
-      </TouchableOpacity>
+    <View style={styles.sortWrapper}>
+      <TabSelector
+        tabs={SORT_TABS}
+        activeTab={sortBy}
+        onTabChange={(tabKey) => setSortBy(tabKey as SortBy)}
+      />
     </View>
   );
 
   const renderFeed = () => (
     <View style={styles.feed}>
       {renderSortOptions()}
-      {episodePosts.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
+      <View style={styles.postsContainer}>
+        {episodePosts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </View>
     </View>
   );
 
@@ -149,103 +149,55 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 16,
-    backgroundColor: colors.card,
+    padding: spacing.pageMargin,
+    backgroundColor: colors.cardBackground,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardStroke,
   },
   episodeTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapSmall,
   },
   showTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 12,
+    ...typography.subtitle,
+    color: colors.grey1,
+    marginBottom: spacing.gapMedium,
   },
   episodeDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
+    ...typography.p1,
+    color: colors.grey1,
+    marginBottom: spacing.gapMedium,
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 16,
+    gap: spacing.gapLarge,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: spacing.gapSmall,
   },
   statText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.p1Bold,
+    color: colors.almostWhite,
   },
-  postButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.highlight,
-    padding: 16,
-    margin: 16,
-    borderRadius: 8,
+  buttonContainer: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.gapLarge,
   },
-  postButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+  tabsWrapper: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.gapMedium,
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingHorizontal: 16,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: colors.secondary,
-  },
-  tabText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-  },
-  tabTextActive: {
-    fontWeight: '600',
-    color: colors.text,
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    padding: 16,
-  },
-  sortButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-  },
-  sortButtonActive: {
-    backgroundColor: colors.highlight,
-  },
-  sortText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  sortTextActive: {
-    fontWeight: '600',
-    color: colors.text,
+  sortWrapper: {
+    marginBottom: spacing.gapLarge,
   },
   feed: {
-    padding: 16,
+    paddingHorizontal: spacing.pageMargin,
     paddingBottom: 100,
+  },
+  postsContainer: {
+    gap: spacing.gapMedium,
   },
 });

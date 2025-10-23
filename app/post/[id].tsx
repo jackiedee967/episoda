@@ -12,8 +12,9 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import Button from '@/components/Button';
 import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
 import CommentCard from '@/components/CommentCard';
@@ -79,15 +80,15 @@ export default function PostDetail() {
   };
 
   const getShowTagColor = (showTitle: string) => {
-    const colors = [
-      { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' },
-      { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' },
-      { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' },
-      { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' },
-      { bg: '#F3E8FF', border: '#9333EA', text: '#9333EA' },
+    const tagColors = [
+      { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 },
+      { bg: colors.tabBack4, border: colors.tabStroke4, text: colors.tabStroke4 },
+      { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 },
+      { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 },
+      { bg: colors.tabBack, border: colors.tabStroke2, text: colors.tabStroke2 },
     ];
-    const index = showTitle.length % colors.length;
-    return colors[index];
+    const index = showTitle.length % tagColors.length;
+    return tagColors[index];
   };
 
   const getTagIcon = (tag: string) => {
@@ -101,11 +102,11 @@ export default function PostDetail() {
 
   const getTagColor = (tag: string) => {
     const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return { bg: '#E8F9E0', border: '#5CB85C', text: '#5CB85C' };
-    if (tagLower.includes('discussion')) return { bg: '#E3F2FD', border: '#5B9FD8', text: '#5B9FD8' };
-    if (tagLower.includes('spoiler')) return { bg: '#FFE8E8', border: '#E53E3E', text: '#E53E3E' };
-    if (tagLower.includes('recap')) return { bg: '#FFF4E6', border: '#DD6B20', text: '#DD6B20' };
-    return { bg: '#F3F4F6', border: '#6B7280', text: '#6B7280' };
+    if (tagLower.includes('theory')) return { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 };
+    if (tagLower.includes('discussion')) return { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 };
+    if (tagLower.includes('spoiler')) return { bg: colors.tabBack4, border: colors.tabStroke4, text: colors.tabStroke4 };
+    if (tagLower.includes('recap')) return { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 };
+    return { bg: colors.grey3, border: colors.grey1, text: colors.grey1 };
   };
 
   const handleLike = async () => {
@@ -249,7 +250,7 @@ export default function PostDetail() {
               <Image source={{ uri: post.show.poster }} style={styles.showPoster} />
             </Pressable>
 
-            {/* Episode and Show Tags - ONLY THESE ARE CLICKABLE */}
+            {/* Episode and Show Tags */}
             <View style={styles.tagsRow}>
               {post.episodes && post.episodes.length > 0 && (
                 <>
@@ -291,7 +292,7 @@ export default function PostDetail() {
                     key={i}
                     name={i < post.rating! ? 'star.fill' : 'star'}
                     size={20}
-                    color={i < post.rating! ? '#000000' : colors.textSecondary}
+                    color={i < post.rating! ? colors.greenHighlight : colors.grey1}
                   />
                 ))}
               </View>
@@ -301,12 +302,11 @@ export default function PostDetail() {
             {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
             {post.body && <Text style={styles.postBody}>{post.body}</Text>}
 
-            {/* Post Tags - Category tags are NOT clickable, only visual labels */}
+            {/* Post Tags */}
             {post.tags.length > 0 && (
               <View style={styles.postTagsContainer}>
                 {post.tags.map((tag, index) => {
                   const tagColor = getTagColor(tag);
-                  // Category tags are NOT clickable - just View, no Pressable
                   return (
                     <View
                       key={index}
@@ -331,8 +331,8 @@ export default function PostDetail() {
               <Pressable onPress={handleLike} style={styles.actionButton}>
                 <Heart
                   size={24}
-                  color={post.isLiked ? '#E53E3E' : colors.textSecondary}
-                  fill={post.isLiked ? '#E53E3E' : 'none'}
+                  color={post.isLiked ? colors.error : colors.grey1}
+                  fill={post.isLiked ? colors.error : 'none'}
                 />
                 <Text style={[styles.actionText, post.isLiked && styles.actionTextActive]}>
                   {post.likes}
@@ -340,15 +340,15 @@ export default function PostDetail() {
               </Pressable>
 
               <View style={styles.actionButton}>
-                <MessageCircle size={24} color={colors.textSecondary} />
+                <MessageCircle size={24} color={colors.grey1} />
                 <Text style={styles.actionText}>{comments.length}</Text>
               </View>
 
               <Pressable onPress={handleRepost} style={styles.actionButton}>
                 <Repeat
                   size={24}
-                  color={isReposted ? '#10B981' : colors.textSecondary}
-                  fill={isReposted ? '#10B981' : 'none'}
+                  color={isReposted ? colors.greenHighlight : colors.grey1}
+                  fill={isReposted ? colors.greenHighlight : 'none'}
                 />
                 <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
                   {post.reposts}
@@ -356,7 +356,7 @@ export default function PostDetail() {
               </Pressable>
 
               <Pressable onPress={handleShare} style={styles.actionButton}>
-                <Share2 size={24} color={colors.textSecondary} />
+                <Share2 size={24} color={colors.grey1} />
               </Pressable>
             </View>
           </View>
@@ -385,7 +385,7 @@ export default function PostDetail() {
                 style={styles.removeImageButton}
                 onPress={() => setCommentImage(null)}
               >
-                <IconSymbol name="xmark.circle.fill" size={24} color={colors.textSecondary} />
+                <IconSymbol name="xmark.circle.fill" size={24} color={colors.grey1} />
               </Pressable>
             </View>
           )}
@@ -394,26 +394,23 @@ export default function PostDetail() {
             <TextInput
               style={styles.commentInput}
               placeholder="Add a comment..."
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.grey1}
               value={commentText}
               onChangeText={setCommentText}
               multiline
             />
             <Pressable onPress={handlePickImage} style={styles.imageButton}>
-              <IconSymbol name="photo" size={24} color={colors.textSecondary} />
+              <IconSymbol name="photo" size={24} color={colors.grey1} />
             </Pressable>
             <Pressable
               onPress={handleSubmitComment}
-              style={[
-                styles.sendButton,
-                (!commentText.trim() && !commentImage) && styles.sendButtonDisabled,
-              ]}
+              style={styles.sendButton}
               disabled={!commentText.trim() && !commentImage}
             >
               <IconSymbol
                 name="paperplane.fill"
                 size={20}
-                color={(!commentText.trim() && !commentImage) ? colors.textSecondary : colors.secondary}
+                color={(!commentText.trim() && !commentImage) ? colors.grey1 : colors.greenHighlight}
               />
             </Pressable>
           </View>
@@ -428,157 +425,160 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   postContainer: {
-    backgroundColor: colors.card,
-    padding: 16,
-    marginBottom: 8,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    padding: spacing.cardPadding,
+    marginBottom: spacing.gapSmall,
+    borderRadius: components.borderRadiusCard,
   },
   userHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 12,
+    marginRight: spacing.gapMedium,
   },
   userInfo: {
     flex: 1,
   },
   username: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.subtitle,
+    color: colors.almostWhite,
   },
   timestamp: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.p2,
+    color: colors.grey1,
     marginTop: 2,
   },
   showPoster: {
     width: '100%',
     height: 400,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: spacing.gapMedium,
+    marginBottom: spacing.gapLarge,
+    borderWidth: 1,
+    borderColor: colors.imageStroke,
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.gapSmall,
+    marginBottom: spacing.gapLarge,
   },
   episodeTag: {
-    backgroundColor: '#E8E4FF',
+    backgroundColor: colors.tabBack,
     borderWidth: 1,
-    borderColor: '#6B5FD8',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: colors.tabStroke2,
+    borderRadius: components.borderRadiusTag,
+    paddingHorizontal: spacing.gapMedium,
     paddingVertical: 6,
   },
   episodeTagText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B5FD8',
+    ...typography.p1Bold,
+    color: colors.tabStroke2,
   },
   showTag: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: components.borderRadiusTag,
+    paddingHorizontal: spacing.gapMedium,
     paddingVertical: 6,
   },
   showTagText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.p1Bold,
   },
   ratingContainer: {
     flexDirection: 'row',
     gap: 4,
-    marginBottom: 16,
+    marginBottom: spacing.gapLarge,
   },
   postTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapMedium,
   },
   postBody: {
-    fontSize: 16,
-    color: colors.text,
-    lineHeight: 24,
-    marginBottom: 16,
+    ...typography.p1,
+    color: colors.almostWhite,
+    lineHeight: typography.p1.lineHeight * 1.5,
+    marginBottom: spacing.gapLarge,
   },
   postTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.gapSmall,
+    marginBottom: spacing.gapLarge,
   },
   postTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.gapMedium,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
     borderWidth: 1,
   },
   postTagText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.p1Bold,
   },
   actions: {
     flexDirection: 'row',
-    gap: 32,
-    paddingTop: 16,
+    gap: spacing.sectionSpacing,
+    paddingTop: spacing.gapLarge,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.cardStroke,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.gapSmall,
   },
   actionText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontWeight: '600',
+    ...typography.p1Bold,
+    color: colors.grey1,
   },
   actionTextActive: {
-    color: '#E53E3E',
+    color: colors.error,
   },
   actionTextRepost: {
-    color: '#10B981',
+    color: colors.greenHighlight,
   },
   commentsSection: {
-    backgroundColor: colors.card,
-    padding: 16,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    borderRadius: components.borderRadiusCard,
+    padding: spacing.cardPadding,
     marginBottom: 100,
   },
   commentsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapLarge,
   },
   commentInputContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.card,
+    backgroundColor: colors.cardBackground,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    padding: 12,
+    borderTopColor: colors.cardStroke,
+    padding: spacing.gapMedium,
   },
   imagePreview: {
     position: 'relative',
-    marginBottom: 8,
+    marginBottom: spacing.gapSmall,
   },
   previewImage: {
     width: 100,
     height: 100,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
+    borderWidth: 1,
+    borderColor: colors.imageStroke,
   },
   removeImageButton: {
     position: 'absolute',
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.gapSmall,
   },
   commentAvatar: {
     width: 32,
@@ -597,21 +597,18 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    backgroundColor: colors.highlight,
+    backgroundColor: colors.grey3,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    fontSize: 15,
-    color: colors.text,
+    paddingHorizontal: spacing.gapLarge,
+    paddingVertical: spacing.gapSmall,
+    ...typography.p1,
+    color: colors.almostWhite,
     maxHeight: 100,
   },
   imageButton: {
-    padding: 8,
+    padding: spacing.gapSmall,
   },
   sendButton: {
-    padding: 8,
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
+    padding: spacing.gapSmall,
   },
 });

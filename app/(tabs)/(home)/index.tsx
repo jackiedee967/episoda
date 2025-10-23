@@ -1,10 +1,10 @@
-
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, ImageBackground, Animated } from 'react-native';
-import { colors, commonStyles, spacing, components } from '@/styles/commonStyles';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, Animated } from 'react-native';
+import { colors, spacing, components, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import ShowCard from '@/components/ShowCard';
+import Button from '@/components/Button';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import PostButton from '@/components/PostButton';
@@ -160,17 +160,16 @@ export default function HomeScreen() {
               <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
               <Text style={styles.userDisplayName}>{user.displayName}</Text>
               <Text style={styles.userUsername}>@{user.username}</Text>
-              <Pressable
-                style={styles.followButton}
+              <Button
+                variant={isFollowing(user.id) ? 'secondary' : 'primary'}
+                size="small"
                 onPress={(e) => {
-                  e.stopPropagation();
+                  e?.stopPropagation?.();
                   handleFollowUser(user.id);
                 }}
               >
-                <Text style={styles.followButtonText}>
-                  {isFollowing(user.id) ? 'Following' : 'Follow'}
-                </Text>
-              </Pressable>
+                {isFollowing(user.id) ? 'Following' : 'Follow'}
+              </Button>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -234,13 +233,16 @@ export default function HomeScreen() {
             <Text style={styles.emptyStateText}>
               Follow friends to see what they&apos;re watching
             </Text>
-            <Pressable
-              style={styles.inviteButton}
-              onPress={() => console.log('Invite friends')}
-            >
-              <IconSymbol name="person.badge.plus" size={20} color="#000000" />
-              <Text style={styles.inviteButtonText}>Invite Friends</Text>
-            </Pressable>
+            <View style={styles.inviteButtonContainer}>
+              <Button
+                variant="primary"
+                size="medium"
+                onPress={() => console.log('Invite friends')}
+                fullWidth
+              >
+                Invite Friends
+              </Button>
+            </View>
           </View>
         )}
       </View>
@@ -248,54 +250,43 @@ export default function HomeScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('@/assets/images/c5654ae2-c4e4-49f4-be1a-ba15401ecb58.jpeg')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        {renderHeader()}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <PostButton onPress={() => setPostModalVisible(true)} pulseAnim={pulseAnim} />
-          {renderRecommendedTitles()}
-          {renderYouMayKnow()}
-          {renderFriendActivity()}
-        </ScrollView>
+    <View style={styles.container}>
+      {renderHeader()}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <PostButton onPress={() => setPostModalVisible(true)} pulseAnim={pulseAnim} />
+        {renderRecommendedTitles()}
+        {renderYouMayKnow()}
+        {renderFriendActivity()}
+      </ScrollView>
 
-        <PostModal
-          visible={postModalVisible}
-          onClose={() => setPostModalVisible(false)}
-        />
-      </View>
-    </ImageBackground>
+      <PostModal
+        visible={postModalVisible}
+        onClose={() => setPostModalVisible(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.pageBackground,
   },
   headerContainer: {
-    paddingTop: 20,
-    paddingBottom: 10,
-    backgroundColor: 'transparent',
+    paddingTop: spacing.pageMargin,
+    paddingBottom: spacing.gapMedium,
+    backgroundColor: colors.pageBackground,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.pageMargin,
-    paddingBottom: 20,
+    paddingBottom: spacing.pageMargin,
   },
   logo: {
     width: 120,
@@ -315,26 +306,22 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 0.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: colors.cardStroke,
     width: '100%',
   },
   welcomeContainer: {
     paddingHorizontal: spacing.pageMargin,
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: spacing.pageMargin,
+    paddingBottom: spacing.gapMedium,
   },
   welcomeText: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.text,
-    marginBottom: 4,
-    fontFamily: 'FunnelDisplay_400Regular',
+    ...typography.subtitle,
+    color: colors.textSecondary,
+    marginBottom: spacing.gapSmall,
   },
   userName: {
-    fontSize: 36,
-    fontWeight: '700',
+    ...typography.titleXL,
     color: colors.text,
-    fontFamily: 'FunnelDisplay_700Bold',
   },
   scrollView: {
     flex: 1,
@@ -354,13 +341,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.gapLarge,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...typography.titleL,
     color: colors.text,
-    fontFamily: 'FunnelDisplay_700Bold',
   },
   seeAllButton: {
-    padding: 4,
+    padding: spacing.gapSmall,
   },
   showsScroll: {
     gap: spacing.gapLarge,
@@ -371,14 +356,13 @@ const styles = StyleSheet.create({
     paddingRight: spacing.pageMargin,
   },
   userCard: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.cardBackground,
     borderRadius: components.borderRadiusCard,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: colors.cardStroke,
     padding: spacing.cardPadding,
     alignItems: 'center',
     width: 160,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.3)',
   },
   userAvatar: {
     width: 80,
@@ -387,65 +371,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.gapMedium,
   },
   userDisplayName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.text,
-    fontFamily: 'FunnelDisplay_700Bold',
   },
   userUsername: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     marginBottom: spacing.gapMedium,
-    fontFamily: 'FunnelDisplay_400Regular',
-  },
-  followButton: {
-    backgroundColor: colors.accent,
-    borderRadius: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-  },
-  followButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    fontFamily: 'FunnelDisplay_700Bold',
   },
   emptyState: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.cardBackground,
     borderRadius: components.borderRadiusCard,
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: colors.cardStroke,
     padding: spacing.sectionSpacing,
     alignItems: 'center',
   },
   emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.titleL,
     color: colors.text,
     marginTop: spacing.gapLarge,
     marginBottom: spacing.gapSmall,
-    fontFamily: 'FunnelDisplay_700Bold',
   },
   emptyStateText: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.pageMargin,
-    fontFamily: 'FunnelDisplay_400Regular',
   },
-  inviteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.gapSmall,
-    backgroundColor: colors.accent,
-    borderRadius: 24,
-    paddingHorizontal: 24,
-    paddingVertical: spacing.gapMedium,
-  },
-  inviteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    fontFamily: 'FunnelDisplay_700Bold',
+  inviteButtonContainer: {
+    alignSelf: 'stretch',
   },
 });

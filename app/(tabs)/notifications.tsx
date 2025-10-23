@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -9,7 +8,8 @@ import {
   Image,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors, commonStyles } from '@/styles/commonStyles';
+import { colors, typography, spacing, components } from '@/styles/commonStyles';
+import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import { Notification } from '@/types';
 import { mockUsers, mockPosts, mockShows, currentUser, mockComments } from '@/data/mockData';
 import * as Haptics from 'expo-haptics';
@@ -20,13 +20,12 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('you');
 
-  // Mock notifications data - created inside component to ensure mockUsers is loaded
   const mockNotifications: Notification[] = [
     {
       id: 'notif-1',
       type: 'like',
       actor: mockUsers[0],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
       read: false,
       post: mockPosts[2],
     },
@@ -34,16 +33,16 @@ export default function NotificationsScreen() {
       id: 'notif-2',
       type: 'comment',
       actor: mockUsers[1],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
       read: false,
       post: mockPosts[2],
-      comment: mockComments[0], // Add comment reference
+      comment: mockComments[0],
     },
     {
       id: 'notif-3',
       type: 'follow',
       actor: mockUsers[2],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
       read: true,
       targetUser: currentUser,
     },
@@ -51,7 +50,7 @@ export default function NotificationsScreen() {
       id: 'notif-4',
       type: 'repost',
       actor: mockUsers[3],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
       read: true,
       post: mockPosts[2],
     },
@@ -59,7 +58,7 @@ export default function NotificationsScreen() {
       id: 'notif-5',
       type: 'like',
       actor: mockUsers[4],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3), // 3 days ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
       read: true,
       post: mockPosts[2],
     },
@@ -70,7 +69,7 @@ export default function NotificationsScreen() {
       id: 'friend-notif-1',
       type: 'friend_post',
       actor: mockUsers[0],
-      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 30),
       read: false,
       post: mockPosts[0],
     },
@@ -78,7 +77,7 @@ export default function NotificationsScreen() {
       id: 'friend-notif-2',
       type: 'friend_follow',
       actor: mockUsers[1],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60),
       read: false,
       targetUser: mockUsers[2],
     },
@@ -86,7 +85,7 @@ export default function NotificationsScreen() {
       id: 'friend-notif-3',
       type: 'friend_like',
       actor: mockUsers[2],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
       read: true,
       post: mockPosts[1],
     },
@@ -94,7 +93,7 @@ export default function NotificationsScreen() {
       id: 'friend-notif-4',
       type: 'friend_comment',
       actor: mockUsers[3],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6), // 6 hours ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
       read: true,
       post: mockPosts[0],
       comment: mockComments[1],
@@ -103,7 +102,7 @@ export default function NotificationsScreen() {
       id: 'friend-notif-5',
       type: 'friend_post',
       actor: mockUsers[4],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
       read: true,
       post: mockPosts[3],
     },
@@ -136,7 +135,6 @@ export default function NotificationsScreen() {
       case 'like':
         return `liked your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
       case 'comment':
-        // Show comment preview instead of post title
         const commentPreview = notification.comment?.text 
           ? notification.comment.text.length > 50 
             ? notification.comment.text.substring(0, 50) + '...'
@@ -148,7 +146,6 @@ export default function NotificationsScreen() {
       case 'repost':
         return `reposted your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
       case 'friend_post':
-        // Show episode info and optionally post title
         const episodeStr = getEpisodeString(notification.post);
         const showTitle = notification.post?.show.title || '';
         const postTitle = notification.post?.title;
@@ -214,7 +211,6 @@ export default function NotificationsScreen() {
   };
 
   const renderNotification = (notification: Notification) => {
-    // Safety check for actor
     if (!notification.actor) {
       console.log('Skipping notification with missing actor:', notification.id);
       return null;
@@ -257,32 +253,10 @@ export default function NotificationsScreen() {
     );
   };
 
-  const renderTabs = () => (
-    <View style={styles.tabContainer}>
-      <Pressable
-        style={[styles.tab, activeTab === 'you' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('you');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'you' && styles.activeTabText]}>
-          You
-        </Text>
-      </Pressable>
-      <Pressable
-        style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setActiveTab('friends');
-        }}
-      >
-        <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-          Friends
-        </Text>
-      </Pressable>
-    </View>
-  );
+  const tabs: TabType[] = [
+    { key: 'you', label: 'You' },
+    { key: 'friends', label: 'Friends' },
+  ];
 
   const notifications = activeTab === 'you' ? mockNotifications : mockFriendNotifications;
 
@@ -293,14 +267,22 @@ export default function NotificationsScreen() {
           headerShown: true,
           headerTitle: 'Notifications',
           headerStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: colors.pageBackground,
           },
-          headerTintColor: colors.text,
+          headerTintColor: colors.almostWhite,
           headerShadowVisible: false,
         }}
       />
       <View style={styles.container}>
-        {renderTabs()}
+        <View style={styles.tabWrapper}>
+          <TabSelector
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={(key) => setActiveTab(key as Tab)}
+            variant="default"
+          />
+        </View>
+
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -327,31 +309,14 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.pageBackground,
   },
-  tabContainer: {
-    flexDirection: 'row',
+  tabWrapper: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.gapMedium,
+    backgroundColor: colors.pageBackground,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: colors.primary,
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  activeTabText: {
-    color: colors.text,
+    borderBottomColor: colors.cardStroke,
   },
   scrollView: {
     flex: 1,
@@ -362,10 +327,11 @@ const styles = StyleSheet.create({
   notificationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.cardPadding,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    borderBottomColor: colors.cardStroke,
+    backgroundColor: colors.pageBackground,
   },
   unreadNotification: {
     backgroundColor: colors.cardBackground,
@@ -374,60 +340,61 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    marginRight: 12,
+    marginRight: spacing.gapMedium,
   },
   notificationContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.gapMedium,
+    gap: spacing.gapSmall / 2,
   },
   notificationText: {
-    fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 4,
+    ...typography.p1,
+    color: colors.almostWhite,
   },
   actorName: {
-    fontWeight: '600',
-    color: colors.text,
+    ...typography.p1Bold,
+    color: colors.almostWhite,
   },
   actionText: {
-    color: colors.text,
+    ...typography.p1,
+    color: colors.grey1,
   },
   timestamp: {
-    fontSize: 13,
-    color: colors.textSecondary,
+    ...typography.smallSubtitle,
+    color: colors.grey1,
   },
   thumbnail: {
     width: 50,
     height: 50,
-    borderRadius: 8,
+    borderRadius: components.borderRadiusTag,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.greenHighlight,
     position: 'absolute',
-    top: 20,
-    right: 16,
+    top: spacing.cardPadding + 4,
+    right: spacing.pageMargin,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.pageMargin * 2,
     paddingTop: 100,
   },
   emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 8,
+    ...typography.titleL,
+    color: colors.almostWhite,
+    marginBottom: spacing.gapSmall,
     textAlign: 'center',
   },
   emptyStateSubtext: {
-    fontSize: 15,
-    color: colors.textSecondary,
+    ...typography.subtitle,
+    color: colors.grey1,
     textAlign: 'center',
-    lineHeight: 22,
   },
 });
