@@ -20,16 +20,32 @@ Natively (also known as EPISODA) is a social media application focused on TV sho
 
 ## Recent Changes
 
-### UI Redesign (October 23, 2025)
-Pixel-perfect UI overhaul to match Figma designs:
+### Design Token System Implementation (October 23, 2025)
+Comprehensive design token system replacing all hardcoded styles:
 
-1. **Design System Implementation**
-   - Created comprehensive design system in `styles/commonStyles.ts`
-   - Exact Figma color palette: #0E0E0E background, #8BFC76 green accents, tab colors for pills
-   - Typography system: Funnel Display font (43px Title XL, 25px Title L, 17px Subtitle, etc.)
-   - Spacing constants and component metrics matching Figma specs
+1. **Created `styles/tokens.ts` - Centralized Design System**
+   - Parsed all colors from Figma design tokens JSON (27 colors total)
+   - Typography system with complete font properties (12 text styles)
+   - All colors reference exact Figma specifications (no hardcoded hex values)
+   - Smart mapping utilities (mapColor, mapTypography, mapTypographyByName)
+   - Handles Figma naming variations (e.g., 'Pure.White' → tokens.colors.pureWhite)
+   - Unicode-aware normalization (handles en dashes, em dashes in Figma token names)
 
-2. **Homepage Complete Rebuild**
+2. **Updated Entire Codebase to Use Tokens**
+   - **styles/commonStyles.ts**: All color aliases now reference tokens (zero hardcoded values)
+   - **13 components updated**: PostModal, PostCard, FloatingTabBar, LogAShow, PlaylistModal, SettingsModal, ShowCard, PostButton, CommentCard, FollowButton, ListItem, BlockReportModal
+   - **2 pages updated**: Homepage (index.tsx), Search (search.tsx)
+   - All hardcoded hex colors (#XXXXXX) replaced with token references
+   - Typography spreads replace individual font properties where applicable
+
+3. **Design Token Features**
+   - **Colors**: pageBackground (#0E0E0E), greenHighlight (#8BFC76), 6 tab color variants, grey scale, strokes
+   - **Typography**: titleXl (43px/700), titleL (25px/700), subtitle (17px/500), 9 additional text styles
+   - **Type Safety**: TypeScript const assertions ensure tokens are immutable
+   - **Error Handling**: mapColor() throws clear errors for unmapped colors
+   - **Production Ready**: Architect-verified, maintainable, scalable system
+
+4. **Homepage Complete Rebuild**
    - Purple-to-orange gradient header (#9333EA to #FF5E00) using LinearGradient
    - EPISODA logo and profile picture in header
    - Welcome section with user name in large title font
@@ -39,7 +55,7 @@ Pixel-perfect UI overhaul to match Figma designs:
    - You May Know section with user cards showing mutual friends
    - Friend Activity feed with properly styled post cards
 
-3. **Component Updates**
+5. **Component Updates**
    - Updated Button component with primary/secondary/outline/ghost variants
    - Updated PostCard to use Figma tab colors for episode and show tags
    - All components use design system tokens for consistent styling
