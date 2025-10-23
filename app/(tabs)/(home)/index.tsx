@@ -191,37 +191,20 @@ export default function HomeScreen() {
               <Image source={{ uri: user.avatar }} style={styles.userProfilePic} />
               <Text style={styles.userCardName} numberOfLines={1}>{user.displayName}</Text>
               <Text style={styles.userCardUsername} numberOfLines={1}>@{user.username}</Text>
-              {user.mutualFriends && user.mutualFriends > 0 && (
-                <View style={styles.mutualFriendsContainer}>
-                  <View style={styles.mutualAvatars}>
-                    {mockUsers.slice(0, 2).map((friend, index) => (
-                      <Image
-                        key={friend.id}
-                        source={{ uri: friend.avatar }}
-                        style={[styles.mutualAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-                      />
-                    ))}
+              <View style={styles.friendsWatchingContainer}>
+                <View style={styles.friendsAvatarRow}>
+                  {mockUsers.slice(0, 3).map((friend, index) => (
+                    <Image
+                      key={friend.id}
+                      source={{ uri: friend.avatar }}
+                      style={[styles.friendAvatar, { marginLeft: index > 0 ? -6 : 0 }]}
+                    />
+                  ))}
+                  <View style={[styles.friendAvatar, styles.countBadge, { marginLeft: -6 }]}>
+                    <Text style={styles.countBadgeText}>+5</Text>
                   </View>
-                  <Text style={styles.mutualText}>{user.mutualFriends} mutual</Text>
                 </View>
-              )}
-              <Pressable
-                style={[
-                  styles.followButton,
-                  isFollowing(user.id) && styles.followingButton
-                ]}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleFollowUser(user.id);
-                }}
-              >
-                <Text style={[
-                  styles.followButtonText,
-                  isFollowing(user.id) && styles.followingButtonText
-                ]}>
-                  {isFollowing(user.id) ? 'Following' : 'Follow'}
-                </Text>
-              </Pressable>
+              </View>
             </Pressable>
           ))}
         </ScrollView>
@@ -499,45 +482,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'FunnelDisplay_500Medium',
   },
-  mutualFriendsContainer: {
+  friendsWatchingContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  friendsAvatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
   },
-  mutualAvatars: {
-    flexDirection: 'row',
-  },
-  mutualAvatar: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+  friendAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 0.25,
     borderColor: '#F4F4F4',
   },
-  mutualText: {
-    fontSize: 8,
-    color: '#A9A9A9',
-    fontFamily: 'FunnelDisplay_300Light',
-  },
-  followButton: {
-    width: '100%',
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: '#8BFC76',
+  countBadge: {
+    backgroundColor: '#DEE8FF',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  followingButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#3E3E3E',
-  },
-  followButtonText: {
-    fontSize: 11,
+  countBadgeText: {
+    fontSize: 8,
     color: '#000',
-    fontFamily: 'FunnelDisplay_600SemiBold',
-  },
-  followingButtonText: {
-    color: '#F4F4F4',
+    fontFamily: 'FunnelDisplay_400Regular',
+    letterSpacing: -0.16,
   },
   
   // Friend Activity - exact specs
