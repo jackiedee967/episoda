@@ -243,14 +243,17 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     return (
       <View style={styles.stepContainer}>
         <Text style={styles.stepTitle}>Select a Show</Text>
-        <TextInput
-          ref={inputRef}
-          style={styles.searchInput}
-          placeholder="Search shows..."
-          placeholderTextColor={colors.textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        <View style={styles.searchInputContainer}>
+          <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
+          <TextInput
+            ref={inputRef}
+            style={styles.searchInput}
+            placeholder="Search shows..."
+            placeholderTextColor={colors.grey1}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
         <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
           <View style={styles.showsGrid}>
             {filteredShows.map(show => (
@@ -260,9 +263,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 onPress={() => handleShowSelect(show)}
               >
                 <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
-                <Text style={styles.showGridTitle} numberOfLines={2}>
-                  {show.title}
-                </Text>
               </Pressable>
             ))}
           </View>
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContainer: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.9,
@@ -535,10 +535,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.pageMargin,
   },
   stepTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '500',
+    fontFamily: 'FunnelDisplay_500Medium',
     color: colors.text,
-    marginBottom: spacing.gapSmall,
+    marginBottom: 16,
+    letterSpacing: 0,
   },
   stepSubtitle: {
     fontSize: 16,
@@ -555,15 +557,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
-  searchInput: {
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: components.borderRadiusButton,
     borderWidth: 0.5,
     borderColor: colors.cardStroke,
-    padding: spacing.gapLarge,
+    paddingHorizontal: spacing.gapLarge,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: spacing.gapSmall,
+  },
+  searchInput: {
+    flex: 1,
     fontSize: 16,
     color: colors.text,
-    marginBottom: spacing.gapLarge,
+    letterSpacing: 0,
   },
   showsList: {
     flex: 1,
@@ -571,18 +581,16 @@ const styles = StyleSheet.create({
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.gapMedium,
+    gap: 7,
   },
   showGridItem: {
-    width: '31%',
-    marginBottom: spacing.gapLarge,
+    width: 126,
+    height: 172,
   },
   showGridPoster: {
-    width: '100%',
-    aspectRatio: 2 / 3,
+    width: 126,
+    height: 172,
     borderRadius: spacing.gapSmall,
-    marginBottom: spacing.gapSmall,
   },
   showGridTitle: {
     fontSize: 12,
