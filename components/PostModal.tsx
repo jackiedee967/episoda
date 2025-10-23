@@ -244,12 +244,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       <View style={styles.stepContainer}>
         <Text style={styles.stepTitle}>Select a Show</Text>
         <View style={styles.searchInputContainer}>
-          <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
+          <IconSymbol name="magnifyingglass" size={20} color="#999999" />
           <TextInput
             ref={inputRef}
             style={styles.searchInput}
             placeholder="Search shows..."
-            placeholderTextColor={colors.grey1}
+            placeholderTextColor="#999999"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -474,7 +474,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           style={[
             styles.modalContainer,
             {
-              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
             }
           ]}
         >
@@ -490,23 +490,28 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   overlayTouchable: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
+    flex: 1,
   },
   modalContainer: {
     width: 440,
     height: 780,
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingTop: 24,
+    paddingLeft: 24,
+    paddingBottom: 24,
+    paddingRight: 24,
+    alignSelf: 'center',
+    shadowColor: 'rgba(255, 255, 255, 0.2)',
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 4 },
   },
   stepContainer: {
     flex: 1,
@@ -515,7 +520,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '500',
     fontFamily: 'FunnelDisplay_500Medium',
-    color: colors.text,
+    color: '#000000',
     marginBottom: 16,
     letterSpacing: 0,
   },
@@ -536,20 +541,22 @@ const styles = StyleSheet.create({
   },
   searchInputContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    width: 392,
     height: 46,
-    backgroundColor: colors.background,
-    borderRadius: components.borderRadiusButton,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    paddingHorizontal: 16,
     marginBottom: 16,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
+    color: '#000000',
     letterSpacing: 0,
   },
   showsList: {
