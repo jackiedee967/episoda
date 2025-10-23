@@ -219,25 +219,19 @@ export default function ProfileScreen() {
   ];
 
   const renderHeader = () => (
-    <LinearGradient
-      colors={['#9333EA', '#FF5E00']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.gradientHeader}
-    >
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Button
-            variant="ghost"
-            size="small"
-            onPress={handleSettingsPress}
-            style={styles.settingsButton}
-          >
-            <Settings size={20} color={colors.almostWhite} />
-          </Button>
-        </View>
+    <View style={styles.header}>
+      <View style={styles.headerTop}>
+        <Button
+          variant="ghost"
+          size="small"
+          onPress={handleSettingsPress}
+          style={styles.settingsButton}
+        >
+          <Settings size={20} color={colors.almostWhite} />
+        </Button>
+      </View>
 
-        <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
+      <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
       <Text style={styles.displayName}>{currentUser.displayName}</Text>
       <Text style={styles.username}>@{currentUser.username}</Text>
       {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
@@ -260,8 +254,7 @@ export default function ProfileScreen() {
           <Text style={styles.statLabel}>Likes</Text>
         </View>
       </View>
-      </View>
-    </LinearGradient>
+    </View>
   );
 
   const renderMyRotation = () => {
@@ -405,6 +398,12 @@ export default function ProfileScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[commonStyles.container, styles.pageContainer]}>
+        <LinearGradient
+          colors={['#9333EA', '#FF5E00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFillObject}
+        />
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderMyRotation()}
@@ -448,17 +447,6 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
-    ...Platform.select({
-      web: {
-        backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      } as any,
-    }),
-  },
-  gradientHeader: {
-    width: '100%',
   },
   scrollView: {
     flex: 1,

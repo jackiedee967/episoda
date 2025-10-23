@@ -274,12 +274,11 @@ export default function NotificationsScreen() {
           colors={['#9333EA', '#FF5E00']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.gradientHeader}
-        >
-          <View style={styles.notificationHeader}>
-            <Text style={styles.headerTitle}>Notifications</Text>
-          </View>
-        </LinearGradient>
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={styles.notificationHeader}>
+          <Text style={styles.headerTitle}>Notifications</Text>
+        </View>
         <View style={styles.tabWrapper}>
           <TabSelector
             tabs={tabs}
@@ -314,17 +313,6 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
-    ...Platform.select({
-      web: {
-        backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      } as any,
-    }),
-  },
-  gradientHeader: {
-    width: '100%',
   },
   notificationHeader: {
     paddingHorizontal: spacing.pageMargin,

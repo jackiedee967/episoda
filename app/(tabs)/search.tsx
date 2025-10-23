@@ -254,11 +254,11 @@ export default function SearchScreen() {
           colors={['#9333EA', '#FF5E00']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.gradientHeader}
-        >
-          <View style={styles.header}>
-            <Text style={styles.title}>Search</Text>
-            <View style={styles.searchContainer}>
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={styles.header}>
+          <Text style={styles.title}>Search</Text>
+          <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
             <TextInput
               style={styles.searchInput}
@@ -274,8 +274,7 @@ export default function SearchScreen() {
               </Pressable>
             )}
           </View>
-          </View>
-        </LinearGradient>
+        </View>
 
         <View style={styles.tabSelectorWrapper}>
           <TabSelector
@@ -310,17 +309,6 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
-    ...Platform.select({
-      web: {
-        backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      } as any,
-    }),
-  },
-  gradientHeader: {
-    width: '100%',
   },
   header: {
     paddingHorizontal: spacing.pageMargin,

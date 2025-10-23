@@ -71,27 +71,20 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <LinearGradient
-      colors={['#9333EA', '#FF5E00']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.gradientHeader}
-    >
-      <View style={styles.header}>
-        <Stack.Screen options={{ headerShown: false }} />
+    <View style={styles.header}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <Image 
+        source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+      <Pressable onPress={handleProfilePress}>
         <Image 
-          source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
-          style={styles.logo}
-          resizeMode="contain"
+          source={{ uri: currentUser.avatar }}
+          style={styles.profilePic}
         />
-        <Pressable onPress={handleProfilePress}>
-          <Image 
-            source={{ uri: currentUser.avatar }}
-            style={styles.profilePic}
-          />
-        </Pressable>
-      </View>
-    </LinearGradient>
+      </Pressable>
+    </View>
   );
 
   const renderDivider = () => (
@@ -281,6 +274,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#9333EA', '#FF5E00']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={StyleSheet.absoluteFillObject}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -306,14 +305,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    ...Platform.select({
-      web: {
-        backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-      } as any,
-    }),
   },
   scrollView: {
     flex: 1,
@@ -324,11 +315,6 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   
-  // Gradient header background
-  gradientHeader: {
-    width: '100%',
-    paddingHorizontal: 20,
-  },
   // Header - exact Figma specs
   header: {
     flexDirection: 'row',
@@ -336,6 +322,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 25,
     paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   logo: {
     width: 123.2,
