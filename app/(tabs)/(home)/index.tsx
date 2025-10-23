@@ -122,6 +122,7 @@ export default function HomeScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.showsScroll}
+          style={styles.showsScrollView}
         >
           {mockShows.slice(0, 6).map((show) => {
             const friendCount = getFriendsWatchingCount(show.id);
@@ -383,8 +384,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.26,
     fontFamily: 'Funnel Display',
   },
+  showsScrollView: {
+    marginLeft: -20,
+    marginRight: -20,
+  },
   showsScroll: {
     gap: 9,
+    paddingLeft: 20,
     paddingRight: 20,
   },
   showCard: {
