@@ -15,6 +15,7 @@ import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useFonts } from "expo-font";
 import {
+  FunnelDisplay_300Light,
   FunnelDisplay_400Regular,
   FunnelDisplay_700Bold,
 } from '@expo-google-fonts/funnel-display';
@@ -120,6 +121,7 @@ export default function RootLayout() {
 
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    FunnelDisplay_300Light,
     FunnelDisplay_400Regular,
     FunnelDisplay_700Bold,
   });

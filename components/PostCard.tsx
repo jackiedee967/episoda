@@ -359,9 +359,8 @@ const styles = StyleSheet.create({
   },
   postBody: {
     color: '#F4F4F4',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,
-    fontWeight: '200',
   },
   postTagsContainer: {
     flexDirection: 'row',
