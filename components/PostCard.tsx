@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     borderWidth: 0.25,
   },
   showTagText: {
-    fontFamily: 'FunnelDisplay_400Regular',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 13,
   },
   starRatings: {
