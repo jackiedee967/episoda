@@ -474,16 +474,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           style={[
             styles.modalContainer,
             {
-              transform: [{ translateY: slideAnim }],
+              opacity: fadeAnim,
             }
           ]}
         >
-          <View style={styles.header}>
-            <View style={styles.handle} />
-            <Pressable style={styles.closeButton} onPress={onClose}>
-              <IconSymbol name="xmark" size={24} color={colors.text} />
-            </Pressable>
-          </View>
           {step === 'selectShow' && renderSelectShow()}
           {step === 'selectEpisodes' && renderSelectEpisodes()}
           {step === 'postDetails' && renderPostDetails()}
@@ -497,42 +491,25 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   overlayTouchable: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   modalContainer: {
+    width: 440,
+    height: 780,
     backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: SCREEN_HEIGHT * 0.9,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: spacing.gapMedium,
-    paddingHorizontal: spacing.pageMargin,
-    paddingBottom: spacing.gapLarge,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: colors.border,
-    borderRadius: 2,
-    marginBottom: spacing.gapLarge,
-  },
-  closeButton: {
-    position: 'absolute',
-    right: spacing.pageMargin,
-    top: spacing.pageMargin,
+    borderRadius: 20,
+    padding: 24,
   },
   stepContainer: {
     flex: 1,
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: spacing.pageMargin,
   },
   stepTitle: {
     fontSize: 17,
@@ -560,14 +537,14 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    height: 46,
+    backgroundColor: colors.background,
     borderRadius: components.borderRadiusButton,
     borderWidth: 0.5,
     borderColor: colors.cardStroke,
-    paddingHorizontal: spacing.gapLarge,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
     marginBottom: 16,
-    gap: spacing.gapSmall,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
@@ -581,16 +558,20 @@ const styles = StyleSheet.create({
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
+    marginLeft: -3.5,
+    marginRight: -3.5,
   },
   showGridItem: {
     width: 126,
     height: 172,
+    marginLeft: 3.5,
+    marginRight: 3.5,
+    marginBottom: 7,
   },
   showGridPoster: {
-    width: 126,
-    height: 172,
-    borderRadius: spacing.gapSmall,
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
   },
   showGridTitle: {
     fontSize: 12,
