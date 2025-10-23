@@ -132,12 +132,13 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
   };
 
   const getShowTagColor = (showTitle: string) => {
+    // Using Figma tab colors
     const tagColors = [
-      { bg: '#2A2A2A', border: '#DD6B20', text: '#DD6B20' },
-      { bg: '#2A2A2A', border: '#E53E3E', text: '#E53E3E' },
-      { bg: '#2A2A2A', border: '#5CB85C', text: '#5CB85C' },
-      { bg: '#2A2A2A', border: '#5B9FD8', text: '#5B9FD8' },
-      { bg: '#2A2A2A', border: '#9333EA', text: '#9333EA' },
+      { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 }, // Orange
+      { bg: colors.tabBack, border: colors.tabStroke, text: colors.tabStroke }, // Purple
+      { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 }, // Blue
+      { bg: colors.tabBack4, border: colors.tabStroke5, text: colors.tabStroke5 }, // Red
+      { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 }, // Green
     ];
     const index = showTitle.length % tagColors.length;
     return tagColors[index];
@@ -154,11 +155,12 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
 
   const getTagColor = (tag: string) => {
     const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return { bg: '#2A2A2A', border: '#5CB85C', text: '#5CB85C' };
-    if (tagLower.includes('discussion')) return { bg: '#2A2A2A', border: '#5B9FD8', text: '#5B9FD8' };
-    if (tagLower.includes('spoiler')) return { bg: '#2A2A2A', border: '#E53E3E', text: '#E53E3E' };
-    if (tagLower.includes('recap')) return { bg: '#2A2A2A', border: '#DD6B20', text: '#DD6B20' };
-    return { bg: '#2A2A2A', border: '#999999', text: '#999999' };
+    // Using Figma tab colors for tag styling
+    if (tagLower.includes('theory')) return { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 };
+    if (tagLower.includes('discussion')) return { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 };
+    if (tagLower.includes('spoiler')) return { bg: colors.tabBack4, border: colors.tabStroke5, text: colors.tabStroke5 };
+    if (tagLower.includes('recap')) return { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 };
+    return { bg: colors.tabBack, border: colors.tabStroke2, text: colors.tabStroke2 };
   };
 
   const showTagColor = getShowTagColor(latestPost.show.title);
