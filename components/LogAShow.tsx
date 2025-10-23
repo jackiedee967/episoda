@@ -28,7 +28,7 @@ export function LogAShow(props: LogAShowProps) {
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
-    width: 400,
+    width: '100%',
     height: 60,
     paddingTop: 8,
     paddingLeft: 20,
@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
     borderColor: '#3E3E3E',
     backgroundColor: '#282828',
+    marginBottom: 20,
   },
   greenCircle: {
     width: 9,
