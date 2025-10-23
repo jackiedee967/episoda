@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   },
   pillContainer: {
     flexDirection: 'row',
-    backgroundColor: colors.card,
+    backgroundColor: colors.pageBackground,
     borderRadius: 30,
     paddingVertical: 8,
     paddingHorizontal: 12,
