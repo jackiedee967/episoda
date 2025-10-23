@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -70,20 +71,27 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <Image 
-        source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
-      <Pressable onPress={handleProfilePress}>
+    <LinearGradient
+      colors={['#9333EA', '#FF5E00']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.gradientHeader}
+    >
+      <View style={styles.header}>
+        <Stack.Screen options={{ headerShown: false }} />
         <Image 
-          source={{ uri: currentUser.avatar }}
-          style={styles.profilePic}
+          source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
+          style={styles.logo}
+          resizeMode="contain"
         />
-      </Pressable>
-    </View>
+        <Pressable onPress={handleProfilePress}>
+          <Image 
+            source={{ uri: currentUser.avatar }}
+            style={styles.profilePic}
+          />
+        </Pressable>
+      </View>
+    </LinearGradient>
   );
 
   const renderDivider = () => (
@@ -316,6 +324,11 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   
+  // Gradient header background
+  gradientHeader: {
+    width: '100%',
+    paddingHorizontal: 20,
+  },
   // Header - exact Figma specs
   header: {
     flexDirection: 'row',

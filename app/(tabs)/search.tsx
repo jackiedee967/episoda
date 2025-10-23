@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -248,10 +249,16 @@ export default function SearchScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={commonStyles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Search</Text>
-          <View style={styles.searchContainer}>
+      <View style={[commonStyles.container, styles.pageContainer]}>
+        <LinearGradient
+          colors={['#9333EA', '#FF5E00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientHeader}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Search</Text>
+            <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
             <TextInput
               style={styles.searchInput}
@@ -267,7 +274,8 @@ export default function SearchScreen() {
               </Pressable>
             )}
           </View>
-        </View>
+          </View>
+        </LinearGradient>
 
         <View style={styles.tabSelectorWrapper}>
           <TabSelector
@@ -301,6 +309,19 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
+  pageContainer: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      } as any,
+    }),
+  },
+  gradientHeader: {
+    width: '100%',
+  },
   header: {
     paddingHorizontal: spacing.pageMargin,
     paddingTop: 60,

@@ -6,7 +6,9 @@ import {
   ScrollView,
   Pressable,
   Image,
+  Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography, spacing, components } from '@/styles/commonStyles';
 import TabSelector, { Tab as TabType } from '@/components/TabSelector';
@@ -264,16 +266,20 @@ export default function NotificationsScreen() {
     <>
       <Stack.Screen
         options={{
-          headerShown: true,
-          headerTitle: 'Notifications',
-          headerStyle: {
-            backgroundColor: colors.pageBackground,
-          },
-          headerTintColor: colors.almostWhite,
-          headerShadowVisible: false,
+          headerShown: false,
         }}
       />
-      <View style={styles.container}>
+      <View style={[styles.container, styles.pageContainer]}>
+        <LinearGradient
+          colors={['#9333EA', '#FF5E00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.gradientHeader}
+        >
+          <View style={styles.notificationHeader}>
+            <Text style={styles.headerTitle}>Notifications</Text>
+          </View>
+        </LinearGradient>
         <View style={styles.tabWrapper}>
           <TabSelector
             tabs={tabs}
@@ -307,6 +313,28 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  pageContainer: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      } as any,
+    }),
+  },
+  gradientHeader: {
+    width: '100%',
+  },
+  notificationHeader: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingTop: 60,
+    paddingBottom: spacing.gapLarge,
+  },
+  headerTitle: {
+    ...typography.titleXL,
+    color: colors.almostWhite,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.pageBackground,
