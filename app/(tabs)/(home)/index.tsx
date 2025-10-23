@@ -1,16 +1,14 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TouchableOpacity, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, components, typography } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
-import ShowCard from '@/components/ShowCard';
 import Button from '@/components/Button';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
-import PostButton from '@/components/PostButton';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRight, Bookmark } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
@@ -22,17 +20,16 @@ export default function HomeScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Create pulsing animation - faster and more visible
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 2.2,
-          duration: 600,
+          toValue: 1.5,
+          duration: 800,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 600,
+          duration: 800,
           useNativeDriver: true,
         }),
       ])
@@ -56,10 +53,8 @@ export default function HomeScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       if (isFollowing(userId)) {
         await unfollowUser(userId);
-        console.log('Unfollowed user:', userId);
       } else {
         await followUser(userId);
-        console.log('Followed user:', userId);
       }
     } catch (error) {
       console.error('Error toggling follow:', error);
@@ -77,7 +72,12 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <View style={styles.headerContainer}>
+    <LinearGradient
+      colors={['#9334E9', '#FF5E00']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.headerGradient}
+    >
       <Stack.Screen
         options={{
           headerShown: false,
@@ -89,20 +89,43 @@ export default function HomeScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Pressable onPress={handleProfilePress} style={styles.profileButton}>
+        <Pressable onPress={handleProfilePress}>
           <Image 
             source={{ uri: currentUser.avatar }}
             style={styles.profilePicture}
           />
         </Pressable>
       </View>
-      <View style={styles.separatorContainer}>
-        <View style={styles.separator} />
+    </LinearGradient>
+  );
+
+  const renderWelcomeSection = () => (
+    <View style={styles.welcomeContainer}>
+      <Text style={styles.welcomeText}>Welcome back</Text>
+      <Text style={styles.userName}>{currentUser.displayName}</Text>
+    </View>
+  );
+
+  const renderPostInput = () => (
+    <View style={styles.postInputCard}>
+      <View style={styles.postInputContent}>
+        <Animated.View 
+          style={[
+            styles.greenDot,
+            {
+              transform: [{ scale: pulseAnim }],
+            },
+          ]}
+        />
+        <Text style={styles.postInputText}>What are you watching?</Text>
       </View>
-      <View style={styles.welcomeContainer}>
-        <Text style={styles.welcomeText}>Welcome back</Text>
-        <Text style={styles.userName}>{currentUser.displayName}</Text>
-      </View>
+      <Button
+        variant="primary"
+        size="medium"
+        onPress={() => setPostModalVisible(true)}
+      >
+        Tell your friends
+      </Button>
     </View>
   );
 
@@ -110,11 +133,8 @@ export default function HomeScreen() {
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recommended Titles</Text>
-        <Pressable 
-          onPress={() => router.push('/recommended-titles')}
-          style={styles.seeAllButton}
-        >
-          <ChevronRight size={16} color={colors.textSecondary} />
+        <Pressable onPress={() => console.log('See all')}>
+          <ChevronRight size={20} color={colors.almostWhite} />
         </Pressable>
       </View>
       <ScrollView
@@ -123,18 +143,40 @@ export default function HomeScreen() {
         contentContainerStyle={styles.showsScroll}
       >
         {mockShows.slice(0, 6).map((show) => (
-          <ShowCard
+          <Pressable
             key={show.id}
-            show={show}
-            friends={mockUsers.slice(0, show.friendsWatching)}
-          />
+            style={styles.showCard}
+            onPress={() => router.push(`/show/${show.id}`)}
+          >
+            <Image 
+              source={{ uri: show.poster || 'https://via.placeholder.com/300x400' }}
+              style={styles.showImage}
+            />
+            <Pressable style={styles.bookmarkButton}>
+              <Bookmark size={20} color={colors.almostWhite} />
+            </Pressable>
+            <View style={styles.showOverlay}>
+              <View style={styles.friendAvatars}>
+                {mockUsers.slice(0, Math.min(3, show.friendsWatching || 0)).map((user, index) => (
+                  <Image
+                    key={user.id}
+                    source={{ uri: user.avatar }}
+                    style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.friendsWatchingText}>
+                {show.friendsWatching || 0} friends watching
+              </Text>
+            </View>
+          </Pressable>
         ))}
       </ScrollView>
     </View>
   );
 
   const renderYouMayKnow = () => {
-    const suggestedUsers = mockUsers.filter(user => !isFollowing(user.id));
+    const suggestedUsers = mockUsers.filter(user => !isFollowing(user.id)).slice(0, 5);
     
     if (suggestedUsers.length === 0) {
       return null;
@@ -144,6 +186,9 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>You May Know</Text>
+          <Pressable onPress={() => console.log('See all')}>
+            <ChevronRight size={20} color={colors.almostWhite} />
+          </Pressable>
         </View>
         <ScrollView
           horizontal
@@ -158,8 +203,24 @@ export default function HomeScreen() {
               activeOpacity={0.7}
             >
               <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
-              <Text style={styles.userDisplayName}>{user.displayName}</Text>
-              <Text style={styles.userUsername}>@{user.username}</Text>
+              <Text style={styles.userDisplayName} numberOfLines={1}>{user.displayName}</Text>
+              <Text style={styles.userUsername} numberOfLines={1}>@{user.username}</Text>
+              {user.mutualFriends && user.mutualFriends > 0 && (
+                <View style={styles.mutualFriendsContainer}>
+                  <View style={styles.mutualAvatars}>
+                    {mockUsers.slice(0, 2).map((friend, index) => (
+                      <Image
+                        key={friend.id}
+                        source={{ uri: friend.avatar }}
+                        style={[styles.mutualAvatar, { marginLeft: index > 0 ? -6 : 0 }]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.mutualFriendsText}>
+                    {user.mutualFriends} mutual
+                  </Text>
+                </View>
+              )}
               <Button
                 variant={isFollowing(user.id) ? 'secondary' : 'primary'}
                 size="small"
@@ -167,6 +228,7 @@ export default function HomeScreen() {
                   e?.stopPropagation?.();
                   handleFollowUser(user.id);
                 }}
+                fullWidth
               >
                 {isFollowing(user.id) ? 'Following' : 'Follow'}
               </Button>
@@ -207,11 +269,8 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend Activity</Text>
-          <Pressable 
-            onPress={() => router.push('/(tabs)/(home)/friend-activity')}
-            style={styles.seeAllButton}
-          >
-            <ChevronRight size={16} color={colors.textSecondary} />
+          <Pressable onPress={() => console.log('See all')}>
+            <ChevronRight size={20} color={colors.almostWhite} />
           </Pressable>
         </View>
         {allActivity.length > 0 ? (
@@ -228,21 +287,10 @@ export default function HomeScreen() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <IconSymbol name="person.2" size={48} color={colors.textSecondary} />
             <Text style={styles.emptyStateTitle}>No friend activity yet</Text>
             <Text style={styles.emptyStateText}>
-              Follow friends to see what they&apos;re watching
+              Follow friends to see what they're watching
             </Text>
-            <View style={styles.inviteButtonContainer}>
-              <Button
-                variant="primary"
-                size="medium"
-                onPress={() => console.log('Invite friends')}
-                fullWidth
-              >
-                Invite Friends
-              </Button>
-            </View>
           </View>
         )}
       </View>
@@ -257,7 +305,8 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <PostButton onPress={() => setPostModalVisible(true)} pulseAnim={pulseAnim} />
+        {renderWelcomeSection()}
+        {renderPostInput()}
         {renderRecommendedTitles()}
         {renderYouMayKnow()}
         {renderFriendActivity()}
@@ -276,60 +325,75 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.pageBackground,
   },
-  headerContainer: {
-    paddingTop: spacing.pageMargin,
-    paddingBottom: spacing.gapMedium,
-    backgroundColor: colors.pageBackground,
+  headerGradient: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: spacing.pageMargin,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.pageMargin,
-    paddingBottom: spacing.pageMargin,
   },
   logo: {
-    width: 120,
-    height: 32,
-  },
-  profileButton: {
-    padding: 0,
+    width: 100,
+    height: 24,
   },
   profilePicture: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  separatorContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 0,
-  },
-  separator: {
-    height: 0.5,
-    backgroundColor: colors.cardStroke,
-    width: '100%',
-  },
-  welcomeContainer: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: spacing.pageMargin,
-    paddingBottom: spacing.gapMedium,
-  },
-  welcomeText: {
-    ...typography.subtitle,
-    color: colors.textSecondary,
-    marginBottom: spacing.gapSmall,
-  },
-  userName: {
-    ...typography.titleXL,
-    color: colors.text,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: colors.pureWhite,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: spacing.pageMargin,
     paddingBottom: 100,
+  },
+  welcomeContainer: {
+    paddingHorizontal: spacing.pageMargin,
+    paddingTop: spacing.gapLarge,
+    paddingBottom: spacing.gapMedium,
+  },
+  welcomeText: {
+    ...typography.subtitle,
+    color: colors.almostWhite,
+    marginBottom: 4,
+  },
+  userName: {
+    ...typography.titleXL,
+    color: colors.pureWhite,
+  },
+  postInputCard: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: components.borderRadiusCard,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    marginHorizontal: spacing.pageMargin,
+    marginBottom: spacing.gapLarge,
+    padding: spacing.cardPadding,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.gapMedium,
+  },
+  postInputContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.gapSmall,
+  },
+  greenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.greenHighlight,
+  },
+  postInputText: {
+    ...typography.subtitle,
+    color: colors.almostWhite,
   },
   section: {
     marginBottom: spacing.sectionSpacing,
@@ -338,68 +402,129 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: spacing.pageMargin,
     marginBottom: spacing.gapLarge,
   },
   sectionTitle: {
     ...typography.titleL,
-    color: colors.text,
-  },
-  seeAllButton: {
-    padding: spacing.gapSmall,
+    color: colors.pureWhite,
   },
   showsScroll: {
-    gap: spacing.gapLarge,
+    paddingLeft: spacing.pageMargin,
     paddingRight: spacing.pageMargin,
+    gap: spacing.gapMedium,
+  },
+  showCard: {
+    width: 160,
+    height: 240,
+    borderRadius: components.borderRadiusCard,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  showImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bookmarkButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  friendAvatars: {
+    flexDirection: 'row',
+  },
+  friendAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.pureWhite,
+  },
+  friendsWatchingText: {
+    ...typography.p2,
+    color: colors.almostWhite,
   },
   usersScroll: {
-    gap: spacing.gapLarge,
+    paddingLeft: spacing.pageMargin,
     paddingRight: spacing.pageMargin,
+    gap: spacing.gapMedium,
   },
   userCard: {
+    width: 140,
     backgroundColor: colors.cardBackground,
     borderRadius: components.borderRadiusCard,
     borderWidth: 1,
     borderColor: colors.cardStroke,
-    padding: spacing.cardPadding,
+    padding: spacing.gapMedium,
     alignItems: 'center',
-    width: 160,
+    gap: spacing.gapSmall,
   },
   userAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: spacing.gapMedium,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: spacing.gapSmall,
   },
   userDisplayName: {
-    ...typography.subtitle,
-    color: colors.text,
+    ...typography.p1Bold,
+    color: colors.pureWhite,
+    textAlign: 'center',
   },
   userUsername: {
-    ...typography.p1,
-    color: colors.textSecondary,
-    marginBottom: spacing.gapMedium,
+    ...typography.p2,
+    color: colors.grey1,
+    textAlign: 'center',
+  },
+  mutualFriendsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  mutualAvatars: {
+    flexDirection: 'row',
+  },
+  mutualAvatar: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.pureWhite,
+  },
+  mutualFriendsText: {
+    ...typography.p3,
+    color: colors.grey1,
   },
   emptyState: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-    padding: spacing.sectionSpacing,
     alignItems: 'center',
+    paddingHorizontal: spacing.pageMargin,
+    paddingVertical: spacing.sectionSpacing,
   },
   emptyStateTitle: {
     ...typography.titleL,
-    color: colors.text,
-    marginTop: spacing.gapLarge,
+    color: colors.pureWhite,
     marginBottom: spacing.gapSmall,
   },
   emptyStateText: {
     ...typography.p1,
-    color: colors.textSecondary,
+    color: colors.grey1,
     textAlign: 'center',
-    marginBottom: spacing.pageMargin,
-  },
-  inviteButtonContainer: {
-    alignSelf: 'stretch',
   },
 });
