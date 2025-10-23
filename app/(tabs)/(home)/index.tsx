@@ -487,19 +487,17 @@ const styles = StyleSheet.create({
   },
   userCardName: {
     fontSize: 13,
-    fontWeight: '400',
     color: '#F4F4F4',
     lineHeight: 15.6,
     textAlign: 'center',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_400Regular',
   },
   userCardUsername: {
     fontSize: 10,
-    fontWeight: '500',
     color: '#8BFC76',
     lineHeight: 10,
     textAlign: 'center',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_500Medium',
   },
   mutualFriendsContainer: {
     flexDirection: 'row',
@@ -518,9 +516,8 @@ const styles = StyleSheet.create({
   },
   mutualText: {
     fontSize: 8,
-    fontWeight: '400',
     color: '#A9A9A9',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
   },
   followButton: {
     width: '100%',
@@ -536,9 +533,8 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     fontSize: 11,
-    fontWeight: '600',
     color: '#000',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_600SemiBold',
   },
   followingButtonText: {
     color: '#F4F4F4',
@@ -555,16 +551,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '500',
     color: '#F4F4F4',
     marginBottom: 8,
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_500Medium',
   },
   emptyText: {
     fontSize: 13,
-    fontWeight: '400',
     color: '#A9A9A9',
     textAlign: 'center',
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_400Regular',
   },
 });
