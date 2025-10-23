@@ -21,7 +21,8 @@ export default function SearchScreen() {
   const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing, currentUser } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<SearchCategory>('shows');
+  const initialTab = (params.tab as SearchCategory) || 'shows';
+  const [activeCategory, setActiveCategory] = useState<SearchCategory>(initialTab);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
 

@@ -177,7 +177,7 @@ export default function HomeScreen() {
       <View style={styles.youMayKnowSection}>
         <Pressable 
           style={styles.sectionHeader}
-          onPress={() => router.push('/(tabs)/search')}
+          onPress={() => router.push('/(tabs)/search?tab=users')}
         >
           <Text style={styles.sectionTitle}>You May Know</Text>
           <ChevronRight size={10} color="#FFF" strokeWidth={1} />
@@ -246,13 +246,9 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.friendActivitySection}>
-        <Pressable 
-          style={styles.sectionHeader}
-          onPress={() => router.push('/(tabs)/(home)')}
-        >
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend Activity</Text>
-          <ChevronRight size={10} color="#FFF" strokeWidth={1} />
-        </Pressable>
+        </View>
         {allActivity.length > 0 ? (
           allActivity.slice(0, 5).map((item, index) => (
             <PostCard
@@ -420,7 +416,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#3E3E3E',
-    backgroundColor: '#282828',
+    backgroundColor: '#1B1B1B',
   },
   friendAvatars: {
     flexDirection: 'row',
@@ -467,7 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 0.5,
     borderColor: '#3E3E3E',
-    backgroundColor: '#282828',
+    backgroundColor: '#1B1B1B',
     alignItems: 'center',
   },
   userProfilePic: {
