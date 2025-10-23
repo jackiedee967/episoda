@@ -101,46 +101,68 @@ export default function HomeScreen() {
     <LogAShow onPress={() => setPostModalVisible(true)} />
   );
 
-  const renderRecommendedTitles = () => (
-    <View style={styles.recommendedSection}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recommended Titles</Text>
-        <ChevronRight size={9} color="#FFF" strokeWidth={1} />
+  const renderRecommendedTitles = () => {
+    const getFriendsWatchingCount = (showId: string) => {
+      const friendIds = currentUser.following || [];
+      const friendsWhoPosted = posts.filter(post => 
+        friendIds.includes(post.user.id) && 
+        post.show?.id === showId
+      );
+      const uniqueFriends = new Set(friendsWhoPosted.map(post => post.user.id));
+      return uniqueFriends.size;
+    };
+
+    return (
+      <View style={styles.recommendedSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recommended Titles</Text>
+          <ChevronRight size={9} color="#FFF" strokeWidth={1} />
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.showsScroll}
+        >
+          {mockShows.slice(0, 6).map((show) => {
+            const friendCount = getFriendsWatchingCount(show.id);
+            const friendsToShow = mockUsers
+              .filter(user => currentUser.following?.includes(user.id))
+              .slice(0, Math.min(3, friendCount));
+
+            return (
+              <Pressable
+                key={show.id}
+                style={styles.showCard}
+                onPress={() => router.push(`/show/${show.id}`)}
+              >
+                <Image 
+                  source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
+                  style={styles.showImage}
+                />
+                {friendCount > 0 && (
+                  <View style={styles.friendsBar}>
+                    <View style={styles.friendAvatars}>
+                      {friendsToShow.map((user, index) => (
+                        <Image
+                          key={user.id}
+                          source={{ uri: user.avatar }}
+                          style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
+                        />
+                      ))}
+                    </View>
+                    <Text style={styles.friendsWatchingText}>
+                      <Text style={styles.friendsWatchingNumber}>{friendCount}</Text>
+                      <Text style={styles.friendsWatchingLabel}> friends watching</Text>
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.showsScroll}
-      >
-        {mockShows.slice(0, 6).map((show) => (
-          <Pressable
-            key={show.id}
-            style={styles.showCard}
-            onPress={() => router.push(`/show/${show.id}`)}
-          >
-            <Image 
-              source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-              style={styles.showImage}
-            />
-            <View style={styles.friendsBar}>
-              <View style={styles.friendAvatars}>
-                {mockUsers.slice(0, Math.min(3, show.friendsWatching || 0)).map((user, index) => (
-                  <Image
-                    key={user.id}
-                    source={{ uri: user.avatar }}
-                    style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-                  />
-                ))}
-              </View>
-              <Text style={styles.friendsWatchingText}>
-                {show.friendsWatching || 0} friends watching
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-      </ScrollView>
-    </View>
-  );
+    );
+  };
 
   const renderYouMayKnow = () => {
     const suggestedUsers = mockUsers.filter(user => !isFollowing(user.id)).slice(0, 5);
@@ -404,9 +426,21 @@ const styles = StyleSheet.create({
     borderColor: '#F4F4F4',
   },
   friendsWatchingText: {
-    fontSize: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  friendsWatchingNumber: {
+    fontSize: 8,
+    fontWeight: '500',
+    color: '#8BFC76',
+    lineHeight: 8 * 1.2,
+    fontFamily: 'Funnel Display',
+  },
+  friendsWatchingLabel: {
+    fontSize: 8,
     fontWeight: '400',
     color: '#F4F4F4',
+    lineHeight: 8 * 1.2,
     fontFamily: 'Funnel Display',
   },
   

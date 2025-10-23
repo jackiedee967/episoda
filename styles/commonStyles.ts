@@ -123,6 +123,12 @@ export const typography = {
     lineHeight: 10 * 1.2,
     fontWeight: '400' as const,
   },
+  p3Medium: {
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 8,
+    lineHeight: 8 * 1.2,
+    fontWeight: '500' as const,
+  },
   p3: {
     fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 8,
