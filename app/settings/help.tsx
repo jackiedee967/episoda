@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: colors.text,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.text,
-    letterSpacing: 1,
+    letterSpacing: 0,
   },
   createButton: {
     flexDirection: 'row',

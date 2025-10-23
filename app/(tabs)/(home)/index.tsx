@@ -114,10 +114,13 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.recommendedSection}>
-        <View style={styles.sectionHeader}>
+        <Pressable 
+          style={styles.sectionHeader}
+          onPress={() => router.push('/recommended-titles')}
+        >
           <Text style={styles.sectionTitle}>Recommended Titles</Text>
-          <ChevronRight size={9} color="#FFF" strokeWidth={1} />
-        </View>
+          <ChevronRight size={10} color="#FFF" strokeWidth={1} />
+        </Pressable>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -172,10 +175,13 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.youMayKnowSection}>
-        <View style={styles.sectionHeader}>
+        <Pressable 
+          style={styles.sectionHeader}
+          onPress={() => router.push('/(tabs)/search')}
+        >
           <Text style={styles.sectionTitle}>You May Know</Text>
-          <ChevronRight size={9} color="#FFF" strokeWidth={1} />
-        </View>
+          <ChevronRight size={10} color="#FFF" strokeWidth={1} />
+        </Pressable>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -240,10 +246,13 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.friendActivitySection}>
-        <View style={styles.sectionHeader}>
+        <Pressable 
+          style={styles.sectionHeader}
+          onPress={() => router.push('/(tabs)/(home)')}
+        >
           <Text style={styles.sectionTitle}>Friend Activity</Text>
-          <ChevronRight size={9} color="#FFF" strokeWidth={1} />
-        </View>
+          <ChevronRight size={10} color="#FFF" strokeWidth={1} />
+        </Pressable>
         {allActivity.length > 0 ? (
           allActivity.slice(0, 5).map((item, index) => (
             <PostCard
@@ -353,7 +362,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFF',
     lineHeight: 43,
-    letterSpacing: -0.86,
+    letterSpacing: 0,
     fontFamily: 'Funnel Display',
   },
   
@@ -372,7 +381,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     color: '#F4F4F4',
-    letterSpacing: -0.26,
+    letterSpacing: 0,
     fontFamily: 'Funnel Display',
   },
   showsScrollView: {
@@ -507,7 +516,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#000',
     fontFamily: 'FunnelDisplay_400Regular',
-    letterSpacing: -0.16,
+    letterSpacing: 0,
   },
   
   // Friend Activity - exact specs

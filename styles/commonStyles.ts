@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export const colors = {
   // Background colors
   pageBackground: '#0E0E0E',
-  cardBackground: '#282828',
+  cardBackground: '#1B1B1B',
   
   // Primary colors
   greenHighlight: '#8BFC76',
@@ -38,7 +38,7 @@ export const colors = {
   
   // Legacy aliases for compatibility
   background: '#0E0E0E',
-  card: '#282828',
+  card: '#1B1B1B',
   text: '#FFFFFF',
   textSecondary: '#A9A9A9',
   accent: '#8BFC76',
