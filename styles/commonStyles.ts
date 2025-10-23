@@ -125,11 +125,23 @@ export const typography = {
   },
   p3Medium: {
     fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 8,
-    lineHeight: 8 * 1.2,
+    fontSize: 10,
+    lineHeight: 10,
     fontWeight: '500' as const,
   },
-  p3: {
+  p3Regular: {
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 10,
+    lineHeight: 10 * 1.2,
+    fontWeight: '400' as const,
+  },
+  p3Bold: {
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 10,
+    lineHeight: 10,
+    fontWeight: '600' as const,
+  },
+  p4: {
     fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 8,
     lineHeight: 8 * 1.2,

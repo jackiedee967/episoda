@@ -430,17 +430,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   friendsWatchingNumber: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '500',
     color: '#8BFC76',
-    lineHeight: 8 * 1.2,
+    lineHeight: 10,
     fontFamily: 'Funnel Display',
   },
   friendsWatchingLabel: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '400',
     color: '#F4F4F4',
-    lineHeight: 8 * 1.2,
+    lineHeight: 10 * 1.2,
     fontFamily: 'Funnel Display',
   },
   
