@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useRouter } from 'expo-router';
 import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -398,12 +397,23 @@ export default function ProfileScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[commonStyles.container, styles.pageContainer]}>
-        <LinearGradient
-          colors={['#9333EA', '#FF5E00']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFillObject}
-        />
+        {Platform.OS === 'web' && (
+          <View style={styles.backgroundImageContainer}>
+            <img 
+              src="/app-background.jpg" 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+              }}
+              alt=""
+            />
+          </View>
+        )}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderMyRotation()}
@@ -447,6 +457,10 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
+  },
+  backgroundImageContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
   scrollView: {
     flex: 1,
