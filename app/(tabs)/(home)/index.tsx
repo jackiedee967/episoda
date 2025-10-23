@@ -150,10 +150,10 @@ export default function HomeScreen() {
                         />
                       ))}
                     </View>
-                    <Text style={styles.friendsWatchingText}>
+                    <View style={styles.friendsWatchingTextContainer}>
                       <Text style={styles.friendsWatchingNumber}>{friendCount}</Text>
                       <Text style={styles.friendsWatchingLabel}> friends watching</Text>
-                    </Text>
+                    </View>
                   </View>
                 )}
               </Pressable>
@@ -426,10 +426,10 @@ const styles = StyleSheet.create({
     borderWidth: 0.25,
     borderColor: '#F4F4F4',
   },
-  friendsWatchingText: {
+  friendsWatchingTextContainer: {
+    height: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   friendsWatchingNumber: {
     fontSize: 10,
@@ -437,8 +437,6 @@ const styles = StyleSheet.create({
     color: '#8BFC76',
     lineHeight: 10,
     fontFamily: 'Funnel Display',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   friendsWatchingLabel: {
     fontSize: 10,
@@ -446,8 +444,6 @@ const styles = StyleSheet.create({
     color: '#F4F4F4',
     lineHeight: 10,
     fontFamily: 'Funnel Display',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
   },
   
   // You May Know - exact specs
