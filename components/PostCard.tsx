@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     shadowColor: 'rgba(0, 0, 0, 0.07)',
     shadowRadius: 10.9,
     shadowOffset: { width: 0, height: 4 },
-    marginBottom: 10,
+    marginBottom: 5,
   },
   userPostInfo: {
     flexDirection: 'row',
