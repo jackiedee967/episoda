@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform, ImageBackground } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import { LogAShow } from '@/components/LogAShow';
@@ -119,7 +120,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/recommended-titles')}
         >
           <Text style={styles.sectionTitle}>Recommended Titles</Text>
-          <ChevronRight size={10} color="#FFF" strokeWidth={1} />
+          <ChevronRight size={10} color={tokens.colors.pureWhite} strokeWidth={1} />
         </Pressable>
         <ScrollView
           horizontal
@@ -180,7 +181,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/(tabs)/search?tab=users')}
         >
           <Text style={styles.sectionTitle}>You May Know</Text>
-          <ChevronRight size={10} color="#FFF" strokeWidth={1} />
+          <ChevronRight size={10} color={tokens.colors.pureWhite} strokeWidth={1} />
         </Pressable>
         <ScrollView
           horizontal
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
   // Divider - exact specs
   divider: {
     height: 0.5,
-    backgroundColor: 'rgba(255, 255, 255, 0.30)',
+    backgroundColor: tokens.colors.imageStroke,
     marginBottom: 23,
   },
   
@@ -358,19 +359,12 @@ const styles = StyleSheet.create({
     marginBottom: 29,
   },
   welcomeBack: {
-    fontSize: 17,
-    fontWeight: '500',
-    color: '#F4F4F4',
-    lineHeight: 17,
-    fontFamily: 'Funnel Display',
+    ...tokens.typography.subtitle,
+    color: tokens.colors.almostWhite,
   },
   userName: {
-    fontSize: 43,
-    fontWeight: '700',
-    color: '#FFF',
-    lineHeight: 43,
-    letterSpacing: 0,
-    fontFamily: 'Funnel Display',
+    ...tokens.typography.titleXl,
+    color: tokens.colors.pureWhite,
   },
   
   
@@ -385,11 +379,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#F4F4F4',
-    letterSpacing: 0,
-    fontFamily: 'Funnel Display',
+    ...tokens.typography.p1,
+    color: tokens.colors.almostWhite,
   },
   showsScrollView: {
     marginLeft: -20,
@@ -410,7 +401,7 @@ const styles = StyleSheet.create({
     height: 280,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.30)',
+    borderColor: tokens.colors.imageStroke,
   },
   friendsBar: {
     position: 'absolute',
@@ -426,8 +417,8 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#3E3E3E',
-    backgroundColor: '#1B1B1B',
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
   },
   friendAvatars: {
     flexDirection: 'row',
@@ -443,18 +434,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   friendsWatchingNumber: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#8BFC76',
-    lineHeight: 10,
-    fontFamily: 'Funnel Display',
+    ...tokens.typography.p3M,
+    color: tokens.colors.greenHighlight,
   },
   friendsWatchingLabel: {
-    fontSize: 10,
-    fontWeight: '400',
-    color: '#F4F4F4',
-    lineHeight: 10,
-    fontFamily: 'Funnel Display',
+    ...tokens.typography.p3R,
+    color: tokens.colors.almostWhite,
   },
   
   // You May Know - exact specs
@@ -473,8 +458,8 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 16,
     borderWidth: 0.5,
-    borderColor: '#3E3E3E',
-    backgroundColor: '#1B1B1B',
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
     alignItems: 'center',
   },
   userProfilePic: {
@@ -482,21 +467,17 @@ const styles = StyleSheet.create({
     height: 92,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.30)',
+    borderColor: tokens.colors.imageStroke,
   },
   userCardName: {
-    fontSize: 13,
-    color: '#F4F4F4',
-    lineHeight: 15.6,
+    ...tokens.typography.p1,
+    color: tokens.colors.almostWhite,
     textAlign: 'center',
-    fontFamily: 'FunnelDisplay_400Regular',
   },
   userCardUsername: {
-    fontSize: 10,
-    color: '#8BFC76',
-    lineHeight: 10,
+    ...tokens.typography.p3M,
+    color: tokens.colors.greenHighlight,
     textAlign: 'center',
-    fontFamily: 'FunnelDisplay_500Medium',
   },
   friendsWatchingContainer: {
     width: '100%',
@@ -512,18 +493,16 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 0.25,
-    borderColor: '#F4F4F4',
+    borderColor: tokens.colors.almostWhite,
   },
   countBadge: {
-    backgroundColor: '#DEE8FF',
+    backgroundColor: tokens.colors.tabBack4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   countBadgeText: {
-    fontSize: 8,
-    color: '#000',
-    fontFamily: 'FunnelDisplay_400Regular',
-    letterSpacing: 0,
+    ...tokens.typography.p4,
+    color: tokens.colors.black,
   },
   
   // Friend Activity - exact specs
@@ -536,15 +515,13 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyTitle: {
-    fontSize: 17,
-    color: '#F4F4F4',
+    ...tokens.typography.subtitle,
+    color: tokens.colors.almostWhite,
     marginBottom: 8,
-    fontFamily: 'FunnelDisplay_500Medium',
   },
   emptyText: {
-    fontSize: 13,
-    color: '#A9A9A9',
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
     textAlign: 'center',
-    fontFamily: 'FunnelDisplay_400Regular',
   },
 });

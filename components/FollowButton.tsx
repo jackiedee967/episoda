@@ -2,6 +2,7 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors, components } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 
 interface FollowButtonProps {
@@ -61,7 +62,7 @@ export default function FollowButton({
       {isLoading ? (
         <ActivityIndicator
           size="small"
-          color={isFollowing ? colors.text : '#000000'}
+          color={isFollowing ? colors.text : tokens.colors.black}
         />
       ) : (
         <Text style={textStyle}>
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttonTextFollow: {
-    color: '#000000',
+    color: tokens.colors.black,
   },
   buttonTextFollowing: {
     color: colors.text,

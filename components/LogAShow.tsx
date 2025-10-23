@@ -1,5 +1,6 @@
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 
 export interface LogAShowProps {
   onPress?: () => void;
@@ -42,21 +43,21 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: '#3E3E3E',
-    backgroundColor: '#282828',
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
     marginBottom: 20,
   },
   greenCircle: {
     width: 9,
     height: 9,
     borderRadius: 4.5,
-    backgroundColor: '#8BFC76',
+    backgroundColor: tokens.colors.greenHighlight,
   },
   whatAreYouWatching: {
     flexGrow: 1,
     flexShrink: 0,
     flexBasis: 0,
-    color: '#F4F4F4',
+    color: tokens.colors.almostWhite,
     fontFamily: 'Funnel Display',
     fontSize: 13,
     fontStyle: 'normal',
@@ -71,10 +72,10 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 14,
     borderTopLeftRadius: 14,
     borderTopRightRadius: 14,
-    backgroundColor: '#8BFC76',
+    backgroundColor: tokens.colors.greenHighlight,
   },
   buttonText: {
-    color: '#000',
+    color: tokens.colors.black,
     fontFamily: 'Funnel Display',
     fontSize: 13,
     fontWeight: '600',

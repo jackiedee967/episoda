@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { Post } from '@/types';
 import { Heart, MessageCircle, RefreshCw, Lightbulb, AlertTriangle, List, HelpCircle } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
@@ -88,12 +89,12 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
 
   const getShowTagColor = (showTitle: string) => {
     const tagColors = [
-      { bg: '#FFF8F3', border: '#FF5E00', text: '#FF5E00' }, // Orange - Love Island
-      { bg: '#FAF5FF', border: '#FF3EFF', text: '#FF3EFF' }, // Purple
-      { bg: '#CEEBFF', border: '#1700C6', text: '#1700C6' }, // Blue
-      { bg: '#FFE2E2', border: '#FF5E00', text: '#FF5E00' }, // Pink/Red
-      { bg: '#DEFFAD', border: '#0F6100', text: '#0F6100' }, // Green
-      { bg: '#FFF8F3', border: '#C20081', text: '#C20081' }, // Magenta
+      { bg: tokens.colors.tabBack, border: tokens.colors.tabStroke, text: tokens.colors.tabStroke }, // Orange - Love Island
+      { bg: tokens.colors.tabBack2, border: tokens.colors.tabStroke2, text: tokens.colors.tabStroke2 }, // Purple
+      { bg: tokens.colors.tabBack4, border: tokens.colors.tabStroke4, text: tokens.colors.tabStroke4 }, // Blue
+      { bg: tokens.colors.tabBack5, border: tokens.colors.tabStroke5, text: tokens.colors.tabStroke5 }, // Pink/Red
+      { bg: tokens.colors.tabBack3, border: tokens.colors.tabStroke3, text: tokens.colors.tabStroke3 }, // Green
+      { bg: tokens.colors.tabBack6, border: tokens.colors.tabStroke6, text: tokens.colors.tabStroke6 }, // Magenta
     ];
     const index = Math.abs(showTitle.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % tagColors.length;
     return tagColors[index];
@@ -101,11 +102,11 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
 
   const getTagColor = (tag: string) => {
     const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory') || tagLower.includes('fan')) return { bg: '#DEFFAD', border: '#0F6100', text: '#0F6100' };
-    if (tagLower.includes('discussion')) return { bg: '#CEEBFF', border: '#1700C6', text: '#1700C6' };
-    if (tagLower.includes('spoiler')) return { bg: '#FFE2E2', border: '#FF5E00', text: '#FF5E00' };
-    if (tagLower.includes('recap')) return { bg: '#CEEBFF', border: '#1700C6', text: '#1700C6' };
-    return { bg: '#FAF5FF', border: '#9334E9', text: '#9334E9' };
+    if (tagLower.includes('theory') || tagLower.includes('fan')) return { bg: tokens.colors.tabBack3, border: tokens.colors.tabStroke3, text: tokens.colors.tabStroke3 };
+    if (tagLower.includes('discussion')) return { bg: tokens.colors.tabBack4, border: tokens.colors.tabStroke4, text: tokens.colors.tabStroke4 };
+    if (tagLower.includes('spoiler')) return { bg: tokens.colors.tabBack5, border: tokens.colors.tabStroke, text: tokens.colors.tabStroke };
+    if (tagLower.includes('recap')) return { bg: tokens.colors.tabBack4, border: tokens.colors.tabStroke4, text: tokens.colors.tabStroke4 };
+    return { bg: tokens.colors.tabBack2, border: tokens.colors.tabStroke2, text: tokens.colors.tabStroke2 };
   };
 
   const getTagIcon = (tag: string) => {
@@ -212,22 +213,22 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
             <Pressable onPress={handleLikePress} style={styles.likes}>
               <Heart
                 size={16}
-                color={latestPost.isLiked ? '#8BFC76' : '#A9A9A9'}
-                fill={latestPost.isLiked ? '#8BFC76' : 'none'}
+                color={latestPost.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                fill={latestPost.isLiked ? tokens.colors.greenHighlight : 'none'}
                 strokeWidth={1.5}
               />
               <Text style={styles.countText}>{latestPost.likes}</Text>
             </Pressable>
 
             <Pressable onPress={handleCommentPress} style={styles.comments}>
-              <MessageCircle size={16} color="#A9A9A9" strokeWidth={1.5} />
+              <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
               <Text style={styles.countText}>{latestPost.comments}</Text>
             </Pressable>
 
             <Pressable onPress={handleRepostPress} style={styles.reposts}>
               <RefreshCw
                 size={16}
-                color={isReposted ? '#8BFC76' : '#A9A9A9'}
+                color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
                 strokeWidth={1.5}
               />
               <Text style={styles.countText}>{latestPost.reposts}</Text>
@@ -251,8 +252,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     borderWidth: 0.5,
-    borderColor: '#3E3E3E',
-    backgroundColor: '#1B1B1B',
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
     shadowColor: 'rgba(0, 0, 0, 0.07)',
     shadowRadius: 10.9,
     shadowOffset: { width: 0, height: 4 },
@@ -284,12 +285,12 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   justWatchedText: {
-    color: '#F4F4F4',
+    color: tokens.colors.almostWhite,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 13,
   },
   usernameText: {
-    color: '#8BFC76',
+    color: tokens.colors.greenHighlight,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -306,11 +307,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     borderWidth: 0.25,
-    borderColor: '#9334E9',
-    backgroundColor: '#FAF5FF',
+    borderColor: tokens.colors.tabStroke2,
+    backgroundColor: tokens.colors.tabBack2,
   },
   episodeTagText: {
-    color: '#FF3EFF',
+    color: tokens.colors.tabStroke2,
     fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 13,
   },
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     gap: 1,
   },
   star: {
-    color: '#8BFC76',
+    color: tokens.colors.greenHighlight,
     fontSize: 14,
   },
   userProfilePic: {
@@ -352,12 +353,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   postTitle: {
-    color: '#F4F4F4',
+    color: tokens.colors.almostWhite,
     fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 13,
   },
   postBody: {
-    color: '#F4F4F4',
+    color: tokens.colors.almostWhite,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,
   },
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   countText: {
-    color: '#A9A9A9',
+    color: tokens.colors.grey1,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,
   },

@@ -1,152 +1,82 @@
 
 import { StyleSheet } from 'react-native';
+import tokens from './tokens';
 
+// Color aliases mapped to design tokens for easy access
 export const colors = {
-  // Background colors
-  pageBackground: '#0E0E0E',
-  cardBackground: '#1B1B1B',
-  
-  // Primary colors
-  greenHighlight: '#8BFC76',
-  almostWhite: '#F4F4F4',
-  pureWhite: '#FFFFFF',
-  black: '#000000',
+  // Primary colors from design tokens
+  pageBackground: tokens.colors.pageBackground,
+  cardBackground: tokens.colors.cardBackground,
+  greenHighlight: tokens.colors.greenHighlight,
+  almostWhite: tokens.colors.almostWhite,
+  pureWhite: tokens.colors.pureWhite,
+  black: tokens.colors.black,
   
   // Grey scale
-  cardStroke: '#3E3E3E',
-  grey1: '#A9A9A9',
-  grey2: '#D8D8D8',
-  grey3: '#333333',
+  cardStroke: tokens.colors.cardStroke,
+  grey1: tokens.colors.grey1,
+  grey2: tokens.colors.grey2,
+  grey3: tokens.colors.grey3,
   
   // Image/Media
-  imageStroke: '#FFFFF4',
+  imageStroke: tokens.colors.imageStroke,
   
-  // Tab colors with strokes
-  tabBack: '#FAF5FF',
-  tabBack2: '#DEFFAD',
-  tabBack3: '#CEEBFF',
-  tabBack4: '#FFE2E2',
-  tabBack5: '#FFF8F3',
-  tabBack6: '#FFF8F3',
+  // Tab colors
+  tabBack: tokens.colors.tabBack,
+  tabBack2: tokens.colors.tabBack2,
+  tabBack3: tokens.colors.tabBack3,
+  tabBack4: tokens.colors.tabBack4,
+  tabBack5: tokens.colors.tabBack5,
+  tabBack6: tokens.colors.tabBack6,
   
-  tabStroke: '#FF3EFF',
-  tabStroke2: '#9334E9',
-  tabStroke3: '#0F6100',
-  tabStroke4: '#1700C6',
-  tabStroke5: '#FF5E00',
-  tabStroke6: '#C20081',
+  tabStroke: tokens.colors.tabStroke,
+  tabStroke2: tokens.colors.tabStroke2,
+  tabStroke3: tokens.colors.tabStroke3,
+  tabStroke4: tokens.colors.tabStroke4,
+  tabStroke5: tokens.colors.tabStroke5,
+  tabStroke6: tokens.colors.tabStroke6,
   
-  // Legacy aliases for compatibility
-  background: '#0E0E0E',
-  card: '#1B1B1B',
-  text: '#FFFFFF',
-  textSecondary: '#A9A9A9',
-  accent: '#8BFC76',
-  accentHover: '#7AE665',
-  border: '#3E3E3E',
-  error: '#FF4444',
-  inputBackground: '#EFEFEF',
-  inputStroke: '#E0E0E0',
-  primary: '#8BFC76',
-  secondary: '#8BFC76',
-  highlight: '#8BFC76',
-  purple: '#9334E9',
-  purpleLight: '#2A2A2A',
-  green: '#8BFC76',
-  blue: '#3B82F6',
+  // Legacy aliases for backward compatibility
+  background: tokens.colors.pageBackground,
+  card: tokens.colors.cardBackground,
+  text: tokens.colors.almostWhite,
+  textSecondary: tokens.colors.grey1,
+  accent: tokens.colors.greenHighlight,
+  accentHover: tokens.colors.accentHover,
+  border: tokens.colors.cardStroke,
+  error: tokens.colors.error,
+  inputBackground: tokens.colors.inputBackground,
+  inputStroke: tokens.colors.inputStroke,
+  primary: tokens.colors.greenHighlight,
+  secondary: tokens.colors.greenHighlight,
+  highlight: tokens.colors.greenHighlight,
+  purple: tokens.colors.tabStroke2,
+  purpleLight: tokens.colors.purpleLight,
+  green: tokens.colors.greenHighlight,
+  blue: tokens.colors.blue,
 };
 
-// Typography system matching Figma specs
+// Typography aliases mapped to design tokens
 export const typography = {
   // Font families
-  fontFamily: 'FunnelDisplay_400Regular',
-  fontFamilyBold: 'FunnelDisplay_700Bold',
+  fontFamily: 'Funnel Display',
+  fontFamilyBold: 'Funnel Display',
   
-  // Text styles from Figma
-  titleXL: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 43,
-    lineHeight: 43,
-    fontWeight: '700' as const,
-  },
-  titleL: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 25,
-    lineHeight: 25 * 1.2,
-    fontWeight: '700' as const,
-  },
-  subtitle: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 17,
-    lineHeight: 17,
-    fontWeight: '500' as const,
-  },
-  smallSubtitle: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 13,
-    lineHeight: 13,
-    fontWeight: '500' as const,
-  },
-  buttonSmall: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 13,
-    lineHeight: 13 * 1.2,
-    fontWeight: '600' as const,
-  },
-  p1Bold: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 13,
-    lineHeight: 13 * 1.2,
-    fontWeight: '600' as const,
-  },
-  p1: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 13,
-    lineHeight: 13 * 1.2,
-    fontWeight: '400' as const,
-  },
-  p2Bold: {
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 10,
-    lineHeight: 10,
-    fontWeight: '600' as const,
-  },
-  p2Medium: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 10,
-    lineHeight: 10,
-    fontWeight: '500' as const,
-  },
-  p2: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 10,
-    lineHeight: 10 * 1.2,
-    fontWeight: '400' as const,
-  },
-  p3Medium: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 10,
-    lineHeight: 10,
-    fontWeight: '500' as const,
-  },
-  p3Regular: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 10,
-    lineHeight: 10 * 1.2,
-    fontWeight: '400' as const,
-  },
-  p3Bold: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 10,
-    lineHeight: 10,
-    fontWeight: '600' as const,
-  },
-  p4: {
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 8,
-    lineHeight: 8 * 1.2,
-    fontWeight: '400' as const,
-  },
+  // Text styles from design tokens
+  titleXL: tokens.typography.titleXl,
+  titleL: tokens.typography.titleL,
+  subtitle: tokens.typography.subtitle,
+  smallSubtitle: tokens.typography.smallSubtitle,
+  buttonSmall: tokens.typography.buttonSmall,
+  p1Bold: tokens.typography.p1B,
+  p1: tokens.typography.p1,
+  p2Bold: tokens.typography.p3B,
+  p2Medium: tokens.typography.p3M,
+  p2: tokens.typography.p3R,
+  p3Medium: tokens.typography.p3M,
+  p3Regular: tokens.typography.p3R,
+  p3Bold: tokens.typography.p3B,
+  p4: tokens.typography.p4,
 };
 
 export const spacing = {

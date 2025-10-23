@@ -11,6 +11,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 
 interface TabBarItem {
   name: string;
@@ -104,7 +105,7 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
                 <IconSymbol
                   name={tab.icon}
                   size={24}
-                  color={active ? '#000000' : colors.text}
+                  color={active ? tokens.colors.black : colors.text}
                 />
               </TouchableOpacity>
             );

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { NotificationPreferences, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe } from 'lucide-react-native';
@@ -565,9 +566,9 @@ export default function SettingsModal({
           {!isCheckingUsername && username !== initialUsername && (
             <View style={styles.usernameIndicator}>
               {usernameAvailable ? (
-                <IconSymbol name="checkmark.circle.fill" size={20} color="#4CAF50" />
+                <IconSymbol name="checkmark.circle.fill" size={20} color={tokens.colors.tabStroke3} />
               ) : (
-                <IconSymbol name="xmark.circle.fill" size={20} color="#FF3B30" />
+                <IconSymbol name="xmark.circle.fill" size={20} color={tokens.colors.tabStroke5} />
               )}
             </View>
           )}
@@ -924,8 +925,8 @@ export default function SettingsModal({
                     </View>
                   ) : saveSuccess ? (
                     <View style={styles.savingContainer}>
-                      <IconSymbol name="checkmark.circle.fill" size={20} color="#4CAF50" />
-                      <Text style={[styles.saveButtonText, { marginLeft: 8, color: '#4CAF50' }]}>Saved!</Text>
+                      <IconSymbol name="checkmark.circle.fill" size={20} color={tokens.colors.tabStroke3} />
+                      <Text style={[styles.saveButtonText, { marginLeft: 8, color: tokens.colors.tabStroke3 }]}>Saved!</Text>
                     </View>
                   ) : (
                     <Text style={styles.saveButtonText}>
@@ -1045,10 +1046,10 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   inputError: {
-    borderColor: '#FF3B30',
+    borderColor: tokens.colors.tabStroke5,
   },
   inputSuccess: {
-    borderColor: '#4CAF50',
+    borderColor: tokens.colors.tabStroke3,
   },
   textArea: {
     height: 80,
@@ -1064,12 +1065,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: '#FF3B30',
+    color: tokens.colors.tabStroke5,
     marginTop: 4,
   },
   successText: {
     fontSize: 12,
-    color: '#4CAF50',
+    color: tokens.colors.tabStroke3,
     marginTop: 4,
   },
   socialInputContainer: {
@@ -1168,11 +1169,11 @@ const styles = StyleSheet.create({
   dangerZoneTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#FF3B30',
+    color: tokens.colors.tabStroke5,
     marginBottom: 12,
   },
   deleteButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: tokens.colors.tabStroke5,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -1181,7 +1182,7 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
   },
   deleteWarning: {
     fontSize: 12,

@@ -12,6 +12,7 @@ import Reanimated from "react-native-reanimated";
 import { appleRed, borderColor } from "@/constants/Colors";
 import { IconCircle } from "./IconCircle";
 import { IconSymbol } from "./IconSymbol";
+import tokens from '@/styles/tokens';
 
 configureReanimatedLogger({ strict: false });
 
@@ -37,7 +38,7 @@ export default function ListItem({ listId }: { listId: string }) {
         }}
       >
         <Reanimated.View style={[styleAnimation, styles.rightAction]}>
-          <IconSymbol name="trash.fill" size={24} color="white" />
+          <IconSymbol name="trash.fill" size={24} color={tokens.colors.pureWhite} />
         </Reanimated.View>
       </Pressable>
     );
@@ -55,7 +56,7 @@ export default function ListItem({ listId }: { listId: string }) {
         enableContextMenu
       >
         <View style={styles.listItemContainer}>
-          <Text style={[styles.listItemText, { color: isDark ? "#FFFFFF" : "#000000" }]}>{listId}</Text>
+          <Text style={[styles.listItemText, { color: isDark ? tokens.colors.pureWhite : tokens.colors.black }]}>{listId}</Text>
         </View>
 
       </ReanimatedSwipeable>
@@ -84,7 +85,7 @@ export const NicknameCircle = ({
         isEllipsis && styles.ellipsisCircle,
         {
           backgroundColor: color,
-          borderColor: isDark ? "#000000" : "#ffffff",
+          borderColor: isDark ? tokens.colors.black : tokens.colors.pureWhite,
           marginLeft: index > 0 ? -6 : 0,
         },
       ]}
@@ -146,9 +147,9 @@ const styles = StyleSheet.create({
   },
   nicknameCircle: {
     fontSize: 12,
-    color: "white",
+    color: tokens.colors.pureWhite,
     borderWidth: 1,
-    borderColor: "white",
+    borderColor: tokens.colors.pureWhite,
     borderRadius: 16,
     padding: 1,
     width: 24,

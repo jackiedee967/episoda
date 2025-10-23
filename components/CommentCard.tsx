@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Image, Pressable, TextInput } from 'react-nativ
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { Comment, Reply } from '@/types';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -124,7 +125,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
             <IconSymbol
               name="flame"
               size={16}
-              color={comment.isLiked ? '#EF4444' : colors.textSecondary}
+              color={comment.isLiked ? tokens.colors.tabStroke5 : colors.textSecondary}
             />
             <Text style={styles.actionText}>{comment.likes}</Text>
           </Pressable>
@@ -148,7 +149,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
                   style={styles.removeImageButton}
                   onPress={() => setReplyImage(undefined)}
                 >
-                  <IconSymbol name="xmark.circle.fill" size={20} color="#EF4444" />
+                  <IconSymbol name="xmark.circle.fill" size={20} color={tokens.colors.tabStroke5} />
                 </Pressable>
               </View>
             )}
@@ -224,7 +225,7 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
                     <IconSymbol
                       name="flame"
                       size={14}
-                      color={reply.isLiked ? '#EF4444' : colors.textSecondary}
+                      color={reply.isLiked ? tokens.colors.tabStroke5 : colors.textSecondary}
                     />
                     <Text style={styles.replyLikeText}>{reply.likes}</Text>
                   </Pressable>
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarPlaceholderText: {
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: tokens.colors.pureWhite,
     borderRadius: 10,
   },
   replyInputRow: {
@@ -373,7 +374,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   replyAvatarPlaceholderText: {
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
     fontSize: 12,
     fontWeight: '600',
   },

@@ -14,6 +14,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 
@@ -222,7 +223,7 @@ export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist 
                 }
               ]}
             >
-              <IconSymbol name="checkmark.circle.fill" size={24} color="#10B981" />
+              <IconSymbol name="checkmark.circle.fill" size={24} color={tokens.colors.tabStroke3} />
               <Text style={styles.successText}>{successMessage}</Text>
             </Animated.View>
           )}
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
     top: 20,
     left: 20,
     right: 20,
-    backgroundColor: '#D1FAE5',
+    backgroundColor: tokens.colors.tabBack3,
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -327,12 +328,12 @@ const styles = StyleSheet.create({
     gap: 12,
     zIndex: 1000,
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: tokens.colors.tabStroke3,
   },
   successText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#065F46',
+    color: tokens.colors.tabStroke3,
   },
   header: {
     alignItems: 'center',

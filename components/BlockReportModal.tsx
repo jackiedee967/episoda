@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { ReportReason } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Shield, Flag } from 'lucide-react-native';
@@ -109,7 +110,7 @@ export default function BlockReportModal({
         }}
       >
         <View style={styles.actionIconContainer}>
-          <Shield size={24} color="#FF3B30" />
+          <Shield size={24} color={tokens.colors.tabStroke5} />
         </View>
         <View style={styles.actionTextContainer}>
           <Text style={styles.actionTitle}>Block @{username}</Text>
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   blockButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: tokens.colors.tabStroke5,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
   blockButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
   },
   reasonsList: {
     marginBottom: 24,

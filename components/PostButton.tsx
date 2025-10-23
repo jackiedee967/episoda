@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { colors, components, spacing } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 
 interface PostButtonProps {
   onPress: () => void;
@@ -72,6 +73,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: tokens.colors.black,
   },
 });

@@ -15,6 +15,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { mockShows, mockEpisodes } from '@/data/mockData';
 import { colors, spacing, components } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { Show, Episode, PostTag } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: 440,
     height: 780,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: tokens.colors.pureWhite,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     borderBottomLeftRadius: 0,
@@ -517,12 +518,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepTitle: {
-    fontSize: 17,
-    fontWeight: '500',
-    fontFamily: 'FunnelDisplay_500Medium',
-    color: '#000000',
+    ...tokens.typography.subtitle,
+    color: tokens.colors.black,
     marginBottom: 16,
-    letterSpacing: 0,
   },
   stepSubtitle: {
     fontSize: 16,
@@ -545,19 +543,19 @@ const styles = StyleSheet.create({
     height: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: tokens.colors.pureWhite,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: tokens.colors.grey2,
     paddingHorizontal: 16,
     marginBottom: 16,
     gap: 12,
   },
   searchInput: {
     flex: 1,
+    ...tokens.typography.subtitle,
     fontSize: 16,
-    color: '#000000',
-    letterSpacing: 0,
+    color: tokens.colors.black,
   },
   showsList: {
     flex: 1,
@@ -650,16 +648,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   continueButton: {
-    backgroundColor: colors.accent,
+    backgroundColor: tokens.colors.greenHighlight,
     borderRadius: components.borderRadiusButton,
     padding: spacing.gapLarge,
     alignItems: 'center',
     marginTop: spacing.gapLarge,
   },
   continueButtonText: {
+    ...tokens.typography.subtitle,
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
+    color: tokens.colors.black,
   },
   detailsForm: {
     flex: 1,
@@ -716,16 +715,16 @@ const styles = StyleSheet.create({
     borderColor: colors.cardStroke,
   },
   tagButtonSelected: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: tokens.colors.greenHighlight,
+    borderColor: tokens.colors.greenHighlight,
   },
   tagButtonText: {
+    ...tokens.typography.p1B,
     fontSize: 14,
-    fontWeight: '600',
     color: colors.text,
   },
   tagButtonTextSelected: {
-    color: '#000000',
+    color: tokens.colors.black,
   },
   customTagsList: {
     flexDirection: 'row',
@@ -764,7 +763,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   addTagButton: {
-    backgroundColor: colors.accent,
+    backgroundColor: tokens.colors.greenHighlight,
     borderRadius: components.borderRadiusButton,
     width: 44,
     height: 44,
@@ -775,7 +774,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   postButton: {
-    backgroundColor: colors.accent,
+    backgroundColor: tokens.colors.greenHighlight,
     borderRadius: components.borderRadiusButton,
     padding: spacing.gapLarge,
     alignItems: 'center',
@@ -785,8 +784,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   postButtonText: {
+    ...tokens.typography.subtitle,
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
+    color: tokens.colors.black,
   },
 });

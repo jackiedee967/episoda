@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { Show, User } from '@/types';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -128,7 +129,7 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
             <IconSymbol 
               name={isInPlaylist ? "bookmark.fill" : "bookmark"} 
               size={18} 
-              color="#FFFFFF" 
+              color={tokens.colors.pureWhite} 
             />
           </Pressable>
 
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   posterPlaceholderText: {
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
     fontSize: 48,
     fontWeight: '600',
   },
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: tokens.colors.pureWhite,
   },
   pillAvatarPlaceholder: {
     backgroundColor: colors.purple,
@@ -221,14 +222,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pillAvatarPlaceholderText: {
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
     fontSize: 9,
     fontWeight: '600',
   },
   pillText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: tokens.colors.pureWhite,
     flex: 1,
   },
 });
