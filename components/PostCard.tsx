@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     color: '#F4F4F4',
     fontFamily: 'Funnel Display',
     fontSize: 10,
-    fontWeight: '300',
+    fontWeight: '200',
   },
   postTagsContainer: {
     flexDirection: 'row',
