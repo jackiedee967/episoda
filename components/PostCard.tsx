@@ -228,7 +228,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <RefreshCw
                 size={16}
                 color={isReposted ? '#8BFC76' : '#A9A9A9'}
-                fill={isReposted ? '#8BFC76' : 'none'}
                 strokeWidth={1.5}
               />
               <Text style={styles.countText}>{latestPost.reposts}</Text>
