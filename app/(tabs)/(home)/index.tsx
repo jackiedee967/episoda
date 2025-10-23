@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
   },
   profilePic: {
     width: 36.286,
-    height: 34.2,
-    borderRadius: 36.286,
+    height: 36.286,
+    borderRadius: 18.143,
   },
   
   // Divider - exact specs
