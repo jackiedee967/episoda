@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated } from '
 import { colors, typography } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
+import { LogAShow } from '@/components/LogAShow';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
@@ -97,21 +98,7 @@ export default function HomeScreen() {
   );
 
   const renderPostInput = () => (
-    <View style={styles.logShowCard}>
-      <Animated.View 
-        style={[
-          styles.greenCircle,
-          { transform: [{ scale: pulseAnim }] },
-        ]}
-      />
-      <Text style={styles.inputText}>What are you watching?</Text>
-      <Pressable 
-        style={styles.tellFriendsButton}
-        onPress={() => setPostModalVisible(true)}
-      >
-        <Text style={styles.buttonLabel}>Tell your friends</Text>
-      </Pressable>
-    </View>
+    <LogAShow onPress={() => setPostModalVisible(true)} />
   );
 
   const renderRecommendedTitles = () => (
@@ -356,52 +343,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Funnel Display',
   },
   
-  // Log Show card - exact specs
-  logShowCard: {
-    height: 60,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingLeft: 20,
-    paddingRight: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#3E3E3E',
-    backgroundColor: '#282828',
-    marginBottom: 29,
-  },
-  greenCircle: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-    backgroundColor: '#8BFC76',
-  },
-  inputText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#F4F4F4',
-    lineHeight: 15.6,
-    fontFamily: 'Funnel Display',
-  },
-  tellFriendsButton: {
-    width: 136,
-    paddingVertical: 11,
-    paddingHorizontal: 34,
-    borderRadius: 14,
-    backgroundColor: '#8BFC76',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#000',
-    lineHeight: 24,
-    fontFamily: 'Funnel Display',
-  },
   
   // Recommended Titles - exact specs
   recommendedSection: {
