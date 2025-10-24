@@ -13,27 +13,22 @@ import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import Button from '@/components/Button';
+import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import { mockEpisodes, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 
 type TabKey = 'friends' | 'all';
-type SortBy = 'hot' | 'recent';
 
 const FEED_TABS: Tab[] = [
   { key: 'friends', label: 'Friends' },
   { key: 'all', label: 'All' },
 ];
 
-const SORT_TABS: Tab[] = [
-  { key: 'hot', label: 'Hot' },
-  { key: 'recent', label: 'Recent' },
-];
-
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
   const { posts } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
-  const [sortBy, setSortBy] = useState<SortBy>('hot');
+  const [sortBy, setSortBy] = useState<SortOption>('hot');
   const [modalVisible, setModalVisible] = useState(false);
 
   const episode = mockEpisodes.find((e) => e.id === id);
@@ -99,13 +94,10 @@ export default function EpisodeHub() {
   );
 
   const renderSortOptions = () => (
-    <View style={styles.sortWrapper}>
-      <TabSelector
-        tabs={SORT_TABS}
-        activeTab={sortBy}
-        onTabChange={(tabKey) => setSortBy(tabKey as SortBy)}
-      />
-    </View>
+    <SortDropdown 
+      sortBy={sortBy}
+      onSortChange={setSortBy}
+    />
   );
 
   const renderFeed = () => (

@@ -38,7 +38,7 @@ export default function ShowHub() {
   const router = useRouter();
   const { posts, isFollowing } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
-  const [sortBy, setSortBy] = useState<SortBy>('recent');
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [isInPlaylist, setIsInPlaylist] = useState(false);
@@ -230,19 +230,11 @@ export default function ShowHub() {
     </View>
   );
 
-  const sortTabs: Tab[] = [
-    { key: 'recent', label: 'Recent' },
-    { key: 'hot', label: 'Hot' },
-  ];
-
   const renderSortDropdown = () => (
-    <View style={styles.sortContainer}>
-      <TabSelector 
-        tabs={sortTabs}
-        activeTab={sortBy}
-        onTabChange={(tabKey) => setSortBy(tabKey as SortBy)}
-      />
-    </View>
+    <SortDropdown 
+      sortBy={sortBy}
+      onSortChange={setSortBy}
+    />
   );
 
   const renderEpisodeRow = (episode: Episode) => (
@@ -510,10 +502,6 @@ const styles = StyleSheet.create({
     maxWidth: 392,
     gap: 10,
     paddingBottom: 100,
-  },
-  sortContainer: {
-    alignSelf: 'flex-end',
-    marginBottom: 10,
   },
   emptyState: {
     padding: spacing.sectionSpacing,

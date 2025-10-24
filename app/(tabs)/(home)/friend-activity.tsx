@@ -1,17 +1,16 @@
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
 import PostCard from '@/components/PostCard';
+import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import { useData } from '@/contexts/DataContext';
 import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
 
-type SortBy = 'recent' | 'hot';
-
 export default function FriendActivityFeed() {
   const { posts, currentUser, getAllReposts } = useData();
-  const [sortBy, setSortBy] = useState<SortBy>('recent');
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -83,22 +82,10 @@ export default function FriendActivityFeed() {
 
       {/* Sort Options */}
       <View style={styles.sortContainer}>
-        <Pressable
-          style={[styles.sortButton, sortBy === 'recent' && styles.sortButtonActive]}
-          onPress={() => setSortBy('recent')}
-        >
-          <Text style={[styles.sortText, sortBy === 'recent' && styles.sortTextActive]}>
-            Recent
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.sortButton, sortBy === 'hot' && styles.sortButtonActive]}
-          onPress={() => setSortBy('hot')}
-        >
-          <Text style={[styles.sortText, sortBy === 'hot' && styles.sortTextActive]}>
-            Hot
-          </Text>
-        </Pressable>
+        <SortDropdown 
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+        />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -135,29 +122,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   sortContainer: {
-    flexDirection: 'row',
-    gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-  },
-  sortButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
-  },
-  sortButtonActive: {
-    backgroundColor: colors.secondary,
-  },
-  sortText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  sortTextActive: {
-    color: colors.background,
+    alignItems: 'flex-end',
   },
   scrollView: {
     flex: 1,
