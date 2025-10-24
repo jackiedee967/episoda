@@ -25,6 +25,7 @@ interface PostModalProps {
   onClose: () => void;
   preselectedShow?: Show;
   preselectedEpisode?: Episode;
+  onPostSuccess?: () => void;
 }
 
 type Step = 'selectShow' | 'selectEpisodes' | 'postDetails';
@@ -37,7 +38,7 @@ interface Season {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode }: PostModalProps) {
+export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, onPostSuccess }: PostModalProps) {
   const { createPost, currentUser } = useData();
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
@@ -215,6 +216,11 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       });
 
       console.log('Post created successfully');
+      
+      if (onPostSuccess) {
+        onPostSuccess();
+      }
+      
       resetModal();
       onClose();
     } catch (error) {

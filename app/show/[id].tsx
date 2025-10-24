@@ -22,6 +22,7 @@ import PlaylistModal from '@/components/PlaylistModal';
 import FriendsWatchingModal from '@/components/FriendsWatchingModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
+import EpisodeListCard from '@/components/EpisodeListCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { mockShows, mockEpisodes, mockUsers } from '@/data/mockData';
 import { Episode } from '@/types';
@@ -49,6 +50,8 @@ export default function ShowHub() {
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | undefined>(undefined);
   const [seasons, setSeasons] = useState<SeasonData[]>([]);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
+  const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<Set<string>>(new Set());
+  const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
 
   const show = mockShows.find((s) => s.id === id);
   const showPosts = posts.filter((p) => p.show.id === id);
@@ -66,6 +69,12 @@ export default function ShowHub() {
       setSortBy('recent');
     } else if (activeTab === 'all') {
       setSortBy('hot');
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'episodes') {
+      setSelectedEpisodeIds(new Set());
     }
   }, [activeTab]);
 
@@ -108,6 +117,35 @@ export default function ShowHub() {
         ? { ...season, expanded: !season.expanded }
         : season
     ));
+  };
+
+  const toggleEpisodeSelection = (episodeId: string) => {
+    setSelectedEpisodeIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(episodeId)) {
+        newSet.delete(episodeId);
+      } else {
+        newSet.add(episodeId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleLogSelectedEpisodes = () => {
+    const episodesToLog = Array.from(selectedEpisodeIds);
+    const episodes = showEpisodes.filter(ep => episodesToLog.includes(ep.id));
+    
+    if (episodes.length > 0) {
+      setSelectedEpisode(episodes[0]);
+      setModalVisible(true);
+    }
+  };
+
+  const handlePostSuccess = () => {
+    selectedEpisodeIds.forEach(id => {
+      setLoggedEpisodeIds(prev => new Set(prev).add(id));
+    });
+    setSelectedEpisodeIds(new Set());
   };
 
   const getFilteredAndSortedPosts = () => {
@@ -241,16 +279,33 @@ export default function ShowHub() {
     />
   );
 
-  const renderEpisodeRow = (episode: Episode) => (
-    <EpisodeCard
-      key={episode.id}
-      variant="list"
-      title={episode.title}
-      episodeNumber={`S${episode.seasonNumber.toString().padStart(2, '0')}E${episode.episodeNumber.toString().padStart(2, '0')}`}
-      showTitle={show?.title || ''}
-      onPress={() => handleEpisodePress(episode)}
-    />
-  );
+  const renderEpisodeRow = (episode: Episode) => {
+    const episodePosts = posts.filter(p => 
+      p.episodes?.some(e => e.id === episode.id)
+    );
+    const postCount = episodePosts.length;
+    const averageRating = episodePosts.length > 0 
+      ? episodePosts.reduce((sum, p) => sum + (p.rating || 0), 0) / episodePosts.length 
+      : 0;
+    
+    const isSelected = selectedEpisodeIds.has(episode.id);
+    const isLogged = loggedEpisodeIds.has(episode.id);
+
+    return (
+      <EpisodeListCard
+        key={episode.id}
+        episodeNumber={`S${episode.seasonNumber.toString().padStart(2, '0')}E${episode.episodeNumber.toString().padStart(2, '0')}`}
+        title={episode.title}
+        description={episode.description}
+        rating={averageRating > 0 ? averageRating : undefined}
+        postCount={postCount > 0 ? postCount : undefined}
+        isSelected={isSelected}
+        isLogged={isLogged}
+        onPress={() => handleEpisodePress(episode)}
+        onToggleSelect={() => toggleEpisodeSelection(episode.id)}
+      />
+    );
+  };
 
   const renderSeasonSection = (season: SeasonData) => (
     <View key={season.seasonNumber} style={styles.seasonSection}>
@@ -339,6 +394,7 @@ export default function ShowHub() {
         onClose={handleCloseModal} 
         preselectedShow={show}
         preselectedEpisode={selectedEpisode}
+        onPostSuccess={handlePostSuccess}
       />
       <PlaylistModal
         visible={playlistModalVisible}
@@ -358,7 +414,10 @@ export default function ShowHub() {
           { name: 'Search', icon: 'magnifyingglass', route: '/search' },
           { name: 'Notifications', icon: 'bell.fill', route: '/notifications' },
           { name: 'Profile', icon: 'person.fill', route: '/profile' },
-        ]} 
+        ]}
+        selectionMode={activeTab === 'episodes'}
+        selectedCount={selectedEpisodeIds.size}
+        onLogPress={handleLogSelectedEpisodes}
       />
     </>
   );

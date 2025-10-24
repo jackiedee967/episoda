@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Animated,
   LayoutChangeEvent,
+  Text,
+  Pressable,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,9 +23,12 @@ interface TabBarItem {
 
 interface FloatingTabBarProps {
   tabs: TabBarItem[];
+  selectionMode?: boolean;
+  selectedCount?: number;
+  onLogPress?: () => void;
 }
 
-export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
+export default function FloatingTabBar({ tabs, selectionMode = false, selectedCount = 0, onLogPress }: FloatingTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [containerWidth, setContainerWidth] = useState(0);
@@ -85,6 +90,23 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
       transform: [{ translateX }],
     };
   };
+
+  if (selectionMode && selectedCount > 0) {
+    return (
+      <SafeAreaView edges={['bottom']} style={styles.safeArea}>
+        <View style={styles.container}>
+          <Pressable 
+            style={styles.logButton}
+            onPress={onLogPress}
+          >
+            <Text style={styles.logButtonText}>
+              Log {selectedCount} {selectedCount === 1 ? 'episode' : 'episodes'}
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['bottom']} style={styles.safeArea}>
@@ -149,5 +171,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+  },
+  logButton: {
+    backgroundColor: tokens.colors.greenHighlight,
+    borderRadius: 30,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)',
+    elevation: 8,
+  },
+  logButtonText: {
+    ...tokens.typography.subtitle,
+    color: tokens.colors.black,
+    textAlign: 'center',
   },
 });
