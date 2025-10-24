@@ -20,6 +20,7 @@ import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import { mockShows, mockEpisodes, mockUsers } from '@/data/mockData';
 import { Episode } from '@/types';
 import { useData } from '@/contexts/DataContext';
@@ -341,6 +342,14 @@ export default function ShowHub() {
         onClose={() => setPlaylistModalVisible(false)}
         show={show}
         onAddToPlaylist={handleAddToPlaylist}
+      />
+      <FloatingTabBar 
+        tabs={[
+          { name: 'Home', icon: 'house.fill', route: '/(home)' },
+          { name: 'Search', icon: 'magnifyingglass', route: '/search' },
+          { name: 'Notifications', icon: 'bell.fill', route: '/notifications' },
+          { name: 'Profile', icon: 'person.fill', route: '/profile' },
+        ]} 
       />
     </>
   );

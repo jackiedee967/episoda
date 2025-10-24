@@ -14,6 +14,7 @@ import PostModal from '@/components/PostModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import Button from '@/components/Button';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import { mockEpisodes, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 
@@ -131,6 +132,14 @@ export default function EpisodeHub() {
         onClose={handleCloseModal} 
         preselectedShow={show}
         preselectedEpisode={episode}
+      />
+      <FloatingTabBar 
+        tabs={[
+          { name: 'Home', icon: 'house.fill', route: '/(home)' },
+          { name: 'Search', icon: 'magnifyingglass', route: '/search' },
+          { name: 'Notifications', icon: 'bell.fill', route: '/notifications' },
+          { name: 'Profile', icon: 'person.fill', route: '/profile' },
+        ]} 
       />
     </>
   );
