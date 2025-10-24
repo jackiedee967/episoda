@@ -437,10 +437,8 @@ const styles = StyleSheet.create({
     gap: 11,
   },
   description: {
+    ...tokens.typography.p1,
     color: tokens.colors.pureWhite,
-    fontFamily: 'Funnel Display',
-    fontSize: 13,
-    fontWeight: '300',
   },
   statsRow: {
     flexDirection: 'row',
