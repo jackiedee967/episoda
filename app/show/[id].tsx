@@ -7,6 +7,7 @@ import {
   Image,
   Pressable,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
@@ -321,7 +322,7 @@ export default function ShowHub() {
   return (
     <>
       <Stack.Screen options={{ title: show.title, headerShown: false }} />
-      <View style={commonStyles.container}>
+      <View style={[commonStyles.container, styles.container]}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
           {renderHeader()}
           {renderShowInfo()}
@@ -356,8 +357,19 @@ export default function ShowHub() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
+  },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   contentContainer: {
     padding: 20,

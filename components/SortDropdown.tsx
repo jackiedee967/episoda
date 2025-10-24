@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Pressable, Text, StyleSheet, ViewStyle, View, Modal, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { Pressable, Text, StyleSheet, ViewStyle, View, TouchableWithoutFeedback } from 'react-native';
 import tokens from '@/styles/tokens';
 import { SortIcon } from './SortIcon';
 import * as Haptics from 'expo-haptics';
@@ -27,52 +27,61 @@ export default function SortDropdown({ sortBy, onSortChange, style }: SortDropdo
   };
 
   return (
-    <View>
-      <Pressable 
-        style={[styles.container, style]} 
-        onPress={handlePress}
-      >
-        <Text style={styles.text}>Sort by</Text>
-        <SortIcon />
-      </Pressable>
-
-      <Modal
-        visible={dropdownVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDropdownVisible(false)}
-      >
+    <>
+      {dropdownVisible && (
         <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.dropdown}>
-                <Pressable
-                  style={[styles.option, sortBy === 'recent' && styles.optionActive]}
-                  onPress={() => handleOptionPress('recent')}
-                >
-                  <Text style={[styles.optionText, sortBy === 'recent' && styles.optionTextActive]}>
-                    Recent
-                  </Text>
-                </Pressable>
-                <View style={styles.divider} />
-                <Pressable
-                  style={[styles.option, sortBy === 'hot' && styles.optionActive]}
-                  onPress={() => handleOptionPress('hot')}
-                >
-                  <Text style={[styles.optionText, sortBy === 'hot' && styles.optionTextActive]}>
-                    Hot
-                  </Text>
-                </Pressable>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
+          <View style={styles.modalOverlay} />
         </TouchableWithoutFeedback>
-      </Modal>
-    </View>
+      )}
+      
+      <View style={styles.wrapper}>
+        <Pressable 
+          style={[styles.container, style]} 
+          onPress={handlePress}
+        >
+          <Text style={styles.text}>Sort by</Text>
+          <SortIcon />
+        </Pressable>
+
+        {dropdownVisible && (
+          <View style={styles.dropdown}>
+            <Pressable
+              style={[styles.option, sortBy === 'recent' && styles.optionActive]}
+              onPress={() => handleOptionPress('recent')}
+            >
+              <Text style={[styles.optionText, sortBy === 'recent' && styles.optionTextActive]}>
+                Recent
+              </Text>
+            </Pressable>
+            <View style={styles.divider} />
+            <Pressable
+              style={[styles.option, sortBy === 'hot' && styles.optionActive]}
+              onPress={() => handleOptionPress('hot')}
+            >
+              <Text style={[styles.optionText, sortBy === 'hot' && styles.optionTextActive]}>
+                Hot
+              </Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  wrapper: {
+    position: 'relative',
+    zIndex: 1000,
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -92,24 +101,27 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     letterSpacing: -0.26,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   dropdown: {
-    backgroundColor: tokens.colors.cardBackground,
-    borderRadius: 12,
+    position: 'absolute',
+    top: 45,
+    right: 0,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: tokens.colors.cardStroke,
-    minWidth: 150,
-    overflow: 'hidden',
+    borderColor: '#48484A',
+    minWidth: 280,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   option: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
     backgroundColor: 'transparent',
+    borderRadius: 20,
   },
   optionActive: {
     backgroundColor: tokens.colors.greenHighlight,
@@ -117,7 +129,7 @@ const styles = StyleSheet.create({
   optionText: {
     color: tokens.colors.pureWhite,
     fontFamily: 'Funnel Display',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -126,7 +138,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   divider: {
-    height: 1,
-    backgroundColor: tokens.colors.cardStroke,
+    height: 12,
   },
 });

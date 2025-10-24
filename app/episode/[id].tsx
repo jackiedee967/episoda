@@ -5,6 +5,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
@@ -119,7 +120,7 @@ export default function EpisodeHub() {
           title: `S${episode.seasonNumber}E${episode.episodeNumber}`,
         }}
       />
-      <View style={commonStyles.container}>
+      <View style={[commonStyles.container, styles.container]}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderPostButton()}
@@ -146,8 +147,19 @@ export default function EpisodeHub() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
+  },
   scrollView: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
     padding: spacing.pageMargin,
