@@ -204,7 +204,7 @@ export default function ShowHub() {
               ))}
             </View>
             <Text style={styles.friendsWatchingText}>
-              {friendsWatching.length} friends watching
+              <Text style={styles.friendsWatchingNumber}>{friendsWatching.length}</Text> friends watching
             </Text>
           </Pressable>
         </View>
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   starIcon: {
-    color: tokens.colors.grey1,
+    color: tokens.colors.greenHighlight,
     fontSize: 10,
   },
   statText: {
@@ -495,11 +495,11 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.cardBackground,
   },
   friendsWatchingText: {
+    ...tokens.typography.p3R,
     color: tokens.colors.almostWhite,
-    fontFamily: 'Funnel Display',
-    fontSize: 10,
-    fontWeight: '400',
-    letterSpacing: -0.2,
+  },
+  friendsWatchingNumber: {
+    color: tokens.colors.greenHighlight,
   },
   logButton: {
     width: '100%',

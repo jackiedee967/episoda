@@ -121,21 +121,20 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   option: {
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 6,
     backgroundColor: 'transparent',
+    flex: 1,
   },
   optionActive: {
     backgroundColor: tokens.colors.greenHighlight,
   },
   optionText: {
+    ...tokens.typography.p3R,
     color: tokens.colors.pureWhite,
-    fontFamily: 'Funnel Display',
-    fontSize: 8,
-    fontWeight: '300',
     textAlign: 'center',
   },
   optionTextActive: {

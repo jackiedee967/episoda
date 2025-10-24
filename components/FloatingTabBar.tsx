@@ -105,7 +105,7 @@ export default function FloatingTabBar({ tabs }: FloatingTabBarProps) {
                 <IconSymbol
                   name={tab.icon}
                   size={24}
-                  color={active ? tokens.colors.black : colors.text}
+                  color={active ? tokens.colors.black : tokens.colors.pureWhite}
                 />
               </TouchableOpacity>
             );

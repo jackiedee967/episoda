@@ -15,5 +15,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderBottomWidth: 0.5,
     borderBottomColor: tokens.colors.pureWhite,
+    opacity: 0.5,
+    marginBottom: 20,
   },
 });
