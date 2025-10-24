@@ -13,7 +13,7 @@ import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { ChevronLeft } from 'lucide-react-native';
 import { SearchDuotoneLine } from '@/components/SearchDuotoneLine';
-import { SortIcon } from '@/components/SortIcon';
+import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import { Vector3Divider } from '@/components/Vector3Divider';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -26,7 +26,6 @@ import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 
 type TabKey = 'friends' | 'all' | 'episodes';
-type SortBy = 'hot' | 'recent';
 
 interface SeasonData {
   seasonNumber: number;
