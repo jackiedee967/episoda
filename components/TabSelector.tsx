@@ -8,7 +8,8 @@ import {
   TextStyle,
   ScrollView,
 } from 'react-native';
-import { colors, typography, components } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 
 export interface Tab {
@@ -50,7 +51,7 @@ export default function TabSelector({
     }
 
     return {
-      backgroundColor: isActive ? colors.greenHighlight : 'transparent',
+      backgroundColor: isActive ? tokens.colors.greenHighlight : 'transparent',
       borderWidth: 0,
     };
   };
@@ -64,8 +65,11 @@ export default function TabSelector({
     }
 
     return {
-      color: isActive ? colors.black : colors.textSecondary,
-      ...typography.p1Bold,
+      color: isActive ? tokens.colors.black : tokens.colors.pureWhite,
+      fontFamily: 'Funnel Display',
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'center',
     };
   };
 
@@ -107,22 +111,27 @@ export default function TabSelector({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusButton,
-    padding: 4,
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 16,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardStroke,
+    width: '100%',
+    maxWidth: 392,
+    height: 46,
   },
   scrollContent: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
   },
   tabsContainer: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 2,
   },
   tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: components.borderRadiusTag,
-    minHeight: 36,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 12,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },

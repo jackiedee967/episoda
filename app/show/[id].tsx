@@ -10,12 +10,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
+import { colors, spacing, components, commonStyles } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
-import Button from '@/components/Button';
+import { Vector3Divider } from '@/components/Vector3Divider';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
 import { mockShows, mockEpisodes, mockUsers, currentUser } from '@/data/mockData';
@@ -188,7 +189,7 @@ export default function ShowHub() {
           <IconSymbol 
             name={isInPlaylist ? "bookmark.fill" : "bookmark"} 
             size={20} 
-            color="#FFFFFF" 
+            color={tokens.colors.pureWhite} 
           />
         </Pressable>
       </View>
@@ -260,14 +261,9 @@ export default function ShowHub() {
 
   const renderPostButton = () => (
     <View style={styles.postButtonContainer}>
-      <Button 
-        variant="primary" 
-        size="medium" 
-        onPress={() => setModalVisible(true)}
-        fullWidth
-      >
-        Log Episode
-      </Button>
+      <Pressable style={styles.tellYourFriendsButton} onPress={() => setModalVisible(true)}>
+        <Text style={styles.buttonLabel}>Tell your friends</Text>
+      </Pressable>
     </View>
   );
 
@@ -393,6 +389,7 @@ export default function ShowHub() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderHeader()}
           {renderPostButton()}
+          <Vector3Divider />
           {renderTabs()}
           {renderFeed()}
         </ScrollView>
@@ -420,7 +417,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     padding: spacing.cardPadding,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: tokens.colors.cardBackground,
     gap: spacing.gapMedium,
   },
   posterWrapper: {
@@ -451,18 +448,22 @@ const styles = StyleSheet.create({
   },
   showTitle: {
     flex: 1,
-    ...typography.titleL,
-    color: colors.almostWhite,
+    color: tokens.colors.almostWhite,
+    fontFamily: 'Funnel Display',
+    fontSize: 25,
+    fontWeight: '700',
     marginRight: spacing.gapSmall,
   },
   searchButton: {
     padding: spacing.gapSmall,
-    backgroundColor: colors.greenHighlight,
+    backgroundColor: tokens.colors.greenHighlight,
     borderRadius: components.borderRadiusTag,
   },
   showDescription: {
-    ...typography.p1,
-    color: colors.grey1,
+    color: tokens.colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '300',
     marginBottom: spacing.gapMedium,
   },
   statsContainer: {
@@ -484,41 +485,73 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.cardBackground,
+    borderColor: tokens.colors.cardBackground,
   },
   friendAvatarPlaceholder: {
-    backgroundColor: colors.purple,
+    backgroundColor: tokens.colors.tabStroke2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   friendAvatarPlaceholderText: {
-    ...typography.p3,
-    color: colors.pureWhite,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '400',
+    color: tokens.colors.pureWhite,
   },
   friendNameLink: {
-    ...typography.p1Bold,
-    color: colors.almostWhite,
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '600',
+    color: tokens.colors.almostWhite,
   },
   statText: {
-    ...typography.p1,
-    color: colors.almostWhite,
+    color: tokens.colors.almostWhite,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '400',
+    letterSpacing: -0.2,
     flexShrink: 1,
   },
   episodeCount: {
-    ...typography.p2,
-    color: colors.grey1,
+    color: tokens.colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '300',
   },
   postButtonContainer: {
     paddingHorizontal: spacing.pageMargin,
     paddingVertical: spacing.gapMedium,
+    alignItems: 'center',
+  },
+  tellYourFriendsButton: {
+    flexDirection: 'row',
+    width: 136,
+    paddingTop: 11,
+    paddingLeft: 34,
+    paddingBottom: 11,
+    paddingRight: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    backgroundColor: tokens.colors.greenHighlight,
+  },
+  buttonLabel: {
+    color: tokens.colors.black,
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 24,
   },
   tabsContainer: {
     paddingHorizontal: spacing.pageMargin,
     marginBottom: spacing.gapMedium,
+    alignItems: 'center',
   },
   sortContainer: {
     paddingHorizontal: spacing.pageMargin,
     paddingBottom: spacing.gapMedium,
+    alignItems: 'center',
   },
   feed: {
     paddingBottom: 100,
@@ -529,8 +562,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyStateText: {
-    ...typography.subtitle,
-    color: colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 17,
+    fontWeight: '500',
+    color: tokens.colors.grey1,
     textAlign: 'center',
   },
   episodesContainer: {
@@ -539,10 +574,10 @@ const styles = StyleSheet.create({
   },
   seasonSection: {
     marginBottom: spacing.gapMedium,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: tokens.colors.cardBackground,
     borderRadius: components.borderRadiusButton,
     borderWidth: 1,
-    borderColor: colors.cardStroke,
+    borderColor: tokens.colors.cardStroke,
     overflow: 'hidden',
   },
   seasonHeader: {
@@ -550,11 +585,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: spacing.cardPadding,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: tokens.colors.cardBackground,
   },
   seasonTitle: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
+    fontFamily: 'Funnel Display',
+    fontSize: 17,
+    fontWeight: '500',
+    color: tokens.colors.almostWhite,
   },
   seasonHeaderRight: {
     flexDirection: 'row',
@@ -562,11 +599,13 @@ const styles = StyleSheet.create({
     gap: spacing.gapSmall,
   },
   seasonEpisodeCount: {
-    ...typography.p1,
-    color: colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '400',
+    color: tokens.colors.grey1,
   },
   episodesList: {
-    backgroundColor: colors.pageBackground,
+    backgroundColor: tokens.colors.pageBackground,
     gap: spacing.gapSmall,
     padding: spacing.gapSmall,
   },
