@@ -129,11 +129,12 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 8,
     borderRadius: 12,
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 34,
   },
   tabPressed: {
     opacity: 0.8,
