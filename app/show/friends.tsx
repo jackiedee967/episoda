@@ -1,23 +1,51 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
-import { Post } from '@/components/Post';
+import PostCard from '@/components/PostCard';
 import { SearchDuotoneLine } from '@/components/SearchDuotoneLine';
 import { SortIcon } from '@/components/SortIcon';
 import { Vector3Divider } from '@/components/Vector3Divider';
 
-// Import Figma components from extracted zip
-// TODO: These need to be adapted to work with our token system
-// import { Toggle } from '@/components/figma/Toggle';
-// import { Friends } from '@/components/figma/Friends';
-// import { ButtonL } from '@/components/figma/ButtonL';
-// import { ExpandLeftLight } from '@/components/figma/ExpandLeftLight';
-
-// Placeholder for now - will import actual components
-const Toggle = ({ testID, property1, state }: any) => <View testID={testID} />;
+// Placeholder components for Figma elements we'll build next
+const Toggle = ({ testID, property1, state }: any) => (
+  <View testID={testID} style={{ 
+    flexDirection: 'row',
+    width: 392,
+    height: 46,
+    paddingTop: 6,
+    paddingLeft: 6,
+    paddingBottom: 6,
+    paddingRight: 6,
+    alignItems: 'flex-start',
+    gap: 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: 'rgba(40, 40, 40, 1)',
+  }} />
+);
 const Friends = ({ testID, prop, state }: any) => <View testID={testID} />;
-const ButtonL = ({ testID, style }: any) => <View testID={testID} style={style} />;
-const ExpandLeftLight = ({ testID }: any) => <View testID={testID} />;
+const ButtonL = ({ testID, style }: any) => (
+  <TouchableOpacity testID={testID} style={[{
+    flexDirection: 'row',
+    paddingVertical: 11,
+    paddingHorizontal: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    backgroundColor: tokens.colors.greenHighlight,
+  }, style]}>
+    <Text style={{
+      color: tokens.colors.black,
+      textAlign: 'center',
+      fontFamily: 'Funnel Display',
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 24,
+    }}>Tell your friends</Text>
+  </TouchableOpacity>
+);
 
 interface ShowHubFriendsTabProps {
   style?: any;
@@ -34,7 +62,7 @@ export default function ShowHubFriendsTab(props: ShowHubFriendsTabProps) {
       <View testID="342:4630" style={styles.frame289706}>
         <View testID="342:4759" style={styles.frame289724}>
           <View testID="342:4760" style={styles.frame83}>
-            <ExpandLeftLight testID="342:4761"/>
+            <ChevronLeft testID="342:4761" size={20} color={tokens.colors.pureWhite} />
             <Text testID="342:4762" style={styles.back}>
               Back
             </Text>
@@ -107,8 +135,17 @@ export default function ShowHubFriendsTab(props: ShowHubFriendsTabProps) {
           </Text>
           <SortIcon testID="342:4651"/>
         </View>
-        <Post testID="342:4652" style={styles.post}/>
-        <Post testID="342:4653" style={styles.post2}/>
+        {/* TODO: Replace with actual Post components with real data */}
+        <View style={styles.post}>
+          <Text style={{ color: tokens.colors.almostWhite, fontFamily: 'Funnel Display', fontSize: 13 }}>
+            Post Card Placeholder
+          </Text>
+        </View>
+        <View style={styles.post2}>
+          <Text style={{ color: tokens.colors.almostWhite, fontFamily: 'Funnel Display', fontSize: 13 }}>
+            Post Card Placeholder
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
