@@ -1,0 +1,1 @@
+export {ButtonS} from './ButtonS';

@@ -26,6 +26,7 @@
     "@react-navigation/native-stack": "^7.2.0",
     "@supabase/supabase-js": "^2.75.0",
     "@types/difflib": "^0.2.7",
+    "adm-zip": "^0.5.16",
     "difflib": "^0.2.4",
     "eas": "^0.1.0",
     "expo": "~54.0.1",
