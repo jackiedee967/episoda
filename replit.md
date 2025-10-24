@@ -20,6 +20,42 @@ Natively (also known as EPISODA) is a social media application focused on TV sho
 
 ## Recent Changes
 
+### Show Hub & Episode Hub UI Improvements (October 24, 2025)
+Pixel-perfect redesign of Show Hub and Episode Hub pages to match Figma specifications:
+
+1. **Sort Dropdown Refinements**
+   - Reduced dropdown size to exact Figma specs (82px width, 64px height)
+   - Font size reduced to 8pt with 300 weight (Funnel Display)
+   - Dropdown positioned directly below "Sort by" button using absolute positioning
+   - Dark background (rgba(40, 40, 40, 1)) with card stroke border
+   - Green highlight for active option, proper spacing (6px padding, 2px gaps)
+   - Options: Recent (sorts by timestamp) and Hot (sorts by engagement)
+
+2. **Friends Watching Modal**
+   - Created `FriendsWatchingModal.tsx` component for showing friends watching a show
+   - Modal opens when clicking "X friends watching" bar in Show Hub header
+   - Displays list of friends with avatars, usernames, bios, and follow buttons
+   - Integrates with DataContext for real-time follow/unfollow functionality
+   - Slide-up animation with dark modal background
+
+3. **Tab Filtering Functionality**
+   - Friends tab: Shows only posts from users you follow (uses isFollowing filter)
+   - Everyone tab: Shows all posts from all users on the app
+   - Episodes tab: Displays organized list of show episodes by season
+   - Tab switching automatically adjusts default sort (Friends→Recent, Everyone→Hot)
+
+4. **Gradient Background Consistency**
+   - Applied purple-to-orange gradient background to Show Hub page
+   - Applied same gradient background to Episode Hub page
+   - Matches homepage gradient for consistent visual design across app
+   - Uses Platform.select with web-specific CSS background-image
+
+5. **Component Updates**
+   - SortDropdown: Matches exact Figma specifications for size and styling
+   - TabSelector: Proper 6px padding containing active button
+   - FloatingTabBar: Added to Show Hub and Episode Hub for navigation
+   - All components use design tokens (zero hardcoded values)
+
 ### Design Token System Implementation (October 23, 2025)
 Comprehensive design token system replacing all hardcoded styles:
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,16 +28,42 @@ const FEED_TABS: Tab[] = [
 
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
-  const { posts } = useData();
+  const { posts, isFollowing } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
-  const [sortBy, setSortBy] = useState<SortOption>('hot');
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'friends') {
+      setSortBy('recent');
+    } else if (activeTab === 'all') {
+      setSortBy('hot');
+    }
+  }, [activeTab]);
 
   const episode = mockEpisodes.find((e) => e.id === id);
   const show = episode ? mockShows.find((s) => s.id === episode.showId) : undefined;
-  const episodePosts = posts.filter((p) => 
+  
+  // Filter posts for this episode
+  let episodePosts = posts.filter((p) => 
     p.episodes?.some((e) => e.id === id)
   );
+
+  // Apply Friends tab filter
+  if (activeTab === 'friends') {
+    episodePosts = episodePosts.filter(post => isFollowing(post.user.id));
+  }
+
+  // Apply sorting
+  if (sortBy === 'hot') {
+    episodePosts = [...episodePosts].sort((a, b) => {
+      const engagementA = a.likes + a.comments;
+      const engagementB = b.likes + b.comments;
+      return engagementB - engagementA;
+    });
+  } else {
+    episodePosts = [...episodePosts].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
 
   if (!episode || !show) {
     return (

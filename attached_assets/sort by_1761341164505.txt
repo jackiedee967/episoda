@@ -1,0 +1,114 @@
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface ToggleProps {
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export function Toggle(props: ToggleProps) {
+  return (
+    <View testID={props.testID ?? "370:92353"} style={[styles.root, props.style]}>
+      <View testID="370:92342" style={styles.autoLayoutHorizontal}>
+        <Text testID="370:92343" style={styles.recent}>
+          {`Recent`}
+        </Text>
+      </View>
+      <View testID="370:92344" style={styles.autoLayoutHorizontal2}>
+        <Text testID="370:92345" style={styles.hot}>
+          {`Hot`}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    width: 82,
+    height: 64,
+    paddingTop: 6,
+    paddingLeft: 6,
+    paddingBottom: 6,
+    paddingRight: 6,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 2,
+    columnGap: 2,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'rgba(40, 40, 40, 1)',
+  },
+  recent: {
+    width: 78,
+    height: 24,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Black',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  autoLayoutHorizontal: {
+    flexDirection: 'row',
+    paddingTop: 16,
+    paddingLeft: 20,
+    paddingBottom: 16,
+    paddingRight: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    backgroundColor: 'Green.Highlight',
+  },
+  hot: {
+    width: 78,
+    height: 24,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  autoLayoutHorizontal2: {
+    flexDirection: 'row',
+    paddingTop: 16,
+    paddingLeft: 20,
+    paddingBottom: 16,
+    paddingRight: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+}));

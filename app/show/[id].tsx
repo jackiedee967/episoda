@@ -19,6 +19,7 @@ import { Vector3Divider } from '@/components/Vector3Divider';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
+import FriendsWatchingModal from '@/components/FriendsWatchingModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
@@ -43,6 +44,7 @@ export default function ShowHub() {
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
+  const [friendsModalVisible, setFriendsModalVisible] = useState(false);
   const [isInPlaylist, setIsInPlaylist] = useState(false);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | undefined>(undefined);
   const [seasons, setSeasons] = useState<SeasonData[]>([]);
@@ -188,7 +190,7 @@ export default function ShowHub() {
             <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
             <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
           </View>
-          <View style={styles.friendsWatchingBar}>
+          <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
             <View style={styles.friendAvatarsRow}>
               {friendsWatching.slice(0, 4).map((friend, index) => (
                 <Image
@@ -204,7 +206,7 @@ export default function ShowHub() {
             <Text style={styles.friendsWatchingText}>
               {friendsWatching.length} friends watching
             </Text>
-          </View>
+          </Pressable>
         </View>
       </View>
     </View>
@@ -343,6 +345,12 @@ export default function ShowHub() {
         onClose={() => setPlaylistModalVisible(false)}
         show={show}
         onAddToPlaylist={handleAddToPlaylist}
+      />
+      <FriendsWatchingModal
+        visible={friendsModalVisible}
+        onClose={() => setFriendsModalVisible(false)}
+        friends={friendsWatching}
+        showTitle={show.title}
       />
       <FloatingTabBar 
         tabs={[
