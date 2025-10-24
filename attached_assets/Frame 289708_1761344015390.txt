@@ -1,0 +1,1100 @@
+import {useVariants} from 'react-exo/utils';
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+import {Image} from 'react-exo/image';
+
+import {PostTags} from 'components/ui-pages/base/post-tags';
+import {ExpandLeftLight} from 'components/ui-pages/base/expand-left-light';
+
+import Star4 from './assets/star4.svg';
+import Star42 from './assets/star42.svg';
+import Star43 from './assets/star43.svg';
+import Star44 from './assets/star44.svg';
+import Vector581 from './assets/vector581.svg';
+import episodeDisplayImg from './assets/episodedisplayimg.png';
+import episodeDisplayImg2 from './assets/episodedisplayimg2.png';
+import episodeDisplayImg3 from './assets/episodedisplayimg3.png';
+import episodeDisplayImg4 from './assets/episodedisplayimg4.png';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface Frame289708Props {
+  prop: typeof Frame289708Variants.prop[number],
+  state: typeof Frame289708Variants.state[number],
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export const Frame289708Variants = {
+  prop: ['SeasonsAndEpisodes'],
+  state: ['White', 'Dark'],
+} as const;
+
+export function Frame289708(props: Frame289708Props) {
+  const {prop, state} = props;
+  const {vstyles} = useVariants(Frame289708Variants, {prop, state}, styles);
+
+  return (
+    <View testID={props.testID ?? "342:5517"} style={[vstyles.root(), props.style]}>
+      <View testID="342:4964" style={styles.openedSeasonList}>
+        <View testID="342:4965" style={vstyles.seasonListTitle()}>
+          <View testID="344:28786" style={vstyles.seasonandEpisodeCount()}>
+            <Text testID="344:28787" style={vstyles.season1()}>
+              {`Season 1`}
+            </Text>
+            <Text testID="344:28788" style={vstyles.$13Episodes()}>
+              {`13 Episodes`}
+            </Text>
+          </View>
+          <ExpandLeftLight testID="344:28789"/>
+        </View>
+        <View testID="342:4970" style={vstyles.episodeCard()}>
+          <Image url={episodeDisplayImg} width={95.96} height={59.06}/>
+          <View testID="370:95518" style={vstyles.episodeInfo()}>
+            <View testID="370:95519" style={vstyles.sEEpisodeTitle()}>
+              <PostTags testID="370:95520"
+                prop="Small"
+                property1="Post_Tag"
+                state="S_E_"
+              />
+              <Text testID="370:95521" style={vstyles.episodeTitle()}>
+                {`Episode Title`}
+              </Text>
+            </View>
+            <Text testID="370:95522" style={vstyles.briefDescriptionOfTheShowsEpisodeGoes()}>
+              {`Brief description of the show’s episode goes...`}
+            </Text>
+            <View testID="370:95523" style={vstyles.ratingAndPostCount()}>
+              <View testID="370:95524" style={vstyles.starRating()}>
+                <Star4/>
+                <Text testID="370:95526" style={vstyles.$40()}>
+                  {`4.0`}
+                </Text>
+              </View>
+              <Text testID="370:95527" style={vstyles.$54Posts()}>
+                {`54 posts`}
+              </Text>
+            </View>
+          </View>
+          <View testID="370:95528" style={vstyles.buttonWithIcon()}>
+          </View>
+        </View>
+        <View testID="344:26751" style={vstyles.episodeCard2()}>
+          <Image url={episodeDisplayImg2} width={95.96} height={59.06}/>
+          <View testID="370:95468" style={vstyles.episodeInfo2()}>
+            <View testID="370:95469" style={vstyles.sEEpisodeTitle2()}>
+              <PostTags testID="370:95470"
+                prop="Small"
+                property1="Post_Tag"
+                state="S_E_"
+              />
+              <Text testID="370:95471" style={vstyles.episodeTitle2()}>
+                {`Episode Title`}
+              </Text>
+            </View>
+            <Text testID="370:95472" style={vstyles.briefDescriptionOfTheShowsEpisodeGoes2()}>
+              {`Brief description of the show’s episode goes...`}
+            </Text>
+            <View testID="370:95473" style={vstyles.ratingAndPostCount2()}>
+              <View testID="370:95474" style={vstyles.starRating2()}>
+                <Star42/>
+                <Text testID="370:95476" style={vstyles.$402()}>
+                  {`4.0`}
+                </Text>
+              </View>
+              <Text testID="370:95477" style={vstyles.$54Posts2()}>
+                {`54 posts`}
+              </Text>
+            </View>
+          </View>
+          <View testID="370:95478" style={vstyles.buttonWithIcon2()}>
+          </View>
+        </View>
+        <View testID="344:27284" style={vstyles.episodeCard3()}>
+          <Image url={episodeDisplayImg3} width={95.96} height={59.06}/>
+          <View testID="370:95440" style={vstyles.episodeInfo3()}>
+            <View testID="370:95441" style={vstyles.sEEpisodeTitle3()}>
+              <PostTags testID="370:95442"
+                prop="Small"
+                property1="Post_Tag"
+                state="S_E_"
+              />
+              <Text testID="370:95443" style={vstyles.episodeTitle3()}>
+                {`Episode Title`}
+              </Text>
+            </View>
+            <Text testID="370:95444" style={vstyles.briefDescriptionOfTheShowsEpisodeGoes3()}>
+              {`Brief description of the show’s episode goes...`}
+            </Text>
+            <View testID="370:95445" style={vstyles.ratingAndPostCount3()}>
+              <View testID="370:95446" style={vstyles.starRating3()}>
+                <Star43/>
+                <Text testID="370:95448" style={vstyles.$403()}>
+                  {`4.0`}
+                </Text>
+              </View>
+              <Text testID="370:95449" style={vstyles.$54Posts3()}>
+                {`54 posts`}
+              </Text>
+            </View>
+          </View>
+          <View testID="370:95450" style={vstyles.buttonWithIcon3()}>
+          </View>
+        </View>
+        <View testID="344:27451" style={vstyles.episodeCardLogged()}>
+          <Image url={episodeDisplayImg4} width={95.96} height={59.06}/>
+          <View testID="344:27454" style={vstyles.episodeInfo4()}>
+            <View testID="344:27455" style={vstyles.sEEpisodeTitle4()}>
+              <PostTags testID="344:27456"
+                prop="Small"
+                property1="Post_Tag"
+                state="S_E_"
+              />
+              <Text testID="344:27457" style={vstyles.episodeTitle4()}>
+                {`Episode Title`}
+              </Text>
+            </View>
+            <Text testID="344:27458" style={vstyles.briefDescriptionOfTheShowsEpisodeGoes4()}>
+              {`Brief description of the show’s episode goes...`}
+            </Text>
+            <View testID="344:28154" style={vstyles.ratingAndPostCount4()}>
+              <View testID="344:28155" style={vstyles.starRating4()}>
+                <Star44/>
+                <Text testID="344:28157" style={vstyles.$404()}>
+                  {`4.0`}
+                </Text>
+              </View>
+              <Text testID="344:28158" style={vstyles.$54Posts4()}>
+                {`54 posts`}
+              </Text>
+            </View>
+          </View>
+          <View testID="344:27616" style={vstyles.buttonWithIcon4()}>
+            <Vector581/>
+          </View>
+        </View>
+      </View>
+      <View testID="344:25956" style={styles.closedSeasonList}>
+        <View testID="342:5034" style={vstyles.seasonListTitle2()}>
+          <View testID="344:28845" style={vstyles.seasonandEpisodeCount2()}>
+            <Text testID="344:28846" style={vstyles.season12()}>
+              {`Season 1`}
+            </Text>
+            <Text testID="344:28847" style={vstyles.$13Episodes2()}>
+              {`13 Episodes`}
+            </Text>
+          </View>
+          <ExpandLeftLight testID="344:28848"/>
+        </View>
+        <View testID="344:26283" style={vstyles.seasonListTitle3()}>
+          <View testID="344:28866" style={vstyles.seasonandEpisodeCount3()}>
+            <Text testID="344:28867" style={vstyles.season13()}>
+              {`Season 1`}
+            </Text>
+            <Text testID="344:28868" style={vstyles.$13Episodes3()}>
+              {`13 Episodes`}
+            </Text>
+          </View>
+          <ExpandLeftLight testID="344:28869"/>
+        </View>
+        <View testID="344:26302" style={vstyles.seasonListTitle4()}>
+          <View testID="344:28919" style={vstyles.seasonandEpisodeCount4()}>
+            <Text testID="344:28920" style={vstyles.season14()}>
+              {`Season 1`}
+            </Text>
+            <Text testID="344:28921" style={vstyles.$13Episodes4()}>
+              {`13 Episodes`}
+            </Text>
+          </View>
+          <ExpandLeftLight testID="344:28937"/>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    width: 392,
+    flexDirection: 'column',
+    alignItems: 'center',
+    rowGap: 5,
+    columnGap: 5,
+  },
+  season1: {
+    width: 67,
+    flexShrink: 0,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  season1PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Black',
+  },
+  $13Episodes: {
+    width: 258,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $13EpisodesPropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Grey.3',
+  },
+  openedSeasonList: {
+    width: 392,
+    height: 408,
+    flexDirection: 'column',
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+  },
+  seasonListTitle: {
+    flexDirection: 'row',
+    height: 40,
+    paddingTop: 8,
+    paddingLeft: 20,
+    paddingBottom: 8,
+    paddingRight: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  seasonListTitlePropSeasonsAndEpisodesStateWhite: {
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Grey.2',
+    backgroundColor: 'Pure.White',
+  },
+  seasonandEpisodeCount: {
+    flexDirection: 'row',
+    width: 151,
+    alignItems: 'center',
+    rowGap: 3,
+    columnGap: 3,
+  },
+  seasonandEpisodeCountPropSeasonsAndEpisodesStateWhite: {
+    width: undefined,
+  },
+  postTags: {
+    flexDirection: 'row',
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  episodeTitle: {
+    width: 162,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  episodeTitlePropSeasonsAndEpisodesStateWhite: {
+    color: 'Black',
+  },
+  episodeCard: {
+    flexDirection: 'row',
+    width: 362,
+    paddingTop: 10,
+    paddingLeft: 10,
+    paddingBottom: 10,
+    paddingRight: 10,
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  episodeCardPropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Grey.2',
+    backgroundColor: 'Almost.White',
+  },
+  episodeInfo: {
+    width: 213,
+    height: 57,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+  },
+  episodeInfoPropSeasonsAndEpisodesStateWhite: {
+    width: 215,
+  },
+  sEEpisodeTitle: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  briefDescriptionOfTheShowsEpisodeGoes: {
+    width: 238,
+    height: 11,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  briefDescriptionOfTheShowsEpisodeGoesPropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '400',
+  },
+  $40: {
+    width: 16,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $40PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '400',
+  },
+  ratingAndPostCount: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  starRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 2,
+    columnGap: 2,
+  },
+  $54Posts: {
+    width: 35,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $54PostsPropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '400',
+  },
+  buttonWithIcon: {
+    flexDirection: 'row',
+    width: 12,
+    height: 12,
+    paddingTop: 16,
+    paddingLeft: 8,
+    paddingBottom: 16,
+    paddingRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+    flexShrink: 0,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Green.Highlight',
+  },
+  buttonWithIconPropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Stroke.2',
+  },
+  postTags2: {
+    flexDirection: 'row',
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  episodeTitle2: {
+    width: 162,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  episodeTitle2PropSeasonsAndEpisodesStateWhite: {
+    color: 'Black',
+  },
+  episodeCard2: {
+    flexDirection: 'row',
+    width: 362,
+    paddingTop: 10,
+    paddingLeft: 10,
+    paddingBottom: 10,
+    paddingRight: 10,
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  episodeCard2PropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Grey.2',
+    backgroundColor: 'Almost.White',
+  },
+  episodeInfo2: {
+    width: 213,
+    height: 57,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+  },
+  episodeInfo2PropSeasonsAndEpisodesStateWhite: {
+    width: 242,
+  },
+  sEEpisodeTitle2: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  briefDescriptionOfTheShowsEpisodeGoes2: {
+    width: 238,
+    height: 11,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  briefDescriptionOfTheShowsEpisodeGoes2PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '400',
+  },
+  $402: {
+    width: 16,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $402PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '400',
+  },
+  ratingAndPostCount2: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  starRating2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 2,
+    columnGap: 2,
+  },
+  $54Posts2: {
+    width: 35,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $54Posts2PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '400',
+  },
+  buttonWithIcon2: {
+    flexDirection: 'row',
+    width: 12,
+    height: 12,
+    paddingTop: 16,
+    paddingLeft: 8,
+    paddingBottom: 16,
+    paddingRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+    flexShrink: 0,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Green.Highlight',
+  },
+  buttonWithIcon2PropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Tab...Stroke.2',
+  },
+  postTags3: {
+    flexDirection: 'row',
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  episodeTitle3: {
+    width: 162,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  episodeTitle3PropSeasonsAndEpisodesStateWhite: {
+    color: 'Black',
+  },
+  episodeCard3: {
+    flexDirection: 'row',
+    width: 362,
+    paddingTop: 10,
+    paddingLeft: 10,
+    paddingBottom: 10,
+    paddingRight: 10,
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  episodeCard3PropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Grey.2',
+    backgroundColor: 'Almost.White',
+  },
+  episodeInfo3: {
+    width: 213,
+    height: 57,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+  },
+  episodeInfo3PropSeasonsAndEpisodesStateWhite: {
+    width: 215,
+  },
+  sEEpisodeTitle3: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  briefDescriptionOfTheShowsEpisodeGoes3: {
+    width: 238,
+    height: 11,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  briefDescriptionOfTheShowsEpisodeGoes3PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+  },
+  $403: {
+    width: 16,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $403PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+  },
+  ratingAndPostCount3: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  starRating3: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 2,
+    columnGap: 2,
+  },
+  $54Posts3: {
+    width: 35,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $54Posts3PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+  },
+  buttonWithIcon3: {
+    flexDirection: 'row',
+    width: 12,
+    height: 12,
+    paddingTop: 16,
+    paddingLeft: 8,
+    paddingBottom: 16,
+    paddingRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+    flexShrink: 0,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Green.Highlight',
+  },
+  buttonWithIcon3PropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Tab...Stroke.2',
+  },
+  postTags4: {
+    flexDirection: 'row',
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  episodeTitle4: {
+    width: 162,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  episodeTitle4PropSeasonsAndEpisodesStateWhite: {
+    color: 'Black',
+  },
+  episodeCardLogged: {
+    flexDirection: 'row',
+    width: 362,
+    paddingTop: 10,
+    paddingLeft: 10,
+    paddingBottom: 10,
+    paddingRight: 10,
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: 'Green.Highlight',
+    backgroundColor: 'Card.Background',
+  },
+  episodeCardLoggedPropSeasonsAndEpisodesStateWhite: {
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  episodeInfo4: {
+    width: 213,
+    height: 57,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+  },
+  episodeInfo4PropSeasonsAndEpisodesStateWhite: {
+    width: 215,
+  },
+  sEEpisodeTitle4: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  briefDescriptionOfTheShowsEpisodeGoes4: {
+    width: 238,
+    height: 11,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  briefDescriptionOfTheShowsEpisodeGoes4PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '300',
+  },
+  $404: {
+    width: 16,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $404PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '300',
+  },
+  ratingAndPostCount4: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  starRating4: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 2,
+    columnGap: 2,
+  },
+  $54Posts4: {
+    width: 35,
+    height: 6,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $54Posts4PropSeasonsAndEpisodesStateWhite: {
+    color: 'Grey.3',
+    fontWeight: '300',
+  },
+  buttonWithIcon4: {
+    flexDirection: 'row',
+    width: 12,
+    height: 12,
+    paddingTop: 16,
+    paddingLeft: 8,
+    paddingBottom: 16,
+    paddingRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+    flexShrink: 0,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Green.Highlight',
+    backgroundColor: 'Green.Highlight',
+  },
+  buttonWithIcon4PropSeasonsAndEpisodesStateWhite: {
+    backgroundColor: undefined,
+    borderColor: 'Tab...Stroke.2',
+  },
+  season12: {
+    width: 67,
+    flexShrink: 0,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  season12PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Black',
+  },
+  $13Episodes2: {
+    width: 258,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $13Episodes2PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Grey.3',
+  },
+  closedSeasonList: {
+    height: 130,
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
+  seasonListTitle2: {
+    flexDirection: 'row',
+    height: 40,
+    paddingTop: 8,
+    paddingLeft: 20,
+    paddingBottom: 8,
+    paddingRight: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  seasonListTitle2PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Grey.2',
+    backgroundColor: 'Pure.White',
+  },
+  seasonandEpisodeCount2: {
+    flexDirection: 'row',
+    width: 151,
+    alignItems: 'center',
+    rowGap: 3,
+    columnGap: 3,
+  },
+  seasonandEpisodeCount2PropSeasonsAndEpisodesStateWhite: {
+    width: undefined,
+  },
+  season13: {
+    width: 67,
+    flexShrink: 0,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  season13PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Black',
+  },
+  $13Episodes3: {
+    width: 258,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $13Episodes3PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Grey.3',
+  },
+  seasonListTitle3: {
+    flexDirection: 'row',
+    height: 40,
+    paddingTop: 8,
+    paddingLeft: 20,
+    paddingBottom: 8,
+    paddingRight: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  seasonListTitle3PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Grey.2',
+    backgroundColor: 'Pure.White',
+  },
+  seasonandEpisodeCount3: {
+    flexDirection: 'row',
+    width: 151,
+    alignItems: 'center',
+    rowGap: 3,
+    columnGap: 3,
+  },
+  seasonandEpisodeCount3PropSeasonsAndEpisodesStateWhite: {
+    width: undefined,
+  },
+  season14: {
+    width: 67,
+    flexShrink: 0,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  season14PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Black',
+  },
+  $13Episodes4: {
+    width: 258,
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $13Episodes4PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    color: 'Grey.3',
+  },
+  seasonListTitle4: {
+    flexDirection: 'row',
+    height: 40,
+    paddingTop: 8,
+    paddingLeft: 20,
+    paddingBottom: 8,
+    paddingRight: 20,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  seasonListTitle4PropSeasonsAndEpisodesStateWhite: {
+    flexShrink: undefined,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Grey.2',
+    backgroundColor: 'Pure.White',
+  },
+  seasonandEpisodeCount4: {
+    flexDirection: 'row',
+    width: 151,
+    alignItems: 'center',
+    rowGap: 3,
+    columnGap: 3,
+  },
+  seasonandEpisodeCount4PropSeasonsAndEpisodesStateWhite: {
+    width: undefined,
+  },
+}));
