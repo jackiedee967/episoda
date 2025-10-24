@@ -1,0 +1,88 @@
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+
+import Vector584 from './assets/vector584.svg';
+import Vector585 from './assets/vector585.svg';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface ShowsEpisodeProgressBarProps {
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export function ShowsEpisodeProgressBar(props: ShowsEpisodeProgressBarProps) {
+  return (
+    <View testID={props.testID ?? "370:101728"} style={[styles.root, props.style]}>
+      <View testID="370:101722" style={styles.showInfo}>
+        <Text testID="370:101723" style={styles.sEEpisodeTitle}>
+          {`S# E# [Episode Title]`}
+        </Text>
+        <View testID="370:101724" style={styles.progressBarMockMakeDynamic}>
+          <Vector584/>
+          <Vector585/>
+        </View>
+        <Text testID="370:101727" style={styles.$2450Episodes}>
+          {`24 / 50 episodes`}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    flexDirection: 'row',
+    width: 392,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    alignItems: 'center',
+    rowGap: 17,
+    columnGap: 17,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  sEEpisodeTitle: {
+    width: 151,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '500',
+  },
+  showInfo: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
+  },
+  progressBarMockMakeDynamic: {
+    height: 0.125,
+    alignSelf: 'stretch',
+  },
+  $2450Episodes: {
+    color: 'Grey.2',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+}));
