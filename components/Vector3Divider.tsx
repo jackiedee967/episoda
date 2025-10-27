@@ -13,9 +13,8 @@ export function Vector3Divider({ testID }: Vector3DividerProps) {
 const styles = StyleSheet.create({
   divider: {
     width: '100%',
-    borderBottomWidth: 0.5,
-    borderBottomColor: tokens.colors.pureWhite,
+    height: 0.5,
+    backgroundColor: tokens.colors.pureWhite,
     opacity: 0.5,
-    marginBottom: 20,
   },
 });

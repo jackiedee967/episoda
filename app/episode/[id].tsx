@@ -169,7 +169,9 @@ export default function EpisodeHub() {
           </View>
 
           {/* Divider */}
-          <Vector3Divider />
+          <View style={styles.dividerContainer}>
+            <Vector3Divider />
+          </View>
 
           {/* Tabs */}
           <View style={styles.tabsContainer}>
@@ -339,6 +341,10 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingHorizontal: 20,
     paddingTop: 21,
+  },
+  dividerContainer: {
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   tabsContainer: {
     paddingHorizontal: 20,
