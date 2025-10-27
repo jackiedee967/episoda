@@ -27,6 +27,7 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **UI Enhancements**: Relative time display for posts, refined progress bar visibility, accurate episode counts based on logged data, standardized "S# E#" episode formatting.
 - **Friends Tab Logic**: Displays posts from followed users AND the current user's own posts.
 - **Post-Creation Navigation**: Users are automatically navigated to their newly created post.
+- **Navigation Highlighting**: FloatingTabBar treats show pages (`/show/[id]`) as part of the home route, keeping the home icon highlighted (black) when viewing show pages.
 
 ### System Design Choices
 - **Modular Structure**: Organized into logical directories for tabs, authentication, episodes, integrations, playlists, posts, settings, shows, and users.
