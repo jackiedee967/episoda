@@ -76,33 +76,6 @@ export default function PostTags({
       baseStyle.push(styles.textSmall);
     }
     
-    switch (state) {
-      case 'S_E_':
-        baseStyle.push(styles.textEpisode);
-        break;
-      case 'Show_Name':
-        baseStyle.push(styles.textShowName);
-        break;
-      case 'Fan_Theory':
-        baseStyle.push(styles.textFanTheory);
-        break;
-      case 'Discussion':
-        baseStyle.push(styles.textDiscussion);
-        break;
-      case 'Episode_Recap':
-        baseStyle.push(styles.textEpisode);
-        break;
-      case 'Spoiler':
-        baseStyle.push(styles.textSpoiler);
-        break;
-      case 'Misc':
-        baseStyle.push(styles.textMisc);
-        break;
-      case 'Custom':
-        baseStyle.push(styles.textCustom);
-        break;
-    }
-    
     return baseStyle;
   };
 
@@ -228,20 +201,7 @@ const styles = StyleSheet.create({
   },
   textSmall: {
     ...tokens.typography.p3M,
+    color: tokens.colors.pureWhite,
     textAlign: 'center',
-  },
-  textEpisode: {
-  },
-  textShowName: {
-  },
-  textFanTheory: {
-  },
-  textDiscussion: {
-  },
-  textSpoiler: {
-  },
-  textMisc: {
-  },
-  textCustom: {
   },
 });
