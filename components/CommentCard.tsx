@@ -234,7 +234,8 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     marginBottom: 8,
-    resizeMode: 'contain',
+    resizeMode: 'cover',
+    overflow: 'hidden',
   },
   actions: {
     flexDirection: 'row',
@@ -346,7 +347,8 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 8,
     marginBottom: 6,
-    resizeMode: 'contain',
+    resizeMode: 'cover',
+    overflow: 'hidden',
   },
   replyActions: {
     flexDirection: 'row',
