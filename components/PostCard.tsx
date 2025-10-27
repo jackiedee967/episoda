@@ -40,10 +40,11 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare, isRepost, repostedBy }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost, getPost, hasUserReposted } = useData();
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost, hasUserReposted, posts, currentUser } = useData();
   
   const latestPost = getPost(post.id) || post;
   const isReposted = hasUserReposted(latestPost.id);
+  const [spoilerRevealed, setSpoilerRevealed] = useState(false);
 
   const handleShowPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -105,6 +106,31 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     if (onComment) {
       onComment();
     }
+  };
+
+  const hasUserLoggedEpisodes = () => {
+    if (!latestPost.episodes || latestPost.episodes.length === 0) return true;
+    
+    // Check if current user has logged ALL episodes in this post
+    const episodeIds = latestPost.episodes.map(ep => ep.id);
+    const userPosts = posts.filter(p => p.user.id === currentUser.id);
+    
+    // Get all episode IDs the user has logged
+    const loggedEpisodeIds = new Set<string>();
+    userPosts.forEach(userPost => {
+      userPost.episodes?.forEach(ep => loggedEpisodeIds.add(ep.id));
+    });
+    
+    // User must have logged ALL episodes in the post
+    return episodeIds.every(episodeId => loggedEpisodeIds.has(episodeId));
+  };
+
+  const shouldShowSpoilerAlert = latestPost.isSpoiler && !hasUserLoggedEpisodes() && !spoilerRevealed;
+
+  const handleSpoilerReveal = (e: any) => {
+    e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSpoilerRevealed(true);
   };
 
   const getShowTagColor = (showTitle: string) => {
@@ -207,8 +233,16 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           {latestPost.title && (
             <Text style={styles.postTitle}>{latestPost.title}</Text>
           )}
-          {latestPost.body && (
-            <Text style={styles.postBody}>{latestPost.body}</Text>
+          {shouldShowSpoilerAlert ? (
+            <Pressable style={styles.spoilerAlertButton} onPress={handleSpoilerReveal}>
+              <AlertTriangle size={14} color={tokens.colors.tabStroke} />
+              <Text style={styles.spoilerAlertTitle}>Spoiler Alert</Text>
+              <Text style={styles.spoilerAlertSubtext}>Click to view</Text>
+            </Pressable>
+          ) : (
+            latestPost.body && (
+              <Text style={styles.postBody}>{latestPost.body}</Text>
+            )
           )}
           
           {latestPost.tags.length > 0 && (
@@ -446,5 +480,33 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,
+  },
+  spoilerAlertButton: {
+    width: '100%',
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingLeft: 16,
+    paddingRight: 16,
+    borderRadius: 10,
+    backgroundColor: tokens.colors.tabBack5,
+    borderWidth: 0.25,
+    borderColor: tokens.colors.tabStroke,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  spoilerAlertTitle: {
+    color: tokens.colors.tabStroke,
+    fontFamily: 'FunnelDisplay_600SemiBold',
+    fontSize: 13,
+    letterSpacing: 0,
+    lineHeight: 13,
+  },
+  spoilerAlertSubtext: {
+    color: tokens.colors.tabStroke,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 10,
+    letterSpacing: 0,
+    lineHeight: 12,
   },
 });
