@@ -124,7 +124,7 @@ export default function NotificationsScreen() {
   const getEpisodeString = (post: any): string => {
     if (!post.episodes || post.episodes.length === 0) return '';
     const episode = post.episodes[0];
-    return `S${episode.seasonNumber}E${episode.episodeNumber}`;
+    return `S${episode.seasonNumber} E${episode.episodeNumber}`;
   };
 
   const getNotificationText = (notification: Notification): string => {

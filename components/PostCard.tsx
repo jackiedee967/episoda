@@ -8,6 +8,26 @@ import { Post } from '@/types';
 import { Heart, MessageCircle, RefreshCw, Lightbulb, AlertTriangle, List, HelpCircle } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
 
+// Utility function to format relative time
+function getRelativeTime(timestamp: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - timestamp.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30));
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else if (diffDays < 30) {
+    return `${diffDays}d ago`;
+  } else {
+    return `${diffMonths}mo ago`;
+  }
+}
+
 interface PostCardProps {
   post: Post;
   onLike?: () => void;
@@ -142,7 +162,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                   }}>
                     <View style={styles.episodeTag}>
                       <Text style={styles.episodeTagText}>
-                        S{latestPost.episodes[0].seasonNumber}E{latestPost.episodes[0].episodeNumber}
+                        S{latestPost.episodes[0].seasonNumber} E{latestPost.episodes[0].episodeNumber}
                       </Text>
                     </View>
                   </Pressable>
@@ -214,30 +234,33 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
             </View>
           )}
 
-          <View style={styles.engagementIconsAndCount}>
-            <Pressable onPress={handleLikePress} style={styles.likes}>
-              <Heart
-                size={16}
-                color={latestPost.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                fill={latestPost.isLiked ? tokens.colors.greenHighlight : 'none'}
-                strokeWidth={1.5}
-              />
-              <Text style={styles.countText}>{latestPost.likes}</Text>
-            </Pressable>
+          <View style={styles.engagementRow}>
+            <View style={styles.engagementIconsAndCount}>
+              <Pressable onPress={handleLikePress} style={styles.likes}>
+                <Heart
+                  size={16}
+                  color={latestPost.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                  fill={latestPost.isLiked ? tokens.colors.greenHighlight : 'none'}
+                  strokeWidth={1.5}
+                />
+                <Text style={styles.countText}>{latestPost.likes}</Text>
+              </Pressable>
 
-            <Pressable onPress={handleCommentPress} style={styles.comments}>
-              <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
-              <Text style={styles.countText}>{latestPost.comments}</Text>
-            </Pressable>
+              <Pressable onPress={handleCommentPress} style={styles.comments}>
+                <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
+                <Text style={styles.countText}>{latestPost.comments}</Text>
+              </Pressable>
 
-            <Pressable onPress={handleRepostPress} style={styles.reposts}>
-              <RefreshCw
-                size={16}
-                color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                strokeWidth={1.5}
-              />
-              <Text style={styles.countText}>{latestPost.reposts}</Text>
-            </Pressable>
+              <Pressable onPress={handleRepostPress} style={styles.reposts}>
+                <RefreshCw
+                  size={16}
+                  color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                  strokeWidth={1.5}
+                />
+                <Text style={styles.countText}>{latestPost.reposts}</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.timestampText}>{getRelativeTime(latestPost.timestamp)}</Text>
           </View>
         </View>
       )}
@@ -390,6 +413,11 @@ const styles = StyleSheet.create({
     fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 10,
   },
+  engagementRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   engagementIconsAndCount: {
     flexDirection: 'row',
     gap: 10,
@@ -410,6 +438,11 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   countText: {
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 10,
+  },
+  timestampText: {
     color: tokens.colors.grey1,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,

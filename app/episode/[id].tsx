@@ -81,7 +81,7 @@ export default function EpisodeHub() {
   const renderHeader = () => (
     <View style={styles.header}>
       <Text style={styles.episodeTitle}>
-        S{episode.seasonNumber}E{episode.episodeNumber}: {episode.title}
+        S{episode.seasonNumber} E{episode.episodeNumber}: {episode.title}
       </Text>
       <Text style={styles.showTitle}>{show.title}</Text>
       <Text style={styles.episodeDescription}>{episode.description}</Text>
@@ -143,7 +143,7 @@ export default function EpisodeHub() {
     <>
       <Stack.Screen
         options={{
-          title: `S${episode.seasonNumber}E${episode.episodeNumber}`,
+          title: `S${episode.seasonNumber} E${episode.episodeNumber}`,
         }}
       />
       <View style={[commonStyles.container, styles.container]}>

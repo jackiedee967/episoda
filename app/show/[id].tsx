@@ -271,11 +271,11 @@ export default function ShowHub() {
   const renderProgressBar = () => {
     const mostRecentEpisode = getMostRecentLoggedEpisode();
     const loggedCount = loggedEpisodeIds.size;
-    const totalCount = show?.totalEpisodes || showEpisodes.length;
+    const totalCount = showEpisodes.length;
     
     return (
       <ShowsEpisodeProgressBar
-        episodeNumber={mostRecentEpisode ? `S${mostRecentEpisode.seasonNumber.toString().padStart(2, '0')}E${mostRecentEpisode.episodeNumber.toString().padStart(2, '0')}` : undefined}
+        episodeNumber={mostRecentEpisode ? `S${mostRecentEpisode.seasonNumber} E${mostRecentEpisode.episodeNumber}` : undefined}
         episodeTitle={mostRecentEpisode?.title}
         loggedCount={loggedCount}
         totalCount={totalCount}
@@ -328,7 +328,7 @@ export default function ShowHub() {
     return (
       <EpisodeListCard
         key={episode.id}
-        episodeNumber={`S${episode.seasonNumber.toString().padStart(2, '0')}E${episode.episodeNumber.toString().padStart(2, '0')}`}
+        episodeNumber={`S${episode.seasonNumber} E${episode.episodeNumber}`}
         title={episode.title}
         description={episode.description}
         rating={averageRating > 0 ? averageRating : undefined}
