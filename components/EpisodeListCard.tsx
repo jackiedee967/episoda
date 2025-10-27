@@ -94,7 +94,7 @@ export default function EpisodeListCard({
         >
           {isSelected && (
             <Check 
-              size={14} 
+              size={10} 
               color={tokens.colors.black}
               strokeWidth={3}
             />
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey2,
   },
   checkmarkButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 16,
+    height: 16,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
