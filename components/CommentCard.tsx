@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   commentImage: {
     width: '100%',
-    height: 200,
+    maxHeight: 100,
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   replyImage: {
     width: '100%',
-    height: 150,
+    maxHeight: 100,
     borderRadius: 8,
     marginBottom: 6,
   },
