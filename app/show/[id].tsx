@@ -646,10 +646,6 @@ const styles = StyleSheet.create({
   },
   seasonSection: {
     marginBottom: spacing.gapMedium,
-    backgroundColor: tokens.colors.cardBackground,
-    borderRadius: components.borderRadiusButton,
-    borderWidth: 1,
-    borderColor: tokens.colors.cardStroke,
     overflow: 'hidden',
   },
   seasonHeader: {
@@ -657,7 +653,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: spacing.cardPadding,
-    backgroundColor: tokens.colors.cardBackground,
   },
   seasonTitle: {
     fontFamily: 'Funnel Display',
