@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logButtonText: {
-    ...tokens.typography.subtitle,
+    ...tokens.typography.buttonSmall,
     color: tokens.colors.black,
     textAlign: 'center',
   },
