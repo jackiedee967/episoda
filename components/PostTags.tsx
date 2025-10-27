@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   textSmall: {
-    ...tokens.typography.p3M,
+    ...tokens.typography.smallSubtitle,
     textAlign: 'center',
   },
   textEpisode: {
