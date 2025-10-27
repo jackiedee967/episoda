@@ -10,7 +10,6 @@ export const currentUser: User = {
   bio: 'TV enthusiast 📺 | Building Natively',
   following: ['user-2', 'user-3', 'user-4', 'user-5'],
   followers: ['user-2', 'user-3', 'user-4'],
-  isAuthenticated: true,
 };
 
 export const mockUsers: User[] = [
