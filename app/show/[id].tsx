@@ -214,23 +214,46 @@ export default function ShowHub() {
     </View>
   );
 
-  const renderShowInfo = () => (
-    <View style={styles.showInfoContainer}>
-      <Text style={styles.showTitle}>{show.title}</Text>
-      <View style={styles.showDetailsRow}>
-        <Image source={{ uri: show.poster }} style={styles.poster} />
-        <View style={styles.detailsColumn}>
-          <Text style={styles.description} numberOfLines={3}>
-            {show.description}
-          </Text>
-          <View style={styles.statsRow}>
-            <View style={styles.ratingContainer}>
-              <Text style={styles.ratingText}>{show.rating.toFixed(1)}</Text>
-              <Text style={styles.starIcon}>★</Text>
+  const calculateShowRating = () => {
+    const postsWithRatings = showPosts.filter(p => p.rating && p.rating > 0);
+    if (postsWithRatings.length === 0) return 0;
+    const totalRating = postsWithRatings.reduce((sum, p) => sum + (p.rating || 0), 0);
+    return totalRating / postsWithRatings.length;
+  };
+
+  const calculateSeasonCount = () => {
+    const uniqueSeasons = new Set(showEpisodes.map(ep => ep.seasonNumber));
+    return uniqueSeasons.size;
+  };
+
+  const calculateEpisodeCount = () => {
+    return showEpisodes.length;
+  };
+
+  const renderShowInfo = () => {
+    const averageRating = calculateShowRating();
+    const totalSeasons = calculateSeasonCount();
+    const totalEpisodes = calculateEpisodeCount();
+
+    return (
+      <View style={styles.showInfoContainer}>
+        <Text style={styles.showTitle}>{show.title}</Text>
+        <View style={styles.showDetailsRow}>
+          <Image source={{ uri: show.poster }} style={styles.poster} />
+          <View style={styles.detailsColumn}>
+            <Text style={styles.description} numberOfLines={3}>
+              {show.description}
+            </Text>
+            <View style={styles.statsRow}>
+              <View style={styles.ratingContainer}>
+                <Text style={styles.ratingText}>
+                  {averageRating > 0 ? averageRating.toFixed(1) : '—'}
+                </Text>
+                <Text style={styles.starIcon}>★</Text>
+              </View>
+              <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
+              <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
-            <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
-            <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
-          </View>
           <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
             <View style={styles.friendAvatarsRow}>
               {friendsWatching.slice(0, 4).map((friend, index) => (
