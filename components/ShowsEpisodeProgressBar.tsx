@@ -30,17 +30,17 @@ export default function ShowsEpisodeProgressBar(props: ShowsEpisodeProgressBarPr
   // Calculate progress percentage (0-100)
   const progressPercentage = totalCount > 0 ? (loggedCount / totalCount) * 100 : 0;
 
-  // Only show episode info if there's an episode logged
-  const hasEpisode = episodeNumber && episodeTitle;
+  // Determine display text - show episode info if available, otherwise fallback message
+  const displayText = episodeNumber && episodeTitle 
+    ? `${episodeNumber} ${episodeTitle}` 
+    : 'No episodes logged yet';
 
   return (
     <View testID={testID ?? "370:101728"} style={[styles.root, style]}>
       <View testID="370:101722" style={styles.showInfo}>
-        {hasEpisode && (
-          <Text testID="370:101723" style={styles.sEEpisodeTitle}>
-            {`${episodeNumber} ${episodeTitle}`}
-          </Text>
-        )}
+        <Text testID="370:101723" style={styles.sEEpisodeTitle}>
+          {displayText}
+        </Text>
         <View testID="370:101724" style={styles.progressBarContainer}>
           <View style={styles.progressBarBackground}>
             <View 
