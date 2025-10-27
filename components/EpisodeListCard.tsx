@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
   },
   episodeInfo: {
     flex: 1,
-    height: 57,
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: 8,
