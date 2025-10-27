@@ -85,7 +85,9 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
         <Text style={styles.text}>{comment.text}</Text>
 
         {comment.image && (
-          <Image source={{ uri: comment.image }} style={styles.commentImage} />
+          <View style={styles.commentImageContainer}>
+            <Image source={{ uri: comment.image }} style={styles.commentImage} resizeMode="contain" />
+          </View>
         )}
 
         <View style={styles.actions}>
@@ -142,7 +144,9 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
                   <Text style={styles.replyText}>{reply.text}</Text>
 
                   {reply.image && (
-                    <Image source={{ uri: reply.image }} style={styles.replyImage} />
+                    <View style={styles.replyImageContainer}>
+                      <Image source={{ uri: reply.image }} style={styles.replyImage} resizeMode="contain" />
+                    </View>
                   )}
 
                   <View style={styles.replyActions}>
@@ -229,14 +233,17 @@ const styles = StyleSheet.create({
     color: tokens.colors.pureWhite,
     marginBottom: 8,
   },
-  commentImage: {
+  commentImageContainer: {
     alignSelf: 'flex-start',
     width: 200,
     height: 100,
     borderRadius: 8,
     marginBottom: 8,
-    resizeMode: 'contain',
     overflow: 'hidden',
+  },
+  commentImage: {
+    width: '100%',
+    height: '100%',
   },
   actions: {
     flexDirection: 'row',
@@ -343,14 +350,17 @@ const styles = StyleSheet.create({
     color: tokens.colors.pureWhite,
     marginBottom: 6,
   },
-  replyImage: {
+  replyImageContainer: {
     alignSelf: 'flex-start',
     width: 200,
     height: 100,
     borderRadius: 8,
     marginBottom: 6,
-    resizeMode: 'contain',
     overflow: 'hidden',
+  },
+  replyImage: {
+    width: '100%',
+    height: '100%',
   },
   replyActions: {
     flexDirection: 'row',
