@@ -123,10 +123,11 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
             style={styles.actionButton}
             onPress={handleLikePress}
           >
-            <IconSymbol
-              name="flame"
-              size={16}
-              color={comment.isLiked ? tokens.colors.tabStroke5 : colors.textSecondary}
+            <Heart
+              size={9}
+              color={comment.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+              fill={comment.isLiked ? tokens.colors.greenHighlight : 'none'}
+              strokeWidth={1.5}
             />
             <Text style={styles.actionText}>{comment.likes}</Text>
           </Pressable>
@@ -135,7 +136,11 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
             style={styles.actionButton}
             onPress={handleReplyPress}
           >
-            <IconSymbol name="arrowshape.turn.up.left" size={16} color={colors.textSecondary} />
+            <MessageCircle
+              size={9}
+              color={tokens.colors.grey1}
+              strokeWidth={1.5}
+            />
             <Text style={styles.actionText}>Reply</Text>
           </Pressable>
         </View>
@@ -318,9 +323,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   actionText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontFamily: 'System',
+    fontSize: 8,
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontWeight: '300',
   },
   replyInputContainer: {
     marginTop: 12,
