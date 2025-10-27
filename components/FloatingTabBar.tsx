@@ -36,7 +36,7 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
 
   const isActive = (route: string) => {
     if (route === '/(home)') {
-      return pathname === '/' || pathname.includes('/(home)');
+      return pathname === '/' || pathname.includes('/(home)') || pathname.includes('/show/');
     }
     return pathname.includes(route);
   };
