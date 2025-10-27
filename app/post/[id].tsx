@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,56 +11,65 @@ import {
   Platform,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import Button from '@/components/Button';
 import * as Haptics from 'expo-haptics';
-import { Heart, MessageCircle, Repeat, Share2, Lightbulb, AlertTriangle, MoreHorizontal, List } from 'lucide-react-native';
+import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send } from 'lucide-react-native';
 import CommentCard from '@/components/CommentCard';
+import PostTags from '@/components/PostTags';
+import StarRatings from '@/components/StarRatings';
 import { mockComments, currentUser } from '@/data/mockData';
 import * as ImagePicker from 'expo-image-picker';
-import { Comment, Reply } from '@/types';
+import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
+import tokens from '@/styles/tokens';
+
+function getRelativeTime(timestamp: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - timestamp.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else {
+    return `${diffDays}d ago`;
+  }
+}
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { getPost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount } = useData();
+  const { getPost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts } = useData();
   const [comments, setComments] = useState<Comment[]>(mockComments.filter(c => c.postId === id));
   const [commentText, setCommentText] = useState('');
   const [commentImage, setCommentImage] = useState<string | null>(null);
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Get the latest post data reactively from context
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
 
+  // Force re-render when posts change to get latest engagement data
   useEffect(() => {
     if (post && comments.length !== post.comments) {
       updateCommentCount(post.id, comments.length);
     }
-  }, [comments.length, post, updateCommentCount]);
+  }, [comments.length, post, updateCommentCount, posts]);
 
   if (!post) {
     return (
-      <View style={commonStyles.container}>
-        <Stack.Screen options={{ title: 'Post Not Found' }} />
-        <Text style={commonStyles.text}>Post not found</Text>
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Text style={styles.errorText}>Post not found</Text>
       </View>
     );
   }
 
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMins = Math.floor(diffInMs / 60000);
-    const diffInHours = Math.floor(diffInMs / 3600000);
-    const diffInDays = Math.floor(diffInMs / 86400000);
-
-    if (diffInMins < 1) return 'just now';
-    if (diffInMins < 60) return `${diffInMins}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    return `${diffInDays}d ago`;
+  const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
   };
 
   const handleShowPress = () => {
@@ -77,36 +85,6 @@ export default function PostDetail() {
   const handleEpisodePress = (episodeId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/episode/${episodeId}`);
-  };
-
-  const getShowTagColor = (showTitle: string) => {
-    const tagColors = [
-      { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 },
-      { bg: colors.tabBack4, border: colors.tabStroke4, text: colors.tabStroke4 },
-      { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 },
-      { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 },
-      { bg: colors.tabBack, border: colors.tabStroke2, text: colors.tabStroke2 },
-    ];
-    const index = showTitle.length % tagColors.length;
-    return tagColors[index];
-  };
-
-  const getTagIcon = (tag: string) => {
-    const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return <Lightbulb size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('discussion')) return <MessageCircle size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('spoiler')) return <AlertTriangle size={16} color={getTagColor(tag).text} />;
-    if (tagLower.includes('recap')) return <List size={16} color={getTagColor(tag).text} />;
-    return <MoreHorizontal size={16} color={getTagColor(tag).text} />;
-  };
-
-  const getTagColor = (tag: string) => {
-    const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory')) return { bg: colors.tabBack2, border: colors.tabStroke3, text: colors.tabStroke3 };
-    if (tagLower.includes('discussion')) return { bg: colors.tabBack3, border: colors.tabStroke4, text: colors.tabStroke4 };
-    if (tagLower.includes('spoiler')) return { bg: colors.tabBack4, border: colors.tabStroke4, text: colors.tabStroke4 };
-    if (tagLower.includes('recap')) return { bg: colors.tabBack5, border: colors.tabStroke5, text: colors.tabStroke5 };
-    return { bg: colors.grey3, border: colors.grey1, text: colors.grey1 };
   };
 
   const handleLike = async () => {
@@ -135,14 +113,9 @@ export default function PostDetail() {
     }
   };
 
-  const handleShare = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    console.log('Share post');
-  };
-
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -186,7 +159,7 @@ export default function PostDetail() {
 
   const handleReply = (commentId: string, text: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newReply: Reply = {
+    const newReply = {
       id: `reply_${Date.now()}`,
       commentId,
       user: currentUser,
@@ -219,144 +192,120 @@ export default function PostDetail() {
     ));
   };
 
-  const showTagColor = getShowTagColor(post.show.title);
-
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'Post',
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
-        style={commonStyles.container}
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={100}
       >
         <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Post Content */}
-          <View style={styles.postContainer}>
-            {/* User Info */}
-            <Pressable onPress={handleUserPress} style={styles.userHeader}>
-              <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-              <View style={styles.userInfo}>
-                <Text style={styles.username}>{post.user.displayName}</Text>
-                <Text style={styles.timestamp}>{formatTimestamp(post.timestamp)}</Text>
-              </View>
+          {/* Custom Back Header */}
+          <View style={styles.header}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
+              <ChevronLeft size={24} color={tokens.colors.almostWhite} strokeWidth={1.5} />
+              <Text style={styles.backText}>Back</Text>
             </Pressable>
+          </View>
 
-            {/* Show Poster */}
-            <Pressable onPress={handleShowPress}>
-              <Image source={{ uri: post.show.poster }} style={styles.showPoster} />
-            </Pressable>
+          {/* Post Container */}
+          <View style={styles.postContainer}>
+            {/* User Info & Time */}
+            <View style={styles.userRow}>
+              <Pressable onPress={handleUserPress}>
+                <Image source={{ uri: post.user.avatar }} style={styles.userAvatar} />
+              </Pressable>
+              <View style={styles.userInfo}>
+                <Pressable onPress={handleUserPress}>
+                  <Text style={styles.username}>{post.user.displayName}</Text>
+                </Pressable>
+                <Text style={styles.timestamp}>{getRelativeTime(post.timestamp)}</Text>
+              </View>
+            </View>
+
+            {/* Star Rating */}
+            {post.rating && (
+              <View style={styles.starRatingsContainer}>
+                <StarRatings rating={post.rating} size={14} />
+              </View>
+            )}
 
             {/* Episode and Show Tags */}
             <View style={styles.tagsRow}>
               {post.episodes && post.episodes.length > 0 && (
-                <>
-                  {post.episodes.map((episode, index) => (
-                    <Pressable
-                      key={episode.id}
-                      onPress={() => handleEpisodePress(episode.id)}
-                      style={styles.episodeTag}
-                    >
-                      <Text style={styles.episodeTagText}>
-                        S{episode.seasonNumber}E{episode.episodeNumber}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </>
+                <PostTags
+                  prop="Large"
+                  state="S_E_"
+                  text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
+                  onPress={() => handleEpisodePress(post.episodes![0].id)}
+                />
               )}
-              <Pressable onPress={handleShowPress}>
-                <View
-                  style={[
-                    styles.showTag,
-                    {
-                      backgroundColor: showTagColor.bg,
-                      borderColor: showTagColor.border,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.showTagText, { color: showTagColor.text }]}>
-                    {post.show.title}
-                  </Text>
-                </View>
-              </Pressable>
+              <PostTags
+                prop="Large"
+                state="Show_Name"
+                text={post.show.title}
+                onPress={handleShowPress}
+              />
             </View>
 
-            {/* Rating */}
-            {post.rating && (
-              <View style={styles.ratingContainer}>
-                {[...Array(5)].map((_, i) => (
-                  <IconSymbol
-                    key={i}
-                    name={i < post.rating! ? 'star.fill' : 'star'}
-                    size={20}
-                    color={i < post.rating! ? colors.greenHighlight : colors.grey1}
-                  />
-                ))}
-              </View>
+            {/* Post Title */}
+            {post.title && (
+              <Text style={styles.postTitle}>{post.title}</Text>
             )}
 
-            {/* Post Title and Body */}
-            {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-            {post.body && <Text style={styles.postBody}>{post.body}</Text>}
+            {/* Post Body */}
+            {post.body && (
+              <Text style={styles.postBody}>{post.body}</Text>
+            )}
 
-            {/* Post Tags */}
+            {/* Post Tags (Discussion, Fan Theory, etc.) */}
             {post.tags.length > 0 && (
               <View style={styles.postTagsContainer}>
                 {post.tags.map((tag, index) => {
-                  const tagColor = getTagColor(tag);
+                  let tagState: 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' = 'Misc';
+                  const tagLower = tag.toLowerCase();
+                  if (tagLower.includes('theory') || tagLower.includes('fan')) tagState = 'Fan_Theory';
+                  else if (tagLower.includes('discussion')) tagState = 'Discussion';
+                  else if (tagLower.includes('recap')) tagState = 'Episode_Recap';
+                  else if (tagLower.includes('spoiler')) tagState = 'Spoiler';
+
                   return (
-                    <View
+                    <PostTags
                       key={index}
-                      style={[
-                        styles.postTag,
-                        {
-                          backgroundColor: tagColor.bg,
-                          borderColor: tagColor.border,
-                        },
-                      ]}
-                    >
-                      {getTagIcon(tag)}
-                      <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
-                    </View>
+                      prop="Small"
+                      state={tagState}
+                      text={tag}
+                    />
                   );
                 })}
               </View>
             )}
 
-            {/* Actions */}
-            <View style={styles.actions}>
-              <Pressable onPress={handleLike} style={styles.actionButton}>
+            {/* Engagement Row */}
+            <View style={styles.engagementRow}>
+              <Pressable onPress={handleLike} style={styles.engagementButton}>
                 <Heart
-                  size={24}
-                  color={post.isLiked ? colors.error : colors.grey1}
-                  fill={post.isLiked ? colors.error : 'none'}
+                  size={16}
+                  color={post.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                  fill={post.isLiked ? tokens.colors.greenHighlight : 'none'}
+                  strokeWidth={1.5}
                 />
-                <Text style={[styles.actionText, post.isLiked && styles.actionTextActive]}>
-                  {post.likes}
-                </Text>
+                <Text style={styles.engagementText}>{post.likes}</Text>
               </Pressable>
 
-              <View style={styles.actionButton}>
-                <MessageCircle size={24} color={colors.grey1} />
-                <Text style={styles.actionText}>{comments.length}</Text>
+              <View style={styles.engagementButton}>
+                <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
+                <Text style={styles.engagementText}>{comments.length}</Text>
               </View>
 
-              <Pressable onPress={handleRepost} style={styles.actionButton}>
-                <Repeat
-                  size={24}
-                  color={isReposted ? colors.greenHighlight : colors.grey1}
-                  fill={isReposted ? colors.greenHighlight : 'none'}
+              <Pressable onPress={handleRepost} style={styles.engagementButton}>
+                <RefreshCw
+                  size={16}
+                  color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                  strokeWidth={1.5}
                 />
-                <Text style={[styles.actionText, isReposted && styles.actionTextRepost]}>
-                  {post.reposts}
-                </Text>
-              </Pressable>
-
-              <Pressable onPress={handleShare} style={styles.actionButton}>
-                <Share2 size={24} color={colors.grey1} />
+                <Text style={styles.engagementText}>{post.reposts}</Text>
               </Pressable>
             </View>
           </View>
@@ -385,32 +334,40 @@ export default function PostDetail() {
                 style={styles.removeImageButton}
                 onPress={() => setCommentImage(null)}
               >
-                <IconSymbol name="xmark.circle.fill" size={24} color={colors.grey1} />
+                <Text style={styles.removeImageText}>✕</Text>
               </Pressable>
             </View>
           )}
           <View style={styles.inputRow}>
-            <Image source={{ uri: currentUser.avatar }} style={styles.commentAvatar} />
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Add a comment..."
-              placeholderTextColor={colors.grey1}
-              value={commentText}
-              onChangeText={setCommentText}
-              multiline
-            />
-            <Pressable onPress={handlePickImage} style={styles.imageButton}>
-              <IconSymbol name="photo" size={24} color={colors.grey1} />
+            <View style={styles.inputBox}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Add a comment"
+                placeholderTextColor={tokens.colors.grey1}
+                value={commentText}
+                onChangeText={setCommentText}
+                multiline
+              />
+            </View>
+            <Pressable 
+              onPress={handlePickImage} 
+              style={styles.uploadButton}
+              accessibilityLabel="Upload image"
+              accessibilityRole="button"
+            >
+              <Upload size={20} color={tokens.colors.almostWhite} strokeWidth={1.5} />
             </Pressable>
             <Pressable
               onPress={handleSubmitComment}
-              style={styles.sendButton}
+              style={[styles.sendButton, (!commentText.trim() && !commentImage) && styles.sendButtonDisabled]}
               disabled={!commentText.trim() && !commentImage}
+              accessibilityLabel="Send comment"
+              accessibilityRole="button"
             >
-              <IconSymbol
-                name="paperplane.fill"
+              <Send
                 size={20}
-                color={(!commentText.trim() && !commentImage) ? colors.grey1 : colors.greenHighlight}
+                color={(!commentText.trim() && !commentImage) ? tokens.colors.grey1 : tokens.colors.almostWhite}
+                strokeWidth={1.5}
               />
             </Pressable>
           </View>
@@ -421,194 +378,199 @@ export default function PostDetail() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: tokens.colors.pageBackground,
+  },
   scrollView: {
     flex: 1,
   },
-  postContainer: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-    padding: spacing.cardPadding,
-    marginBottom: spacing.gapSmall,
-    borderRadius: components.borderRadiusCard,
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
-  userHeader: {
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.gapLarge,
+    gap: 4,
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: spacing.gapMedium,
+  backText: {
+    ...tokens.typography.subtitle,
+    color: tokens.colors.almostWhite,
+  },
+  postContainer: {
+    backgroundColor: tokens.colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    shadowColor: 'rgba(0, 0, 0, 0.07)',
+    shadowRadius: 10.9,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  userAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   userInfo: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   username: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
+    ...tokens.typography.p1M,
+    color: tokens.colors.almostWhite,
   },
   timestamp: {
-    ...typography.p2,
-    color: colors.grey1,
-    marginTop: 2,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
   },
-  showPoster: {
-    width: '100%',
-    height: 400,
-    borderRadius: spacing.gapMedium,
-    marginBottom: spacing.gapLarge,
-    borderWidth: 1,
-    borderColor: colors.imageStroke,
+  starRatingsContainer: {
+    marginBottom: 12,
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.gapSmall,
-    marginBottom: spacing.gapLarge,
-  },
-  episodeTag: {
-    backgroundColor: colors.tabBack,
-    borderWidth: 1,
-    borderColor: colors.tabStroke2,
-    borderRadius: components.borderRadiusTag,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: 6,
-  },
-  episodeTagText: {
-    ...typography.p1Bold,
-    color: colors.tabStroke2,
-  },
-  showTag: {
-    borderWidth: 1,
-    borderRadius: components.borderRadiusTag,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: 6,
-  },
-  showTagText: {
-    ...typography.p1Bold,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: spacing.gapLarge,
+    gap: 8,
+    marginBottom: 12,
   },
   postTitle: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-    marginBottom: spacing.gapMedium,
+    ...tokens.typography.titleL,
+    color: tokens.colors.almostWhite,
+    marginBottom: 10,
   },
   postBody: {
-    ...typography.p1,
-    color: colors.almostWhite,
-    lineHeight: typography.p1.lineHeight * 1.5,
-    marginBottom: spacing.gapLarge,
+    ...tokens.typography.p1,
+    color: tokens.colors.almostWhite,
+    marginBottom: 12,
   },
   postTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.gapSmall,
-    marginBottom: spacing.gapLarge,
+    gap: 10,
+    marginBottom: 12,
   },
-  postTag: {
+  engagementRow: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255, 255, 255, 0.30)',
+  },
+  engagementButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: 6,
-    borderRadius: components.borderRadiusTag,
-    borderWidth: 1,
+    gap: 4,
   },
-  postTagText: {
-    ...typography.p1Bold,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing.sectionSpacing,
-    paddingTop: spacing.gapLarge,
-    borderTopWidth: 1,
-    borderTopColor: colors.cardStroke,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.gapSmall,
-  },
-  actionText: {
-    ...typography.p1Bold,
-    color: colors.grey1,
-  },
-  actionTextActive: {
-    color: colors.error,
-  },
-  actionTextRepost: {
-    color: colors.greenHighlight,
+  engagementText: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
   },
   commentsSection: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-    borderRadius: components.borderRadiusCard,
-    padding: spacing.cardPadding,
+    backgroundColor: tokens.colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 20,
     marginBottom: 100,
   },
   commentsTitle: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-    marginBottom: spacing.gapLarge,
+    ...tokens.typography.titleL,
+    color: tokens.colors.almostWhite,
+    marginBottom: 16,
   },
   commentInputContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.cardBackground,
-    borderTopWidth: 1,
-    borderTopColor: colors.cardStroke,
-    padding: spacing.gapMedium,
+    backgroundColor: tokens.colors.cardBackground,
+    borderTopWidth: 0.5,
+    borderTopColor: tokens.colors.cardStroke,
+    padding: 16,
   },
   imagePreview: {
     position: 'relative',
-    marginBottom: spacing.gapSmall,
+    marginBottom: 12,
+    width: 80,
+    height: 80,
   },
   previewImage: {
-    width: 100,
-    height: 100,
-    borderRadius: components.borderRadiusTag,
-    borderWidth: 1,
-    borderColor: colors.imageStroke,
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.imageStroke,
   },
   removeImageButton: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: tokens.colors.tabStroke5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeImageText: {
+    color: tokens.colors.pureWhite,
+    fontSize: 12,
+    fontWeight: '600',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.gapSmall,
+    gap: 12,
   },
-  commentAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  inputBox: {
+    flex: 1,
+    backgroundColor: tokens.colors.grey3,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 40,
   },
   commentInput: {
-    flex: 1,
-    backgroundColor: colors.grey3,
-    borderRadius: 20,
-    paddingHorizontal: spacing.gapLarge,
-    paddingVertical: spacing.gapSmall,
-    ...typography.p1,
-    color: colors.almostWhite,
-    maxHeight: 100,
+    ...tokens.typography.p1,
+    color: tokens.colors.almostWhite,
+    minHeight: 20,
   },
-  imageButton: {
-    padding: spacing.gapSmall,
+  uploadButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: tokens.colors.cardStroke,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButton: {
-    padding: spacing.gapSmall,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: tokens.colors.greenHighlight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: tokens.colors.cardStroke,
+  },
+  errorText: {
+    ...tokens.typography.p1,
+    color: tokens.colors.almostWhite,
+    textAlign: 'center',
+    marginTop: 40,
   },
 });
