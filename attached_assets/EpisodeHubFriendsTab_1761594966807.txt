@@ -1,0 +1,433 @@
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+import {Image} from 'react-exo/image';
+
+import {SearchDuotoneLine} from '';
+import {Post} from 'components/ui-pages/base/post';
+import {Sort} from '';
+import {Toggle} from 'components/ui-pages/base/toggle';
+import {ButtonL} from 'components/ui-pages/base/button-l';
+import {PostTags} from 'components/ui-pages/base/post-tags';
+import {ExpandLeftLight} from 'components/ui-pages/base/expand-left-light';
+
+import Star4 from './assets/star4.svg';
+import Vector3 from './assets/vector3.svg';
+import rectangle5 from './assets/rectangle5.png';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface EpisodeHubFriendsTabProps {
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export function EpisodeHubFriendsTab(props: EpisodeHubFriendsTabProps) {
+  return (
+    <View testID={props.testID ?? "376:7022"} style={[styles.root, props.style]}>
+      <View testID="342:5259" style={styles.frame289706}>
+        <View testID="342:5260" style={styles.frame289724}>
+          <View testID="342:5261" style={styles.frame83}>
+            <ExpandLeftLight testID="342:5262"/>
+            <Text testID="342:5263" style={styles.back}>
+              {`Back`}
+            </Text>
+          </View>
+          <View testID="342:5264" style={styles.group289700}>
+            <View testID="342:5265" style={styles.input}>
+              <View testID="342:5266" style={styles.frame4}>
+                <View testID="342:5267" style={styles.frame}>
+                  <View testID="342:5268" style={styles.autoLayoutHorizontal}>
+                    <SearchDuotoneLine testID="342:5269"/>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View testID="342:5411" style={styles.frame289725}>
+          <PostTags testID="358:48654"
+            prop="Large"
+            property1="Post_Tag"
+            state="S_E_"
+          />
+          <PostTags testID="342:5407"
+            prop="Large"
+            property1="Post_Tag"
+            state="Show_Name"
+          />
+        </View>
+        <View testID="342:5270" style={styles.group289706}>
+          <Text testID="342:5271" style={styles.firstImpression}>
+            {`First Impression`}
+          </Text>
+          <View testID="342:5272" style={styles.frame289723}>
+            <View testID="342:5273" style={styles.group73}>
+              <View testID="342:5412" style={styles.group732}>
+                <Image url={rectangle5} width={122.39} height={72}/>
+              </View>
+            </View>
+            <View testID="342:5275" style={styles.frame289722}>
+              <Text testID="342:5276" style={styles.singlePeopleArriveAtATropicalIslandResortWhereTheyMustCoupleUpToSurviveSinglePeopleArriveAt}>
+                {`Single people arrive at a tropical island resort where they must couple up to survive. Single people arrive at.`}
+              </Text>
+              <View testID="342:5277" style={styles.frame85}>
+                <View testID="342:5278" style={styles.group25}>
+                  <Text testID="342:5279" style={styles.$40}>
+                    {`4.0`}
+                  </Text>
+                  <Star4/>
+                </View>
+                <Text testID="342:5281" style={styles.$100Posts}>
+                  {`100 posts`}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        <ButtonL testID="342:5284" style={styles.buttonL}/>
+        <Vector3/>
+        <Toggle testID="342:5415"
+          property1="Post_Tag"
+          state="$2_tabs"
+        />
+      </View>
+      <View testID="342:5287" style={styles.frame289707}>
+        <View testID="342:5421" style={styles.frame2897072}>
+          <View testID="342:5422" style={styles.autoLayoutHorizontal2}>
+            <Text testID="342:5423" style={styles.sortBy}>
+              {`Sort by`}
+            </Text>
+            <Sort testID="342:5424"/>
+          </View>
+          <Post testID="342:5425"
+            style={styles.post}
+            property1="Default"
+          />
+          <Post testID="342:5426"
+            style={styles.post2}
+            property1="Default"
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    width: 440,
+    height: 1009,
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingBottom: 20,
+    paddingRight: 20,
+    flexDirection: 'column',
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+    backgroundColor: 'lightgray',
+  },
+  back: {
+    width: 168,
+    height: 20,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'rgba(255, 255, 255, 1)',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  frame289706: {
+    width: 392,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 21,
+    columnGap: 21,
+  },
+  frame289724: {
+    flexDirection: 'row',
+    height: 31,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
+  frame83: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 16,
+    columnGap: 16,
+  },
+  group289700: {
+    width: 49,
+    height: 40,
+  },
+  input: {
+    width: 49,
+    height: 40,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    rowGap: 16,
+    columnGap: 16,
+    flexShrink: 0,
+  },
+  frame4: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 6,
+    paddingBottom: 8,
+    paddingRight: 6,
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: 0,
+    alignSelf: 'stretch',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'rgba(22, 22, 22, 0)',
+    backgroundColor: 'rgba(239, 239, 239, 0)',
+  },
+  frame: {
+    flexDirection: 'row',
+    width: 37,
+    height: 35,
+    paddingTop: 6,
+    paddingLeft: 0,
+    paddingBottom: 7,
+    paddingRight: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomLeftRadius: 9,
+    borderBottomRightRadius: 9,
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
+  },
+  autoLayoutHorizontal: {
+    flexDirection: 'row',
+    width: 37,
+    height: 22,
+    paddingTop: 8,
+    paddingLeft: 10,
+    paddingBottom: 8,
+    paddingRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  postTags: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  postTags2: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke',
+    backgroundColor: 'Tab...Back',
+  },
+  frame289725: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  firstImpression: {
+    width: 258,
+    height: 22,
+    flexShrink: 0,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 25,
+    fontStyle: 'normal',
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  group289706: {
+    width: 392,
+    height: 117,
+  },
+  frame289723: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  group73: {
+    width: 122.443,
+    height: 72,
+  },
+  group732: {
+    width: 122.443,
+    height: 72,
+    flexShrink: 0,
+  },
+  singlePeopleArriveAtATropicalIslandResortWhereTheyMustCoupleUpToSurviveSinglePeopleArriveAt: {
+    width: 261,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $40: {
+    width: 20,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    flexShrink: 0,
+    color: 'Grey.1',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  frame289722: {
+    width: 290,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 11,
+    columnGap: 11,
+  },
+  frame85: {
+    flexDirection: 'row',
+    width: 158,
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  group25: {
+    width: 28.435,
+    height: 11,
+    flexShrink: 0,
+  },
+  $100Posts: {
+    color: 'Grey.1',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  buttonL: {
+    width: undefined,
+    alignSelf: 'stretch',
+  },
+  toggle: {
+    flexDirection: 'row',
+    width: 392,
+    height: 46,
+    paddingTop: 6,
+    paddingLeft: 6,
+    paddingBottom: 6,
+    paddingRight: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 2,
+    columnGap: 2,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'rgba(40, 40, 40, 1)',
+  },
+  sortBy: {
+    color: 'rgba(255, 255, 255, 1)',
+    fontFamily: 'Akzidenz-Grotesk Pro',
+    fontSize: 9,
+    fontStyle: 'normal',
+    fontWeight: '400',
+    lineHeight: 16,
+    letterSpacing: -0.18,
+  },
+  frame289707: {
+    width: 392,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    rowGap: 10,
+    columnGap: 10,
+  },
+  frame2897072: {
+    width: 392,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    rowGap: 10,
+    columnGap: 10,
+  },
+  autoLayoutHorizontal2: {
+    flexDirection: 'row',
+    width: 60,
+    height: 38,
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderWidth: 0,
+    borderStyle: 'solid',
+    borderColor: 'light.40',
+    shadowColor: 'rgba(0, 0, 0, 0.10196078568696976)',
+    shadowRadius: 20,
+    shadowOffset: {"width":0,"height":0},
+  },
+  post: {
+    width: undefined,
+    alignSelf: 'stretch',
+  },
+  post2: {
+    width: undefined,
+    alignSelf: 'stretch',
+  },
+}));
