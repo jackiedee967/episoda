@@ -228,7 +228,8 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   textSmall: {
-    fontSize: 10,
+    ...tokens.typography.p3M,
+    textAlign: 'center',
   },
   textEpisode: {
     color: tokens.colors.tabStroke2,
