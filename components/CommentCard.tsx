@@ -293,9 +293,8 @@ const styles = StyleSheet.create({
     color: tokens.colors.greenHighlight,
   },
   timestamp: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontFamily: 'System',
+    ...tokens.typography.p4,
+    color: tokens.colors.grey1,
   },
   text: {
     fontSize: 14,
@@ -407,9 +406,8 @@ const styles = StyleSheet.create({
     color: tokens.colors.greenHighlight,
   },
   replyTimestamp: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontFamily: 'System',
+    ...tokens.typography.p4,
+    color: tokens.colors.grey1,
   },
   replyText: {
     fontSize: 13,
