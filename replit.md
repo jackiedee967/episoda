@@ -28,11 +28,12 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Friends Tab Logic**: Displays posts from followed users AND the current user's own posts.
 - **Post-Creation Navigation**: Users are automatically navigated to their newly created post.
 - **Navigation Highlighting**: FloatingTabBar treats show pages (`/show/[id]`) as part of the home route, keeping the home icon highlighted (black) when viewing show pages.
-- **Profile Tab**: FloatingTabBar displays the user's profile picture instead of a generic icon, with circular styling and active/inactive border states (black when active, white when inactive).
+- **Profile Tab**: FloatingTabBar displays the user's profile picture instead of a generic icon, with circular styling (no border).
+- **Episode Hub Page**: Redesigned to match Figma specifications with header (back button + search icon), episode/show tags, section title, episode info card with thumbnail, log button, divider, Friends/Everyone tabs, and sorted feed.
 
 ### System Design Choices
 - **Modular Structure**: Organized into logical directories for tabs, authentication, episodes, integrations, playlists, posts, settings, shows, and users.
-- **Component-Based**: Reusable UI components are stored in the `components/` directory.
+- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon).
 - **Centralized Styling**: All styling uses a design token system to ensure consistency and maintainability.
 - **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates.
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
