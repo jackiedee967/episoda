@@ -379,7 +379,7 @@ export default function PostDetail() {
                 accessibilityLabel="Upload image"
                 accessibilityRole="button"
               >
-                <Upload size={20} color={tokens.colors.grey1} strokeWidth={1.5} />
+                <Upload size={20} color={tokens.colors.black} strokeWidth={1.5} />
               </Pressable>
               <Pressable
                 onPress={handleSubmitComment}
