@@ -231,7 +231,8 @@ const styles = StyleSheet.create({
   },
   commentImage: {
     alignSelf: 'flex-start',
-    maxHeight: 100,
+    width: 200,
+    height: 100,
     borderRadius: 8,
     marginBottom: 8,
     resizeMode: 'contain',
@@ -344,7 +345,8 @@ const styles = StyleSheet.create({
   },
   replyImage: {
     alignSelf: 'flex-start',
-    maxHeight: 100,
+    width: 200,
+    height: 100,
     borderRadius: 8,
     marginBottom: 6,
     resizeMode: 'contain',
