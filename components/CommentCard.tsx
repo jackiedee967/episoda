@@ -297,11 +297,9 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
   },
   text: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
+    ...tokens.typography.p1B,
+    color: tokens.colors.pureWhite,
     marginBottom: 8,
-    fontFamily: 'System',
   },
   commentImage: {
     width: '100%',
@@ -410,11 +408,9 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
   },
   replyText: {
-    fontSize: 13,
-    color: colors.text,
-    lineHeight: 18,
+    ...tokens.typography.p1B,
+    color: tokens.colors.pureWhite,
     marginBottom: 6,
-    fontFamily: 'System',
   },
   replyImage: {
     width: '100%',
