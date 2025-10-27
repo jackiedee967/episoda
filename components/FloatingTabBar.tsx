@@ -33,9 +33,6 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
   const pathname = usePathname();
   const [containerWidth, setContainerWidth] = useState(0);
   const animatedValue = useRef(new Animated.Value(0)).current;
-  const expansionAnim = useRef(new Animated.Value(0)).current;
-  const iconOpacityAnim = useRef(new Animated.Value(1)).current;
-  const textOpacityAnim = useRef(new Animated.Value(0)).current;
 
   const isActive = (route: string) => {
     if (route === '/(home)') {
@@ -62,55 +59,8 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
     }
   }, [activeTabIndex, containerWidth, animatedValue]);
 
-  useEffect(() => {
-    if (selectionMode && selectedCount > 0) {
-      Animated.parallel([
-        Animated.spring(expansionAnim, {
-          toValue: 1,
-          useNativeDriver: false,
-          damping: 18,
-          stiffness: 180,
-          mass: 0.8,
-        }),
-        Animated.timing(iconOpacityAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        Animated.timing(textOpacityAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }).start();
-      });
-    } else {
-      Animated.sequence([
-        Animated.timing(textOpacityAnim, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.parallel([
-          Animated.spring(expansionAnim, {
-            toValue: 0,
-            useNativeDriver: false,
-            damping: 18,
-            stiffness: 180,
-            mass: 0.8,
-          }),
-          Animated.timing(iconOpacityAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-    }
-  }, [selectionMode, selectedCount, expansionAnim, iconOpacityAnim, textOpacityAnim]);
-
   const handleTabPress = (route: string) => {
-    router.push(route);
+    router.push(route as any);
   };
 
   const handleLayout = (event: LayoutChangeEvent) => {
@@ -124,21 +74,9 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
     }
 
     const tabWidth = (containerWidth - 24) / tabs.length;
-    const fullWidth = containerWidth - 24;
-    
     const translateX = animatedValue.interpolate({
       inputRange: tabs.map((_, i) => i),
       outputRange: tabs.map((_, i) => 12 + i * tabWidth),
-    });
-
-    const animatedWidth = expansionAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [tabWidth, fullWidth],
-    });
-
-    const animatedTranslateX = expansionAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, -12 - activeTabIndex * tabWidth + 12],
     });
 
     return {
@@ -146,63 +84,55 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
       left: 0,
       top: 8,
       bottom: 8,
-      width: animatedWidth,
+      width: tabWidth,
       backgroundColor: colors.accent,
       borderRadius: 20,
-      transform: [
-        { translateX: translateX },
-        { translateX: animatedTranslateX },
-      ],
+      transform: [{ translateX }],
     };
   };
 
-  return (
-    <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-      <View style={styles.container}>
-        <Pressable 
-          style={styles.pillContainer}
-          onLayout={handleLayout}
-          onPress={selectionMode && selectedCount > 0 ? onLogPress : undefined}
-        >
-          <Animated.View style={getIndicatorStyle()} />
-          
-          <Animated.View 
-            style={[
-              styles.iconsContainer,
-              { opacity: iconOpacityAnim }
-            ]}
-            pointerEvents={selectionMode && selectedCount > 0 ? 'none' : 'auto'}
-          >
-            {tabs.map((tab, index) => {
-              const active = isActive(tab.route);
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.tab}
-                  onPress={() => handleTabPress(tab.route)}
-                >
-                  <IconSymbol
-                    name={tab.icon}
-                    size={24}
-                    color={active ? tokens.colors.black : tokens.colors.pureWhite}
-                  />
-                </TouchableOpacity>
-              );
-            })}
-          </Animated.View>
-
-          <Animated.View 
-            style={[
-              styles.textContainer,
-              { opacity: textOpacityAnim }
-            ]}
-            pointerEvents={selectionMode && selectedCount > 0 ? 'auto' : 'none'}
+  if (selectionMode && selectedCount > 0) {
+    return (
+      <SafeAreaView edges={['bottom']} style={styles.safeArea}>
+        <View style={styles.container}>
+          <Pressable 
+            style={styles.logButton}
+            onPress={onLogPress}
           >
             <Text style={styles.logButtonText}>
               Log {selectedCount} {selectedCount === 1 ? 'episode' : 'episodes'}
             </Text>
-          </Animated.View>
-        </Pressable>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView edges={['bottom']} style={styles.safeArea}>
+      <View style={styles.container}>
+        <View 
+          style={styles.pillContainer}
+          onLayout={handleLayout}
+        >
+          <Animated.View style={getIndicatorStyle()} />
+          {tabs.map((tab, index) => {
+            const active = isActive(tab.route);
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.tab}
+                onPress={() => handleTabPress(tab.route)}
+              >
+                <IconSymbol
+                  name={tab.icon as any}
+                  size={24}
+                  color={active ? tokens.colors.black : tokens.colors.pureWhite}
+                />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -242,27 +172,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
-  iconsContainer: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
-    top: 8,
-    bottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    zIndex: 2,
-  },
-  textContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
+  logButton: {
+    backgroundColor: tokens.colors.greenHighlight,
+    borderRadius: 30,
     paddingVertical: 16,
+    paddingHorizontal: 48,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)',
+    elevation: 8,
   },
   logButtonText: {
     ...tokens.typography.buttonSmall,
