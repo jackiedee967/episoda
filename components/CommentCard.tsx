@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   displayName: {
-    ...tokens.typography.p1B,
+    ...tokens.typography.p3B,
     color: tokens.colors.pureWhite,
   },
   timestamp: {
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   replyDisplayName: {
-    ...tokens.typography.p1B,
+    ...tokens.typography.p3B,
     color: tokens.colors.pureWhite,
   },
   replyTimestamp: {
