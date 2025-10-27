@@ -84,7 +84,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
       if (episodesToPreselect.length > 0) {
         setSelectedEpisodes(episodesToPreselect);
-        setStep('selectEpisodes');
+        setStep('postDetails');
       } else {
         setStep('selectEpisodes');
       }
