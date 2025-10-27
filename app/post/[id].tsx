@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send } from 'lucide-react-native';
@@ -58,15 +57,10 @@ export default function PostDetail() {
 
   if (!post) {
     return (
-      <LinearGradient
-        colors={['#4a1a7a', '#ff6b35']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.container}
-      >
+      <View style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <Text style={styles.errorText}>Post not found</Text>
-      </LinearGradient>
+      </View>
     );
   }
 
@@ -198,12 +192,7 @@ export default function PostDetail() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={['#4a1a7a', '#ff6b35']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={styles.container}
-      >
+      <View style={styles.container}>
         <KeyboardAvoidingView
           style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -380,7 +369,7 @@ export default function PostDetail() {
             </View>
           </View>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </>
   );
 }
@@ -388,6 +377,15 @@ export default function PostDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: tokens.colors.pageBackground,
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
   },
   keyboardView: {
     flex: 1,

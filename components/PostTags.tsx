@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, Pressable } from 'react-native';
+import { MessageCircle, RefreshCw, AlertTriangle, Lightbulb, Hash, HelpCircle } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 
@@ -88,6 +89,9 @@ export default function PostTags({
       case 'Discussion':
         baseStyle.push(styles.textDiscussion);
         break;
+      case 'Episode_Recap':
+        baseStyle.push(styles.textEpisode);
+        break;
       case 'Spoiler':
         baseStyle.push(styles.textSpoiler);
         break;
@@ -102,7 +106,55 @@ export default function PostTags({
     return baseStyle;
   };
 
+  const getIconColor = () => {
+    switch (state) {
+      case 'S_E_':
+        return tokens.colors.tabStroke2;
+      case 'Show_Name':
+        return tokens.colors.tabStroke;
+      case 'Fan_Theory':
+        return tokens.colors.tabStroke3;
+      case 'Discussion':
+        return tokens.colors.tabStroke4;
+      case 'Episode_Recap':
+        return tokens.colors.tabStroke2;
+      case 'Spoiler':
+        return tokens.colors.tabStroke5;
+      case 'Misc':
+        return tokens.colors.tabStroke6;
+      case 'Custom':
+        return tokens.colors.grey3;
+      default:
+        return tokens.colors.grey1;
+    }
+  };
+
+  const getIcon = () => {
+    if (prop !== 'Small') return null;
+    
+    const iconSize = 10;
+    const iconColor = getIconColor();
+    
+    switch (state) {
+      case 'Discussion':
+        return <MessageCircle size={iconSize} color={iconColor} strokeWidth={1.5} />;
+      case 'Episode_Recap':
+        return <RefreshCw size={iconSize} color={iconColor} strokeWidth={1.5} />;
+      case 'Spoiler':
+        return <AlertTriangle size={iconSize} color={iconColor} strokeWidth={1.5} />;
+      case 'Fan_Theory':
+        return <Lightbulb size={iconSize} color={iconColor} strokeWidth={1.5} />;
+      case 'Misc':
+        return <Hash size={iconSize} color={iconColor} strokeWidth={1.5} />;
+      case 'Custom':
+        return <HelpCircle size={iconSize} color={iconColor} strokeWidth={1.5} />;
+      default:
+        return null;
+    }
+  };
+
   const TagWrapper = onPress ? Pressable : View;
+  const icon = getIcon();
   
   return (
     <TagWrapper 
@@ -110,6 +162,7 @@ export default function PostTags({
       style={[...getTagStyle(), style]}
       {...(onPress ? { onPress: handlePress } : {})}
     >
+      {icon}
       <Text style={getTextStyle()}>{text}</Text>
     </TagWrapper>
   );
@@ -124,6 +177,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 6,
     borderRadius: 10,
     borderWidth: 0.25,
     borderStyle: 'solid',
@@ -133,6 +187,7 @@ const styles = StyleSheet.create({
     paddingLeft: 9,
     paddingBottom: 5,
     paddingRight: 9,
+    gap: 4,
   },
   episode: {
     borderColor: tokens.colors.tabStroke2,
