@@ -137,14 +137,15 @@ export default function ShowHub() {
     const episodes = showEpisodes.filter(ep => episodesToLog.includes(ep.id));
     
     if (episodes.length > 0) {
-      setSelectedEpisode(episodes[0]);
+      setSelectedEpisode(undefined);
       setModalVisible(true);
     }
   };
 
-  const handlePostSuccess = (postId: string) => {
-    selectedEpisodeIds.forEach(id => {
-      setLoggedEpisodeIds(prev => new Set(prev).add(id));
+  const handlePostSuccess = (postId: string, postedEpisodes: Episode[]) => {
+    // Mark only the episodes that were actually included in the post as logged
+    postedEpisodes.forEach(episode => {
+      setLoggedEpisodeIds(prev => new Set(prev).add(episode.id));
     });
     setSelectedEpisodeIds(new Set());
     router.push(`/post/${postId}`);
@@ -335,7 +336,7 @@ export default function ShowHub() {
         postCount={postCount > 0 ? postCount : undefined}
         isSelected={isSelected}
         isLogged={isLogged}
-        onPress={() => handleEpisodePress(episode)}
+        onPress={() => toggleEpisodeSelection(episode.id)}
         onToggleSelect={() => toggleEpisodeSelection(episode.id)}
       />
     );
@@ -429,6 +430,7 @@ export default function ShowHub() {
         onClose={handleCloseModal} 
         preselectedShow={show}
         preselectedEpisode={selectedEpisode}
+        preselectedEpisodes={selectedEpisodeIds.size > 0 ? showEpisodes.filter(ep => selectedEpisodeIds.has(ep.id)) : undefined}
         onPostSuccess={handlePostSuccess}
       />
       <PlaylistModal

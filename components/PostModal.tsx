@@ -25,7 +25,8 @@ interface PostModalProps {
   onClose: () => void;
   preselectedShow?: Show;
   preselectedEpisode?: Episode;
-  onPostSuccess?: (postId: string) => void;
+  preselectedEpisodes?: Episode[];
+  onPostSuccess?: (postId: string, postedEpisodes: Episode[]) => void;
 }
 
 type Step = 'selectShow' | 'selectEpisodes' | 'postDetails';
@@ -38,7 +39,7 @@ interface Season {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, onPostSuccess }: PostModalProps) {
+export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
   const { createPost, currentUser } = useData();
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
@@ -70,16 +71,19 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         seasonMap.get(episode.seasonNumber)!.push(episode);
       });
 
+      const episodesToPreselect = preselectedEpisodes || (preselectedEpisode ? [preselectedEpisode] : []);
+      const seasonNumbersToExpand = new Set(episodesToPreselect.map(ep => ep.seasonNumber));
+
       const seasonsData: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
         seasonNumber,
         episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-        expanded: preselectedEpisode ? preselectedEpisode.seasonNumber === seasonNumber : false,
+        expanded: seasonNumbersToExpand.has(seasonNumber),
       }));
 
       setSeasons(seasonsData);
 
-      if (preselectedEpisode) {
-        setSelectedEpisodes([preselectedEpisode]);
+      if (episodesToPreselect.length > 0) {
+        setSelectedEpisodes(episodesToPreselect);
         setStep('selectEpisodes');
       } else {
         setStep('selectEpisodes');
@@ -87,7 +91,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     } else if (visible && !preselectedShow) {
       setStep('selectShow');
     }
-  }, [visible, preselectedShow, preselectedEpisode]);
+  }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes]);
 
   useEffect(() => {
     if (step === 'selectShow' && visible) {
@@ -218,7 +222,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       console.log('Post created successfully');
       
       if (onPostSuccess) {
-        onPostSuccess(newPost.id);
+        onPostSuccess(newPost.id, selectedEpisodes);
       }
       
       resetModal();
