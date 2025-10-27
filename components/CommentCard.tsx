@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     ...tokens.typography.p1B,
-    color: tokens.colors.greenHighlight,
+    color: tokens.colors.pureWhite,
   },
   timestamp: {
     ...tokens.typography.p4,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   replyDisplayName: {
     ...tokens.typography.p1B,
-    color: tokens.colors.greenHighlight,
+    color: tokens.colors.pureWhite,
   },
   replyTimestamp: {
     ...tokens.typography.p4,
