@@ -390,7 +390,7 @@ export default function PostDetail() {
               >
                 <Send
                   size={20}
-                  color={tokens.colors.almostWhite}
+                  color={tokens.colors.black}
                   strokeWidth={1.5}
                 />
               </Pressable>
