@@ -158,13 +158,20 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
                       />
                       <Text style={styles.replyLikeText}>{reply.likes}</Text>
                     </Pressable>
-                    <View style={styles.replyCommentButton}>
+                    <Pressable
+                      style={styles.replyCommentButton}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        const textPreview = reply.text.length > 50 ? reply.text.substring(0, 50) + '...' : reply.text;
+                        onReplyStart?.(comment.id, reply.user.displayName, textPreview);
+                      }}
+                    >
                       <MessageCircle
                         size={9}
                         color={tokens.colors.grey1}
                         strokeWidth={1.5}
                       />
-                    </View>
+                    </Pressable>
                   </View>
                 </View>
               </View>
