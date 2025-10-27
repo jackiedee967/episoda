@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   listCard: {
-    backgroundColor: colors.cardBackground,
     borderRadius: components.borderRadiusButton,
     borderWidth: 1,
     borderColor: colors.cardStroke,
