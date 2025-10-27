@@ -62,7 +62,7 @@ export default function EpisodeListCard({
         </View>
         
         {description && (
-          <Text style={styles.episodeDescription} numberOfLines={1}>
+          <Text style={styles.episodeDescription} numberOfLines={2}>
             {description}
           </Text>
         )}
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   episodeDescription: {
-    ...tokens.typography.p1,
+    ...tokens.typography.p3R,
     color: tokens.colors.grey2,
     width: '100%',
   },
