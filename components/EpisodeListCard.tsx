@@ -84,16 +84,21 @@ export default function EpisodeListCard({
         </View>
       </View>
 
-      {showCheckmark && (
+      {onToggleSelect && (
         <Pressable 
           onPress={handleTogglePress}
-          style={styles.checkmarkButton}
+          style={[
+            styles.checkmarkButton,
+            isSelected && styles.checkmarkButtonSelected
+          ]}
         >
-          <Check 
-            size={12} 
-            color={tokens.colors.greenHighlight}
-            strokeWidth={3}
-          />
+          {isSelected && (
+            <Check 
+              size={14} 
+              color={tokens.colors.black}
+              strokeWidth={3}
+            />
+          )}
         </Pressable>
       )}
     </Pressable>
@@ -185,8 +190,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 0.5,
+    borderWidth: 1.5,
     borderColor: tokens.colors.greenHighlight,
+    backgroundColor: 'transparent',
+  },
+  checkmarkButtonSelected: {
     backgroundColor: tokens.colors.greenHighlight,
   },
 });
