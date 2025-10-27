@@ -104,7 +104,6 @@ const styles = StyleSheet.create({
   episodeCard: {
     flexDirection: 'row',
     width: '100%',
-    maxWidth: 362,
     paddingTop: 10,
     paddingLeft: 10,
     paddingBottom: 10,
