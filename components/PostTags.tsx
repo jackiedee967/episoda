@@ -222,34 +222,26 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.almostWhite,
   },
   text: {
+    ...tokens.typography.p1B,
+    color: tokens.colors.pureWhite,
     textAlign: 'center',
-    fontFamily: 'Funnel Display',
-    fontSize: 13,
-    fontWeight: '400',
   },
   textSmall: {
     ...tokens.typography.p3M,
     textAlign: 'center',
   },
   textEpisode: {
-    color: tokens.colors.tabStroke2,
   },
   textShowName: {
-    color: tokens.colors.tabStroke,
   },
   textFanTheory: {
-    color: tokens.colors.tabStroke3,
   },
   textDiscussion: {
-    color: tokens.colors.tabStroke4,
   },
   textSpoiler: {
-    color: tokens.colors.tabStroke5,
   },
   textMisc: {
-    color: tokens.colors.tabStroke6,
   },
   textCustom: {
-    color: tokens.colors.grey3,
   },
 });
