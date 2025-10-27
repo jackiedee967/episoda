@@ -30,12 +30,13 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Navigation Highlighting**: FloatingTabBar treats show pages (`/show/[id]`) as part of the home route, keeping the home icon highlighted (black) when viewing show pages.
 - **Profile Tab**: FloatingTabBar displays the user's profile picture instead of a generic icon, with circular styling (no border).
 - **Episode Hub Page**: Redesigned to match Figma specifications with header (back button + search icon), episode/show tags, section title, episode info card with thumbnail, log button, divider, Friends/Everyone tabs, and sorted feed.
+- **Post Page**: Fully redesigned to match Figma with custom back button, user info header, StarRatings component, clickable PostTags, engagement row with reactive updates, and comment input with token-styled upload/send buttons. All styling uses design tokens with proper accessibility labels.
 
 ### System Design Choices
 - **Modular Structure**: Organized into logical directories for tabs, authentication, episodes, integrations, playlists, posts, settings, shows, and users.
-- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon).
+- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon), StarRatings (consistent star rating display using Lucide icons and design tokens).
 - **Centralized Styling**: All styling uses a design token system to ensure consistency and maintainability.
-- **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates.
+- **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates. Engagement actions (likes, reposts) trigger reactive UI updates through context subscriptions.
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
 ## External Dependencies
