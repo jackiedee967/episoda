@@ -8,12 +8,14 @@ import {
   LayoutChangeEvent,
   Text,
   Pressable,
+  Image,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, usePathname } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
+import { useData } from '@/contexts/DataContext';
 
 interface TabBarItem {
   name: string;
@@ -31,6 +33,7 @@ interface FloatingTabBarProps {
 export default function FloatingTabBar({ tabs, selectionMode = false, selectedCount = 0, onLogPress }: FloatingTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { currentUser } = useData();
   const [containerWidth, setContainerWidth] = useState(0);
   const animatedValue = useRef(new Animated.Value(0)).current;
 
@@ -118,17 +121,30 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
           <Animated.View style={getIndicatorStyle()} />
           {tabs.map((tab, index) => {
             const active = isActive(tab.route);
+            const isProfileTab = tab.route === '/profile';
+            const hasAvatar = currentUser && currentUser.avatar;
+            
             return (
               <TouchableOpacity
                 key={index}
                 style={styles.tab}
                 onPress={() => handleTabPress(tab.route)}
               >
-                <IconSymbol
-                  name={tab.icon as any}
-                  size={24}
-                  color={active ? tokens.colors.black : tokens.colors.pureWhite}
-                />
+                {isProfileTab && hasAvatar ? (
+                  <Image
+                    source={{ uri: currentUser.avatar }}
+                    style={[
+                      styles.profileImage,
+                      active && styles.profileImageActive
+                    ]}
+                  />
+                ) : (
+                  <IconSymbol
+                    name={tab.icon as any}
+                    size={24}
+                    color={active ? tokens.colors.black : tokens.colors.pureWhite}
+                  />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -184,5 +200,15 @@ const styles = StyleSheet.create({
     ...tokens.typography.buttonSmall,
     color: tokens.colors.black,
     textAlign: 'center',
+  },
+  profileImage: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: tokens.colors.pureWhite,
+  },
+  profileImageActive: {
+    borderColor: tokens.colors.black,
   },
 });
