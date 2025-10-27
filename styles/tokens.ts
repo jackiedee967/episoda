@@ -115,6 +115,14 @@ export const typography = {
     letterSpacing: 0,
     lineHeight: 13,
   },
+  p1M: {
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '500' as const,
+    fontStyle: 'normal' as const,
+    letterSpacing: 0,
+    lineHeight: 15.6,
+  },
   p3M: {
     fontFamily: 'Funnel Display',
     fontSize: 10,
@@ -262,6 +270,7 @@ export function mapTypographyByName(name: string): typeof typography[keyof typeo
     [normalize('small subtitle')]: typography.smallSubtitle,
     [normalize('p1')]: typography.p1,
     [normalize('p1 - b')]: typography.p1B,
+    [normalize('p1 - m')]: typography.p1M,
     [normalize('p3 - m')]: typography.p3M,
     [normalize('p3 - r')]: typography.p3R,
     [normalize('p3 3- b')]: typography.p3B,
