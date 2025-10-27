@@ -345,6 +345,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     paddingHorizontal: 20,
     marginTop: 20,
+    marginBottom: 20,
   },
   tabsContainer: {
     paddingHorizontal: 20,
