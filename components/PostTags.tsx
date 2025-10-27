@@ -76,6 +76,33 @@ export default function PostTags({
       baseStyle.push(styles.textSmall);
     }
     
+    switch (state) {
+      case 'S_E_':
+        baseStyle.push(styles.textEpisode);
+        break;
+      case 'Show_Name':
+        baseStyle.push(styles.textShowName);
+        break;
+      case 'Fan_Theory':
+        baseStyle.push(styles.textFanTheory);
+        break;
+      case 'Discussion':
+        baseStyle.push(styles.textDiscussion);
+        break;
+      case 'Episode_Recap':
+        baseStyle.push(styles.textEpisode);
+        break;
+      case 'Spoiler':
+        baseStyle.push(styles.textSpoiler);
+        break;
+      case 'Misc':
+        baseStyle.push(styles.textMisc);
+        break;
+      case 'Custom':
+        baseStyle.push(styles.textCustom);
+        break;
+    }
+    
     return baseStyle;
   };
 
@@ -196,12 +223,31 @@ const styles = StyleSheet.create({
   },
   text: {
     ...tokens.typography.p1B,
-    color: tokens.colors.pureWhite,
     textAlign: 'center',
   },
   textSmall: {
     ...tokens.typography.p3M,
-    color: tokens.colors.pureWhite,
     textAlign: 'center',
+  },
+  textEpisode: {
+    color: tokens.colors.tabStroke2,
+  },
+  textShowName: {
+    color: tokens.colors.tabStroke,
+  },
+  textFanTheory: {
+    color: tokens.colors.tabStroke3,
+  },
+  textDiscussion: {
+    color: tokens.colors.tabStroke4,
+  },
+  textSpoiler: {
+    color: tokens.colors.tabStroke5,
+  },
+  textMisc: {
+    color: tokens.colors.tabStroke6,
+  },
+  textCustom: {
+    color: tokens.colors.grey3,
   },
 });
