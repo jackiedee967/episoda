@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
@@ -86,7 +86,20 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
 
         {comment.image && (
           <View style={styles.commentImageContainer}>
-            <Image source={{ uri: comment.image }} style={styles.commentImage} resizeMode="contain" />
+            {Platform.OS === 'web' ? (
+              <img 
+                src={comment.image} 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block'
+                } as any}
+                alt="Comment attachment"
+              />
+            ) : (
+              <Image source={{ uri: comment.image }} style={styles.commentImage} resizeMode="contain" />
+            )}
           </View>
         )}
 
@@ -145,7 +158,20 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
 
                   {reply.image && (
                     <View style={styles.replyImageContainer}>
-                      <Image source={{ uri: reply.image }} style={styles.replyImage} resizeMode="contain" />
+                      {Platform.OS === 'web' ? (
+                        <img 
+                          src={reply.image} 
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'contain',
+                            display: 'block'
+                          } as any}
+                          alt="Reply attachment"
+                        />
+                      ) : (
+                        <Image source={{ uri: reply.image }} style={styles.replyImage} resizeMode="contain" />
+                      )}
                     </View>
                   )}
 
