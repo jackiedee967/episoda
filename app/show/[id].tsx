@@ -254,27 +254,28 @@ export default function ShowHub() {
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
-          <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
-            <View style={styles.friendAvatarsRow}>
-              {friendsWatching.slice(0, 4).map((friend, index) => (
-                <Image
-                  key={friend.id}
-                  source={{ uri: friend.avatar }}
-                  style={[
-                    styles.friendAvatar,
-                    { marginLeft: index > 0 ? -8 : 0, zIndex: friendsWatching.length - index }
-                  ]}
-                />
-              ))}
-            </View>
-            <Text style={styles.friendsWatchingText}>
-              <Text style={styles.friendsWatchingNumber}>{friendsWatching.length}</Text> friends watching
-            </Text>
-          </Pressable>
+            <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
+              <View style={styles.friendAvatarsRow}>
+                {friendsWatching.slice(0, 4).map((friend, index) => (
+                  <Image
+                    key={friend.id}
+                    source={{ uri: friend.avatar }}
+                    style={[
+                      styles.friendAvatar,
+                      { marginLeft: index > 0 ? -8 : 0, zIndex: friendsWatching.length - index }
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.friendsWatchingText}>
+                <Text style={styles.friendsWatchingNumber}>{friendsWatching.length}</Text> friends watching
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const getMostRecentLoggedEpisode = () => {
     if (loggedEpisodeIds.size === 0) return null;
