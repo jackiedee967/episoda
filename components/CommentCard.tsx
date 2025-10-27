@@ -90,10 +90,10 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
               <img 
                 src={comment.image} 
                 style={{
-                  width: '100%',
-                  height: '100%',
+                  maxHeight: 100,
                   objectFit: 'contain',
-                  display: 'block'
+                  display: 'block',
+                  borderRadius: 8
                 } as any}
                 alt="Comment attachment"
               />
@@ -162,10 +162,10 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
                         <img 
                           src={reply.image} 
                           style={{
-                            width: '100%',
-                            height: '100%',
+                            maxHeight: 100,
                             objectFit: 'contain',
-                            display: 'block'
+                            display: 'block',
+                            borderRadius: 8
                           } as any}
                           alt="Reply attachment"
                         />
@@ -261,13 +261,10 @@ const styles = StyleSheet.create({
   },
   commentImageContainer: {
     alignSelf: 'flex-start',
-    width: 200,
-    maxWidth: 200,
-    height: 100,
+    maxHeight: 100,
     borderRadius: 8,
     marginBottom: 8,
     overflow: 'hidden',
-    flexShrink: 0,
   },
   commentImage: {
     width: '100%',
@@ -380,13 +377,10 @@ const styles = StyleSheet.create({
   },
   replyImageContainer: {
     alignSelf: 'flex-start',
-    width: 200,
-    maxWidth: 200,
-    height: 100,
+    maxHeight: 100,
     borderRadius: 8,
     marginBottom: 6,
     overflow: 'hidden',
-    flexShrink: 0,
   },
   replyImage: {
     width: '100%',
