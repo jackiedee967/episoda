@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
   },
   text: {
-    ...tokens.typography.p1B,
+    ...tokens.typography.p3R,
     color: tokens.colors.pureWhite,
     marginBottom: 8,
   },
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
   },
   replyText: {
-    ...tokens.typography.p1B,
+    ...tokens.typography.p3R,
     color: tokens.colors.pureWhite,
     marginBottom: 6,
   },
