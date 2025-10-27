@@ -231,9 +231,10 @@ const styles = StyleSheet.create({
   },
   commentImage: {
     width: '100%',
-    maxHeight: 100,
+    height: 100,
     borderRadius: 8,
     marginBottom: 8,
+    resizeMode: 'cover',
   },
   actions: {
     flexDirection: 'row',
@@ -342,9 +343,10 @@ const styles = StyleSheet.create({
   },
   replyImage: {
     width: '100%',
-    maxHeight: 100,
+    height: 100,
     borderRadius: 8,
     marginBottom: 6,
+    resizeMode: 'cover',
   },
   replyActions: {
     flexDirection: 'row',
