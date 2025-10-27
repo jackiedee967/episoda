@@ -91,6 +91,13 @@ export default function EpisodeHub() {
     router.push('/search');
   };
 
+  const handleShowPress = () => {
+    if (show) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push(`/show/${show.id}`);
+    }
+  };
+
   const handleCloseModal = () => {
     setModalVisible(false);
   };
@@ -126,6 +133,7 @@ export default function EpisodeHub() {
               prop="Large"
               state="Show_Name"
               text={show.title}
+              onPress={handleShowPress}
             />
           </View>
 

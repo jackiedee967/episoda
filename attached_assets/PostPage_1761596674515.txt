@@ -1,0 +1,1030 @@
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+import {Image} from 'react-exo/image';
+
+import {Heart} from '';
+import {MessageCircle} from '';
+import {PostTags} from 'components/ui-pages/base/post-tags';
+import {ExpandLeftLight} from 'components/ui-pages/base/expand-left-light';
+import {RefreshCw} from '';
+import {Send} from '';
+import {Upload} from '';
+import {StarRatings} from 'components/ui-pages/base/star-ratings';
+
+import Icon from './assets/icon.svg';
+import Icon2 from './assets/icon2.svg';
+import Icon3 from './assets/icon3.svg';
+import Icon4 from './assets/icon4.svg';
+import Icon5 from './assets/icon5.svg';
+import ThreadIndicatorLine from './assets/threadindicatorline.svg';
+import ThreadIndicatorLine2 from './assets/threadindicatorline2.svg';
+import image20 from './assets/image20.png';
+import rectangle4 from './assets/rectangle4.png';
+import rectangle42 from './assets/rectangle42.png';
+import rectangle43 from './assets/rectangle43.png';
+import rectangle44 from './assets/rectangle44.png';
+import rectangle45 from './assets/rectangle45.png';
+import userProfilePic from './assets/userprofilepic.png';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface PostPageProps {
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export function PostPage(props: PostPageProps) {
+  return (
+    <View testID={props.testID ?? "376:301230"} style={[styles.root, props.style]}>
+      <ThreadIndicatorLine/>
+      <ThreadIndicatorLine2/>
+      <View testID="342:9257" style={styles.postHeader}>
+        <View testID="342:9258" style={styles.back2}>
+          <View testID="342:9259" style={styles.frame83}>
+            <ExpandLeftLight testID="342:9260"/>
+            <Text testID="342:9261" style={styles.back}>
+              {`Back`}
+            </Text>
+          </View>
+        </View>
+        <View testID="342:9484" style={styles.postInfo}>
+          <View testID="342:9391" style={styles.userInfo}>
+            <Image url={userProfilePic} width={28} height={28}/>
+            <View testID="342:9394" style={styles.nameAndTime}>
+              <Text testID="342:9389" style={styles.jvckie}>
+                {`Jvckie`}
+              </Text>
+              <Text testID="342:9392" style={styles.$2HAgo}>
+                {`2h ago`}
+              </Text>
+            </View>
+          </View>
+          <StarRatings testID="342:9475"
+            state="$5"
+          />
+          <View testID="342:9268" style={styles.showTagsMainL}>
+            <PostTags testID="358:48657"
+              prop="Large"
+              property1="Post_Tag"
+              state="S_E_"
+            />
+            <PostTags testID="342:9270"
+              prop="Large"
+              property1="Post_Tag"
+              state="Show_Name"
+            />
+          </View>
+          <View testID="342:9271" style={styles.postTitle}>
+            <Text testID="342:9272" style={styles.iNeedSomeoneToTalkToAboutThisNow}>
+              {`I need someone to talk to about this NOW`}
+            </Text>
+          </View>
+          <Text testID="342:9395" style={styles.loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit}>
+            {`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla maximus erat non elit rutrum facilisis ornare sit amet est. Duis semper id ante non malesuada. Ut erat enim, porta id posuere at, volutpat vehicula elit.  `}
+          </Text>
+          <View testID="342:9397" style={styles.postTags5}>
+            <PostTags testID="342:9398"
+              prop="Small"
+              property1="Post_Tag"
+              state="Fan_Theory"
+            />
+            <PostTags testID="342:9399"
+              prop="Small"
+              property1="Post_Tag"
+              state="Discussion"
+            />
+          </View>
+          <View testID="342:9406" style={styles.engagement}>
+            <View testID="342:9407" style={styles.likes}>
+              <Heart testID="342:9408"
+                size="$48"
+              />
+              <Text testID="342:9409" style={styles.$5}>
+                {`5`}
+              </Text>
+            </View>
+            <View testID="342:9410" style={styles.comments}>
+              <MessageCircle testID="342:9411"
+                size="$48"
+              />
+              <Text testID="342:9412" style={styles.$12}>
+                {`12`}
+              </Text>
+            </View>
+            <View testID="342:9413" style={styles.reposts}>
+              <RefreshCw testID="342:9414"
+                size="$48"
+              />
+              <Text testID="342:9415" style={styles.$52}>
+                {`5`}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      <Text testID="342:9482" style={styles.comments3}>
+        {`Comments (3)`}
+      </Text>
+      <View testID="342:9558" style={styles.commentThreads}>
+        <View testID="342:9495" style={styles.status}>
+          <Image url={rectangle4} width={21} height={21}/>
+          <View testID="342:9504" style={styles.frame289731}>
+            <Text testID="342:9499" style={styles.jackie}>
+              {`Jackie`}
+            </Text>
+            <Text testID="342:9501" style={styles.$2H}>
+              {`2h`}
+            </Text>
+          </View>
+          <Text testID="342:9500" style={styles.loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit2}>
+            {`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla maximus erat non elit rutrum facilisis ornare sit amet est. Duis semper id ante non malesuada. Ut erat enim, porta id posuere at, volutpat vehicula elit.  `}
+          </Text>
+          <View testID="342:9520" style={styles.group289710}>
+            <Icon/>
+            <Text testID="342:9522" style={styles.$53}>
+              {`5`}
+            </Text>
+          </View>
+          <View testID="342:9524" style={styles.group289711}>
+            <MessageCircle testID="342:9527"
+              size="$48"
+            />
+            <Text testID="342:9526" style={styles.$3}>
+              {`3`}
+            </Text>
+          </View>
+        </View>
+        <View testID="342:9530" style={styles.status2}>
+          <Image url={rectangle42} width={16} height={16}/>
+          <View testID="342:9532" style={styles.frame2897312}>
+            <Text testID="342:9533" style={styles.jackie2}>
+              {`Jackie`}
+            </Text>
+            <Text testID="342:9534" style={styles.$2H2}>
+              {`2h`}
+            </Text>
+          </View>
+          <Text testID="342:9535" style={styles.loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit3}>
+            {`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla maximus erat non elit rutrum facilisis ornare sit amet est. Duis semper id ante non malesuada. Ut erat enim, porta id posuere at, volutpat vehicula elit.  `}
+          </Text>
+          <View testID="342:9536" style={styles.group2897102}>
+            <Icon2/>
+            <Text testID="342:9538" style={styles.$54}>
+              {`5`}
+            </Text>
+          </View>
+          <View testID="342:9539" style={styles.group2897112}>
+            <MessageCircle testID="342:9540"
+              size="$48"
+            />
+            <Text testID="342:9541" style={styles.$32}>
+              {`3`}
+            </Text>
+          </View>
+        </View>
+        <View testID="342:9559" style={styles.status3}>
+          <Image url={rectangle43} width={16} height={16}/>
+          <View testID="342:9561" style={styles.frame2897313}>
+            <Text testID="342:9562" style={styles.jackie3}>
+              {`Jackie`}
+            </Text>
+            <Text testID="342:9563" style={styles.$2H3}>
+              {`2h`}
+            </Text>
+          </View>
+          <Text testID="342:9564" style={styles.loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit4}>
+            {`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla maximus erat non elit rutrum facilisis ornare sit amet est. Duis semper id ante non malesuada. Ut erat enim, porta id posuere at, volutpat vehicula elit.  `}
+          </Text>
+          <View testID="342:9565" style={styles.group2897103}>
+            <Icon3/>
+            <Text testID="342:9567" style={styles.$55}>
+              {`5`}
+            </Text>
+          </View>
+          <View testID="342:9568" style={styles.group2897113}>
+            <MessageCircle testID="342:9569"
+              size="$48"
+            />
+            <Text testID="342:9570" style={styles.$33}>
+              {`3`}
+            </Text>
+          </View>
+        </View>
+        <View testID="342:9573" style={styles.status4}>
+          <Image url={rectangle44} width={16} height={16}/>
+          <View testID="342:9575" style={styles.frame2897314}>
+            <Text testID="342:9576" style={styles.jackie4}>
+              {`Jackie`}
+            </Text>
+            <Text testID="342:9577" style={styles.$2H4}>
+              {`2h`}
+            </Text>
+          </View>
+          <Text testID="342:9578" style={styles.loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit5}>
+            {`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla maximus erat non elit rutrum facilisis ornare sit amet est. Duis semper id ante non malesuada. Ut erat enim, porta id posuere at, volutpat vehicula elit.  `}
+          </Text>
+          <View testID="342:9579" style={styles.group2897104}>
+            <Icon4/>
+            <Text testID="342:9581" style={styles.$56}>
+              {`5`}
+            </Text>
+          </View>
+          <View testID="342:9582" style={styles.group2897114}>
+            <MessageCircle testID="342:9583"
+              size="$48"
+            />
+            <Text testID="342:9584" style={styles.$34}>
+              {`3`}
+            </Text>
+          </View>
+        </View>
+        <View testID="342:9587" style={styles.status5}>
+          <Image url={rectangle45} width={16} height={16}/>
+          <View testID="342:9589" style={styles.frame2897315}>
+            <Text testID="342:9590" style={styles.jackie5}>
+              {`Jackie`}
+            </Text>
+            <Text testID="342:9591" style={styles.$2H5}>
+              {`2h`}
+            </Text>
+          </View>
+          <Text testID="342:9592" style={styles.loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit6}>
+            {`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla maximus erat non elit rutrum facilisis ornare sit amet est. Duis semper id ante non malesuada. Ut erat enim, porta id posuere at, volutpat vehicula elit.  `}
+          </Text>
+          <View testID="342:9593" style={styles.group2897105}>
+            <Icon5/>
+            <Text testID="342:9595" style={styles.$57}>
+              {`5`}
+            </Text>
+          </View>
+          <View testID="342:9596" style={styles.group2897115}>
+            <MessageCircle testID="342:9597"
+              size="$48"
+            />
+            <Text testID="342:9598" style={styles.$35}>
+              {`3`}
+            </Text>
+          </View>
+        </View>
+      </View>
+      <View testID="342:9770" style={styles.commentPopUp}>
+        <View testID="342:9771" style={styles.inputBox}>
+          <Text testID="342:9772" style={styles.addAComment}>
+            {`Add a comment`}
+          </Text>
+          <Image url={image20} width={10} height={10}/>
+        </View>
+        <View testID="342:9774" style={styles.uploadPhotoButton}>
+          <Upload testID="342:9777"
+            size="$48"
+          />
+        </View>
+        <View testID="342:9778" style={styles.vector265}/>
+        <View testID="342:9779" style={styles.sendButton}>
+          <Send testID="342:9782"
+            size="$48"
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    width: 440,
+    height: 1009,
+    backgroundColor: 'lightgray',
+  },
+  back: {
+    width: 168,
+    height: 20,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'rgba(255, 255, 255, 1)',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  postHeader: {
+    width: 392,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 14,
+    columnGap: 14,
+  },
+  back2: {
+    flexDirection: 'row',
+    height: 31,
+    alignItems: 'center',
+    alignSelf: 'stretch',
+  },
+  frame83: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 16,
+    columnGap: 16,
+  },
+  jvckie: {
+    color: 'Green.Highlight',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  $2HAgo: {
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  postInfo: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 14,
+    columnGap: 14,
+    alignSelf: 'stretch',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+  },
+  nameAndTime: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  starRatings: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 1,
+    columnGap: 1,
+  },
+  postTags: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.2',
+    backgroundColor: 'Tab...Back.2',
+  },
+  postTags2: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke',
+    backgroundColor: 'Tab...Back',
+  },
+  showTagsMainL: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  iNeedSomeoneToTalkToAboutThisNow: {
+    width: 392,
+    height: 66,
+    flexShrink: 0,
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 25,
+    fontStyle: 'normal',
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  postTitle: {
+    width: 392,
+    height: 66,
+  },
+  loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit: {
+    alignSelf: 'stretch',
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  postTags3: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.3',
+    backgroundColor: 'Tab...Back.3',
+  },
+  postTags4: {
+    flexDirection: 'row',
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: 'Tab...Stroke.4',
+    backgroundColor: 'Tab...Back.4',
+  },
+  postTags5: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 10,
+    columnGap: 10,
+  },
+  $5: {
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  engagement: {
+    flexDirection: 'row',
+    width: 127,
+    height: 16,
+    alignItems: 'center',
+    rowGap: 13,
+    columnGap: 13,
+  },
+  likes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+  },
+  $12: {
+    color: 'Grey.1',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  comments: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+  },
+  $52: {
+    color: 'Grey.1',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  reposts: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    rowGap: 4,
+    columnGap: 4,
+  },
+  comments3: {
+    width: 392,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '500',
+    letterSpacing: -0.26,
+  },
+  jackie: {
+    width: 40,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  $2H: {
+    width: 131,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  commentThreads: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    rowGap: 10,
+    columnGap: 10,
+  },
+  status: {
+    width: 392,
+    height: 96,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  frame289731: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 5,
+    columnGap: 5,
+  },
+  loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit2: {
+    width: 323,
+    height: 48,
+    flexShrink: 0,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $53: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group289710: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  $3: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group289711: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  jackie2: {
+    width: 40,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  $2H2: {
+    width: 131,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  status2: {
+    width: 334,
+    height: 88,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  frame2897312: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 5,
+    columnGap: 5,
+  },
+  loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit3: {
+    width: 323,
+    height: 48,
+    flexShrink: 0,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $54: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897102: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  $32: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897112: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  jackie3: {
+    width: 40,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  $2H3: {
+    width: 131,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  status3: {
+    width: 334,
+    height: 88,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  frame2897313: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 5,
+    columnGap: 5,
+  },
+  loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit4: {
+    width: 323,
+    height: 48,
+    flexShrink: 0,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $55: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897103: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  $33: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897113: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  jackie4: {
+    width: 40,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  $2H4: {
+    width: 131,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  status4: {
+    width: 278,
+    height: 88,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  frame2897314: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 5,
+    columnGap: 5,
+  },
+  loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit5: {
+    width: 276,
+    height: 48,
+    flexShrink: 0,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $56: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897104: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  $34: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897114: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  jackie5: {
+    width: 40,
+    height: 10,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  $2H5: {
+    width: 131,
+    height: 11,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  status5: {
+    width: 334,
+    height: 88,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  frame2897315: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    rowGap: 5,
+    columnGap: 5,
+  },
+  loremIpsumDolorSitAmetConsecteturAdipiscingElitNullaMaximusEratNonElitRutrumFacilisisOrnareSitAmetEstDuisSemperIdAnteNonMalesuadaUtEratEnimPortaIdPosuereAtVolutpatVehiculaElit6: {
+    width: 323,
+    height: 48,
+    flexShrink: 0,
+    color: 'Almost.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  $57: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897105: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  $35: {
+    width: 5,
+    height: 9,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  group2897115: {
+    width: 15,
+    height: 9,
+    flexShrink: 0,
+  },
+  addAComment: {
+    width: 317,
+    height: 85,
+    flexShrink: 0,
+    color: 'Grey.1',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '300',
+  },
+  commentPopUp: {
+    width: 440,
+    height: 131,
+    flexShrink: 0,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    backgroundColor: 'rgba(250, 250, 250, 1)',
+    shadowColor: 'rgba(255, 255, 255, 0.20000000298023224)',
+    shadowRadius: 20,
+    shadowOffset: {"width":0,"height":4},
+  },
+  inputBox: {
+    flexDirection: 'row',
+    width: 356,
+    height: 101,
+    paddingTop: 8,
+    paddingLeft: 13,
+    paddingBottom: 8,
+    paddingRight: 8,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    flexShrink: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Grey.2',
+    backgroundColor: 'Almost.White',
+  },
+  uploadPhotoButton: {
+    flexDirection: 'row',
+    width: 48,
+    height: 48,
+    paddingTop: 11,
+    paddingLeft: 34,
+    paddingBottom: 11,
+    paddingRight: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Grey.2',
+    backgroundColor: 'Almost.White',
+  },
+  sendButton: {
+    flexDirection: 'row',
+    width: 48,
+    height: 48,
+    paddingTop: 11,
+    paddingLeft: 34,
+    paddingBottom: 11,
+    paddingRight: 34,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    backgroundColor: 'Green.Highlight',
+  },
+}));

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, Pressable } from 'react-native';
 import tokens from '@/styles/tokens';
+import * as Haptics from 'expo-haptics';
 
 type TagSize = 'Small' | 'Large';
 type TagState = 'S_E_' | 'Show_Name' | 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' | 'Custom';
@@ -11,6 +12,7 @@ interface PostTagsProps {
   text?: string;
   testID?: string;
   style?: ViewStyle;
+  onPress?: () => void;
 }
 
 export default function PostTags({ 
@@ -18,8 +20,16 @@ export default function PostTags({
   state = 'S_E_', 
   text = 'S3 E3',
   testID,
-  style
+  style,
+  onPress
 }: PostTagsProps) {
+  
+  const handlePress = () => {
+    if (onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      onPress();
+    }
+  };
   
   const getTagStyle = () => {
     const baseStyle = [styles.root];
@@ -92,10 +102,16 @@ export default function PostTags({
     return baseStyle;
   };
 
+  const TagWrapper = onPress ? Pressable : View;
+  
   return (
-    <View testID={testID} style={[...getTagStyle(), style]}>
+    <TagWrapper 
+      testID={testID} 
+      style={[...getTagStyle(), style]}
+      {...(onPress ? { onPress: handlePress } : {})}
+    >
       <Text style={getTextStyle()}>{text}</Text>
-    </View>
+    </TagWrapper>
   );
 }
 
