@@ -8,6 +8,7 @@ import tokens from '@/styles/tokens';
 import { Comment, Reply } from '@/types';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { Heart, MessageCircle } from 'lucide-react-native';
 
 interface CommentCardProps {
   comment: Comment;
@@ -218,17 +219,27 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
                     <Image source={{ uri: reply.image }} style={styles.replyImage} />
                   )}
 
-                  <Pressable
-                    style={styles.replyLikeButton}
-                    onPress={() => handleReplyLikePress(reply.id)}
-                  >
-                    <IconSymbol
-                      name="flame"
-                      size={14}
-                      color={reply.isLiked ? tokens.colors.tabStroke5 : colors.textSecondary}
-                    />
-                    <Text style={styles.replyLikeText}>{reply.likes}</Text>
-                  </Pressable>
+                  <View style={styles.replyActions}>
+                    <Pressable
+                      style={styles.replyLikeButton}
+                      onPress={() => handleReplyLikePress(reply.id)}
+                    >
+                      <Heart
+                        size={9}
+                        color={reply.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                        fill={reply.isLiked ? tokens.colors.greenHighlight : 'none'}
+                        strokeWidth={1.5}
+                      />
+                      <Text style={styles.replyLikeText}>{reply.likes}</Text>
+                    </Pressable>
+                    <View style={styles.replyCommentButton}>
+                      <MessageCircle
+                        size={9}
+                        color={tokens.colors.grey1}
+                        strokeWidth={1.5}
+                      />
+                    </View>
+                  </View>
                 </View>
               </View>
             ))}
@@ -411,15 +422,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 6,
   },
+  replyActions: {
+    flexDirection: 'row',
+    gap: 13,
+    marginTop: 4,
+  },
   replyLikeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
+  },
+  replyCommentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   replyLikeText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontFamily: 'System',
+    fontSize: 8,
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontWeight: '300',
   },
 });

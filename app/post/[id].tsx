@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send } from 'lucide-react-native';
@@ -27,14 +28,13 @@ function getRelativeTime(timestamp: Date): string {
   const diffMs = now.getTime() - timestamp.getTime();
   const diffMinutes = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
+    return `${diffMinutes}m`;
   } else if (diffHours < 24) {
-    return `${diffHours}h ago`;
+    return `${diffHours}h`;
   } else {
-    return `${diffDays}d ago`;
+    return `${Math.floor(diffHours / 24)}d`;
   }
 }
 
@@ -47,11 +47,9 @@ export default function PostDetail() {
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Get the latest post data reactively from context
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
 
-  // Force re-render when posts change to get latest engagement data
   useEffect(() => {
     if (post && comments.length !== post.comments) {
       updateCommentCount(post.id, comments.length);
@@ -60,10 +58,15 @@ export default function PostDetail() {
 
   if (!post) {
     return (
-      <View style={styles.container}>
+      <LinearGradient
+        colors={['#4a1a7a', '#ff6b35']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.container}
+      >
         <Stack.Screen options={{ headerShown: false }} />
         <Text style={styles.errorText}>Post not found</Text>
-      </View>
+      </LinearGradient>
     );
   }
 
@@ -195,184 +198,189 @@ export default function PostDetail() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <KeyboardAvoidingView
+      <LinearGradient
+        colors={['#4a1a7a', '#ff6b35']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
       >
-        <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Custom Back Header */}
-          <View style={styles.header}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={100}
+        >
+          <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {/* Back Button */}
             <Pressable onPress={handleBack} style={styles.backButton}>
-              <ChevronLeft size={24} color={tokens.colors.almostWhite} strokeWidth={1.5} />
+              <ChevronLeft size={16} color={tokens.colors.almostWhite} strokeWidth={1.5} />
               <Text style={styles.backText}>Back</Text>
             </Pressable>
-          </View>
 
-          {/* Post Container */}
-          <View style={styles.postContainer}>
-            {/* User Info & Time */}
-            <View style={styles.userRow}>
-              <Pressable onPress={handleUserPress}>
-                <Image source={{ uri: post.user.avatar }} style={styles.userAvatar} />
-              </Pressable>
-              <View style={styles.userInfo}>
+            {/* Post Content - No background */}
+            <View style={styles.postContainer}>
+              {/* User Info */}
+              <View style={styles.userRow}>
                 <Pressable onPress={handleUserPress}>
-                  <Text style={styles.username}>{post.user.displayName}</Text>
+                  <Image source={{ uri: post.user.avatar }} style={styles.userAvatar} />
                 </Pressable>
-                <Text style={styles.timestamp}>{getRelativeTime(post.timestamp)}</Text>
+                <View style={styles.userInfoColumn}>
+                  <Pressable onPress={handleUserPress}>
+                    <Text style={styles.username}>{post.user.displayName}</Text>
+                  </Pressable>
+                  <Text style={styles.timestamp}>{getRelativeTime(post.timestamp)}</Text>
+                </View>
               </View>
-            </View>
 
-            {/* Star Rating */}
-            {post.rating && (
-              <View style={styles.starRatingsContainer}>
+              {/* Star Rating */}
+              {post.rating && (
                 <StarRatings rating={post.rating} size={14} />
-              </View>
-            )}
+              )}
 
-            {/* Episode and Show Tags */}
-            <View style={styles.tagsRow}>
-              {post.episodes && post.episodes.length > 0 && (
+              {/* Episode and Show Tags */}
+              <View style={styles.tagsRow}>
+                {post.episodes && post.episodes.length > 0 && (
+                  <PostTags
+                    prop="Large"
+                    state="S_E_"
+                    text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
+                    onPress={() => handleEpisodePress(post.episodes![0].id)}
+                  />
+                )}
                 <PostTags
                   prop="Large"
-                  state="S_E_"
-                  text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
-                  onPress={() => handleEpisodePress(post.episodes![0].id)}
+                  state="Show_Name"
+                  text={post.show.title}
+                  onPress={handleShowPress}
                 />
+              </View>
+
+              {/* Post Title */}
+              {post.title && (
+                <Text style={styles.postTitle}>{post.title}</Text>
               )}
-              <PostTags
-                prop="Large"
-                state="Show_Name"
-                text={post.show.title}
-                onPress={handleShowPress}
-              />
+
+              {/* Post Body */}
+              {post.body && (
+                <Text style={styles.postBody}>{post.body}</Text>
+              )}
+
+              {/* Post Tags (Discussion, Fan Theory, etc.) */}
+              {post.tags.length > 0 && (
+                <View style={styles.postTagsContainer}>
+                  {post.tags.map((tag, index) => {
+                    let tagState: 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' = 'Misc';
+                    const tagLower = tag.toLowerCase();
+                    if (tagLower.includes('theory') || tagLower.includes('fan')) tagState = 'Fan_Theory';
+                    else if (tagLower.includes('discussion')) tagState = 'Discussion';
+                    else if (tagLower.includes('recap')) tagState = 'Episode_Recap';
+                    else if (tagLower.includes('spoiler')) tagState = 'Spoiler';
+
+                    return (
+                      <PostTags
+                        key={index}
+                        prop="Small"
+                        state={tagState}
+                        text={tag}
+                      />
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Engagement Row */}
+              <View style={styles.engagementRow}>
+                <Pressable onPress={handleLike} style={styles.engagementButton}>
+                  <Heart
+                    size={16}
+                    color={post.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                    fill={post.isLiked ? tokens.colors.greenHighlight : 'none'}
+                    strokeWidth={1.5}
+                  />
+                  <Text style={styles.engagementText}>{post.likes}</Text>
+                </Pressable>
+
+                <View style={styles.engagementButton}>
+                  <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
+                  <Text style={styles.engagementText}>{comments.length}</Text>
+                </View>
+
+                <Pressable onPress={handleRepost} style={styles.engagementButton}>
+                  <RefreshCw
+                    size={16}
+                    color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                    strokeWidth={1.5}
+                  />
+                  <Text style={styles.engagementText}>{post.reposts}</Text>
+                </Pressable>
+              </View>
             </View>
 
-            {/* Post Title */}
-            {post.title && (
-              <Text style={styles.postTitle}>{post.title}</Text>
-            )}
-
-            {/* Post Body */}
-            {post.body && (
-              <Text style={styles.postBody}>{post.body}</Text>
-            )}
-
-            {/* Post Tags (Discussion, Fan Theory, etc.) */}
-            {post.tags.length > 0 && (
-              <View style={styles.postTagsContainer}>
-                {post.tags.map((tag, index) => {
-                  let tagState: 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' = 'Misc';
-                  const tagLower = tag.toLowerCase();
-                  if (tagLower.includes('theory') || tagLower.includes('fan')) tagState = 'Fan_Theory';
-                  else if (tagLower.includes('discussion')) tagState = 'Discussion';
-                  else if (tagLower.includes('recap')) tagState = 'Episode_Recap';
-                  else if (tagLower.includes('spoiler')) tagState = 'Spoiler';
-
-                  return (
-                    <PostTags
-                      key={index}
-                      prop="Small"
-                      state={tagState}
-                      text={tag}
-                    />
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Engagement Row */}
-            <View style={styles.engagementRow}>
-              <Pressable onPress={handleLike} style={styles.engagementButton}>
-                <Heart
-                  size={16}
-                  color={post.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                  fill={post.isLiked ? tokens.colors.greenHighlight : 'none'}
-                  strokeWidth={1.5}
-                />
-                <Text style={styles.engagementText}>{post.likes}</Text>
-              </Pressable>
-
-              <View style={styles.engagementButton}>
-                <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
-                <Text style={styles.engagementText}>{comments.length}</Text>
-              </View>
-
-              <Pressable onPress={handleRepost} style={styles.engagementButton}>
-                <RefreshCw
-                  size={16}
-                  color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                  strokeWidth={1.5}
-                />
-                <Text style={styles.engagementText}>{post.reposts}</Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Comments Section */}
-          <View style={styles.commentsSection}>
+            {/* Comments Title */}
             <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
-            {comments.map((comment) => (
-              <CommentCard
-                key={comment.id}
-                comment={comment}
-                onLike={() => handleCommentLike(comment.id)}
-                onReply={(text) => handleReply(comment.id, text)}
-                onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
-              />
-            ))}
-          </View>
-        </ScrollView>
 
-        {/* Comment Input */}
-        <View style={styles.commentInputContainer}>
-          {commentImage && (
-            <View style={styles.imagePreview}>
-              <Image source={{ uri: commentImage }} style={styles.previewImage} />
-              <Pressable
-                style={styles.removeImageButton}
-                onPress={() => setCommentImage(null)}
+            {/* Comments - No background */}
+            <View style={styles.commentsContainer}>
+              {comments.map((comment) => (
+                <CommentCard
+                  key={comment.id}
+                  comment={comment}
+                  onLike={() => handleCommentLike(comment.id)}
+                  onReply={(text) => handleReply(comment.id, text)}
+                  onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
+                />
+              ))}
+            </View>
+          </ScrollView>
+
+          {/* Comment Input Popup */}
+          <View style={styles.commentPopup}>
+            {commentImage && (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: commentImage }} style={styles.previewImage} />
+                <Pressable
+                  style={styles.removeImageButton}
+                  onPress={() => setCommentImage(null)}
+                >
+                  <Text style={styles.removeImageText}>✕</Text>
+                </Pressable>
+              </View>
+            )}
+            <View style={styles.inputRow}>
+              <View style={styles.inputBox}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Add a comment"
+                  placeholderTextColor={tokens.colors.grey1}
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  multiline
+                />
+              </View>
+              <Pressable 
+                onPress={handlePickImage} 
+                style={styles.uploadButton}
+                accessibilityLabel="Upload image"
+                accessibilityRole="button"
               >
-                <Text style={styles.removeImageText}>✕</Text>
+                <Upload size={20} color={tokens.colors.grey1} strokeWidth={1.5} />
+              </Pressable>
+              <Pressable
+                onPress={handleSubmitComment}
+                style={styles.sendButton}
+                disabled={!commentText.trim() && !commentImage}
+                accessibilityLabel="Send comment"
+                accessibilityRole="button"
+              >
+                <Send
+                  size={20}
+                  color={tokens.colors.almostWhite}
+                  strokeWidth={1.5}
+                />
               </Pressable>
             </View>
-          )}
-          <View style={styles.inputRow}>
-            <View style={styles.inputBox}>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Add a comment"
-                placeholderTextColor={tokens.colors.grey1}
-                value={commentText}
-                onChangeText={setCommentText}
-                multiline
-              />
-            </View>
-            <Pressable 
-              onPress={handlePickImage} 
-              style={styles.uploadButton}
-              accessibilityLabel="Upload image"
-              accessibilityRole="button"
-            >
-              <Upload size={20} color={tokens.colors.almostWhite} strokeWidth={1.5} />
-            </Pressable>
-            <Pressable
-              onPress={handleSubmitComment}
-              style={[styles.sendButton, (!commentText.trim() && !commentImage) && styles.sendButtonDisabled]}
-              disabled={!commentText.trim() && !commentImage}
-              accessibilityLabel="Send comment"
-              accessibilityRole="button"
-            >
-              <Send
-                size={20}
-                color={(!commentText.trim() && !commentImage) ? tokens.colors.grey1 : tokens.colors.almostWhite}
-                strokeWidth={1.5}
-              />
-            </Pressable>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
     </>
   );
 }
@@ -380,93 +388,85 @@ export default function PostDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.pageBackground,
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
   },
-  header: {
+  scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 160,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+    marginBottom: 14,
   },
   backText: {
-    ...tokens.typography.subtitle,
     color: tokens.colors.almostWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
   },
   postContainer: {
-    backgroundColor: tokens.colors.cardBackground,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.cardStroke,
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    shadowColor: 'rgba(0, 0, 0, 0.07)',
-    shadowRadius: 10.9,
-    shadowOffset: { width: 0, height: 4 },
+    gap: 14,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
   },
   userAvatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
   },
-  userInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  userInfoColumn: {
+    flexDirection: 'column',
   },
   username: {
-    ...tokens.typography.p1M,
-    color: tokens.colors.almostWhite,
+    color: tokens.colors.greenHighlight,
+    fontFamily: 'FunnelDisplay_600SemiBold',
+    fontSize: 13,
+    fontWeight: '600',
   },
   timestamp: {
-    ...tokens.typography.p1,
     color: tokens.colors.grey1,
-  },
-  starRatingsContainer: {
-    marginBottom: 12,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 8,
+    fontWeight: '300',
   },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 12,
   },
   postTitle: {
-    ...tokens.typography.titleL,
-    color: tokens.colors.almostWhite,
-    marginBottom: 10,
+    color: tokens.colors.pureWhite,
+    fontFamily: 'FunnelDisplay_700Bold',
+    fontSize: 25,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   postBody: {
-    ...tokens.typography.p1,
     color: tokens.colors.almostWhite,
-    marginBottom: 12,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
   },
   postTagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 12,
   },
   engagementRow: {
     flexDirection: 'row',
-    gap: 10,
-    paddingTop: 12,
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255, 255, 255, 0.30)',
+    gap: 13,
+    alignItems: 'center',
   },
   engagementButton: {
     flexDirection: 'row',
@@ -474,34 +474,39 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   engagementText: {
-    ...tokens.typography.p1,
     color: tokens.colors.grey1,
-  },
-  commentsSection: {
-    backgroundColor: tokens.colors.cardBackground,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.cardStroke,
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 100,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 10,
+    fontWeight: '300',
   },
   commentsTitle: {
-    ...tokens.typography.titleL,
     color: tokens.colors.almostWhite,
+    fontFamily: 'FunnelDisplay_500Medium',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.26,
+    marginTop: 20,
     marginBottom: 16,
   },
-  commentInputContainer: {
+  commentsContainer: {
+    gap: 10,
+  },
+  commentPopup: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: tokens.colors.cardBackground,
-    borderTopWidth: 0.5,
-    borderTopColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.pureWhite,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    shadowColor: 'rgba(255, 255, 255, 0.20)',
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
   },
-  imagePreview: {
+  imagePreviewContainer: {
     position: 'relative',
     marginBottom: 12,
     width: 80,
@@ -511,8 +516,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.imageStroke,
   },
   removeImageButton: {
     position: 'absolute',
@@ -533,43 +536,47 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   inputBox: {
     flex: 1,
-    backgroundColor: tokens.colors.grey3,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    minHeight: 40,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    backgroundColor: tokens.colors.almostWhite,
+    minHeight: 48,
   },
   commentInput: {
-    ...tokens.typography.p1,
-    color: tokens.colors.almostWhite,
-    minHeight: 20,
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
+    minHeight: 32,
   },
   uploadButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: tokens.colors.cardStroke,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    backgroundColor: tokens.colors.almostWhite,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     backgroundColor: tokens.colors.greenHighlight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sendButtonDisabled: {
-    backgroundColor: tokens.colors.cardStroke,
-  },
   errorText: {
-    ...tokens.typography.p1,
     color: tokens.colors.almostWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
     textAlign: 'center',
     marginTop: 40,
   },
