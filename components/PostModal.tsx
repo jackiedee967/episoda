@@ -25,7 +25,7 @@ interface PostModalProps {
   onClose: () => void;
   preselectedShow?: Show;
   preselectedEpisode?: Episode;
-  onPostSuccess?: () => void;
+  onPostSuccess?: (postId: string) => void;
 }
 
 type Step = 'selectShow' | 'selectEpisodes' | 'postDetails';
@@ -204,7 +204,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     
     try {
-      await createPost({
+      const newPost = await createPost({
         user: currentUser,
         show: selectedShow,
         episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
@@ -218,7 +218,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       console.log('Post created successfully');
       
       if (onPostSuccess) {
-        onPostSuccess();
+        onPostSuccess(newPost.id);
       }
       
       resetModal();

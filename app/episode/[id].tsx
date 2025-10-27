@@ -28,7 +28,7 @@ const FEED_TABS: Tab[] = [
 
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
-  const { posts, isFollowing } = useData();
+  const { posts, isFollowing, currentUser } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,7 +51,7 @@ export default function EpisodeHub() {
 
   // Apply Friends tab filter
   if (activeTab === 'friends') {
-    episodePosts = episodePosts.filter(post => isFollowing(post.user.id));
+    episodePosts = episodePosts.filter(post => post.user.id === currentUser.id || isFollowing(post.user.id));
   }
 
   // Apply sorting

@@ -41,7 +41,7 @@ interface SeasonData {
 export default function ShowHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { posts, isFollowing } = useData();
+  const { posts, isFollowing, currentUser } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
@@ -142,18 +142,19 @@ export default function ShowHub() {
     }
   };
 
-  const handlePostSuccess = () => {
+  const handlePostSuccess = (postId: string) => {
     selectedEpisodeIds.forEach(id => {
       setLoggedEpisodeIds(prev => new Set(prev).add(id));
     });
     setSelectedEpisodeIds(new Set());
+    router.push(`/post/${postId}`);
   };
 
   const getFilteredAndSortedPosts = () => {
     let filteredPosts = [...showPosts];
 
     if (activeTab === 'friends') {
-      filteredPosts = filteredPosts.filter(post => isFollowing(post.user.id));
+      filteredPosts = filteredPosts.filter(post => post.user.id === currentUser.id || isFollowing(post.user.id));
     }
 
     if (sortBy === 'hot') {
