@@ -374,8 +374,9 @@ const styles = StyleSheet.create({
   },
   episodeTagText: {
     color: tokens.colors.tabStroke2,
-    fontFamily: 'FunnelDisplay_400Regular',
+    fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 13,
+    lineHeight: 15.6,
   },
   showTag: {
     paddingTop: 8,
@@ -389,8 +390,9 @@ const styles = StyleSheet.create({
     borderWidth: 0.25,
   },
   showTagText: {
-    fontFamily: 'FunnelDisplay_300Light',
+    fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 13,
+    lineHeight: 15.6,
   },
   starRatings: {
     flexDirection: 'row',
