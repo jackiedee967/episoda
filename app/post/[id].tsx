@@ -549,15 +549,15 @@ const styles = StyleSheet.create({
   },
   replyingToLabel: {
     ...tokens.typography.p3R,
-    color: tokens.colors.grey1,
+    color: tokens.colors.black,
   },
   replyingToUsername: {
     ...tokens.typography.p3B,
-    color: tokens.colors.greenHighlight,
+    color: tokens.colors.tabStroke2,
   },
   replyingToPreview: {
     ...tokens.typography.p3R,
-    color: tokens.colors.grey1,
+    color: tokens.colors.black,
     flex: 1,
   },
   cancelReplyButton: {
