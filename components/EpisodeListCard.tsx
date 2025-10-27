@@ -89,10 +89,10 @@ export default function EpisodeListCard({
           onPress={handleTogglePress}
           style={[
             styles.checkmarkButton,
-            isSelected && styles.checkmarkButtonSelected
+            showCheckmark && styles.checkmarkButtonSelected
           ]}
         >
-          {isSelected && (
+          {showCheckmark && (
             <Check 
               size={10} 
               color={tokens.colors.black}
