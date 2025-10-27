@@ -230,11 +230,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   commentImage: {
-    width: '100%',
-    height: 100,
+    alignSelf: 'flex-start',
+    maxHeight: 100,
     borderRadius: 8,
     marginBottom: 8,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
     overflow: 'hidden',
   },
   actions: {
@@ -343,11 +343,11 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   replyImage: {
-    width: '100%',
-    height: 100,
+    alignSelf: 'flex-start',
+    maxHeight: 100,
     borderRadius: 8,
     marginBottom: 6,
-    resizeMode: 'cover',
+    resizeMode: 'contain',
     overflow: 'hidden',
   },
   replyActions: {
