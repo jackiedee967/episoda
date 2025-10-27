@@ -1,0 +1,253 @@
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+
+import {Sort} from '';
+import {Input} from 'components/ui-pages/base/input';
+import {Toggle} from 'components/ui-pages/base/toggle';
+import {ExplorePageCardsShows} from 'components/ui-pages/base/explore-page-cards-shows';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface ExploreShowTabProps {
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export function ExploreShowTab(props: ExploreShowTabProps) {
+  return (
+    <View testID={props.testID ?? "377:304302"} style={[styles.root, props.style]}>
+      <View testID="342:7303" style={styles.frame289709}>
+        <Text testID="342:7304" style={styles.explore}>
+          {`Explore`}
+        </Text>
+        <Input testID="342:7305"
+          areaCode="+1"
+          filledText="305 1234 5678"
+          helperDisabledText="Your phone number cannot be modified."
+          helperErrorText="Phone number already in use, try logging in."
+          helperSuccessText="Looking good!"
+          helperText="We will use this number to validate your account."
+          placeholderInput="305 1234 5678"
+          text="Phone Number"
+          typedText="305 123"
+          property1="Input"
+          state="Search"
+          helperText
+          iconStatus
+        />
+        <Toggle testID="342:7306"
+          style={styles.toggle}
+          property1="Post_Tag"
+          state="$4_tabs"
+        />
+        <View testID="342:7307" style={styles.autoLayoutHorizontal}>
+          <Text testID="342:7308" style={styles.sortBy}>
+            {`Sort by`}
+          </Text>
+          <Sort testID="342:7309"/>
+        </View>
+        <View testID="342:7310" style={styles.frame289707}>
+          <ExplorePageCardsShows testID="342:7311"
+            style={styles.explorePageCardsShows}
+            property1="Default"
+          />
+          <ExplorePageCardsShows testID="342:7312"
+            style={styles.explorePageCardsShows2}
+            property1="Default"
+          />
+          <ExplorePageCardsShows testID="342:7313"
+            style={styles.explorePageCardsShows3}
+            property1="Default"
+          />
+          <ExplorePageCardsShows testID="342:7314"
+            style={styles.explorePageCardsShows4}
+            property1="Default"
+          />
+          <ExplorePageCardsShows testID="342:7315"
+            style={styles.explorePageCardsShows5}
+            property1="Default"
+          />
+          <ExplorePageCardsShows testID="342:7316"
+            style={styles.explorePageCardsShows6}
+            property1="Default"
+          />
+          <ExplorePageCardsShows testID="342:7317"
+            style={styles.explorePageCardsShows7}
+            property1="Default"
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    width: 440,
+    height: 995,
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingBottom: 20,
+    paddingRight: 20,
+    flexDirection: 'column',
+    alignItems: 'center',
+    backgroundColor: 'lightgray',
+  },
+  explore: {
+    height: 13,
+    flexShrink: 0,
+    alignSelf: 'stretch',
+    color: 'rgba(255, 255, 255, 1)',
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontStyle: 'normal',
+    fontWeight: '600',
+  },
+  input: {
+    flexDirection: 'row',
+    width: 392,
+    height: 46,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  toggle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sortBy: {
+    color: 'rgba(255, 255, 255, 1)',
+    fontFamily: 'Akzidenz-Grotesk Pro',
+    fontSize: 9,
+    fontStyle: 'normal',
+    fontWeight: '400',
+    lineHeight: 16,
+    letterSpacing: -0.18,
+  },
+  frame289709: {
+    width: 392,
+    height: 1094,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    rowGap: 18,
+    columnGap: 18,
+    flexShrink: 0,
+  },
+  autoLayoutHorizontal: {
+    flexDirection: 'row',
+    width: 60,
+    height: 16,
+    paddingTop: 8,
+    paddingLeft: 12,
+    paddingBottom: 8,
+    paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 6,
+    columnGap: 6,
+    flexShrink: 0,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderWidth: 0,
+    borderStyle: 'solid',
+    borderColor: 'light.40',
+    shadowColor: 'rgba(0, 0, 0, 0.10196078568696976)',
+    shadowRadius: 20,
+    shadowOffset: {"width":0,"height":0},
+  },
+  explorePageCardsShows: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  explorePageCardsShows2: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  explorePageCardsShows3: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  explorePageCardsShows4: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  explorePageCardsShows5: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  explorePageCardsShows6: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  explorePageCardsShows7: {
+    width: undefined,
+    height: undefined,
+    flexShrink: undefined,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+    alignSelf: 'stretch',
+  },
+  frame289707: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 10,
+    columnGap: 10,
+    alignSelf: 'stretch',
+  },
+}));
