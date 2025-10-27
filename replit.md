@@ -20,6 +20,30 @@ Natively (also known as EPISODA) is a social media application focused on TV sho
 
 ## Recent Changes
 
+### Show Progress Tracking Component (October 27, 2025)
+Added dynamic episode progress tracking to Show Hub:
+
+1. **ShowsEpisodeProgressBar Component**
+   - New component displays real-time show watching progress
+   - Shows most recently RELEASED logged episode (highest S#E# number among logged episodes)
+   - Visual progress bar with green fill showing percentage of episodes logged
+   - Episode count display (e.g., "24 / 120 episodes")
+   - Clean fallback message "No episodes logged yet" when no episodes are logged
+   - Uses design tokens exclusively (card background, card stroke, grey2 text, green highlight)
+   
+2. **Show Hub Integration**
+   - Positioned above "Log an episode" button with 10px bottom margin
+   - Dynamically calculates most recently released logged episode
+   - Updates in real-time when episodes are logged via multi-select
+   - Progress bar fills based on loggedEpisodeIds set
+   - Integrates seamlessly with existing Show Hub functionality
+
+3. **Component Features**
+   - Props: episodeNumber, episodeTitle, loggedCount, totalCount
+   - Progress percentage calculation (logged / total * 100)
+   - Conditional rendering of episode info vs fallback text
+   - Matches Figma specifications with 10pt/500 weight typography
+
 ### Show Hub & Episode Hub UI Improvements (October 24, 2025)
 Pixel-perfect redesign of Show Hub and Episode Hub pages to match Figma specifications:
 

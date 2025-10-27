@@ -24,6 +24,7 @@ import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
+import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
 import { mockShows, mockEpisodes, mockUsers } from '@/data/mockData';
 import { Episode } from '@/types';
 import { useData } from '@/contexts/DataContext';
@@ -250,6 +251,38 @@ export default function ShowHub() {
     </View>
   );
 
+  const getMostRecentLoggedEpisode = () => {
+    if (loggedEpisodeIds.size === 0) return null;
+    
+    const loggedEpisodes = showEpisodes.filter(ep => loggedEpisodeIds.has(ep.id));
+    
+    // Sort by season and episode number to find the most recently released
+    loggedEpisodes.sort((a, b) => {
+      if (a.seasonNumber !== b.seasonNumber) {
+        return b.seasonNumber - a.seasonNumber;
+      }
+      return b.episodeNumber - a.episodeNumber;
+    });
+    
+    return loggedEpisodes[0];
+  };
+
+  const renderProgressBar = () => {
+    const mostRecentEpisode = getMostRecentLoggedEpisode();
+    const loggedCount = loggedEpisodeIds.size;
+    const totalCount = show?.totalEpisodes || showEpisodes.length;
+    
+    return (
+      <ShowsEpisodeProgressBar
+        episodeNumber={mostRecentEpisode ? `S${mostRecentEpisode.seasonNumber.toString().padStart(2, '0')}E${mostRecentEpisode.episodeNumber.toString().padStart(2, '0')}` : undefined}
+        episodeTitle={mostRecentEpisode?.title}
+        loggedCount={loggedCount}
+        totalCount={totalCount}
+        style={styles.progressBar}
+      />
+    );
+  };
+
   const renderLogButton = () => (
     <Pressable style={styles.logButton} onPress={() => setModalVisible(true)}>
       <Text style={styles.logButtonText}>Log an episode</Text>
@@ -383,6 +416,7 @@ export default function ShowHub() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
           {renderHeader()}
           {renderShowInfo()}
+          {renderProgressBar()}
           {renderLogButton()}
           <Vector3Divider />
           {renderTabs()}
@@ -557,6 +591,9 @@ const styles = StyleSheet.create({
   },
   friendsWatchingNumber: {
     color: tokens.colors.greenHighlight,
+  },
+  progressBar: {
+    marginBottom: 10,
   },
   logButton: {
     width: '100%',
