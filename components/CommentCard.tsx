@@ -1,28 +1,22 @@
 
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Image, Pressable, TextInput } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
-import { Comment, Reply } from '@/types';
+import { Comment } from '@/types';
 import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import { Heart, MessageCircle } from 'lucide-react-native';
 
 interface CommentCardProps {
   comment: Comment;
   onLike?: () => void;
-  onReply?: (text: string, image?: string) => void;
+  onReplyStart?: (commentId: string, username: string, textPreview: string) => void;
   onReplyLike?: (replyId: string) => void;
 }
 
-export default function CommentCard({ comment, onLike, onReply, onReplyLike }: CommentCardProps) {
+export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike }: CommentCardProps) {
   const router = useRouter();
-  const [showReplyInput, setShowReplyInput] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [replyImage, setReplyImage] = useState<string | undefined>();
-  const replyInputRef = useRef<TextInput>(null);
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -46,39 +40,15 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
     router.push(`/user/${userId}`);
   };
 
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setReplyImage(result.assets[0].uri);
-    }
-  };
-
-  const handleSubmitReply = () => {
-    if (replyText.trim() || replyImage) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onReply?.(replyText, replyImage);
-      setReplyText('');
-      setReplyImage(undefined);
-      setShowReplyInput(false);
-    }
-  };
-
   const handleLikePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onLike?.();
   };
 
   const handleReplyPress = () => {
-    setShowReplyInput(!showReplyInput);
-    if (!showReplyInput) {
-      setTimeout(() => replyInputRef.current?.focus(), 100);
-    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const textPreview = comment.text.length > 50 ? comment.text.substring(0, 50) + '...' : comment.text;
+    onReplyStart?.(comment.id, comment.user.displayName, textPreview);
   };
 
   const handleReplyLikePress = (replyId: string) => {
@@ -143,54 +113,6 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
             />
           </Pressable>
         </View>
-
-        {/* Reply Input */}
-        {showReplyInput && (
-          <View style={styles.replyInputContainer}>
-            {replyImage && (
-              <View style={styles.replyImagePreview}>
-                <Image source={{ uri: replyImage }} style={styles.replyImagePreviewImage} />
-                <Pressable
-                  style={styles.removeImageButton}
-                  onPress={() => setReplyImage(undefined)}
-                >
-                  <IconSymbol name="xmark.circle.fill" size={20} color={tokens.colors.tabStroke5} />
-                </Pressable>
-              </View>
-            )}
-            <View style={styles.replyInputRow}>
-              <TextInput
-                ref={replyInputRef}
-                style={styles.replyInput}
-                placeholder="Write a reply..."
-                placeholderTextColor={colors.textSecondary}
-                value={replyText}
-                onChangeText={setReplyText}
-                multiline
-                returnKeyType="send"
-                onSubmitEditing={handleSubmitReply}
-                blurOnSubmit={false}
-              />
-              <Pressable onPress={handlePickImage} style={styles.imageButton}>
-                <IconSymbol name="photo" size={20} color={colors.textSecondary} />
-              </Pressable>
-              <Pressable
-                onPress={handleSubmitReply}
-                style={[
-                  styles.sendButton,
-                  (!replyText.trim() && !replyImage) && styles.sendButtonDisabled
-                ]}
-                disabled={!replyText.trim() && !replyImage}
-              >
-                <IconSymbol
-                  name="paperplane.fill"
-                  size={18}
-                  color={(!replyText.trim() && !replyImage) ? colors.textSecondary : colors.primary}
-                />
-              </Pressable>
-            </View>
-          </View>
-        )}
 
         {/* Replies */}
         {comment.replies && comment.replies.length > 0 && (

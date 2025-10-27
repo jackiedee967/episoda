@@ -44,6 +44,7 @@ export default function PostDetail() {
   const [comments, setComments] = useState<Comment[]>(mockComments.filter(c => c.postId === id));
   const [commentText, setCommentText] = useState('');
   const [commentImage, setCommentImage] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string; textPreview: string } | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const post = getPost(id as string);
@@ -128,19 +129,42 @@ export default function PostDetail() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const newComment: Comment = {
-      id: `comment_${Date.now()}`,
-      postId: post.id,
-      user: currentUser,
-      text: commentText,
-      image: commentImage || undefined,
-      likes: 0,
-      isLiked: false,
-      timestamp: new Date(),
-      replies: [],
-    };
+    if (replyingTo) {
+      // Submit as a reply
+      const newReply = {
+        id: `reply_${Date.now()}`,
+        commentId: replyingTo.commentId,
+        user: currentUser,
+        text: commentText,
+        image: commentImage || undefined,
+        likes: 0,
+        isLiked: false,
+        timestamp: new Date(),
+      };
 
-    setComments([...comments, newComment]);
+      setComments(comments.map(comment =>
+        comment.id === replyingTo.commentId
+          ? { ...comment, replies: [...comment.replies, newReply] }
+          : comment
+      ));
+      setReplyingTo(null);
+    } else {
+      // Submit as a new comment
+      const newComment: Comment = {
+        id: `comment_${Date.now()}`,
+        postId: post.id,
+        user: currentUser,
+        text: commentText,
+        image: commentImage || undefined,
+        likes: 0,
+        isLiked: false,
+        timestamp: new Date(),
+        replies: [],
+      };
+
+      setComments([...comments, newComment]);
+    }
+
     setCommentText('');
     setCommentImage(null);
   };
@@ -150,25 +174,6 @@ export default function PostDetail() {
     setComments(comments.map(comment =>
       comment.id === commentId
         ? { ...comment, likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1, isLiked: !comment.isLiked }
-        : comment
-    ));
-  };
-
-  const handleReply = (commentId: string, text: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newReply = {
-      id: `reply_${Date.now()}`,
-      commentId,
-      user: currentUser,
-      text,
-      likes: 0,
-      isLiked: false,
-      timestamp: new Date(),
-    };
-
-    setComments(comments.map(comment =>
-      comment.id === commentId
-        ? { ...comment, replies: [...comment.replies, newReply] }
         : comment
     ));
   };
@@ -187,6 +192,15 @@ export default function PostDetail() {
           }
         : comment
     ));
+  };
+
+  const handleReplyStart = (commentId: string, username: string, textPreview: string) => {
+    setReplyingTo({ commentId, username, textPreview });
+  };
+
+  const handleCancelReply = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReplyingTo(null);
   };
 
   return (
@@ -314,7 +328,7 @@ export default function PostDetail() {
                   key={comment.id}
                   comment={comment}
                   onLike={() => handleCommentLike(comment.id)}
-                  onReply={(text) => handleReply(comment.id, text)}
+                  onReplyStart={handleReplyStart}
                   onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
                 />
               ))}
@@ -323,6 +337,20 @@ export default function PostDetail() {
 
           {/* Comment Input Popup */}
           <View style={styles.commentPopup}>
+            {/* Replying To Indicator */}
+            {replyingTo && (
+              <View style={styles.replyingToContainer}>
+                <View style={styles.replyingToContent}>
+                  <Text style={styles.replyingToLabel}>Replying to: </Text>
+                  <Text style={styles.replyingToUsername}>{replyingTo.username}</Text>
+                  <Text style={styles.replyingToPreview}> {replyingTo.textPreview}</Text>
+                </View>
+                <Pressable onPress={handleCancelReply} style={styles.cancelReplyButton}>
+                  <Text style={styles.cancelReplyText}>✕</Text>
+                </Pressable>
+              </View>
+            )}
+            
             {commentImage && (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: commentImage }} style={styles.previewImage} />
@@ -503,6 +531,45 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 1,
+  },
+  replyingToContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: tokens.colors.almostWhite,
+    borderRadius: 8,
+  },
+  replyingToContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  replyingToLabel: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.grey1,
+  },
+  replyingToUsername: {
+    ...tokens.typography.p3B,
+    color: tokens.colors.greenHighlight,
+  },
+  replyingToPreview: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.grey1,
+    flex: 1,
+  },
+  cancelReplyButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelReplyText: {
+    color: tokens.colors.grey1,
+    fontSize: 16,
+    fontWeight: '600',
   },
   imagePreviewContainer: {
     position: 'relative',
