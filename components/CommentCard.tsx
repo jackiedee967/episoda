@@ -141,7 +141,6 @@ export default function CommentCard({ comment, onLike, onReply, onReplyLike }: C
               color={tokens.colors.grey1}
               strokeWidth={1.5}
             />
-            <Text style={styles.actionText}>Reply</Text>
           </Pressable>
         </View>
 
