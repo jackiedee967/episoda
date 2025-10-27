@@ -289,10 +289,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   displayName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'System',
+    ...tokens.typography.p1B,
+    color: tokens.colors.greenHighlight,
   },
   timestamp: {
     fontSize: 12,
@@ -405,10 +403,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   replyDisplayName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-    fontFamily: 'System',
+    ...tokens.typography.p1B,
+    color: tokens.colors.greenHighlight,
   },
   replyTimestamp: {
     fontSize: 11,
