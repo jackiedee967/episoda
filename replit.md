@@ -4,8 +4,8 @@
 Natively (also known as EPISODA) is a social media application focused on TV show discussions and recommendations. Built with Expo and React Native, it allows users to share their TV watching experiences, create playlists, follow other users, and interact through posts, likes, comments, and reposts.
 
 ## Project Status
-- **Last Updated**: October 23, 2025
-- **Current State**: UI overhaul in progress - Homepage redesigned to match Figma pixel-perfectly
+- **Last Updated**: October 27, 2025
+- **Current State**: UI overhaul in progress - Homepage redesigned to match Figma pixel-perfectly, core functionality fixes completed
 - **Platform**: Expo React Native (iOS, Android, and Web)
 
 ## Technology Stack
@@ -19,6 +19,28 @@ Natively (also known as EPISODA) is a social media application focused on TV sho
 - **Styling**: StyleSheet API with common styles and color constants
 
 ## Recent Changes
+
+### Friends Tab Filter & Post Navigation Fixes (October 27, 2025)
+Fixed two critical user experience issues:
+
+1. **Friends Tab Filter Enhancement**
+   - Updated Show Hub and Episode Hub to include user's own posts in Friends tab
+   - Changed filter from `isFollowing(post.user.id)` to `post.user.id === currentUser.id || isFollowing(post.user.id)`
+   - Users now see their own posts alongside posts from people they follow
+   - Applies to both Show Hub and Episode Hub consistently
+
+2. **Post Navigation After Creation**
+   - PostModal now captures the created post object and passes post ID to onPostSuccess callback
+   - Show Hub's handlePostSuccess receives post ID and navigates to `/post/${postId}`
+   - After creating a post, users are automatically taken to view their new post
+   - Modal closes smoothly during navigation transition
+   - Backward compatible - onPostSuccess callback remains optional
+
+3. **Technical Implementation**
+   - Updated PostModal interface to accept `onPostSuccess?: (postId: string) => void`
+   - Modified handlePost to capture return value from createPost
+   - Updated Show Hub and Episode Hub to import currentUser from DataContext
+   - No breaking changes to existing code (other PostModal usages unaffected)
 
 ### Show Progress Tracking Component (October 27, 2025)
 Added dynamic episode progress tracking to Show Hub:
@@ -63,7 +85,7 @@ Pixel-perfect redesign of Show Hub and Episode Hub pages to match Figma specific
    - Slide-up animation with dark modal background
 
 3. **Tab Filtering Functionality**
-   - Friends tab: Shows only posts from users you follow (uses isFollowing filter)
+   - Friends tab: Shows posts from users you follow AND your own posts (updated October 27)
    - Everyone tab: Shows all posts from all users on the app
    - Episodes tab: Displays organized list of show episodes by season
    - Tab switching automatically adjusts default sort (Friends→Recent, Everyone→Hot)
