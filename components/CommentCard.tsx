@@ -236,10 +236,12 @@ const styles = StyleSheet.create({
   commentImageContainer: {
     alignSelf: 'flex-start',
     width: 200,
+    maxWidth: 200,
     height: 100,
     borderRadius: 8,
     marginBottom: 8,
     overflow: 'hidden',
+    flexShrink: 0,
   },
   commentImage: {
     width: '100%',
@@ -353,10 +355,12 @@ const styles = StyleSheet.create({
   replyImageContainer: {
     alignSelf: 'flex-start',
     width: 200,
+    maxWidth: 200,
     height: 100,
     borderRadius: 8,
     marginBottom: 6,
     overflow: 'hidden',
+    flexShrink: 0,
   },
   replyImage: {
     width: '100%',
