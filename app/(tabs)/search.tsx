@@ -334,6 +334,8 @@ export default function SearchScreen() {
             ? `S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`
             : '';
 
+          const commentFullText = `${comment.user.displayName} commented on post "${post.title || 'Untitled'}" ${episodeText ? `about ${episodeText} of ${post.show.title}` : `about ${post.show.title}`}: "${comment.text}"`;
+
           return (
             <Pressable
               key={comment.id}
@@ -344,7 +346,7 @@ export default function SearchScreen() {
                 <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
                 <View style={styles.commentInfo}>
                   <Text style={styles.commentText} numberOfLines={2}>
-                    {comment.user.displayName} commented on post "{post.title}" {episodeText ? `about ${episodeText} of ${post.show.title}` : `about ${post.show.title}`}: "{comment.text}"
+                    {commentFullText}
                   </Text>
                   <Text style={styles.commentTime}>{timeAgo}</Text>
                 </View>
@@ -625,12 +627,16 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   commentText: {
-    ...tokens.typography.p1B,
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '600',
     color: tokens.colors.greenHighlight,
-    lineHeight: 15.6,
+    letterSpacing: -0.24,
   },
   commentTime: {
-    ...tokens.typography.p4,
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontWeight: '400',
     color: tokens.colors.grey1,
   },
   commentShowPoster: {
