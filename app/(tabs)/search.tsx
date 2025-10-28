@@ -209,6 +209,24 @@ export default function SearchScreen() {
   };
 
   const renderResults = () => {
+    // Show placeholder when no search query
+    if (searchQuery.length === 0) {
+      return (
+        <View style={styles.searchPlaceholder}>
+          <Image 
+            source={require('@/assets/search-placeholder.png')} 
+            style={styles.placeholderImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.placeholderTitle}>Type to search</Text>
+          <Text style={styles.placeholderSubtitle}>
+            Search shows, posts, comments or users...
+          </Text>
+        </View>
+      );
+    }
+
+    // Show no results when searched but nothing found
     if (filteredResults.length === 0) {
       return (
         <View style={styles.emptyState}>
@@ -450,6 +468,26 @@ const styles = StyleSheet.create({
     ...tokens.typography.p1,
     color: tokens.colors.grey1,
     marginTop: 8,
+    textAlign: 'center',
+  },
+  searchPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  placeholderImage: {
+    width: 300,
+    height: 200,
+    marginBottom: 24,
+  },
+  placeholderTitle: {
+    ...tokens.typography.titleL,
+    color: tokens.colors.almostWhite,
+    marginBottom: 8,
+  },
+  placeholderSubtitle: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
     textAlign: 'center',
   },
   showCard: {
