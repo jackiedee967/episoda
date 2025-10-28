@@ -33,11 +33,49 @@ export default function SearchScreen() {
     ? mockShows.find(s => s.id === showFilter) 
     : null;
 
+  // Check if each category has results
+  const getResultsCount = (category: SearchCategory): number => {
+    const query = searchQuery.toLowerCase();
+    if (!query) return 0;
+
+    switch (category) {
+      case 'shows':
+        return mockShows.filter(show =>
+          show.title.toLowerCase().includes(query)
+        ).length;
+      
+      case 'posts':
+        let filteredPosts = preselectedShow 
+          ? posts.filter(post => post.show.id === preselectedShow.id)
+          : posts;
+        return filteredPosts.filter(
+          post =>
+            post.title?.toLowerCase().includes(query) ||
+            post.body.toLowerCase().includes(query) ||
+            post.show.title.toLowerCase().includes(query)
+        ).length;
+      
+      case 'comments':
+        return 0;
+      
+      case 'users':
+        return mockUsers.filter(
+          user =>
+            user.displayName.toLowerCase().includes(query) ||
+            user.username.toLowerCase().includes(query) ||
+            user.bio?.toLowerCase().includes(query)
+        ).length;
+      
+      default:
+        return 0;
+    }
+  };
+
   const tabs: Tab[] = [
-    { key: 'shows', label: 'Shows' },
-    { key: 'users', label: 'Users' },
-    { key: 'posts', label: 'Posts' },
-    { key: 'comments', label: 'Comments' },
+    { key: 'shows', label: 'Shows', hasIndicator: searchQuery.length > 0 && activeCategory !== 'shows' && getResultsCount('shows') > 0 },
+    { key: 'posts', label: 'Posts', hasIndicator: searchQuery.length > 0 && activeCategory !== 'posts' && getResultsCount('posts') > 0 },
+    { key: 'comments', label: 'Comments', hasIndicator: searchQuery.length > 0 && activeCategory !== 'comments' && getResultsCount('comments') > 0 },
+    { key: 'users', label: 'Users', hasIndicator: searchQuery.length > 0 && activeCategory !== 'users' && getResultsCount('users') > 0 },
   ];
 
   // Filter based on search query and category
@@ -250,7 +288,7 @@ export default function SearchScreen() {
             <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />
             <TextInput
               style={styles.searchInput}
-              placeholder={`Search ${activeCategory}...`}
+              placeholder="Search"
               placeholderTextColor={tokens.colors.grey1}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -316,7 +354,6 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 18,
   },
   title: {
     ...tokens.typography.p1B,
@@ -344,7 +381,8 @@ const styles = StyleSheet.create({
   },
   tabSelectorWrapper: {
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
   },
   filterChipContainer: {
     paddingHorizontal: 20,
@@ -382,7 +420,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultsContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 18,
     paddingBottom: 100,
     gap: 10,
   },

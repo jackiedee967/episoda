@@ -17,6 +17,7 @@ export interface Tab {
   label: string;
   color?: string;
   strokeColor?: string;
+  hasIndicator?: boolean;
 }
 
 interface TabSelectorProps {
@@ -75,6 +76,7 @@ export default function TabSelector({
 
   const renderTab = (tab: Tab) => {
     const isActive = activeTab === tab.key;
+    const showIndicator = !isActive && tab.hasIndicator;
 
     return (
       <Pressable
@@ -86,7 +88,10 @@ export default function TabSelector({
           pressed && styles.tabPressed,
         ]}
       >
-        <Text style={getTabTextStyle(tab, isActive)}>{tab.label}</Text>
+        <View style={styles.tabContent}>
+          <Text style={getTabTextStyle(tab, isActive)}>{tab.label}</Text>
+          {showIndicator && <View style={styles.indicator} />}
+        </View>
       </Pressable>
     );
   };
@@ -116,8 +121,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
-    width: '100%',
-    maxWidth: 392,
+    alignSelf: 'flex-start',
     height: 46,
   },
   scrollContent: {
@@ -138,5 +142,16 @@ const styles = StyleSheet.create({
   },
   tabPressed: {
     opacity: 0.8,
+  },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  indicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: tokens.colors.greenHighlight,
   },
 });
