@@ -257,7 +257,10 @@ export default function SearchScreen() {
     if (filteredResults.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <IconSymbol name="magnifyingglass" size={48} color={tokens.colors.grey1} />
+          <Image 
+            source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+            style={styles.emptyStateIcon}
+          />
           <Text style={styles.emptyStateText}>No results found</Text>
           <Text style={styles.emptyStateSubtext}>
             Try searching for something else or change category
@@ -385,10 +388,7 @@ export default function SearchScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Explore</Text>
           <View style={styles.searchContainer}>
-            <Image 
-              source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
-              style={styles.searchIcon}
-            />
+            <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search"
@@ -475,10 +475,6 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 46,
   },
-  searchIcon: {
-    width: 20,
-    height: 20,
-  },
   searchInput: {
     flex: 1,
     fontSize: 13,
@@ -535,6 +531,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+  },
+  emptyStateIcon: {
+    width: 48,
+    height: 48,
   },
   emptyStateText: {
     ...tokens.typography.titleL,
