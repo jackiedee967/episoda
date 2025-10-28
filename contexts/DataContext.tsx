@@ -979,7 +979,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log(`📝 Getting top ${limit} most popular followers for user:`, userId);
       
-      // Get followers sorted by their follower_count
+      // Get all followers first, then sort by follower_count
       const { data, error } = await supabase
         .from('follows')
         .select(`
@@ -993,13 +993,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
             follower_count
           )
         `)
-        .eq('following_id', userId)
-        .order('profiles(follower_count)', { ascending: false })
-        .limit(limit);
+        .eq('following_id', userId);
 
-      if (!error && data) {
-        console.log(`✅ Loaded top ${data.length} followers from Supabase`);
-        return data.map((follow: any) => ({
+      if (!error && data && data.length > 0) {
+        console.log(`✅ Loaded ${data.length} followers from Supabase`);
+        // Sort by follower_count and take top N
+        const sortedFollowers = data
+          .filter((follow: any) => follow.profiles)
+          .sort((a: any, b: any) => (b.profiles.follower_count || 0) - (a.profiles.follower_count || 0))
+          .slice(0, limit);
+        
+        return sortedFollowers.map((follow: any) => ({
           id: follow.profiles.user_id,
           username: follow.profiles.username,
           displayName: follow.profiles.display_name,
@@ -1015,7 +1019,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Fallback to mock data
     console.log('⚠️ Using mock data for top followers');
-    const followers = mockUsers.filter(u => u.following?.includes(userId));
+    const followers = mockUsers.filter(u => u.following?.includes(userId)) || [];
     return followers.slice(0, limit);
   }, []);
 
@@ -1023,7 +1027,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log(`📝 Getting top ${limit} most popular following for user:`, userId);
       
-      // Get following sorted by their follower_count
+      // Get all following first, then sort by follower_count
       const { data, error } = await supabase
         .from('follows')
         .select(`
@@ -1037,13 +1041,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
             follower_count
           )
         `)
-        .eq('follower_id', userId)
-        .order('profiles(follower_count)', { ascending: false })
-        .limit(limit);
+        .eq('follower_id', userId);
 
-      if (!error && data) {
-        console.log(`✅ Loaded top ${data.length} following from Supabase`);
-        return data.map((follow: any) => ({
+      if (!error && data && data.length > 0) {
+        console.log(`✅ Loaded ${data.length} following from Supabase`);
+        // Sort by follower_count and take top N
+        const sortedFollowing = data
+          .filter((follow: any) => follow.profiles)
+          .sort((a: any, b: any) => (b.profiles.follower_count || 0) - (a.profiles.follower_count || 0))
+          .slice(0, limit);
+        
+        return sortedFollowing.map((follow: any) => ({
           id: follow.profiles.user_id,
           username: follow.profiles.username,
           displayName: follow.profiles.display_name,
@@ -1060,7 +1068,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Fallback to mock data
     console.log('⚠️ Using mock data for top following');
     const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
-    const following = mockUsers.filter(u => user.following?.includes(u.id));
+    const following = mockUsers.filter(u => user.following?.includes(u.id)) || [];
     return following.slice(0, limit);
   }, []);
 

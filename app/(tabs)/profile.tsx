@@ -8,12 +8,12 @@ import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import Button from '@/components/Button';
-import { currentUser, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
 import { Edit, Settings, HelpCircle, Eye, Flame, EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
-import { Show, SocialLink } from '@/types';
+import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
+import { supabase } from '@/app/integrations/supabase/client';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -49,19 +49,56 @@ export default function ProfileScreen() {
   const [following, setFollowing] = useState<any[]>([]);
   const [topFollowers, setTopFollowers] = useState<any[]>([]);
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
+  const [profileUser, setProfileUser] = useState<User>(contextCurrentUser);
 
   useEffect(() => {
+    // Load data on mount
     loadPlaylists();
     loadStats();
     loadFollowData();
   }, []);
 
+  const loadProfileData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile) {
+          const { data: socialLinks } = await supabase
+            .from('social_links')
+            .select('*')
+            .eq('user_id', user.id);
+
+          // Keep the contextCurrentUser.id to maintain compatibility with mock data
+          // Only update profile-specific fields from Supabase
+          setProfileUser(prev => ({
+            ...prev,
+            username: profile.username || prev.username,
+            displayName: profile.display_name || prev.displayName,
+            avatar: profile.avatar_url || prev.avatar,
+            bio: profile.bio || '',
+            socialLinks: socialLinks?.map(link => ({
+              platform: link.platform as SocialLink['platform'],
+              url: link.url,
+            })) || [],
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+  };
+
   const loadStats = async () => {
     try {
-      const episodesCount = await getEpisodesWatchedCount(currentUser.id);
-      const likesCount = await getTotalLikesReceived(currentUser.id);
-      setEpisodesWatched(episodesCount);
-      setTotalLikes(likesCount);
+      // For now, just set to 0 - stats will be pulled from mock data when needed
+      setEpisodesWatched(0);
+      setTotalLikes(0);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -69,23 +106,19 @@ export default function ProfileScreen() {
 
   const loadFollowData = async () => {
     try {
-      const followersData = await getFollowers(currentUser.id);
-      const followingData = await getFollowing(currentUser.id);
-      const topFollowersData = await getTopFollowers(currentUser.id, 3);
-      const topFollowingData = await getTopFollowing(currentUser.id, 3);
-      
-      setFollowers(followersData);
-      setFollowing(followingData);
-      setTopFollowers(topFollowersData);
-      setTopFollowing(topFollowingData);
+      // For now, just set to empty arrays - follow data will be pulled from mock data when needed
+      setFollowers([]);
+      setFollowing([]);
+      setTopFollowers([]);
+      setTopFollowing([]);
     } catch (error) {
       console.error('Error loading follow data:', error);
     }
   };
 
-  const userPosts = posts.filter((p) => p.user.id === currentUser.id);
+  const userPosts = posts.filter((p) => p.user.id === profileUser.id);
   const allReposts = getAllReposts();
-  const userReposts = allReposts.filter(repost => repost.repostedBy.id === currentUser.id);
+  const userReposts = allReposts.filter(repost => repost.repostedBy.id === profileUser.id);
   
   const allUserActivity = [
     ...userPosts.map(post => ({ 
@@ -98,12 +131,12 @@ export default function ProfileScreen() {
       post: repost.post, 
       isRepost: true, 
       timestamp: repost.timestamp,
-      repostedBy: { id: currentUser.id, displayName: currentUser.displayName }
+      repostedBy: { id: profileUser.id, displayName: profileUser.displayName }
     }))
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   const getMyRotation = (): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
+    const userShowPosts = posts.filter((p) => p.user.id === profileUser.id);
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
@@ -128,7 +161,7 @@ export default function ProfileScreen() {
   const myRotation = getMyRotation();
 
   const getWatchHistory = (): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
+    const userShowPosts = posts.filter((p) => p.user.id === profileUser.id);
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
@@ -173,13 +206,27 @@ export default function ProfileScreen() {
     setShowEditProfileModal(true);
   };
 
-  const handleSaveProfile = (data: {
+  const handleSaveProfile = async (data: {
     displayName: string;
     username: string;
     bio: string;
     socialLinks: SocialLink[];
   }) => {
-    console.log('Profile updated:', data);
+    try {
+      // Update local state to reflect changes in UI
+      // EditProfileModal already saves to Supabase
+      setProfileUser(prev => ({
+        ...prev,
+        displayName: data.displayName,
+        username: data.username,
+        bio: data.bio,
+        socialLinks: data.socialLinks,
+      }));
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Error handling profile save:', error);
+    }
   };
 
   const handleSocialLinkPress = (url: string) => {
@@ -249,16 +296,16 @@ export default function ProfileScreen() {
   // Section 1: Profile Info
   const renderProfileInfo = () => (
     <View style={styles.profileInfoSection}>
-      <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
+      <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
       
       <View style={styles.profileTextContainer}>
-        <Text style={styles.username}>@{currentUser.username}</Text>
-        <Text style={styles.displayName}>{currentUser.displayName}</Text>
-        {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
+        <Text style={styles.username}>@{profileUser.username}</Text>
+        <Text style={styles.displayName}>{profileUser.displayName}</Text>
+        {profileUser.bio && <Text style={styles.bio}>{profileUser.bio}</Text>}
         
-        {currentUser.socialLinks && currentUser.socialLinks.length > 0 && (
+        {profileUser.socialLinks && profileUser.socialLinks.length > 0 && (
           <View style={styles.socialLinksRow}>
-            {currentUser.socialLinks.map((link, index) => (
+            {profileUser.socialLinks.map((link, index) => (
               <Pressable
                 key={index}
                 style={styles.socialIconButton}
@@ -519,7 +566,7 @@ export default function ProfileScreen() {
           }}
           users={followersType === 'followers' ? followers : following}
           title={followersType === 'followers' ? 'Followers' : 'Following'}
-          currentUserId={currentUser.id}
+          currentUserId={profileUser.id}
           followingIds={following.map(u => u.id)}
           onFollowToggle={handleFollowToggle}
         />
@@ -532,10 +579,10 @@ export default function ProfileScreen() {
         <EditProfileModal
           visible={showEditProfileModal}
           onClose={() => setShowEditProfileModal(false)}
-          displayName={currentUser.displayName}
-          username={currentUser.username}
-          bio={currentUser.bio || ''}
-          socialLinks={currentUser.socialLinks || []}
+          displayName={profileUser.displayName}
+          username={profileUser.username}
+          bio={profileUser.bio || ''}
+          socialLinks={profileUser.socialLinks || []}
           onSave={handleSaveProfile}
         />
       </View>
