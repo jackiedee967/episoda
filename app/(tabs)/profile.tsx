@@ -10,7 +10,7 @@ import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import Button from '@/components/Button';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { Edit, Settings, HelpCircle, Eye, Flame, EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
+import { EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
@@ -332,17 +332,17 @@ export default function ProfileScreen() {
   const renderActionButtons = () => (
     <View style={styles.actionButtonsSection}>
       <Pressable style={styles.actionButton} onPress={handleEditProfile}>
-        <Edit size={19} color={colors.almostWhite} />
+        <Image source={require('@/assets/images/edit_1761625354124.png')} style={styles.actionIcon} />
         <Text style={styles.actionButtonLabel}>Edit</Text>
       </Pressable>
       
       <Pressable style={styles.actionButton} onPress={handleSettingsPress}>
-        <Settings size={19} color={colors.almostWhite} />
+        <Image source={require('@/assets/images/Setting_line_light_1761625354125.png')} style={styles.actionIcon} />
         <Text style={styles.actionButtonLabel}>Settings</Text>
       </Pressable>
       
       <Pressable style={styles.actionButton} onPress={handleHelpPress}>
-        <HelpCircle size={19} color={colors.almostWhite} />
+        <Image source={require('@/assets/images/Question_light_1761625354125.png')} style={styles.actionIcon} />
         <Text style={styles.actionButtonLabel}>Help</Text>
       </Pressable>
     </View>
@@ -353,15 +353,19 @@ export default function ProfileScreen() {
     <View style={styles.statsSection}>
       <View style={styles.statCard}>
         <View style={styles.statContent}>
-          <Eye size={24} color={colors.almostWhite} />
-          <Text style={styles.statValue}>{episodesWatched} Episodes</Text>
+          <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+          </Text>
         </View>
       </View>
 
       <View style={styles.statCard}>
         <View style={styles.statContent}>
-          <Flame size={24} color={colors.almostWhite} />
-          <Text style={styles.statValue}>{totalLikes} Likes</Text>
+          <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+          </Text>
         </View>
       </View>
 
@@ -379,7 +383,9 @@ export default function ProfileScreen() {
               />
             ))}
           </View>
-          <Text style={styles.statValue}>{followers.length} Followers</Text>
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{followers.length}</Text> Followers
+          </Text>
         </View>
       </Pressable>
 
@@ -397,7 +403,9 @@ export default function ProfileScreen() {
               />
             ))}
           </View>
-          <Text style={styles.statValue}>{following.length} Following</Text>
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{following.length}</Text> Following
+          </Text>
         </View>
       </Pressable>
     </View>
@@ -668,9 +676,8 @@ const styles = StyleSheet.create({
   // Section 2: Action Buttons
   actionButtonsSection: {
     flexDirection: 'row',
-    width: 398,
     alignSelf: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
     marginTop: 20,
     paddingHorizontal: 16,
   },
@@ -693,6 +700,10 @@ const styles = StyleSheet.create({
     color: colors.pureWhite,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  actionIcon: {
+    width: 19,
+    height: 19,
   },
 
   // Section 3: Stats Grid
@@ -727,6 +738,13 @@ const styles = StyleSheet.create({
     height: 15,
     color: colors.grey1,
     textAlign: 'center',
+  },
+  statNumber: {
+    color: colors.pureWhite,
+  },
+  statIcon: {
+    width: 24,
+    height: 24,
   },
   avatarRow: {
     flexDirection: 'row',
