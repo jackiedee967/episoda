@@ -43,6 +43,8 @@ interface DataContextType {
   isFollowing: (userId: string) => boolean;
   getFollowers: (userId: string) => Promise<User[]>;
   getFollowing: (userId: string) => Promise<User[]>;
+  getTopFollowers: (userId: string, limit?: number) => Promise<User[]>;
+  getTopFollowing: (userId: string, limit?: number) => Promise<User[]>;
   getEpisodesWatchedCount: (userId: string) => Promise<number>;
   getTotalLikesReceived: (userId: string) => Promise<number>;
   isLoading: boolean;
@@ -973,6 +975,95 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return userPosts.reduce((sum, post) => sum + post.likes, 0);
   }, [posts]);
 
+  const getTopFollowers = useCallback(async (userId: string, limit: number = 3): Promise<User[]> => {
+    try {
+      console.log(`📝 Getting top ${limit} most popular followers for user:`, userId);
+      
+      // Get followers sorted by their follower_count
+      const { data, error } = await supabase
+        .from('follows')
+        .select(`
+          follower_id,
+          profiles!follows_follower_id_fkey (
+            user_id,
+            username,
+            display_name,
+            avatar_url,
+            bio,
+            follower_count
+          )
+        `)
+        .eq('following_id', userId)
+        .order('profiles(follower_count)', { ascending: false })
+        .limit(limit);
+
+      if (!error && data) {
+        console.log(`✅ Loaded top ${data.length} followers from Supabase`);
+        return data.map((follow: any) => ({
+          id: follow.profiles.user_id,
+          username: follow.profiles.username,
+          displayName: follow.profiles.display_name,
+          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          bio: follow.profiles.bio || '',
+          followers: [],
+          following: [],
+        }));
+      }
+    } catch (error) {
+      console.log('⚠️ Error fetching top followers from Supabase:', error);
+    }
+
+    // Fallback to mock data
+    console.log('⚠️ Using mock data for top followers');
+    const followers = mockUsers.filter(u => u.following?.includes(userId));
+    return followers.slice(0, limit);
+  }, []);
+
+  const getTopFollowing = useCallback(async (userId: string, limit: number = 3): Promise<User[]> => {
+    try {
+      console.log(`📝 Getting top ${limit} most popular following for user:`, userId);
+      
+      // Get following sorted by their follower_count
+      const { data, error } = await supabase
+        .from('follows')
+        .select(`
+          following_id,
+          profiles!follows_following_id_fkey (
+            user_id,
+            username,
+            display_name,
+            avatar_url,
+            bio,
+            follower_count
+          )
+        `)
+        .eq('follower_id', userId)
+        .order('profiles(follower_count)', { ascending: false })
+        .limit(limit);
+
+      if (!error && data) {
+        console.log(`✅ Loaded top ${data.length} following from Supabase`);
+        return data.map((follow: any) => ({
+          id: follow.profiles.user_id,
+          username: follow.profiles.username,
+          displayName: follow.profiles.display_name,
+          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          bio: follow.profiles.bio || '',
+          followers: [],
+          following: [],
+        }));
+      }
+    } catch (error) {
+      console.log('⚠️ Error fetching top following from Supabase:', error);
+    }
+
+    // Fallback to mock data
+    console.log('⚠️ Using mock data for top following');
+    const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
+    const following = mockUsers.filter(u => user.following?.includes(u.id));
+    return following.slice(0, limit);
+  }, []);
+
   return (
     <DataContext.Provider
       value={{
@@ -1001,6 +1092,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         isFollowing,
         getFollowers,
         getFollowing,
+        getTopFollowers,
+        getTopFollowing,
         getEpisodesWatchedCount,
         getTotalLikesReceived,
         isLoading,
