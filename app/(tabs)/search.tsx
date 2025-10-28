@@ -394,7 +394,6 @@ const styles = StyleSheet.create({
   tabSelectorWrapper: {
     paddingHorizontal: 20,
     paddingTop: 18,
-    paddingBottom: 18,
   },
   filterChipContainer: {
     paddingHorizontal: 20,
