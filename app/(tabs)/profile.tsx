@@ -893,7 +893,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: colors.greenHighlight,
     justifyContent: 'center',
     alignItems: 'center',
