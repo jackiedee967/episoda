@@ -417,7 +417,7 @@ export default function ProfileScreen() {
 
     return (
       <View style={styles.rotationSection}>
-        <Text style={styles.rotationTitle}>My Rotation</Text>
+        <Text style={styles.rotationTitle}>Currently Watching</Text>
         <View style={styles.rotationRow}>
           {myRotation.map((show) => (
             <Pressable
@@ -676,14 +676,13 @@ const styles = StyleSheet.create({
   // Section 2: Action Buttons
   actionButtonsSection: {
     flexDirection: 'row',
-    alignSelf: 'center',
     gap: 6,
     marginTop: 20,
     paddingHorizontal: 16,
   },
   actionButton: {
     flexDirection: 'row',
-    width: 129,
+    flex: 1,
     height: 46,
     paddingVertical: 11,
     paddingHorizontal: 34,
@@ -710,13 +709,12 @@ const styles = StyleSheet.create({
   statsSection: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    width: 400,
-    alignSelf: 'center',
     gap: 8,
     marginTop: 20,
+    paddingHorizontal: 16,
   },
   statCard: {
-    width: 196,
+    width: 'calc(50% - 4px)' as any,
     height: 57,
     padding: 8,
     justifyContent: 'center',
@@ -763,9 +761,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   rotationTitle: {
-    fontFamily: 'Instrument Serif',
-    fontSize: 25,
-    fontWeight: '400',
+    ...typography.smallSubtitle,
     color: colors.pureWhite,
     marginBottom: 16,
   },
