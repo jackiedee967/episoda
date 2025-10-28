@@ -449,7 +449,7 @@ export default function ProfileScreen() {
                 <IconSymbol 
                   name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
                   size={16} 
-                  color={tokens.colors.pureWhite} 
+                  color={colors.pureWhite} 
                 />
               </Pressable>
             </Pressable>
