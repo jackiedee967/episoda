@@ -149,9 +149,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: tokens.colors.greenHighlight,
   },
 });
