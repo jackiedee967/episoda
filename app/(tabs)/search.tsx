@@ -334,8 +334,6 @@ export default function SearchScreen() {
             ? `S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`
             : '';
 
-          const commentFullText = `${comment.user.displayName} commented on post "${post.title || 'Untitled'}" ${episodeText ? `about ${episodeText} of ${post.show.title}` : `about ${post.show.title}`}: "${comment.text}"`;
-
           return (
             <Pressable
               key={comment.id}
@@ -345,8 +343,21 @@ export default function SearchScreen() {
               <View style={styles.commentCardContent}>
                 <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
                 <View style={styles.commentInfo}>
-                  <Text style={styles.commentText} numberOfLines={2}>
-                    {commentFullText}
+                  <Text style={styles.commentTextMixed}>
+                    <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
+                    <Text style={styles.commentTextWhite}> commented on post "</Text>
+                    <Text style={styles.commentTextWhite}>{post.title || 'Untitled'}</Text>
+                    <Text style={styles.commentTextWhite}>" about </Text>
+                    {episodeText && (
+                      <>
+                        <Text style={styles.commentTextGreen}>{episodeText}</Text>
+                        <Text style={styles.commentTextWhite}> of </Text>
+                      </>
+                    )}
+                    <Text style={styles.commentTextGreen}>{post.show.title}</Text>
+                    <Text style={styles.commentTextWhite}>: "</Text>
+                    <Text style={styles.commentTextWhite}>{comment.text}</Text>
+                    <Text style={styles.commentTextWhite}>"</Text>
                   </Text>
                   <Text style={styles.commentTime}>{timeAgo}</Text>
                 </View>
@@ -626,12 +637,17 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 5,
   },
-  commentText: {
+  commentTextMixed: {
     fontFamily: 'Funnel Display',
     fontSize: 13,
     fontWeight: '600',
-    color: tokens.colors.greenHighlight,
     letterSpacing: -0.24,
+  },
+  commentTextGreen: {
+    color: tokens.colors.greenHighlight,
+  },
+  commentTextWhite: {
+    color: tokens.colors.pureWhite,
   },
   commentTime: {
     fontFamily: 'Funnel Display',
