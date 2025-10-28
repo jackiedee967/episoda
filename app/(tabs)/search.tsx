@@ -151,7 +151,7 @@ export default function SearchScreen() {
             style={styles.filterChipClose}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <X size={16} color={colors.text} strokeWidth={2.5} />
+            <X size={16} color={tokens.colors.almostWhite} strokeWidth={2.5} />
           </Pressable>
         </View>
       </View>
@@ -162,7 +162,7 @@ export default function SearchScreen() {
     if (filteredResults.length === 0) {
       return (
         <View style={styles.emptyState}>
-          <IconSymbol name="magnifyingglass" size={48} color={colors.grey1} />
+          <IconSymbol name="magnifyingglass" size={48} color={tokens.colors.grey1} />
           <Text style={styles.emptyStateText}>No results found</Text>
           <Text style={styles.emptyStateSubtext}>
             Try searching for something else or change category
@@ -247,18 +247,18 @@ export default function SearchScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Explore</Text>
           <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
+            <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />
             <TextInput
               style={styles.searchInput}
               placeholder={`Search ${activeCategory}...`}
-              placeholderTextColor={colors.grey1}
+              placeholderTextColor={tokens.colors.grey1}
               value={searchQuery}
               onChangeText={setSearchQuery}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery('')}>
-                <IconSymbol name="xmark.circle.fill" size={20} color={colors.grey1} />
+                <IconSymbol name="xmark.circle.fill" size={20} color={tokens.colors.grey1} />
               </Pressable>
             )}
           </View>
