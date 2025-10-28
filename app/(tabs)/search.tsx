@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform, ImageBackground } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { colors, typography, spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import UserCard from '@/components/UserCard';
@@ -12,6 +11,7 @@ import { useData } from '@/contexts/DataContext';
 import PostCard from '@/components/PostCard';
 import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
+import tokens from '@/styles/tokens';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -73,7 +73,19 @@ export default function SearchScreen() {
             show.title.toLowerCase().includes(query)
           );
         }
-        return filteredShows;
+        
+        // Auto-sort shows: first by friendsWatching, then by post count
+        return filteredShows.sort((a, b) => {
+          // First priority: friends watching (descending)
+          if (b.friendsWatching !== a.friendsWatching) {
+            return b.friendsWatching - a.friendsWatching;
+          }
+          
+          // Second priority: post count (descending)
+          const aPostCount = posts.filter(p => p.show.id === a.id).length;
+          const bPostCount = posts.filter(p => p.show.id === b.id).length;
+          return bPostCount - aPostCount;
+        });
 
       case 'users':
         let filteredUsers = mockUsers;
@@ -172,22 +184,7 @@ export default function SearchScreen() {
             style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
             onPress={() => router.push(`/show/${show.id}`)}
           >
-            <View style={styles.posterWrapper}>
-              <Image source={{ uri: show.poster }} style={styles.showPoster} />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.saveIcon,
-                  pressed && styles.saveIconPressed,
-                ]}
-                onPress={e => handleSavePress(show, e)}
-              >
-                <IconSymbol
-                  name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
-                  size={16}
-                  color={colors.pureWhite}
-                />
-              </Pressable>
-            </View>
+            <Image source={{ uri: show.poster }} style={styles.showPoster} />
             <View style={styles.showInfo}>
               <Text style={styles.showTitle}>{show.title}</Text>
               <Text style={styles.showDescription} numberOfLines={2}>
@@ -198,17 +195,15 @@ export default function SearchScreen() {
                   <IconSymbol name="star.fill" size={14} color="#FCD34D" />
                   <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
                 </View>
-                <View style={styles.stat}>
-                  <IconSymbol name="person.2.fill" size={14} color={colors.grey1} />
-                  <Text style={styles.statText}>{show.friendsWatching} friends</Text>
-                </View>
-                <View style={styles.stat}>
-                  <IconSymbol name="tv" size={14} color={colors.grey1} />
-                  <Text style={styles.statText}>
-                    {show.totalSeasons} season{show.totalSeasons > 1 ? 's' : ''}
-                  </Text>
-                </View>
+                <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
+                <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
               </View>
+              {show.friendsWatching > 0 && (
+                <View style={styles.friendsRow}>
+                  <IconSymbol name="person.2.fill" size={12} color={tokens.colors.grey1} />
+                  <Text style={styles.friendsText}>{show.friendsWatching} friends watching</Text>
+                </View>
+              )}
             </View>
           </Pressable>
         ));
@@ -248,9 +243,9 @@ export default function SearchScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[commonStyles.container, styles.pageContainer]}>
+      <View style={styles.pageContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Search</Text>
+          <Text style={styles.title}>Explore</Text>
           <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color={colors.grey1} />
             <TextInput
@@ -302,6 +297,8 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
+    flex: 1,
+    backgroundColor: tokens.colors.pageBackground,
     ...Platform.select({
       web: {
         backgroundImage: "url('/app-background.jpg')",
@@ -317,64 +314,64 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   header: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: 60,
-    paddingBottom: spacing.gapLarge,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 18,
   },
   title: {
-    ...typography.titleXL,
-    color: colors.almostWhite,
-    marginBottom: spacing.gapLarge,
+    ...tokens.typography.p1B,
+    color: tokens.colors.pureWhite,
+    marginBottom: 18,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusButton,
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.cardStroke,
-    paddingHorizontal: spacing.gapMedium,
-    gap: spacing.gapSmall,
+    borderColor: tokens.colors.cardStroke,
+    paddingHorizontal: 12,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
-    ...typography.subtitle,
-    color: colors.almostWhite,
-    paddingVertical: spacing.gapMedium,
+    ...tokens.typography.subtitle,
+    color: tokens.colors.almostWhite,
+    paddingVertical: 12,
   },
   tabSelectorWrapper: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingVertical: spacing.gapMedium,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
   filterChipContainer: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingVertical: spacing.gapMedium,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.cardStroke,
-    backgroundColor: colors.pageBackground,
+    borderBottomColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.pageBackground,
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusTag * 2.5,
-    paddingLeft: spacing.gapMedium + 2,
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 20,
+    paddingLeft: 14,
     paddingRight: 10,
-    paddingVertical: spacing.gapSmall,
-    gap: spacing.gapSmall,
+    paddingVertical: 8,
+    gap: 8,
     borderWidth: 1,
-    borderColor: colors.cardStroke,
+    borderColor: tokens.colors.cardStroke,
   },
   filterChipText: {
-    ...typography.p1Bold,
-    color: colors.almostWhite,
+    ...tokens.typography.p1B,
+    color: tokens.colors.almostWhite,
   },
   filterChipClose: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.pageBackground,
+    backgroundColor: tokens.colors.pageBackground,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -382,9 +379,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   resultsContainer: {
-    padding: spacing.pageMargin,
+    padding: 20,
     paddingBottom: 100,
-    gap: spacing.gapMedium,
+    gap: 10,
   },
   emptyState: {
     alignItems: 'center',
@@ -392,67 +389,52 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyStateText: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-    marginTop: spacing.gapLarge,
+    ...tokens.typography.titleL,
+    color: tokens.colors.almostWhite,
+    marginTop: 18,
   },
   emptyStateSubtext: {
-    ...typography.p1,
-    color: colors.grey1,
-    marginTop: spacing.gapSmall,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    marginTop: 8,
     textAlign: 'center',
   },
   showCard: {
     flexDirection: 'row',
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapMedium,
-    marginBottom: spacing.gapMedium,
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    padding: 11,
+    marginBottom: 10,
+    gap: 17,
   },
   pressed: {
     opacity: 0.8,
   },
-  posterWrapper: {
-    position: 'relative',
-    marginRight: spacing.gapMedium,
-  },
   showPoster: {
-    width: 80,
-    height: 120,
-    borderRadius: components.borderRadiusTag,
-  },
-  saveIcon: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  saveIconPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.9 }],
+    width: 80.34,
+    height: 98.79,
+    borderRadius: 8,
   },
   showInfo: {
     flex: 1,
   },
   showTitle: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
+    ...tokens.typography.subtitle,
+    color: tokens.colors.pureWhite,
     marginBottom: 4,
   },
   showDescription: {
-    ...typography.p1,
-    color: colors.grey1,
-    lineHeight: 20,
-    marginBottom: spacing.gapSmall,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    lineHeight: 15.6,
+    marginBottom: 8,
   },
   showStats: {
     flexDirection: 'row',
-    gap: spacing.gapMedium,
+    alignItems: 'center',
+    gap: 10,
   },
   stat: {
     flexDirection: 'row',
@@ -460,10 +442,20 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statText: {
-    ...typography.p2Bold,
-    color: colors.grey1,
+    ...tokens.typography.p3M,
+    color: tokens.colors.grey1,
+  },
+  friendsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  friendsText: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.grey1,
   },
   userCardWrapper: {
-    marginBottom: spacing.gapMedium,
+    marginBottom: 12,
   },
 });
