@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 127,
     height: 127,
-    borderRadius: 14,
+    borderRadius: 20,
     marginBottom: 10,
   },
   profileTextContainer: {
