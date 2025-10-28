@@ -13,7 +13,7 @@ import Button from '@/components/Button';
 import WatchHistoryCard from '@/components/WatchHistoryCard';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
+import { Eye, EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
