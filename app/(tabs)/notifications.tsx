@@ -21,93 +21,9 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('you');
 
-  const mockNotifications: Notification[] = [
-    {
-      id: 'notif-1',
-      type: 'like',
-      actor: mockUsers[0],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-      read: false,
-      post: mockPosts[2],
-    },
-    {
-      id: 'notif-2',
-      type: 'comment',
-      actor: mockUsers[1],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5),
-      read: false,
-      post: mockPosts[2],
-      comment: mockComments[0],
-    },
-    {
-      id: 'notif-3',
-      type: 'follow',
-      actor: mockUsers[2],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      read: true,
-      targetUser: currentUser,
-    },
-    {
-      id: 'notif-4',
-      type: 'repost',
-      actor: mockUsers[3],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-      read: true,
-      post: mockPosts[2],
-    },
-    {
-      id: 'notif-5',
-      type: 'like',
-      actor: mockUsers[4],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
-      read: true,
-      post: mockPosts[2],
-    },
-  ];
+  const mockNotifications: Notification[] = [];
 
-  const mockFriendNotifications: Notification[] = [
-    {
-      id: 'friend-notif-1',
-      type: 'friend_post',
-      actor: mockUsers[0],
-      timestamp: new Date(Date.now() - 1000 * 60 * 30),
-      read: false,
-      post: mockPosts[0],
-    },
-    {
-      id: 'friend-notif-2',
-      type: 'friend_follow',
-      actor: mockUsers[1],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60),
-      read: false,
-      targetUser: mockUsers[2],
-    },
-    {
-      id: 'friend-notif-3',
-      type: 'friend_like',
-      actor: mockUsers[2],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-      read: true,
-      post: mockPosts[1],
-    },
-    {
-      id: 'friend-notif-4',
-      type: 'friend_comment',
-      actor: mockUsers[3],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
-      read: true,
-      post: mockPosts[0],
-      comment: mockComments[1],
-    },
-    {
-      id: 'friend-notif-5',
-      type: 'friend_post',
-      actor: mockUsers[4],
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      read: true,
-      post: mockPosts[3],
-    },
-  ];
+  const mockFriendNotifications: Notification[] = [];
 
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
@@ -271,11 +187,13 @@ export default function NotificationsScreen() {
           <View style={styles.resultsContainer}>
             {notifications.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>No notifications yet</Text>
+                <Image 
+                  source={require('@/assets/images/invite-friends.png')} 
+                  style={styles.emptyStateImage}
+                />
+                <Text style={styles.emptyStateText}>Invite your friends!</Text>
                 <Text style={styles.emptyStateSubtext}>
-                  {activeTab === 'you' 
-                    ? "When someone interacts with your posts, you'll see it here"
-                    : "When your friends are active, you'll see it here"}
+                  Invite friends to see what they're watching, talk theories and delusions, and find your next binge!
                 </Text>
               </View>
             ) : (
@@ -379,16 +297,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyStateImage: {
+    width: 303,
+    height: 239,
+    marginBottom: 24,
   },
   emptyStateText: {
     ...tokens.typography.titleL,
     color: tokens.colors.almostWhite,
-    marginTop: 18,
+    marginBottom: 8,
   },
   emptyStateSubtext: {
     ...tokens.typography.p1,
     color: tokens.colors.grey1,
-    marginTop: 8,
     textAlign: 'center',
+    maxWidth: 300,
   },
 });
