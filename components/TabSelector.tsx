@@ -129,15 +129,14 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     gap: 2,
+    height: 34,
   },
   tab: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
     borderRadius: 12,
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 34,
   },
   tabPressed: {
     opacity: 0.8,

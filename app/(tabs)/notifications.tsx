@@ -308,7 +308,6 @@ const styles = StyleSheet.create({
   title: {
     ...tokens.typography.p1B,
     color: tokens.colors.pureWhite,
-    marginBottom: 18,
   },
   tabSelectorWrapper: {
     paddingHorizontal: 20,
