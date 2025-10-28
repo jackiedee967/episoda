@@ -532,15 +532,6 @@ export default function ProfileScreen() {
                       <EyeOff size={20} color={colors.grey1} />
                     )}
                   </Pressable>
-                  <Pressable
-                    style={styles.iconButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleSharePlaylist(playlist.id);
-                    }}
-                  >
-                    <IconSymbol name="square.and.arrow.up" size={20} color={colors.almostWhite} />
-                  </Pressable>
                 </View>
               </Pressable>
             );
