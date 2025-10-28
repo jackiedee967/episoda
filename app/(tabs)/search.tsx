@@ -4,8 +4,8 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import UserCard from '@/components/UserCard';
-import { mockShows, mockUsers } from '@/data/mockData';
-import { Show, User } from '@/types';
+import { mockShows, mockUsers, mockComments } from '@/data/mockData';
+import { Show, User, Comment } from '@/types';
 import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 import PostCard from '@/components/PostCard';
@@ -56,7 +56,9 @@ export default function SearchScreen() {
         ).length;
       
       case 'comments':
-        return 0;
+        return mockComments.filter(comment =>
+          comment.text.toLowerCase().includes(query)
+        ).length;
       
       case 'users':
         return mockUsers.filter(
@@ -107,8 +109,17 @@ export default function SearchScreen() {
         });
 
       case 'comments':
-        // In a real app, you'd have a comments array to search through
-        return [];
+        let filteredComments = mockComments;
+        if (query) {
+          filteredComments = mockComments.filter(comment =>
+            comment.text.toLowerCase().includes(query)
+          );
+        }
+        
+        // Auto-sort comments by likes (popularity)
+        return filteredComments.sort((a, b) => {
+          return (b.likes || 0) - (a.likes || 0);
+        });
 
       case 'shows':
         let filteredShows = mockShows;
