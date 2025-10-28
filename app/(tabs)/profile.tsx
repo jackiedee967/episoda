@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, Linking } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
+import { colors, typography } from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import FollowersModal from '@/components/FollowersModal';
+import EditProfileModal from '@/components/EditProfileModal';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import Button from '@/components/Button';
-import { currentUser, mockUsers, mockShows } from '@/data/mockData';
+import { currentUser, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { Settings, Eye, EyeOff } from 'lucide-react-native';
-import { Show } from '@/types';
+import { Edit, Settings, HelpCircle, Eye, Flame, EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
+import { Show, SocialLink } from '@/types';
+import { IconSymbol } from '@/components/IconSymbol';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -28,15 +28,18 @@ export default function ProfileScreen() {
     playlists, 
     loadPlaylists, 
     updatePlaylistPrivacy, 
-    createPlaylist,
     getFollowers,
     getFollowing,
+    getTopFollowers,
+    getTopFollowing,
     getEpisodesWatchedCount,
     getTotalLikesReceived,
     currentUser: contextCurrentUser
   } = useData();
+
   const [activeTab, setActiveTab] = useState<Tab>('posts');
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
@@ -44,12 +47,14 @@ export default function ProfileScreen() {
   const [totalLikes, setTotalLikes] = useState(0);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
+  const [topFollowers, setTopFollowers] = useState<any[]>([]);
+  const [topFollowing, setTopFollowing] = useState<any[]>([]);
 
   useEffect(() => {
     loadPlaylists();
     loadStats();
     loadFollowData();
-  }, [loadPlaylists]);
+  }, []);
 
   const loadStats = async () => {
     try {
@@ -64,20 +69,21 @@ export default function ProfileScreen() {
 
   const loadFollowData = async () => {
     try {
-      console.log('ProfileScreen - Loading follow data for user:', currentUser.id);
       const followersData = await getFollowers(currentUser.id);
       const followingData = await getFollowing(currentUser.id);
-      console.log('ProfileScreen - Followers:', followersData.length);
-      console.log('ProfileScreen - Following:', followingData.length);
+      const topFollowersData = await getTopFollowers(currentUser.id, 3);
+      const topFollowingData = await getTopFollowing(currentUser.id, 3);
+      
       setFollowers(followersData);
       setFollowing(followingData);
+      setTopFollowers(topFollowersData);
+      setTopFollowing(topFollowingData);
     } catch (error) {
       console.error('Error loading follow data:', error);
     }
   };
 
   const userPosts = posts.filter((p) => p.user.id === currentUser.id);
-  
   const allReposts = getAllReposts();
   const userReposts = allReposts.filter(repost => repost.repostedBy.id === currentUser.id);
   
@@ -98,7 +104,6 @@ export default function ProfileScreen() {
 
   const getMyRotation = (): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
-    
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
@@ -111,7 +116,7 @@ export default function ProfileScreen() {
         uniqueShows.push(post.show);
         seenShowIds.add(post.show.id);
         
-        if (uniqueShows.length === 4) {
+        if (uniqueShows.length === 3) {
           break;
         }
       }
@@ -124,7 +129,6 @@ export default function ProfileScreen() {
 
   const getWatchHistory = (): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === currentUser.id);
-    
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
@@ -144,13 +148,6 @@ export default function ProfileScreen() {
 
   const watchHistory = getWatchHistory();
 
-  console.log('Profile - User posts:', userPosts.length);
-  console.log('Profile - User reposts:', userReposts.length);
-  console.log('Profile - Total activity:', allUserActivity.length);
-  console.log('Profile - Playlists:', playlists.length);
-  console.log('Profile - My Rotation:', myRotation.length, myRotation.map(s => s.title));
-  console.log('Profile - Watch History:', watchHistory.length, watchHistory.map(s => s.title));
-
   const handleShowFollowers = () => {
     setFollowersType('followers');
     setShowFollowersModal(true);
@@ -164,6 +161,30 @@ export default function ProfileScreen() {
   const handleSettingsPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/settings');
+  };
+
+  const handleHelpPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/help');
+  };
+
+  const handleEditProfile = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowEditProfileModal(true);
+  };
+
+  const handleSaveProfile = (data: {
+    displayName: string;
+    username: string;
+    bio: string;
+    socialLinks: SocialLink[];
+  }) => {
+    console.log('Profile updated:', data);
+  };
+
+  const handleSocialLinkPress = (url: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL(url).catch(err => console.error('Error opening URL:', err));
   };
 
   const handlePlaylistToggle = async (playlistId: string, isPublic: boolean) => {
@@ -186,28 +207,36 @@ export default function ProfileScreen() {
   };
 
   const handleFollowToggle = async (userId: string) => {
-    console.log('ProfileScreen - handleFollowToggle called for userId:', userId);
-    console.log('ProfileScreen - Currently following?', isFollowing(userId));
-    
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       if (isFollowing(userId)) {
-        console.log('ProfileScreen - Unfollowing user...');
         await unfollowUser(userId);
       } else {
-        console.log('ProfileScreen - Following user...');
         await followUser(userId);
       }
       
-      console.log('ProfileScreen - Follow action completed, reloading follow data...');
-      
       await loadFollowData();
-      
-      console.log('ProfileScreen - Follow data reloaded successfully');
     } catch (error) {
-      console.error('ProfileScreen - Error toggling follow:', error);
+      console.error('Error toggling follow:', error);
       Alert.alert('Error', 'Failed to update follow status. Please try again.');
+    }
+  };
+
+  const getSocialIcon = (platform: SocialLink['platform']) => {
+    const iconProps = { size: 16, color: colors.almostWhite };
+    switch (platform) {
+      case 'instagram':
+        return <Instagram {...iconProps} />;
+      case 'tiktok':
+      case 'spotify':
+        return <Music {...iconProps} />;
+      case 'x':
+        return <Text style={styles.xIconSmall}>𝕏</Text>;
+      case 'website':
+        return <Globe {...iconProps} />;
+      default:
+        return null;
     }
   };
 
@@ -217,62 +246,126 @@ export default function ProfileScreen() {
     { key: 'playlists', label: 'Playlists' },
   ];
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.headerTop}>
-        <Button
-          variant="ghost"
-          size="small"
-          onPress={handleSettingsPress}
-          style={styles.settingsButton}
-        >
-          <Settings size={20} color={colors.almostWhite} />
-        </Button>
-      </View>
-
+  // Section 1: Profile Info
+  const renderProfileInfo = () => (
+    <View style={styles.profileInfoSection}>
       <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-      <Text style={styles.displayName}>{currentUser.displayName}</Text>
-      <Text style={styles.username}>@{currentUser.username}</Text>
-      {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
-
-      <View style={styles.statsContainer}>
-        <Pressable style={styles.statItem} onPress={handleShowFollowers}>
-          <Text style={styles.statValue}>{followers.length}</Text>
-          <Text style={styles.statLabel}>Followers</Text>
-        </Pressable>
-        <Pressable style={styles.statItem} onPress={handleShowFollowing}>
-          <Text style={styles.statValue}>{following.length}</Text>
-          <Text style={styles.statLabel}>Following</Text>
-        </Pressable>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{episodesWatched}</Text>
-          <Text style={styles.statLabel}>Episodes</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{totalLikes}</Text>
-          <Text style={styles.statLabel}>Likes</Text>
-        </View>
+      
+      <View style={styles.profileTextContainer}>
+        <Text style={styles.username}>@{currentUser.username}</Text>
+        <Text style={styles.displayName}>{currentUser.displayName}</Text>
+        {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
+        
+        {currentUser.socialLinks && currentUser.socialLinks.length > 0 && (
+          <View style={styles.socialLinksRow}>
+            {currentUser.socialLinks.map((link, index) => (
+              <Pressable
+                key={index}
+                style={styles.socialIconButton}
+                onPress={() => handleSocialLinkPress(link.url)}
+              >
+                {getSocialIcon(link.platform)}
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
 
+  // Section 2: Action Buttons
+  const renderActionButtons = () => (
+    <View style={styles.actionButtonsSection}>
+      <Pressable style={styles.actionButton} onPress={handleEditProfile}>
+        <Edit size={19} color={colors.almostWhite} />
+        <Text style={styles.actionButtonLabel}>Edit</Text>
+      </Pressable>
+      
+      <Pressable style={styles.actionButton} onPress={handleSettingsPress}>
+        <Settings size={19} color={colors.almostWhite} />
+        <Text style={styles.actionButtonLabel}>Settings</Text>
+      </Pressable>
+      
+      <Pressable style={styles.actionButton} onPress={handleHelpPress}>
+        <HelpCircle size={19} color={colors.almostWhite} />
+        <Text style={styles.actionButtonLabel}>Help</Text>
+      </Pressable>
+    </View>
+  );
+
+  // Section 3: Stats Grid
+  const renderStatsGrid = () => (
+    <View style={styles.statsSection}>
+      <View style={styles.statCard}>
+        <View style={styles.statContent}>
+          <Eye size={24} color={colors.almostWhite} />
+          <Text style={styles.statValue}>{episodesWatched} Episodes</Text>
+        </View>
+      </View>
+
+      <View style={styles.statCard}>
+        <View style={styles.statContent}>
+          <Flame size={24} color={colors.almostWhite} />
+          <Text style={styles.statValue}>{totalLikes} Likes</Text>
+        </View>
+      </View>
+
+      <Pressable style={styles.statCard} onPress={handleShowFollowers}>
+        <View style={styles.statContent}>
+          <View style={styles.avatarRow}>
+            {topFollowers.slice(0, 3).map((follower, index) => (
+              <Image
+                key={follower.id}
+                source={{ uri: follower.avatar }}
+                style={[
+                  styles.miniAvatar,
+                  index > 0 && { marginLeft: -8 }
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={styles.statValue}>{followers.length} Followers</Text>
+        </View>
+      </Pressable>
+
+      <Pressable style={styles.statCard} onPress={handleShowFollowing}>
+        <View style={styles.statContent}>
+          <View style={styles.avatarRow}>
+            {topFollowing.slice(0, 3).map((user, index) => (
+              <Image
+                key={user.id}
+                source={{ uri: user.avatar }}
+                style={[
+                  styles.miniAvatar,
+                  index > 0 && { marginLeft: -8 }
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={styles.statValue}>{following.length} Following</Text>
+        </View>
+      </Pressable>
+    </View>
+  );
+
+  // Section 4: My Rotation
   const renderMyRotation = () => {
     if (myRotation.length === 0) return null;
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Rotation</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rotationScroll}>
+      <View style={styles.rotationSection}>
+        <Text style={styles.rotationTitle}>Currently Watching</Text>
+        <View style={styles.rotationRow}>
           {myRotation.map((show) => (
             <Pressable
               key={show.id}
               style={styles.rotationPoster}
               onPress={() => router.push(`/show/${show.id}`)}
             >
-              <Image source={{ uri: show.poster }} style={styles.posterImage} />
+              <Image source={{ uri: show.poster }} style={styles.rotationPosterImage} />
             </Pressable>
           ))}
-        </ScrollView>
+        </View>
       </View>
     );
   };
@@ -396,9 +489,11 @@ export default function ProfileScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[commonStyles.container, styles.pageContainer]}>
+      <View style={styles.pageContainer}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {renderHeader()}
+          {renderProfileInfo()}
+          {renderActionButtons()}
+          {renderStatsGrid()}
           {renderMyRotation()}
           
           <View style={styles.tabSelectorContainer}>
@@ -417,22 +512,32 @@ export default function ProfileScreen() {
         </ScrollView>
 
         <FollowersModal
-        visible={showFollowersModal || showFollowingModal}
-        onClose={() => {
-          setShowFollowersModal(false);
-          setShowFollowingModal(false);
-        }}
-        users={followersType === 'followers' ? followers : following}
-        title={followersType === 'followers' ? 'Followers' : 'Following'}
-        currentUserId={currentUser.id}
-        followingIds={following.map(u => u.id)}
-        onFollowToggle={handleFollowToggle}
-      />
+          visible={showFollowersModal || showFollowingModal}
+          onClose={() => {
+            setShowFollowersModal(false);
+            setShowFollowingModal(false);
+          }}
+          users={followersType === 'followers' ? followers : following}
+          title={followersType === 'followers' ? 'Followers' : 'Following'}
+          currentUserId={currentUser.id}
+          followingIds={following.map(u => u.id)}
+          onFollowToggle={handleFollowToggle}
+        />
 
-      <PostModal
-        visible={showPostModal}
-        onClose={() => setShowPostModal(false)}
-      />
+        <PostModal
+          visible={showPostModal}
+          onClose={() => setShowPostModal(false)}
+        />
+
+        <EditProfileModal
+          visible={showEditProfileModal}
+          onClose={() => setShowEditProfileModal(false)}
+          displayName={currentUser.displayName}
+          username={currentUser.username}
+          bio={currentUser.bio || ''}
+          socialLinks={currentUser.socialLinks || []}
+          onSave={handleSaveProfile}
+        />
       </View>
     </>
   );
@@ -440,6 +545,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
     ...Platform.select({
       web: {
         backgroundImage: "url('/app-background.jpg')",
@@ -449,129 +556,202 @@ const styles = StyleSheet.create({
       } as any,
     }),
   },
-  backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
   scrollView: {
     flex: 1,
   },
-  header: {
+  
+  // Section 1: Profile Info
+  profileInfoSection: {
     alignItems: 'center',
-    padding: spacing.pageMargin,
     paddingTop: 60,
-  },
-  headerTop: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginBottom: spacing.gapLarge,
-  },
-  settingsButton: {
-    padding: 0,
-    minHeight: 0,
+    paddingBottom: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: spacing.gapLarge,
+    width: 127,
+    height: 127,
+    borderRadius: 14,
+    marginBottom: 10,
   },
-  displayName: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-    marginBottom: spacing.gapSmall,
+  profileTextContainer: {
+    width: 331,
+    alignItems: 'center',
+    gap: 10,
   },
   username: {
-    ...typography.subtitle,
-    color: colors.grey1,
-    marginBottom: spacing.gapSmall,
+    ...typography.p1B,
+    color: colors.greenHighlight,
+    textAlign: 'center',
+  },
+  displayName: {
+    fontFamily: 'Instrument Serif',
+    fontSize: 25,
+    fontWeight: '400',
+    color: colors.pureWhite,
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   bio: {
     ...typography.p1,
-    color: colors.almostWhite,
+    color: colors.pureWhite,
     textAlign: 'center',
-    marginBottom: spacing.gapLarge,
-    paddingHorizontal: spacing.pageMargin,
+    maxWidth: 308,
   },
-  statsContainer: {
+  socialLinksRow: {
     flexDirection: 'row',
-    gap: spacing.gapXLarge,
-    marginTop: spacing.gapMedium,
+    gap: 13,
+    marginTop: 4,
   },
-  statItem: {
+  socialIconButton: {
+    padding: 6,
+  },
+  xIconSmall: {
+    fontSize: 16,
+    color: colors.almostWhite,
+    fontWeight: '600',
+  },
+
+  // Section 2: Action Buttons
+  actionButtonsSection: {
+    flexDirection: 'row',
+    width: 398,
+    alignSelf: 'center',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    width: 129,
+    height: 46,
+    paddingVertical: 11,
+    paddingHorizontal: 34,
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    backgroundColor: colors.cardBackground,
+  },
+  actionButtonLabel: {
+    ...typography.p1,
+    color: colors.pureWhite,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+
+  // Section 3: Stats Grid
+  statsSection: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 400,
+    alignSelf: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  statCard: {
+    width: 196,
+    height: 57,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    backgroundColor: colors.cardBackground,
+  },
+  statContent: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 3,
   },
   statValue: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-  },
-  statLabel: {
-    ...typography.smallSubtitle,
+    ...typography.p1,
+    height: 15,
     color: colors.grey1,
-    marginTop: spacing.gapSmall,
+    textAlign: 'center',
   },
-  section: {
-    padding: spacing.pageMargin,
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  sectionTitle: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-    marginBottom: spacing.gapLarge,
+  miniAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.cardBackground,
   },
-  rotationScroll: {
-    marginHorizontal: -spacing.pageMargin,
-    paddingHorizontal: spacing.pageMargin,
+
+  // Section 4: My Rotation
+  rotationSection: {
+    marginTop: 30,
+    paddingHorizontal: 16,
+  },
+  rotationTitle: {
+    fontFamily: 'Instrument Serif',
+    fontSize: 25,
+    fontWeight: '400',
+    color: colors.pureWhite,
+    marginBottom: 16,
+  },
+  rotationRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   rotationPoster: {
-    width: 120,
-    height: 180,
-    borderRadius: components.borderRadiusButton,
-    marginRight: spacing.gapMedium,
+    width: 128.67,
+    height: 162.25,
+    borderRadius: 14,
     overflow: 'hidden',
   },
-  posterImage: {
+  rotationPosterImage: {
     width: '100%',
     height: '100%',
   },
+
+  // Tab Selector
   tabSelectorContainer: {
-    paddingHorizontal: spacing.pageMargin,
-    marginBottom: spacing.gapLarge,
+    paddingHorizontal: 16,
+    marginTop: 30,
+    marginBottom: 18,
   },
+  
+  // Tab Content
   tabContent: {
-    paddingHorizontal: spacing.pageMargin,
+    paddingHorizontal: 16,
   },
   emptyState: {
     alignItems: 'center',
-    padding: spacing.sectionSpacing,
+    padding: 32,
     backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
   },
   emptyStateTitle: {
     ...typography.subtitle,
     color: colors.almostWhite,
-    marginTop: spacing.gapLarge,
-    marginBottom: spacing.gapSmall,
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyStateText: {
     ...typography.p1,
     color: colors.grey1,
     textAlign: 'center',
-    marginBottom: spacing.gapLarge,
+    marginBottom: 16,
   },
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.gapMedium,
+    gap: 12,
   },
   showGridItem: {
     width: '31%',
     aspectRatio: 2 / 3,
-    borderRadius: components.borderRadiusTag,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   showGridPoster: {
@@ -582,12 +762,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.cardPadding,
+    padding: 15,
     backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
-    marginBottom: spacing.gapMedium,
+    marginBottom: 12,
   },
   playlistItemPressed: {
     opacity: 0.7,
@@ -598,7 +778,7 @@ const styles = StyleSheet.create({
   playlistName: {
     ...typography.subtitle,
     color: colors.almostWhite,
-    marginBottom: spacing.gapSmall,
+    marginBottom: 4,
   },
   playlistCount: {
     ...typography.p1,
@@ -606,13 +786,13 @@ const styles = StyleSheet.create({
   },
   playlistActions: {
     flexDirection: 'row',
-    gap: spacing.gapMedium,
+    gap: 12,
     alignItems: 'center',
   },
   iconButton: {
-    padding: spacing.gapSmall,
+    padding: 8,
     backgroundColor: colors.pageBackground,
-    borderRadius: components.borderRadiusTag,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.cardStroke,
   },
