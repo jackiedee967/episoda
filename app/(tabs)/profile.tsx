@@ -53,7 +53,6 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     // Load data on mount
-    loadPlaylists();
     loadStats();
     loadFollowData();
   }, []);
@@ -401,7 +400,7 @@ export default function ProfileScreen() {
 
     return (
       <View style={styles.rotationSection}>
-        <Text style={styles.rotationTitle}>Currently Watching</Text>
+        <Text style={styles.rotationTitle}>My Rotation</Text>
         <View style={styles.rotationRow}>
           {myRotation.map((show) => (
             <Pressable
