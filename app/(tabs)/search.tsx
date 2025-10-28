@@ -533,8 +533,8 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyStateIcon: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
   },
   emptyStateText: {
     ...tokens.typography.titleL,

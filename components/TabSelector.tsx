@@ -121,7 +121,6 @@ const styles = StyleSheet.create({
     padding: 6,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
-    alignSelf: 'flex-start',
     height: 46,
   },
   scrollContent: {
