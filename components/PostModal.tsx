@@ -296,7 +296,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                   <IconSymbol 
                     name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
                     size={14} 
-                    color={tokens.colors.pureWhite} 
+                    color={colors.pureWhite} 
                   />
                 </Pressable>
               </Pressable>
