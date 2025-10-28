@@ -6,6 +6,7 @@ import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
+import InviteFriendsModal from '@/components/InviteFriendsModal';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import Button from '@/components/Button';
 import { useData } from '@/contexts/DataContext';
@@ -42,6 +43,7 @@ export default function ProfileScreen() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
   const [episodesWatched, setEpisodesWatched] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
@@ -553,6 +555,19 @@ export default function ProfileScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.pageContainer}>
+        {/* Invite Friends Button - Top Right Corner (Owner Only) */}
+        <Pressable 
+          style={styles.inviteFloatingButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowInviteFriendsModal(true);
+          }}
+        >
+          <Image 
+            source={require('@/assets/images/user-plus.png')} 
+            style={styles.inviteButtonIcon}
+          />
+        </Pressable>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderProfileInfo()}
           {renderActionButtons()}
@@ -600,6 +615,11 @@ export default function ProfileScreen() {
           bio={profileUser.bio || ''}
           socialLinks={profileUser.socialLinks || []}
           onSave={handleSaveProfile}
+        />
+
+        <InviteFriendsModal
+          visible={showInviteFriendsModal}
+          onClose={() => setShowInviteFriendsModal(false)}
         />
       </View>
     </>
@@ -863,5 +883,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.cardStroke,
+  },
+
+  // Invite Friends Floating Button
+  inviteFloatingButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.greenHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  inviteButtonIcon: {
+    width: 20,
+    height: 20,
   },
 });
