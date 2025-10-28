@@ -7,12 +7,16 @@ import {
   Pressable,
   Image,
   Platform,
+  Share,
+  Alert,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import { Notification } from '@/types';
 import { mockUsers, mockPosts, currentUser, mockComments } from '@/data/mockData';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
+import Button from '@/components/Button';
 import tokens from '@/styles/tokens';
 
 type Tab = 'you' | 'friends';
@@ -24,6 +28,34 @@ export default function NotificationsScreen() {
   const mockNotifications: Notification[] = [];
 
   const mockFriendNotifications: Notification[] = [];
+
+  // Placeholder App Store URL - update this when you have your real App Store link
+  const APP_STORE_URL = 'https://apps.apple.com/app/natively/idXXXXXXXXX';
+
+  const handleInviteFriends = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Copy link to clipboard
+      await Clipboard.setStringAsync(APP_STORE_URL);
+      
+      // Share with native share sheet
+      const message = `Check out Natively - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
+      
+      const result = await Share.share({
+        message: message,
+        url: APP_STORE_URL, // iOS will use this
+      });
+
+      if (result.action === Share.sharedAction) {
+        // Successfully shared
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
+      Alert.alert('Error', 'Failed to share. Link copied to clipboard.');
+    }
+  };
 
   const formatTimestamp = (date: Date): string => {
     const now = new Date();
@@ -195,6 +227,13 @@ export default function NotificationsScreen() {
                 <Text style={styles.emptyStateSubtext}>
                   Invite friends to see what they're watching, talk theories and delusions, and find your next binge!
                 </Text>
+                <Button 
+                  variant="primary" 
+                  onPress={handleInviteFriends}
+                  style={styles.inviteButton}
+                >
+                  Invite Friends
+                </Button>
               </View>
             ) : (
               notifications.map(renderNotification)
@@ -314,5 +353,9 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
     textAlign: 'center',
     maxWidth: 300,
+    marginBottom: 24,
+  },
+  inviteButton: {
+    alignSelf: 'center',
   },
 });
