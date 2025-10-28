@@ -98,7 +98,13 @@ export default function SearchScreen() {
               post.show.title.toLowerCase().includes(query)
           );
         }
-        return filteredPosts;
+        
+        // Auto-sort posts by popularity (likes + reposts + comments)
+        return filteredPosts.sort((a, b) => {
+          const aPopularity = (a.likes || 0) + (a.reposts || 0) + (a.comments || 0);
+          const bPopularity = (b.likes || 0) + (b.reposts || 0) + (b.comments || 0);
+          return bPopularity - aPopularity;
+        });
 
       case 'comments':
         // In a real app, you'd have a comments array to search through
@@ -135,7 +141,13 @@ export default function SearchScreen() {
               user.bio?.toLowerCase().includes(query)
           );
         }
-        return filteredUsers;
+        
+        // Auto-sort users by follower count
+        return filteredUsers.sort((a, b) => {
+          const aFollowers = a.followers?.length || 0;
+          const bFollowers = b.followers?.length || 0;
+          return bFollowers - aFollowers;
+        });
 
       default:
         return [];
