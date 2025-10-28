@@ -200,6 +200,22 @@ export default function SearchScreen() {
     }
   };
 
+  const formatTimeAgo = (timestamp: Date): string => {
+    const now = new Date();
+    const diffInMs = now.getTime() - timestamp.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else {
+      return `${diffInDays}d ago`;
+    }
+  };
+
   const renderShowFilter = () => {
     if (!preselectedShow) return null;
 
@@ -308,11 +324,35 @@ export default function SearchScreen() {
         });
 
       case 'comments':
-        return (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>Comment search coming soon</Text>
-          </View>
-        );
+        return filteredResults.map((comment: any) => {
+          // Find the post this comment belongs to
+          const post = posts.find(p => p.id === comment.postId);
+          if (!post) return null;
+
+          const timeAgo = formatTimeAgo(comment.timestamp);
+          const episodeText = post.episodes && post.episodes.length > 0 
+            ? `S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`
+            : '';
+
+          return (
+            <Pressable
+              key={comment.id}
+              style={({ pressed }) => [styles.commentCard, pressed && styles.pressed]}
+              onPress={() => router.push(`/post/${comment.postId}`)}
+            >
+              <View style={styles.commentCardContent}>
+                <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
+                <View style={styles.commentInfo}>
+                  <Text style={styles.commentText} numberOfLines={2}>
+                    {comment.user.displayName} commented on post "{post.title}" {episodeText ? `about ${episodeText} of ${post.show.title}` : `about ${post.show.title}`}: "{comment.text}"
+                  </Text>
+                  <Text style={styles.commentTime}>{timeAgo}</Text>
+                </View>
+              </View>
+              <Image source={{ uri: post.show.poster }} style={styles.commentShowPoster} />
+            </Pressable>
+          );
+        }).filter(Boolean);
 
       default:
         return null;
@@ -558,5 +598,44 @@ const styles = StyleSheet.create({
   },
   userCardWrapper: {
     marginBottom: 12,
+  },
+  commentCard: {
+    flexDirection: 'row',
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    padding: 16,
+    gap: 10,
+    alignItems: 'center',
+  },
+  commentCardContent: {
+    flexDirection: 'row',
+    flex: 1,
+    gap: 10,
+    alignItems: 'center',
+  },
+  commentAvatar: {
+    width: 31,
+    height: 31,
+    borderRadius: 15.5,
+  },
+  commentInfo: {
+    flex: 1,
+    gap: 5,
+  },
+  commentText: {
+    ...tokens.typography.p1B,
+    color: tokens.colors.greenHighlight,
+    lineHeight: 15.6,
+  },
+  commentTime: {
+    ...tokens.typography.p4,
+    color: tokens.colors.grey1,
+  },
+  commentShowPoster: {
+    width: 40,
+    height: 40,
+    borderRadius: 4,
   },
 });
