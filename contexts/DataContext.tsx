@@ -211,6 +211,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           name,
           userId: currentUser.id,
           shows: showId ? [showId] : [],
+          showCount: showId ? 1 : 0,
           isPublic: true,
           createdAt: new Date(),
         };
@@ -268,6 +269,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         name: data.name,
         userId: data.user_id,
         shows: showId ? [showId] : [],
+        showCount: showId ? 1 : 0,
         isPublic: data.is_public,
         createdAt: new Date(data.created_at),
       };
@@ -310,13 +312,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Update local state
       setPlaylists(prev => prev.map(p => 
         p.id === playlistId 
-          ? { ...p, shows: [...p.shows, showId] }
+          ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
           : p
       ));
 
       const updatedPlaylists = playlists.map(p => 
         p.id === playlistId 
-          ? { ...p, shows: [...p.shows, showId] }
+          ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
           : p
       );
       await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
@@ -351,17 +353,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local state
-      setPlaylists(prev => prev.map(p => 
-        p.id === playlistId 
-          ? { ...p, shows: p.shows.filter(id => id !== showId) }
-          : p
-      ));
+      setPlaylists(prev => prev.map(p => {
+        if (p.id === playlistId) {
+          const newShows = (p.shows || []).filter(id => id !== showId);
+          return { ...p, shows: newShows, showCount: newShows.length };
+        }
+        return p;
+      }));
 
-      const updatedPlaylists = playlists.map(p => 
-        p.id === playlistId 
-          ? { ...p, shows: p.shows.filter(id => id !== showId) }
-          : p
-      );
+      const updatedPlaylists = playlists.map(p => {
+        if (p.id === playlistId) {
+          const newShows = (p.shows || []).filter(id => id !== showId);
+          return { ...p, shows: newShows, showCount: newShows.length };
+        }
+        return p;
+      });
       await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('❌ Error removing show from playlist:', error);
@@ -455,14 +461,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error('❌ Error loading playlists from Supabase:', error);
         } else if (data) {
-          const loadedPlaylists: Playlist[] = data.map(p => ({
-            id: p.id,
-            name: p.name,
-            userId: p.user_id,
-            shows: p.playlist_shows.map((ps: any) => ps.show_id),
-            isPublic: p.is_public,
-            createdAt: new Date(p.created_at),
-          }));
+          const loadedPlaylists: Playlist[] = data.map(p => {
+            const shows = p.playlist_shows.map((ps: any) => ps.show_id);
+            return {
+              id: p.id,
+              name: p.name,
+              userId: p.user_id,
+              shows: shows,
+              showCount: shows.length,
+              isPublic: p.is_public,
+              createdAt: new Date(p.created_at),
+            };
+          });
 
           console.log('✅ Loaded', loadedPlaylists.length, 'playlists from Supabase');
           setPlaylists(loadedPlaylists);

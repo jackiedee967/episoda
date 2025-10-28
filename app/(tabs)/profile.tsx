@@ -502,7 +502,7 @@ export default function ProfileScreen() {
       {playlists.length > 0 ? (
         <>
           {playlists.map((playlist) => {
-            const showCount = playlist.shows?.length || 0;
+            const showCount = playlist.showCount || 0;
             return (
               <Pressable
                 key={playlist.id}

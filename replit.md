@@ -51,6 +51,14 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - Created EditProfileModal component with full profile editing functionality
 - Added getTopFollowers() and getTopFollowing() helper functions to DataContext for avatar previews
 - Wired profile page data loading to display real episode counts, like counts, follower counts, and avatar overlays
+- Implemented Watch History feature for Profile Shows tab:
+  - Created WatchHistoryCard component showing show poster, title, most recent episode, progress bar, and episode count
+  - Added getWatchHistory() function to DataContext that groups posts by show and calculates progress
+  - Watch history sorted by most recently logged activity
+- Fixed Playlist tab errors by ensuring all playlist objects include the required showCount property:
+  - Updated loadPlaylists, createPlaylist, addShowToPlaylist, and removeShowFromPlaylist functions
+  - Fixed data filtering bug in getWatchHistory (post.user.id vs post.userId)
+  - Added missing Episode type import to DataContext
 
 ## External Dependencies
 - **Supabase**: Used for database, authentication, and real-time functionalities.
