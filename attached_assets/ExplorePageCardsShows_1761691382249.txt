@@ -1,0 +1,171 @@
+import {useVariants} from 'react-exo/utils';
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+import {Image} from 'react-exo/image';
+
+import {Friends} from 'components/ui-pages/base/friends';
+
+import Star4 from './assets/star4.svg';
+import showPoster from './assets/showposter.png';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface ExplorePageCardsShowsProps {
+  property1: typeof ExplorePageCardsShowsVariants.property1[number],
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export const ExplorePageCardsShowsVariants = {
+  property1: ['Default', 'WatchHistory'],
+} as const;
+
+export function ExplorePageCardsShows(props: ExplorePageCardsShowsProps) {
+  const {property1} = props;
+  const {vstyles} = useVariants(ExplorePageCardsShowsVariants, {property1}, styles);
+
+  return (
+    <View testID={props.testID ?? "368:89192"} style={[vstyles.root(), props.style]}>
+      <Image url={showPoster} width={80.34} height={98.79}/>
+      <View testID="342:6063" style={vstyles.showInfo()}>
+        <Text testID="342:6065" style={styles.showTitle}>
+          {`Show Title`}
+        </Text>
+        <Text testID="342:6066" style={styles.briefDescriptionOfTheShowsEpisodeGoes}>
+          {`Brief description of the show’s episode goes...`}
+        </Text>
+        <View testID="342:6067" style={styles.ratingSeasonsEpisodes}>
+          <View testID="342:6068" style={styles.rating}>
+            <Star4/>
+            <Text testID="342:6069" style={styles.$40}>
+              {`4.0`}
+            </Text>
+          </View>
+          <Text testID="342:6071" style={styles.$3Seasons}>
+            {`3 Seasons`}
+          </Text>
+          <Text testID="342:6072" style={styles.$102Episodes}>
+            {`102 Episodes`}
+          </Text>
+        </View>
+        <Friends testID="344:30134"
+          prop="Count"
+          state="Mutual_Friends"
+        />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    flexDirection: 'row',
+    width: 392,
+    height: 117,
+    paddingTop: 9.382,
+    paddingLeft: 10.995,
+    paddingBottom: 8.827,
+    paddingRight: 42,
+    alignItems: 'center',
+    rowGap: 16.599,
+    columnGap: 16.599,
+    flexShrink: 0,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  rootProperty1WatchHistory: {
+    height: undefined,
+    flexShrink: undefined,
+    width: 412,
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    rowGap: 17,
+    columnGap: 17,
+  },
+  showTitle: {
+    color: 'Pure.White',
+    fontFamily: 'Funnel Display',
+    fontSize: 17,
+    fontStyle: 'normal',
+    fontWeight: '500',
+  },
+  briefDescriptionOfTheShowsEpisodeGoes: {
+    width: 238,
+    height: 11,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $40: {
+    width: 16,
+    height: 8,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    flexShrink: 0,
+    color: 'Grey.2',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  showInfo: {
+    width: 242,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 8,
+    columnGap: 8,
+    flexShrink: 0,
+    alignSelf: 'stretch',
+  },
+  showInfoProperty1WatchHistory: {
+    alignSelf: undefined,
+    justifyContent: 'center',
+  },
+  ratingSeasonsEpisodes: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+  },
+  rating: {
+    width: 27,
+    height: 8.641,
+  },
+  $3Seasons: {
+    color: 'Grey.2',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  $102Episodes: {
+    color: 'Grey.2',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontStyle: 'normal',
+    fontWeight: '400',
+  },
+  friends: {
+    flexDirection: 'row',
+    width: 56,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+}));
