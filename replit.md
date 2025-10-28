@@ -31,19 +31,32 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Profile Tab**: FloatingTabBar displays the user's profile picture instead of a generic icon, with circular styling (no border).
 - **Episode Hub Page**: Redesigned to match Figma specifications with header (back button + search icon), episode/show tags, section title, episode info card with thumbnail, log button, divider, Friends/Everyone tabs, and sorted feed.
 - **Post Page**: Fully redesigned to match Figma with custom back button, user info header, StarRatings component, clickable PostTags, engagement row with reactive updates, and comment input with token-styled upload/send buttons. All styling uses design tokens with proper accessibility labels.
+- **Profile Page**: Completely redesigned with 4 sections matching Figma specs:
+  - Section 1 (Profile Info): 127x127 rounded rectangle avatar, username in green P1-B centered, display name (Instrument Serif 25px), bio (max 308px width), dynamic social links row
+  - Section 2 (Action Buttons): Edit/Settings/Help buttons with icons (owner view) or Follow button (visitor view)
+  - Section 3 (Stats Grid): 2x2 wrapped flex layout with Episodes (Eye icon), Likes (Flame icon), Followers/Following (3 overlapping avatars + counts)
+  - Section 4 (My Rotation): 3 most recent shows watched
+  - EditProfileModal: Slide-up modal for editing profile pic, username, display name, bio, and social links with validation
 
 ### System Design Choices
 - **Modular Structure**: Organized into logical directories for tabs, authentication, episodes, integrations, playlists, posts, settings, shows, and users.
-- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon), StarRatings (consistent star rating display using Lucide icons and design tokens).
+- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon), StarRatings (consistent star rating display using Lucide icons and design tokens), EditProfileModal (profile editing interface), TabSelector (height: 100% fix for proper padding).
 - **Centralized Styling**: All styling uses a design token system to ensure consistency and maintainability.
-- **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates. Engagement actions (likes, reposts) trigger reactive UI updates through context subscriptions.
+- **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates. Engagement actions (likes, reposts) trigger reactive UI updates through context subscriptions. DataContext includes helper functions for getting top followers/following by follower_count.
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
+
+## Recent Changes (October 28, 2025)
+- Fixed TabSelector component to use height: 100% instead of fixed 34px, improving padding across all toggle tab bars site-wide
+- Completed Profile page redesign with all 4 sections matching Figma specifications
+- Created EditProfileModal component with full profile editing functionality
+- Added getTopFollowers() and getTopFollowing() helper functions to DataContext for avatar previews
+- Wired profile page data loading to display real episode counts, like counts, follower counts, and avatar overlays
 
 ## External Dependencies
 - **Supabase**: Used for database, authentication, and real-time functionalities.
 - **Expo**: Core framework for React Native development.
 - **AsyncStorage**: Local storage for session persistence.
 - **expo-symbols**: For UI icons.
-- **lucide-react-native**: For UI icons.
+- **lucide-react-native**: For UI icons (Edit, Settings, HelpCircle, Eye, Flame, EyeOff, Instagram, Music, Globe).
 - **react-native-phone-number-input**: (Mobile only) For phone number input formatting.
 - **LinearGradient**: For gradient backgrounds.

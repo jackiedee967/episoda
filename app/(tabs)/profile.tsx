@@ -95,9 +95,10 @@ export default function ProfileScreen() {
 
   const loadStats = async () => {
     try {
-      // For now, just set to 0 - stats will be pulled from mock data when needed
-      setEpisodesWatched(0);
-      setTotalLikes(0);
+      const episodesCount = await getEpisodesWatchedCount(profileUser.id);
+      const likesCount = await getTotalLikesReceived(profileUser.id);
+      setEpisodesWatched(episodesCount);
+      setTotalLikes(likesCount);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -105,13 +106,21 @@ export default function ProfileScreen() {
 
   const loadFollowData = async () => {
     try {
-      // For now, just set to empty arrays - follow data will be pulled from mock data when needed
+      const followersData = await getFollowers(profileUser.id);
+      const followingData = await getFollowing(profileUser.id);
+      const topFollowersData = await getTopFollowers(profileUser.id, 3);
+      const topFollowingData = await getTopFollowing(profileUser.id, 3);
+      
+      setFollowers(followersData || []);
+      setFollowing(followingData || []);
+      setTopFollowers(topFollowersData || []);
+      setTopFollowing(topFollowingData || []);
+    } catch (error) {
+      console.error('Error loading follow data:', error);
       setFollowers([]);
       setFollowing([]);
       setTopFollowers([]);
       setTopFollowing([]);
-    } catch (error) {
-      console.error('Error loading follow data:', error);
     }
   };
 
