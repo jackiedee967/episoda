@@ -714,7 +714,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: 8,
     marginTop: 20,
-    paddingHorizontal: 16,
   },
   statCard: {
     width: 196,
