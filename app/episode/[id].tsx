@@ -12,6 +12,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import ButtonL from '@/components/ButtonL';
 import PostTags from '@/components/PostTags';
@@ -35,10 +36,15 @@ const FEED_TABS: Tab[] = [
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { posts, isFollowing, currentUser } = useData();
+  const { posts, isFollowing, currentUser, isShowInPlaylist, playlists } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
+  const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
+
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
+  };
 
   useEffect(() => {
     if (activeTab === 'friends') {
@@ -141,14 +147,32 @@ export default function EpisodeHub() {
           <View style={styles.episodeInfoContainer}>
             <Text style={styles.sectionTitle}>{episode.title}</Text>
             <View style={styles.episodeCard}>
-              <View style={styles.thumbnailPlaceholder}>
-                {show.posterUrl && (
-                  <Image
-                    source={{ uri: show.posterUrl }}
-                    style={styles.thumbnail}
-                    resizeMode="cover"
+              <View style={styles.thumbnailWrapper}>
+                <View style={styles.thumbnailPlaceholder}>
+                  {show.posterUrl && (
+                    <Image
+                      source={{ uri: show.posterUrl }}
+                      style={styles.thumbnail}
+                      resizeMode="cover"
+                    />
+                  )}
+                </View>
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.saveIcon,
+                    pressed && styles.saveIconPressed,
+                  ]} 
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setPlaylistModalVisible(true);
+                  }}
+                >
+                  <IconSymbol 
+                    name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                    size={14} 
+                    color={tokens.colors.pureWhite} 
                   />
-                )}
+                </Pressable>
               </View>
               <View style={styles.episodeDetails}>
                 <Text style={styles.episodeDescription} numberOfLines={3}>
@@ -220,6 +244,15 @@ export default function EpisodeHub() {
         preselectedShow={show}
         preselectedEpisodes={[episode]}
       />
+
+      {show && (
+        <PlaylistModal
+          visible={playlistModalVisible}
+          onClose={() => setPlaylistModalVisible(false)}
+          show={show}
+          onAddToPlaylist={() => {}}
+        />
+      )}
       
       <FloatingTabBar 
         tabs={[
@@ -305,12 +338,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  thumbnailWrapper: {
+    position: 'relative',
+    width: 122,
+    height: 72,
+  },
   thumbnailPlaceholder: {
     width: 122,
     height: 72,
     borderRadius: 6,
     backgroundColor: tokens.colors.grey3,
     overflow: 'hidden',
+  },
+  saveIcon: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   thumbnail: {
     width: '100%',

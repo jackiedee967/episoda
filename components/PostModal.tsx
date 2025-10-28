@@ -18,6 +18,7 @@ import { colors, spacing, components } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Show, Episode, PostTag } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
+import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 
 interface PostModalProps {
@@ -40,7 +41,7 @@ interface Season {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
-  const { createPost, currentUser } = useData();
+  const { createPost, currentUser, isShowInPlaylist, playlists } = useData();
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
@@ -51,11 +52,17 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [customTag, setCustomTag] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
+  const [selectedShowForPlaylist, setSelectedShowForPlaylist] = useState<Show | null>(null);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
   const customTagInputRef = useRef<TextInput>(null);
+
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
+  };
 
   useEffect(() => {
     if (visible && preselectedShow) {
@@ -274,6 +281,24 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 onPress={() => handleShowSelect(show)}
               >
                 <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.saveIconGrid,
+                    pressed && styles.saveIconPressed,
+                  ]} 
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedShowForPlaylist(show);
+                    setPlaylistModalVisible(true);
+                  }}
+                >
+                  <IconSymbol 
+                    name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                    size={14} 
+                    color={tokens.colors.pureWhite} 
+                  />
+                </Pressable>
               </Pressable>
             ))}
           </View>
@@ -494,6 +519,18 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           {step === 'postDetails' && renderPostDetails()}
         </Animated.View>
       </Animated.View>
+      
+      {selectedShowForPlaylist && (
+        <PlaylistModal
+          visible={playlistModalVisible}
+          onClose={() => {
+            setPlaylistModalVisible(false);
+            setSelectedShowForPlaylist(null);
+          }}
+          show={selectedShowForPlaylist}
+          onAddToPlaylist={() => {}}
+        />
+      )}
     </Modal>
   );
 }
@@ -577,6 +614,7 @@ const styles = StyleSheet.create({
     marginRight: -3.5,
   },
   showGridItem: {
+    position: 'relative',
     width: 126,
     height: 172,
     marginLeft: 3.5,
@@ -587,6 +625,21 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 8,
+  },
+  saveIconGrid: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   showGridTitle: {
     fontSize: 12,

@@ -3,7 +3,9 @@ import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import { LogAShow } from '@/components/LogAShow';
+import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
@@ -13,10 +15,16 @@ import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing, getAllReposts } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, getAllReposts, isShowInPlaylist, playlists } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
+  const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
+  const [selectedShow, setSelectedShow] = useState<any>(null);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
+  };
 
   useEffect(() => {
     Animated.loop(
@@ -140,27 +148,49 @@ export default function HomeScreen() {
                 style={styles.showCard}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <Image 
-                  source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-                  style={styles.showImage}
-                />
-                {friendCount > 0 && (
-                  <View style={styles.friendsBar}>
-                    <View style={styles.friendAvatars}>
-                      {friendsToShow.map((user, index) => (
-                        <Image
-                          key={user.id}
-                          source={{ uri: user.avatar }}
-                          style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-                        />
-                      ))}
+                <View style={styles.posterWrapper}>
+                  <Image 
+                    source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
+                    style={styles.showImage}
+                  />
+                  
+                  <Pressable 
+                    style={({ pressed }) => [
+                      styles.saveIcon,
+                      pressed && styles.saveIconPressed,
+                    ]} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedShow(show);
+                      setPlaylistModalVisible(true);
+                    }}
+                  >
+                    <IconSymbol 
+                      name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                      size={18} 
+                      color={tokens.colors.pureWhite} 
+                    />
+                  </Pressable>
+
+                  {friendCount > 0 && (
+                    <View style={styles.friendsBar}>
+                      <View style={styles.friendAvatars}>
+                        {friendsToShow.map((user, index) => (
+                          <Image
+                            key={user.id}
+                            source={{ uri: user.avatar }}
+                            style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
+                          />
+                        ))}
+                      </View>
+                      <View style={styles.friendsWatchingTextContainer}>
+                        <Text style={styles.friendsWatchingNumber}>{friendCount}</Text>
+                        <Text style={styles.friendsWatchingLabel}> friends watching</Text>
+                      </View>
                     </View>
-                    <View style={styles.friendsWatchingTextContainer}>
-                      <Text style={styles.friendsWatchingNumber}>{friendCount}</Text>
-                      <Text style={styles.friendsWatchingLabel}> friends watching</Text>
-                    </View>
-                  </View>
-                )}
+                  )}
+                </View>
               </Pressable>
             );
           })}
@@ -292,6 +322,15 @@ export default function HomeScreen() {
         visible={postModalVisible}
         onClose={() => setPostModalVisible(false)}
       />
+
+      {selectedShow && (
+        <PlaylistModal
+          visible={playlistModalVisible}
+          onClose={() => setPlaylistModalVisible(false)}
+          show={selectedShow}
+          onAddToPlaylist={() => {}}
+        />
+      )}
     </View>
   );
 }
@@ -396,12 +435,32 @@ const styles = StyleSheet.create({
     height: 280,
     position: 'relative',
   },
+  posterWrapper: {
+    position: 'relative',
+    width: 215,
+    height: 280,
+  },
   showImage: {
     width: 215,
     height: 280,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: tokens.colors.imageStroke,
+  },
+  saveIcon: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 16,
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   friendsBar: {
     position: 'absolute',

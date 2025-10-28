@@ -282,7 +282,26 @@ export default function SearchScreen() {
             style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
             onPress={() => router.push(`/show/${show.id}`)}
           >
-            <Image source={{ uri: show.poster }} style={styles.showPoster} />
+            <View style={styles.showPosterWrapper}>
+              <Image source={{ uri: show.poster }} style={styles.showPoster} />
+              <Pressable 
+                style={({ pressed }) => [
+                  styles.saveIconSearch,
+                  pressed && styles.saveIconPressed,
+                ]} 
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  handleSavePress(show, e);
+                }}
+              >
+                <IconSymbol 
+                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                  size={16} 
+                  color={tokens.colors.pureWhite} 
+                />
+              </Pressable>
+            </View>
             <View style={styles.showInfo}>
               <Text style={styles.showTitle}>{show.title}</Text>
               <Text style={styles.showDescription} numberOfLines={2}>
@@ -579,10 +598,30 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
+  showPosterWrapper: {
+    position: 'relative',
+    width: 80.34,
+    height: 98.79,
+  },
   showPoster: {
     width: 80.34,
     height: 98.79,
     borderRadius: 8,
+  },
+  saveIconSearch: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 26,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 13,
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   showInfo: {
     flex: 1,

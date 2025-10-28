@@ -4,6 +4,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
     getTopFollowing,
     getEpisodesWatchedCount,
     getTotalLikesReceived,
+    isShowInPlaylist,
     currentUser: contextCurrentUser
   } = useData();
 
@@ -44,6 +46,7 @@ export default function ProfileScreen() {
   const [showFollowersModal, setShowFollowersModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState<Show | null>(null);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
   const [episodesWatched, setEpisodesWatched] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
@@ -52,6 +55,10 @@ export default function ProfileScreen() {
   const [topFollowers, setTopFollowers] = useState<any[]>([]);
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
   const [profileUser, setProfileUser] = useState<User>(contextCurrentUser);
+
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist ? isShowInPlaylist(pl.id, showId) : false);
+  };
 
   useEffect(() => {
     // Load data on mount
@@ -428,6 +435,23 @@ export default function ProfileScreen() {
               onPress={() => router.push(`/show/${show.id}`)}
             >
               <Image source={{ uri: show.poster }} style={styles.rotationPosterImage} />
+              <Pressable 
+                style={({ pressed }) => [
+                  styles.saveIconRotation,
+                  pressed && styles.saveIconPressed,
+                ]} 
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowPlaylistModal(show);
+                }}
+              >
+                <IconSymbol 
+                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                  size={16} 
+                  color={tokens.colors.pureWhite} 
+                />
+              </Pressable>
             </Pressable>
           ))}
         </View>
@@ -621,6 +645,15 @@ export default function ProfileScreen() {
           visible={showInviteFriendsModal}
           onClose={() => setShowInviteFriendsModal(false)}
         />
+
+        {showPlaylistModal && (
+          <PlaylistModal
+            visible={!!showPlaylistModal}
+            onClose={() => setShowPlaylistModal(null)}
+            show={showPlaylistModal}
+            onAddToPlaylist={() => {}}
+          />
+        )}
       </View>
     </>
   );
@@ -790,6 +823,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rotationPoster: {
+    position: 'relative',
     width: 128.67,
     height: 162.25,
     borderRadius: 14,
@@ -798,6 +832,21 @@ const styles = StyleSheet.create({
   rotationPosterImage: {
     width: '100%',
     height: '100%',
+  },
+  saveIconRotation: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 14,
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
 
   // Tab Selector

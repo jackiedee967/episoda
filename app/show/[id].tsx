@@ -14,6 +14,7 @@ import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { ChevronLeft } from 'lucide-react-native';
 import { SearchDuotoneLine } from '@/components/SearchDuotoneLine';
+import { IconSymbol } from '@/components/IconSymbol';
 import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import { Vector3Divider } from '@/components/Vector3Divider';
 import PostCard from '@/components/PostCard';
@@ -29,6 +30,7 @@ import { mockShows, mockEpisodes, mockUsers } from '@/data/mockData';
 import { Episode } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -41,7 +43,7 @@ interface SeasonData {
 export default function ShowHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { posts, isFollowing, currentUser } = useData();
+  const { posts, isFollowing, currentUser, isShowInPlaylist, playlists } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
@@ -202,6 +204,10 @@ export default function ShowHub() {
     setIsInPlaylist(true);
   };
 
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
+  };
+
   const renderHeader = () => (
     <View style={styles.headerRow}>
       <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -239,7 +245,25 @@ export default function ShowHub() {
       <View style={styles.showInfoContainer}>
         <Text style={styles.showTitle}>{show.title}</Text>
         <View style={styles.showDetailsRow}>
-          <Image source={{ uri: show.poster }} style={styles.poster} />
+          <View style={styles.posterWrapper}>
+            <Image source={{ uri: show.poster }} style={styles.poster} />
+            <Pressable 
+              style={({ pressed }) => [
+                styles.saveIcon,
+                pressed && styles.saveIconPressed,
+              ]} 
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setPlaylistModalVisible(true);
+              }}
+            >
+              <IconSymbol 
+                name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                size={18} 
+                color={tokens.colors.pureWhite} 
+              />
+            </Pressable>
+          </View>
           <View style={styles.detailsColumn}>
             <Text style={styles.description} numberOfLines={3}>
               {show.description}
@@ -547,10 +571,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
+  posterWrapper: {
+    position: 'relative',
+    width: 93,
+    height: 119,
+  },
   poster: {
     width: 93,
     height: 119,
     borderRadius: components.borderRadiusButton,
+  },
+  saveIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 14,
+  },
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   detailsColumn: {
     flex: 1,
