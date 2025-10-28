@@ -7,14 +7,13 @@ import {
   Pressable,
   Image,
   Platform,
-  ImageBackground,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors, typography, spacing, components } from '@/styles/commonStyles';
 import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import { Notification } from '@/types';
-import { mockUsers, mockPosts, mockShows, currentUser, mockComments } from '@/data/mockData';
+import { mockUsers, mockPosts, currentUser, mockComments } from '@/data/mockData';
 import * as Haptics from 'expo-haptics';
+import tokens from '@/styles/tokens';
 
 type Tab = 'you' | 'friends';
 
@@ -129,7 +128,6 @@ export default function NotificationsScreen() {
 
   const getNotificationText = (notification: Notification): string => {
     if (!notification.actor) {
-      console.log('Notification missing actor:', notification);
       return 'Unknown action';
     }
 
@@ -142,7 +140,7 @@ export default function NotificationsScreen() {
             ? notification.comment.text.substring(0, 50) + '...'
             : notification.comment.text
           : '';
-        return `commented on your post: ${commentPreview}`;
+        return `commented: "${commentPreview}"`;
       case 'follow':
         return 'started following you';
       case 'repost':
@@ -154,8 +152,8 @@ export default function NotificationsScreen() {
         
         if (episodeStr) {
           return postTitle 
-            ? `just watched ${episodeStr} ${showTitle}: "${postTitle}"`
-            : `just watched ${episodeStr} ${showTitle}`;
+            ? `watched ${episodeStr} of ${showTitle}: "${postTitle}"`
+            : `watched ${episodeStr} of ${showTitle}`;
         }
         return `posted about ${showTitle}`;
       case 'friend_follow':
@@ -170,20 +168,13 @@ export default function NotificationsScreen() {
   };
 
   const getThumbnail = (notification: Notification): string | null => {
-    switch (notification.type) {
-      case 'like':
-      case 'comment':
-      case 'repost':
-      case 'friend_post':
-      case 'friend_like':
-      case 'friend_comment':
-        return notification.post?.show.poster || null;
-      case 'follow':
-      case 'friend_follow':
-        return notification.targetUser?.avatar || notification.actor?.avatar || null;
-      default:
-        return null;
+    // Follow notifications don't show thumbnails
+    if (notification.type === 'follow' || notification.type === 'friend_follow') {
+      return null;
     }
+    
+    // All other notifications show the show poster
+    return notification.post?.show.poster || null;
   };
 
   const handleNotificationPress = (notification: Notification) => {
@@ -214,7 +205,6 @@ export default function NotificationsScreen() {
 
   const renderNotification = (notification: Notification) => {
     if (!notification.actor) {
-      console.log('Skipping notification with missing actor:', notification.id);
       return null;
     }
 
@@ -223,57 +213,52 @@ export default function NotificationsScreen() {
     return (
       <Pressable
         key={notification.id}
-        style={[
-          styles.notificationRow,
-          !notification.read && styles.unreadNotification,
-        ]}
+        style={({ pressed }) => [styles.notificationCard, pressed && styles.pressed]}
         onPress={() => handleNotificationPress(notification)}
       >
-        <Image
-          source={{ uri: notification.actor.avatar }}
-          style={styles.actorAvatar}
-        />
-        
-        <View style={styles.notificationContent}>
-          <Text style={styles.notificationText}>
-            <Text style={styles.actorName}>{notification.actor.displayName}</Text>
-            {' '}
-            <Text style={styles.actionText}>{getNotificationText(notification)}</Text>
-          </Text>
-          <Text style={styles.timestamp}>{formatTimestamp(notification.timestamp)}</Text>
+        <View style={styles.cardContent}>
+          <Image
+            source={{ uri: notification.actor.avatar }}
+            style={styles.actorAvatar}
+          />
+          <View style={styles.textContent}>
+            <Text style={styles.notificationText} numberOfLines={2}>
+              <Text style={styles.actorName}>{notification.actor.displayName}</Text>
+              {' '}
+              {getNotificationText(notification)}
+            </Text>
+            <Text style={styles.timestamp}>{formatTimestamp(notification.timestamp)}</Text>
+          </View>
         </View>
-
+        
         {thumbnail && (
           <Image
             source={{ uri: thumbnail }}
             style={styles.thumbnail}
           />
         )}
-
-        {!notification.read && <View style={styles.unreadDot} />}
       </Pressable>
     );
   };
 
   const tabs: TabType[] = [
     { key: 'you', label: 'You' },
-    { key: 'friends', label: 'Friends' },
+    { key: 'friends', label: 'Friend Activity' },
   ];
 
-  const notifications = activeTab === 'you' ? mockNotifications : mockFriendNotifications;
+  // Get notifications and sort by most recent
+  const notifications = (activeTab === 'you' ? mockNotifications : mockFriendNotifications)
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-      <View style={[styles.container, styles.pageContainer]}>
-        <View style={styles.notificationHeader}>
-          <Text style={styles.headerTitle}>Notifications</Text>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.pageContainer}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Notifications</Text>
         </View>
-        <View style={styles.tabWrapper}>
+
+        <View style={styles.tabSelectorWrapper}>
           <TabSelector
             tabs={tabs}
             activeTab={activeTab}
@@ -282,23 +267,21 @@ export default function NotificationsScreen() {
           />
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {notifications.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No notifications yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                {activeTab === 'you' 
-                  ? "When someone interacts with your posts, you'll see it here"
-                  : "When your friends are active, you'll see it here"}
-              </Text>
-            </View>
-          ) : (
-            notifications.map(renderNotification)
-          )}
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.resultsContainer}>
+            {notifications.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No notifications yet</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  {activeTab === 'you' 
+                    ? "When someone interacts with your posts, you'll see it here"
+                    : "When your friends are active, you'll see it here"}
+                </Text>
+              </View>
+            ) : (
+              notifications.map(renderNotification)
+            )}
+          </View>
         </ScrollView>
       </View>
     </>
@@ -307,6 +290,8 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   pageContainer: {
+    flex: 1,
+    backgroundColor: tokens.colors.pageBackground,
     ...Platform.select({
       web: {
         backgroundImage: "url('/app-background.jpg')",
@@ -316,108 +301,95 @@ const styles = StyleSheet.create({
       } as any,
     }),
   },
-  backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  notificationHeader: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingTop: 60,
-    paddingBottom: spacing.gapLarge,
+  title: {
+    ...tokens.typography.p1B,
+    color: tokens.colors.pureWhite,
+    marginBottom: 18,
   },
-  headerTitle: {
-    ...typography.titleXL,
-    color: colors.almostWhite,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.pageBackground,
-  },
-  tabWrapper: {
-    paddingHorizontal: spacing.pageMargin,
-    paddingVertical: spacing.gapMedium,
-    backgroundColor: colors.pageBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardStroke,
+  tabSelectorWrapper: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
+  resultsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
     paddingBottom: 100,
+    gap: 10,
   },
-  notificationRow: {
+  notificationCard: {
     flexDirection: 'row',
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    padding: 15,
     alignItems: 'center',
-    paddingHorizontal: spacing.pageMargin,
-    paddingVertical: spacing.cardPadding,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardStroke,
-    backgroundColor: colors.pageBackground,
+    gap: 10,
   },
-  unreadNotification: {
-    backgroundColor: colors.cardBackground,
+  pressed: {
+    opacity: 0.8,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'center',
+    gap: 10,
   },
   actorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: spacing.gapMedium,
+    width: 31,
+    height: 31,
+    borderRadius: 15.5,
   },
-  notificationContent: {
+  textContent: {
     flex: 1,
-    marginRight: spacing.gapMedium,
-    gap: spacing.gapSmall / 2,
+    gap: 5,
   },
   notificationText: {
-    ...typography.p1,
-    color: colors.almostWhite,
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '400',
+    color: tokens.colors.pureWhite,
+    letterSpacing: -0.24,
   },
   actorName: {
-    ...typography.p1Bold,
-    color: colors.almostWhite,
-  },
-  actionText: {
-    ...typography.p1,
-    color: colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '600',
+    color: tokens.colors.pureWhite,
+    letterSpacing: -0.24,
   },
   timestamp: {
-    ...typography.smallSubtitle,
-    color: colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontWeight: '400',
+    color: tokens.colors.grey1,
   },
   thumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: components.borderRadiusTag,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
+    width: 40,
+    height: 40,
     borderRadius: 4,
-    backgroundColor: colors.greenHighlight,
-    position: 'absolute',
-    top: spacing.cardPadding + 4,
-    right: spacing.pageMargin,
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.pageMargin * 2,
-    paddingTop: 100,
+    paddingVertical: 60,
   },
   emptyStateText: {
-    ...typography.titleL,
-    color: colors.almostWhite,
-    marginBottom: spacing.gapSmall,
-    textAlign: 'center',
+    ...tokens.typography.titleL,
+    color: tokens.colors.almostWhite,
+    marginTop: 18,
   },
   emptyStateSubtext: {
-    ...typography.subtitle,
-    color: colors.grey1,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    marginTop: 8,
     textAlign: 'center',
   },
 });
