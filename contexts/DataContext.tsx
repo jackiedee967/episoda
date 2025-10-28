@@ -437,7 +437,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const isShowInPlaylist = useCallback((playlistId: string, showId: string): boolean => {
     const playlist = playlists.find(p => p.id === playlistId);
-    return playlist ? playlist.shows.includes(showId) : false;
+    return playlist ? (playlist.shows || []).includes(showId) : false;
   }, [playlists]);
 
   const loadPlaylists = useCallback(async (userId?: string) => {
