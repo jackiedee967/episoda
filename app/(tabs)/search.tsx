@@ -497,7 +497,6 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: tokens.colors.cardStroke,
     padding: 11,
-    marginBottom: 10,
     gap: 17,
   },
   pressed: {
