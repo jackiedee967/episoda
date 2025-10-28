@@ -1,8 +1,8 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { mockPosts, mockUsers, currentUser as mockCurrentUser } from '@/data/mockData';
-import { Post, Show, User, Playlist } from '@/types';
+import { mockPosts, mockUsers, currentUser as mockCurrentUser, mockEpisodes } from '@/data/mockData';
+import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 
@@ -15,6 +15,14 @@ interface RepostData {
   postId: string;
   userId: string;
   timestamp: Date;
+}
+
+export interface WatchHistoryItem {
+  show: Show;
+  mostRecentEpisode: Episode | null;
+  loggedCount: number;
+  totalCount: number;
+  lastWatchedDate: Date;
 }
 
 interface DataContextType {
@@ -47,6 +55,7 @@ interface DataContextType {
   getTopFollowing: (userId: string, limit?: number) => Promise<User[]>;
   getEpisodesWatchedCount: (userId: string) => Promise<number>;
   getTotalLikesReceived: (userId: string) => Promise<number>;
+  getWatchHistory: (userId: string) => WatchHistoryItem[];
   isLoading: boolean;
 }
 
@@ -1072,6 +1081,69 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return following.slice(0, limit);
   }, []);
 
+  const getWatchHistory = useCallback((userId: string): WatchHistoryItem[] => {
+    // Get all posts by this user that have episodes
+    const userPosts = posts.filter(p => p.user.id === userId && p.episodes && p.episodes.length > 0);
+    
+    // Group posts by show
+    const showMap = new Map<string, { show: Show; episodes: Set<string>; lastDate: Date; latestPost: Post }>();
+    
+    userPosts.forEach(post => {
+      if (!post.show) return;
+      
+      const existing = showMap.get(post.show.id);
+      const episodeIds = new Set(post.episodes?.map(e => e.id) || []);
+      
+      if (existing) {
+        // Add episodes to the set
+        post.episodes?.forEach(ep => existing.episodes.add(ep.id));
+        // Update last date if this post is more recent
+        if (post.timestamp > existing.lastDate) {
+          existing.lastDate = post.timestamp;
+          existing.latestPost = post;
+        }
+      } else {
+        showMap.set(post.show.id, {
+          show: post.show,
+          episodes: episodeIds,
+          lastDate: post.timestamp,
+          latestPost: post,
+        });
+      }
+    });
+    
+    // Convert to array and calculate stats
+    const watchHistory: WatchHistoryItem[] = Array.from(showMap.values()).map(item => {
+      const totalEpisodes = mockEpisodes.filter(ep => ep.showId === item.show.id);
+      
+      // Get most recent episode from the latest post
+      let mostRecentEpisode: Episode | null = null;
+      if (item.latestPost.episodes && item.latestPost.episodes.length > 0) {
+        // Sort episodes by season and episode number to get the highest
+        const sortedEpisodes = [...item.latestPost.episodes].sort((a, b) => {
+          if (a.seasonNumber !== b.seasonNumber) {
+            return b.seasonNumber - a.seasonNumber;
+          }
+          return b.episodeNumber - a.episodeNumber;
+        });
+        mostRecentEpisode = sortedEpisodes[0];
+      }
+      
+      return {
+        show: item.show,
+        mostRecentEpisode,
+        loggedCount: item.episodes.size,
+        totalCount: totalEpisodes.length,
+        lastWatchedDate: item.lastDate,
+      };
+    });
+    
+    // Sort by most recently watched (lastWatchedDate descending)
+    watchHistory.sort((a, b) => b.lastWatchedDate.getTime() - a.lastWatchedDate.getTime());
+    
+    return watchHistory;
+  }, [posts]);
+
   return (
     <DataContext.Provider
       value={{
@@ -1104,6 +1176,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         getTopFollowing,
         getEpisodesWatchedCount,
         getTotalLikesReceived,
+        getWatchHistory,
         isLoading,
       }}
     >

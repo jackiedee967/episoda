@@ -10,6 +10,7 @@ import EditProfileModal from '@/components/EditProfileModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import Button from '@/components/Button';
+import WatchHistoryCard from '@/components/WatchHistoryCard';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
 import { EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
     getEpisodesWatchedCount,
     getTotalLikesReceived,
     isShowInPlaylist,
+    getWatchHistory: getWatchHistoryFromContext,
     currentUser: contextCurrentUser
   } = useData();
 
@@ -177,26 +179,7 @@ export default function ProfileScreen() {
 
   const myRotation = getMyRotation();
 
-  const getWatchHistory = (): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === profileUser.id);
-    const sortedPosts = [...userShowPosts].sort((a, b) => 
-      b.timestamp.getTime() - a.timestamp.getTime()
-    );
-    
-    const uniqueShows: Show[] = [];
-    const seenShowIds = new Set<string>();
-    
-    for (const post of sortedPosts) {
-      if (!seenShowIds.has(post.show.id)) {
-        uniqueShows.push(post.show);
-        seenShowIds.add(post.show.id);
-      }
-    }
-    
-    return uniqueShows;
-  };
-
-  const watchHistory = getWatchHistory();
+  const watchHistory = getWatchHistoryFromContext(profileUser.id);
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -488,15 +471,15 @@ export default function ProfileScreen() {
   const renderShowsTab = () => (
     <View style={styles.tabContent}>
       {watchHistory.length > 0 ? (
-        <View style={styles.showsGrid}>
-          {watchHistory.map((show) => (
-            <Pressable
-              key={show.id}
-              style={styles.showGridItem}
-              onPress={() => router.push(`/show/${show.id}`)}
-            >
-              <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
-            </Pressable>
+        <View style={styles.watchHistoryList}>
+          {watchHistory.map((item) => (
+            <WatchHistoryCard
+              key={item.show.id}
+              show={item.show}
+              mostRecentEpisode={item.mostRecentEpisode || undefined}
+              loggedCount={item.loggedCount}
+              totalCount={item.totalCount}
+            />
           ))}
         </View>
       ) : (
@@ -890,6 +873,9 @@ const styles = StyleSheet.create({
     aspectRatio: 2 / 3,
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  watchHistoryList: {
+    gap: 8,
   },
   showGridPoster: {
     width: '100%',
