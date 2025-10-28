@@ -385,7 +385,10 @@ export default function SearchScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Explore</Text>
           <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />
+            <Image 
+              source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+              style={styles.searchIcon}
+            />
             <TextInput
               style={styles.searchInput}
               placeholder="Search"
@@ -471,6 +474,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 8,
     height: 46,
+  },
+  searchIcon: {
+    width: 20,
+    height: 20,
   },
   searchInput: {
     flex: 1,
