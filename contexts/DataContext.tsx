@@ -86,9 +86,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   
   // MOCK USER - Always use jvckie as the current user (authentication bypassed)
-  const [currentUser, setCurrentUser] = useState<User>(mockCurrentUser);
+  const [currentUserData, setCurrentUserData] = useState<User>(mockCurrentUser);
   const [isLoading, setIsLoading] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
+  
+  // Memoize currentUser to prevent recreation on every render
+  const currentUser = useMemo(() => ({
+    ...currentUserData,
+    following: userData.following,
+    followers: userData.followers,
+  }), [currentUserData, userData.following, userData.followers]);
 
   const loadData = useCallback(async () => {
     try {
@@ -1182,42 +1189,75 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return watchHistory;
   }, [posts]);
 
+  // Memoize the entire context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    playlists,
+    createPlaylist,
+    addShowToPlaylist,
+    removeShowFromPlaylist,
+    deletePlaylist,
+    isShowInPlaylist,
+    updatePlaylistPrivacy,
+    loadPlaylists,
+    posts,
+    createPost,
+    likePost,
+    unlikePost,
+    repostPost,
+    unrepostPost,
+    updateCommentCount,
+    getPost,
+    hasUserReposted,
+    getUserReposts,
+    allReposts,
+    currentUser,
+    followUser,
+    unfollowUser,
+    isFollowing,
+    getFollowers,
+    getFollowing,
+    getTopFollowers,
+    getTopFollowing,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived,
+    getWatchHistory,
+    isLoading,
+  }), [
+    playlists,
+    createPlaylist,
+    addShowToPlaylist,
+    removeShowFromPlaylist,
+    deletePlaylist,
+    isShowInPlaylist,
+    updatePlaylistPrivacy,
+    loadPlaylists,
+    posts,
+    createPost,
+    likePost,
+    unlikePost,
+    repostPost,
+    unrepostPost,
+    updateCommentCount,
+    getPost,
+    hasUserReposted,
+    getUserReposts,
+    allReposts,
+    currentUser,
+    followUser,
+    unfollowUser,
+    isFollowing,
+    getFollowers,
+    getFollowing,
+    getTopFollowers,
+    getTopFollowing,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived,
+    getWatchHistory,
+    isLoading,
+  ]);
+
   return (
-    <DataContext.Provider
-      value={{
-        playlists,
-        createPlaylist,
-        addShowToPlaylist,
-        removeShowFromPlaylist,
-        deletePlaylist,
-        isShowInPlaylist,
-        updatePlaylistPrivacy,
-        loadPlaylists,
-        posts,
-        createPost,
-        likePost,
-        unlikePost,
-        repostPost,
-        unrepostPost,
-        updateCommentCount,
-        getPost,
-        hasUserReposted,
-        getUserReposts,
-        allReposts,
-        currentUser,
-        followUser,
-        unfollowUser,
-        isFollowing,
-        getFollowers,
-        getFollowing,
-        getTopFollowers,
-        getTopFollowing,
-        getEpisodesWatchedCount,
-        getTotalLikesReceived,
-        getWatchHistory,
-        isLoading,
-      }}
-    >
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );
