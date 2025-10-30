@@ -1193,40 +1193,89 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return watchHistory;
   }, [posts]);
 
+  // STATE/ACTIONS/SELECTORS ARCHITECTURE
+  // This prevents both stale closures and excessive re-renders by memoizing each layer independently
+  
+  // LAYER 1: State - Memoized object containing all raw state
+  const state = useMemo(() => ({
+    posts,
+    reposts,
+    playlists,
+    userData,
+    currentUserData,
+    isLoading,
+    authUserId,
+  }), [posts, reposts, playlists, userData, currentUserData, isLoading, authUserId]);
+
+  // LAYER 2: Selectors - Memoized derived data and read operations
+  const selectors = useMemo(() => ({
+    currentUser,
+    allReposts,
+    getWatchHistory,
+    isShowInPlaylist,
+    getPost,
+    hasUserReposted,
+    getUserReposts,
+    isFollowing,
+  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing]);
+
+  // LAYER 3: Actions - All mutation callbacks (already stable via useCallback)
+  const actions = useMemo(() => ({
+    createPlaylist,
+    addShowToPlaylist,
+    removeShowFromPlaylist,
+    deletePlaylist,
+    updatePlaylistPrivacy,
+    loadPlaylists,
+    createPost,
+    likePost,
+    unlikePost,
+    repostPost,
+    unrepostPost,
+    updateCommentCount,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+    getTopFollowers,
+    getTopFollowing,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived,
+  }), [
+    createPlaylist,
+    addShowToPlaylist,
+    removeShowFromPlaylist,
+    deletePlaylist,
+    updatePlaylistPrivacy,
+    loadPlaylists,
+    createPost,
+    likePost,
+    unlikePost,
+    repostPost,
+    unrepostPost,
+    updateCommentCount,
+    followUser,
+    unfollowUser,
+    getFollowers,
+    getFollowing,
+    getTopFollowers,
+    getTopFollowing,
+    getEpisodesWatchedCount,
+    getTotalLikesReceived,
+  ]);
+
+  // Assemble the context value from the three stable layers
+  const contextValue = useMemo(() => ({
+    // Spread state
+    ...state,
+    // Spread selectors
+    ...selectors,
+    // Spread actions
+    ...actions,
+  }), [state, selectors, actions]);
+
   return (
-    <DataContext.Provider value={{
-      playlists,
-      createPlaylist,
-      addShowToPlaylist,
-      removeShowFromPlaylist,
-      deletePlaylist,
-      isShowInPlaylist,
-      updatePlaylistPrivacy,
-      loadPlaylists,
-      posts,
-      createPost,
-      likePost,
-      unlikePost,
-      repostPost,
-      unrepostPost,
-      updateCommentCount,
-      getPost,
-      hasUserReposted,
-      getUserReposts,
-      allReposts,
-      currentUser,
-      followUser,
-      unfollowUser,
-      isFollowing,
-      getFollowers,
-      getFollowing,
-      getTopFollowers,
-      getTopFollowing,
-      getEpisodesWatchedCount,
-      getTotalLikesReceived,
-      getWatchHistory,
-      isLoading,
-    }}>
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );
