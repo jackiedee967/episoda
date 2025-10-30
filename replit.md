@@ -46,13 +46,16 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
 ## Recent Changes (October 30, 2025)
-- **FIXED: Critical infinite loop causing app freezes**
-  - Root cause: `loadFollowDataFromSupabase` was calling `Array.sort()` directly on state arrays, mutating React state
-  - This triggered React to detect "changes" even when data was identical, causing infinite re-render loops
-  - Solution: Clone arrays before sorting (`[...prev.following].sort()`) to prevent state mutation
-  - Result: Friend Activity and Profile pages now load successfully without freezing
-  - Also converted `getAllReposts` from callback to useMemo for better performance
-  - Status: Friend Activity, Profile, and Search working. Home page still blank - investigating
+- **RESOLVED: Critical infinite re-render loop causing app crashes**
+  - **Root Cause #1**: DataContext provider value object was being recreated on every render
+  - **Root Cause #2**: `currentUser` object was being recreated every render
+  - **Root Cause #3**: `loadFollowDataFromSupabase` was calling `Array.sort()` directly on state arrays, mutating React state
+  - **Solution**:
+    - Wrapped entire DataContext provider value in `useMemo` with proper dependencies
+    - Memoized `currentUser` object with `useMemo` to prevent recreation
+    - Cloned arrays before sorting (`[...prev.following].sort()`) to prevent state mutation
+    - Converted `getAllReposts` from useCallback to useMemo data (`allReposts`)
+  - **Result**: All pages (Home, Friend Activity, Profile, Search) now load successfully without freezing or crashes
 
 ## Previous Changes (October 28, 2025)
 - Fixed TabSelector component to use height: 100% instead of fixed 34px, improving padding across all toggle tab bars site-wide
