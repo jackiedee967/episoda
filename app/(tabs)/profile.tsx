@@ -27,7 +27,7 @@ export default function ProfileScreen() {
     followUser, 
     unfollowUser, 
     isFollowing, 
-    getAllReposts, 
+    allReposts, 
     playlists, 
     loadPlaylists, 
     updatePlaylistPrivacy, 
@@ -139,8 +139,6 @@ export default function ProfileScreen() {
     posts.filter((p) => p.user.id === profileUser.id),
     [posts, profileUser.id]
   );
-
-  const allReposts = useMemo(() => getAllReposts(), []);
   
   const userReposts = useMemo(() => 
     allReposts.filter(repost => repost.repostedBy.id === profileUser.id),
