@@ -7,7 +7,7 @@ import PlaylistModal from '@/components/PlaylistModal';
 import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight, Bookmark } from 'lucide-react-native';
@@ -249,9 +249,9 @@ export default function HomeScreen() {
     );
   };
 
-  const renderFriendActivity = () => {
-    const allReposts = getAllReposts();
-    
+  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
+
+  const friendActivityData = useMemo(() => {
     const friendPosts = posts.filter(post => 
       currentUser.following?.includes(post.user.id)
     );
@@ -274,6 +274,12 @@ export default function HomeScreen() {
         timestamp: repost.timestamp,
       })),
     ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    return allActivity;
+  }, [posts, allReposts, currentUser.following]);
+
+  const renderFriendActivity = () => {
+    const allActivity = friendActivityData;
 
     return (
       <View style={styles.friendActivitySection}>

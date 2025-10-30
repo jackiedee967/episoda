@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
 import PostCard from '@/components/PostCard';
@@ -25,20 +25,26 @@ export default function FriendActivityFeed() {
   };
 
   // Get all reposts
-  const allReposts = getAllReposts();
+  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
   
   // Filter posts from users the current user is following (original posts)
-  const friendPosts = posts.filter(post => 
-    currentUser.following?.includes(post.user.id)
+  const friendPosts = useMemo(() => 
+    posts.filter(post => 
+      currentUser.following?.includes(post.user.id)
+    ),
+    [posts, currentUser.following]
   );
 
   // Filter reposts from friends
-  const friendReposts = allReposts.filter(repost =>
-    currentUser.following?.includes(repost.repostedBy.id)
+  const friendReposts = useMemo(() => 
+    allReposts.filter(repost =>
+      currentUser.following?.includes(repost.repostedBy.id)
+    ),
+    [allReposts, currentUser.following]
   );
 
   // Combine original posts and reposts (using repost timestamp for reposts, not original post timestamp)
-  const allActivity = [
+  const allActivity = useMemo(() => [
     ...friendPosts.map(post => ({
       post,
       isRepost: false,
@@ -51,10 +57,10 @@ export default function FriendActivityFeed() {
       repostedBy: { id: repost.repostedBy.id, displayName: repost.repostedBy.displayName },
       timestamp: repost.timestamp, // Use the repost timestamp, not the original post timestamp
     })),
-  ];
+  ], [friendPosts, friendReposts]);
 
   // Sort posts based on selected sort option
-  const sortedActivity = [...allActivity].sort((a, b) => {
+  const sortedActivity = useMemo(() => [...allActivity].sort((a, b) => {
     if (sortBy === 'recent') {
       // Sort by the activity timestamp (repost time for reposts, post time for original posts)
       return b.timestamp.getTime() - a.timestamp.getTime();
@@ -64,7 +70,7 @@ export default function FriendActivityFeed() {
       const engagementB = b.post.likes + b.post.comments + b.post.reposts;
       return engagementB - engagementA;
     }
-  });
+  }), [allActivity, sortBy]);
 
   console.log('Friend Activity - Original posts:', friendPosts.length);
   console.log('Friend Activity - Reposts:', friendReposts.length);

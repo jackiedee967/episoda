@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform, ImageBackground } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -26,15 +26,14 @@ export default function SearchScreen() {
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
 
-  // Check if there's a pre-selected show filter from params
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
-  const preselectedShow = showFilter 
-    ? mockShows.find(s => s.id === showFilter) 
-    : null;
+  const preselectedShow = useMemo(() => 
+    showFilter ? mockShows.find(s => s.id === showFilter) : null,
+    [showFilter]
+  );
 
-  // Check if each category has results
-  const getResultsCount = (category: SearchCategory): number => {
+  const getResultsCount = useMemo(() => (category: SearchCategory): number => {
     const query = searchQuery.toLowerCase();
     if (!query) return 0;
 
@@ -71,7 +70,7 @@ export default function SearchScreen() {
       default:
         return 0;
     }
-  };
+  }, [searchQuery, posts, preselectedShow]);
 
   const tabs: Tab[] = [
     { key: 'shows', label: 'Shows', hasIndicator: searchQuery.length > 0 && activeCategory !== 'shows' && getResultsCount('shows') > 0 },
@@ -80,18 +79,15 @@ export default function SearchScreen() {
     { key: 'users', label: 'Users', hasIndicator: searchQuery.length > 0 && activeCategory !== 'users' && getResultsCount('users') > 0 },
   ];
 
-  // Filter based on search query and category
-  const getFilteredResults = () => {
+  const filteredResults = useMemo(() => {
     const query = searchQuery.toLowerCase();
 
     switch (activeCategory) {
       case 'posts':
         let filteredPosts = posts;
-        // If there's a preselected show, filter posts by that show
         if (preselectedShow) {
           filteredPosts = posts.filter(post => post.show.id === preselectedShow.id);
         }
-        // Apply search query
         if (query) {
           filteredPosts = filteredPosts.filter(
             post =>
@@ -101,7 +97,6 @@ export default function SearchScreen() {
           );
         }
         
-        // Auto-sort posts by popularity (likes + reposts + comments)
         return filteredPosts.sort((a, b) => {
           const aPopularity = (a.likes || 0) + (a.reposts || 0) + (a.comments || 0);
           const bPopularity = (b.likes || 0) + (b.reposts || 0) + (b.comments || 0);
@@ -116,7 +111,6 @@ export default function SearchScreen() {
           );
         }
         
-        // Auto-sort comments by likes (popularity)
         return filteredComments.sort((a, b) => {
           return (b.likes || 0) - (a.likes || 0);
         });
@@ -129,14 +123,11 @@ export default function SearchScreen() {
           );
         }
         
-        // Auto-sort shows: first by friendsWatching, then by post count
         return filteredShows.sort((a, b) => {
-          // First priority: friends watching (descending)
           if (b.friendsWatching !== a.friendsWatching) {
             return b.friendsWatching - a.friendsWatching;
           }
           
-          // Second priority: post count (descending)
           const aPostCount = posts.filter(p => p.show.id === a.id).length;
           const bPostCount = posts.filter(p => p.show.id === b.id).length;
           return bPostCount - aPostCount;
@@ -153,7 +144,6 @@ export default function SearchScreen() {
           );
         }
         
-        // Auto-sort users by follower count
         return filteredUsers.sort((a, b) => {
           const aFollowers = a.followers?.length || 0;
           const bFollowers = b.followers?.length || 0;
@@ -163,9 +153,7 @@ export default function SearchScreen() {
       default:
         return [];
     }
-  };
-
-  const filteredResults = getFilteredResults();
+  }, [searchQuery, activeCategory, posts, preselectedShow]);
 
   // Check if show is in any playlist
   const isShowSaved = (showId: string) => {

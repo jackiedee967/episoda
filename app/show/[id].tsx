@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -57,8 +57,8 @@ export default function ShowHub() {
   const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
 
   const show = mockShows.find((s) => s.id === id);
-  const showPosts = posts.filter((p) => p.show.id === id);
-  const showEpisodes = mockEpisodes.filter((e) => e.showId === id);
+  const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
+  const showEpisodes = useMemo(() => mockEpisodes.filter((e) => e.showId === id), [id]);
   const friendsWatching = [mockUsers[0], mockUsers[1], mockUsers[2]];
 
   useEffect(() => {
@@ -153,7 +153,7 @@ export default function ShowHub() {
     router.push(`/post/${postId}`);
   };
 
-  const getFilteredAndSortedPosts = () => {
+  const filteredAndSortedPosts = useMemo(() => {
     let filteredPosts = [...showPosts];
 
     if (activeTab === 'friends') {
@@ -171,7 +171,7 @@ export default function ShowHub() {
     }
 
     return filteredPosts;
-  };
+  }, [showPosts, activeTab, sortBy, currentUser.id, isFollowing]);
 
   if (!show) {
     return (
@@ -420,7 +420,7 @@ export default function ShowHub() {
   );
 
   const renderFeed = () => {
-    const filteredPosts = getFilteredAndSortedPosts();
+    const filteredPosts = filteredAndSortedPosts;
 
     return (
       <View style={styles.feedContainer}>

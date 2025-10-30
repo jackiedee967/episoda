@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -57,26 +57,25 @@ export default function EpisodeHub() {
   const episode = mockEpisodes.find((e) => e.id === id);
   const show = episode ? mockShows.find((s) => s.id === episode.showId) : undefined;
   
-  // Filter posts for this episode
-  let episodePosts = posts.filter((p) => 
-    p.episodes?.some((e) => e.id === id)
-  );
+  const episodePosts = useMemo(() => {
+    let filtered = posts.filter((p) => 
+      p.episodes?.some((e) => e.id === id)
+    );
 
-  // Apply Friends tab filter
-  if (activeTab === 'friends') {
-    episodePosts = episodePosts.filter(post => post.user.id === currentUser.id || isFollowing(post.user.id));
-  }
+    if (activeTab === 'friends') {
+      filtered = filtered.filter(post => post.user.id === currentUser.id || isFollowing(post.user.id));
+    }
 
-  // Apply sorting
-  if (sortBy === 'hot') {
-    episodePosts = [...episodePosts].sort((a, b) => {
-      const engagementA = a.likes + a.comments;
-      const engagementB = b.likes + b.comments;
-      return engagementB - engagementA;
-    });
-  } else {
-    episodePosts = [...episodePosts].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }
+    if (sortBy === 'hot') {
+      return [...filtered].sort((a, b) => {
+        const engagementA = a.likes + a.comments;
+        const engagementB = b.likes + b.comments;
+        return engagementB - engagementA;
+      });
+    } else {
+      return [...filtered].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    }
+  }, [posts, id, activeTab, sortBy, currentUser.id, isFollowing]);
 
   if (!episode || !show) {
     return (
