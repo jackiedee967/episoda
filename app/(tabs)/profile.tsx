@@ -542,7 +542,7 @@ export default function ProfileScreen() {
           <IconSymbol name="list.bullet" size={48} color={colors.grey1} />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
           <Text style={styles.emptyStateText}>
-            Create your first playlist to organize your shows!
+            Tap the bookmark icon on any show's poster to save it a playlist!
           </Text>
         </View>
       )}
