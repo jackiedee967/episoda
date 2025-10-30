@@ -140,7 +140,7 @@ export default function ProfileScreen() {
     [posts, profileUser.id]
   );
 
-  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
+  const allReposts = useMemo(() => getAllReposts(), []);
   
   const userReposts = useMemo(() => 
     allReposts.filter(repost => repost.repostedBy.id === profileUser.id),
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
 
   const watchHistory = useMemo(() => 
     getWatchHistoryFromContext(profileUser.id),
-    [getWatchHistoryFromContext, profileUser.id]
+    [profileUser.id]
   );
 
   const handleShowFollowers = () => {
