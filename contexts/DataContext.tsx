@@ -155,7 +155,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         // Only update state if the data actually changed (prevents unnecessary re-renders)
         setUserData(prev => {
-          const followingChanged = JSON.stringify(prev.following.sort()) !== JSON.stringify(followingIds.sort());
+          // Clone arrays before sorting to avoid mutating state
+          const prevSorted = [...prev.following].sort();
+          const newSorted = [...followingIds].sort();
+          const followingChanged = JSON.stringify(prevSorted) !== JSON.stringify(newSorted);
           if (followingChanged) {
             return {
               ...prev,
