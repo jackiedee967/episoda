@@ -46,16 +46,24 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
 ## Recent Changes (October 30, 2025)
-- **RESOLVED: Critical infinite re-render loop causing app crashes**
-  - **Root Cause #1**: DataContext provider value object was being recreated on every render
-  - **Root Cause #2**: `currentUser` object was being recreated every render
-  - **Root Cause #3**: `loadFollowDataFromSupabase` was calling `Array.sort()` directly on state arrays, mutating React state
-  - **Solution**:
-    - Wrapped entire DataContext provider value in `useMemo` with proper dependencies
-    - Memoized `currentUser` object with `useMemo` to prevent recreation
-    - Cloned arrays before sorting (`[...prev.following].sort()`) to prevent state mutation
-    - Converted `getAllReposts` from useCallback to useMemo data (`allReposts`)
-  - **Result**: All pages (Home, Friend Activity, Profile, Search) now load successfully without freezing or crashes
+- **ARCHITECTURAL ISSUE: DataContext stability problems requiring refactor**
+  - **Problem**: App experiencing instability where different memoization strategies cause different pages to break:
+    - No useMemo on contextValue → Home + Search work, Profile + Friend Activity blank
+    - useMemo with state-only deps → All pages blank (stale closures)
+    - useMemo with all deps → Would cause circular dependencies/excessive re-renders
+  - **Root Causes** (identified by architect):
+    1. Mixed architecture: Provider value combines mutable state, derived collections, and callbacks in single object
+    2. Removing useMemo propagates fresh object identities causing re-renders; adding useMemo creates stale closures
+    3. Callbacks close over transient data/other callbacks, creating circular dependencies
+    4. Derived data recomputes eagerly, causing render storms when dependencies change
+  - **Partial Fixes Applied** (addressing symptoms, not root cause):
+    - Fixed `allReposts` to filter out invalid user lookups
+    - Added defensive checks in Home/Friend Activity for repost filtering
+    - Memoized `currentUser` object
+    - Cloned arrays before sorting to prevent state mutation
+  - **Architect Recommendation**: Implement state/actions/selectors architecture where state, selectors, and actions are memoized independently, preventing both stale closures and runaway renders
+  - **Current Status**: Partial functionality - some pages work depending on memoization approach, but no approach works for all pages
+  - **Next Steps**: Either (1) implement full state/actions/selectors refactor for long-term stability, or (2) continue targeted fixes with acceptance of intermittent instability
 
 ## Previous Changes (October 28, 2025)
 - Fixed TabSelector component to use height: 100% instead of fixed 34px, improving padding across all toggle tab bars site-wide

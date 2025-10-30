@@ -77,9 +77,6 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  // DIAGNOSTIC: Track renders
-  console.count('[DataProvider] RENDER');
-  
   const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [userData, setUserData] = useState<UserData>({
     following: mockCurrentUser.following || [],
@@ -94,14 +91,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
   // Memoize currentUser to prevent recreation on every render
-  const currentUser = useMemo(() => {
-    console.log('[DataProvider] currentUser memoized');
-    return {
-      ...currentUserData,
-      following: userData.following,
-      followers: userData.followers,
-    };
-  }, [currentUserData, userData.following, userData.followers]);
+  const currentUser = useMemo(() => ({
+    ...currentUserData,
+    following: userData.following,
+    followers: userData.followers,
+  }), [currentUserData, userData.following, userData.followers]);
 
   const loadData = useCallback(async () => {
     try {
@@ -725,16 +719,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // Memoize the reposts data directly instead of wrapping in a callback
   const allReposts = useMemo(() => {
-    return reposts.map(repost => {
-      const post = posts.find(p => p.id === repost.postId);
-      const user = mockUsers.find(u => u.id === repost.userId) || currentUser;
-      return {
-        post: post!,
-        repostedBy: user,
-        timestamp: repost.timestamp,
-      };
-    }).filter(r => r.post);
-  }, [posts, reposts, currentUser]);
+    return reposts
+      .map(repost => {
+        const post = posts.find(p => p.id === repost.postId);
+        const user = mockUsers.find(u => u.id === repost.userId);
+        // Filter out invalid reposts where either post or user is missing
+        if (!post || !user) return null;
+        return {
+          post,
+          repostedBy: user,
+          timestamp: repost.timestamp,
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+  }, [posts, reposts]);
 
   const updateCommentCount = useCallback(async (postId: string, count: number) => {
     const updatedPosts = posts.map(post =>
@@ -1195,75 +1193,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return watchHistory;
   }, [posts]);
 
-  // Memoize the entire context value to prevent unnecessary re-renders
-  const contextValue = useMemo(() => ({
-    playlists,
-    createPlaylist,
-    addShowToPlaylist,
-    removeShowFromPlaylist,
-    deletePlaylist,
-    isShowInPlaylist,
-    updatePlaylistPrivacy,
-    loadPlaylists,
-    posts,
-    createPost,
-    likePost,
-    unlikePost,
-    repostPost,
-    unrepostPost,
-    updateCommentCount,
-    getPost,
-    hasUserReposted,
-    getUserReposts,
-    allReposts,
-    currentUser,
-    followUser,
-    unfollowUser,
-    isFollowing,
-    getFollowers,
-    getFollowing,
-    getTopFollowers,
-    getTopFollowing,
-    getEpisodesWatchedCount,
-    getTotalLikesReceived,
-    getWatchHistory,
-    isLoading,
-  }), [
-    playlists,
-    createPlaylist,
-    addShowToPlaylist,
-    removeShowFromPlaylist,
-    deletePlaylist,
-    isShowInPlaylist,
-    updatePlaylistPrivacy,
-    loadPlaylists,
-    posts,
-    createPost,
-    likePost,
-    unlikePost,
-    repostPost,
-    unrepostPost,
-    updateCommentCount,
-    getPost,
-    hasUserReposted,
-    getUserReposts,
-    allReposts,
-    currentUser,
-    followUser,
-    unfollowUser,
-    isFollowing,
-    getFollowers,
-    getFollowing,
-    getTopFollowers,
-    getTopFollowing,
-    getEpisodesWatchedCount,
-    getTotalLikesReceived,
-    getWatchHistory,
-    isLoading,
-  ]);
-
   return (
-    <DataContext.Provider value={contextValue}>
+    <DataContext.Provider value={{
+      playlists,
+      createPlaylist,
+      addShowToPlaylist,
+      removeShowFromPlaylist,
+      deletePlaylist,
+      isShowInPlaylist,
+      updatePlaylistPrivacy,
+      loadPlaylists,
+      posts,
+      createPost,
+      likePost,
+      unlikePost,
+      repostPost,
+      unrepostPost,
+      updateCommentCount,
+      getPost,
+      hasUserReposted,
+      getUserReposts,
+      allReposts,
+      currentUser,
+      followUser,
+      unfollowUser,
+      isFollowing,
+      getFollowers,
+      getFollowing,
+      getTopFollowers,
+      getTopFollowing,
+      getEpisodesWatchedCount,
+      getTotalLikesReceived,
+      getWatchHistory,
+      isLoading,
+    }}>
       {children}
     </DataContext.Provider>
   );

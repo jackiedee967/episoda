@@ -35,7 +35,7 @@ export default function FriendActivityFeed() {
   // Filter reposts from friends
   const friendReposts = useMemo(() => 
     allReposts.filter(repost =>
-      currentUser.following?.includes(repost.repostedBy.id)
+      repost && repost.repostedBy && currentUser.following?.includes(repost.repostedBy.id)
     ),
     [allReposts, currentUser.following]
   );

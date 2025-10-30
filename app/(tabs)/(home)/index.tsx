@@ -255,7 +255,7 @@ export default function HomeScreen() {
     );
 
     const friendReposts = allReposts.filter(repost =>
-      currentUser.following?.includes(repost.repostedBy.id)
+      repost && repost.repostedBy && currentUser.following?.includes(repost.repostedBy.id)
     );
 
     const allActivity = [
