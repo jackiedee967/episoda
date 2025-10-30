@@ -301,10 +301,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
           throw new Error(`Failed to add show: ${error.message}`);
         }
 
-        await supabase
+        const { data: currentPlaylist } = await supabase
           .from('playlists')
-          .update({ show_count: supabase.raw('show_count + 1') })
-          .eq('id', playlistId);
+          .select('show_count')
+          .eq('id', playlistId)
+          .single();
+        
+        if (currentPlaylist) {
+          await supabase
+            .from('playlists')
+            .update({ show_count: currentPlaylist.show_count + 1 })
+            .eq('id', playlistId);
+        }
 
         console.log('✅ Show added to playlist in Supabase');
       }
@@ -344,10 +352,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
           throw new Error(`Failed to remove show: ${error.message}`);
         }
 
-        await supabase
+        const { data: currentPlaylist } = await supabase
           .from('playlists')
-          .update({ show_count: supabase.raw('show_count - 1') })
-          .eq('id', playlistId);
+          .select('show_count')
+          .eq('id', playlistId)
+          .single();
+        
+        if (currentPlaylist) {
+          await supabase
+            .from('playlists')
+            .update({ show_count: Math.max(0, currentPlaylist.show_count - 1) })
+            .eq('id', playlistId);
+        }
 
         console.log('✅ Show removed from playlist in Supabase');
       }
@@ -545,7 +561,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
 
           // Update profile stats
-          await supabase.rpc('update_user_profile_stats', { target_user_id: user.id });
+          await supabase.rpc('update_user_profile_stats', { user_id: user.id });
         }
       }
     } catch (error) {
@@ -582,7 +598,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (postData) {
           // Update profile stats for the post owner
-          await supabase.rpc('update_user_profile_stats', { target_user_id: postData.user_id });
+          await supabase.rpc('update_user_profile_stats', { user_id: postData.user_id });
         }
       }
     } catch (error) {
@@ -620,7 +636,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (postData) {
           // Update profile stats for the post owner
-          await supabase.rpc('update_user_profile_stats', { target_user_id: postData.user_id });
+          await supabase.rpc('update_user_profile_stats', { user_id: postData.user_id });
         }
       }
     } catch (error) {
@@ -979,11 +995,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Try to get from Supabase
       const { data, error } = await supabase
         .from('posts')
-        .select('likes_count')
+        .select('likes')
         .eq('user_id', userId);
 
       if (!error && data) {
-        return data.reduce((sum, post) => sum + (post.likes_count || 0), 0);
+        return data.reduce((sum, post) => sum + (post.likes || 0), 0);
       }
     } catch (error) {
       console.log('Error fetching total likes received from Supabase:', error);

@@ -9,13 +9,278 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      follows: {
+        Row: {
+          id: string
+          follower_id: string
+          following_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          follower_id: string
+          following_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          follower_id?: string
+          following_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      playlists: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          is_public: boolean
+          show_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          is_public?: boolean
+          show_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          is_public?: boolean
+          show_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      playlist_shows: {
+        Row: {
+          id: string
+          playlist_id: string
+          show_id: string
+          added_at: string
+        }
+        Insert: {
+          id?: string
+          playlist_id: string
+          show_id: string
+          added_at?: string
+        }
+        Update: {
+          id?: string
+          playlist_id?: string
+          show_id?: string
+          added_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_shows_playlist_id_fkey"
+            columns: ["playlist_id"]
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      posts: {
+        Row: {
+          id: string
+          user_id: string
+          show_id: string
+          show_title: string
+          show_poster: string
+          episode_ids: string[]
+          title: string | null
+          body: string
+          rating: number | null
+          tags: string[]
+          likes: number
+          comments: number
+          reposts: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          show_id: string
+          show_title: string
+          show_poster: string
+          episode_ids?: string[]
+          title?: string | null
+          body: string
+          rating?: number | null
+          tags?: string[]
+          likes?: number
+          comments?: number
+          reposts?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          show_id?: string
+          show_title?: string
+          show_poster?: string
+          episode_ids?: string[]
+          title?: string | null
+          body?: string
+          rating?: number | null
+          tags?: string[]
+          likes?: number
+          comments?: number
+          reposts?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      post_likes: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      post_reposts: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reposts_post_id_fkey"
+            columns: ["post_id"]
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      watch_history: {
+        Row: {
+          id: string
+          user_id: string
+          show_id: string
+          episode_id: string
+          watched_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          show_id: string
+          episode_id: string
+          watched_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          show_id?: string
+          episode_id?: string
+          watched_at?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          username: string
+          display_name: string | null
+          avatar_url: string | null
+          bio: string | null
+          social_links: Json | null
+          episodes_watched: number
+          total_likes_received: number
+          follower_count: number
+          following_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          username: string
+          display_name?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          social_links?: Json | null
+          episodes_watched?: number
+          total_likes_received?: number
+          follower_count?: number
+          following_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          username?: string
+          display_name?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          social_links?: Json | null
+          episodes_watched?: number
+          total_likes_received?: number
+          follower_count?: number
+          following_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_user_profile_stats: {
+        Args: {
+          user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
