@@ -249,7 +249,7 @@ export default function HomeScreen() {
     );
   };
 
-  const allReposts = useMemo(() => getAllReposts(), []);
+  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
 
   const friendActivityData = useMemo(() => {
     const friendPosts = posts.filter(post => 

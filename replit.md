@@ -45,7 +45,15 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates. Engagement actions (likes, reposts) trigger reactive UI updates through context subscriptions. DataContext includes helper functions for getting top followers/following by follower_count.
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
-## Recent Changes (October 28, 2025)
+## Recent Changes (October 30, 2025)
+- **Critical Performance Fix**: Resolved infinite re-render loop that was causing the app to freeze completely
+  - Wrapped DataContext functions (loadFollowDataFromSupabase, checkAuthStatus) in useCallback with stable dependencies
+  - Added data comparison logic in DataContext to prevent unnecessary state updates when data hasn't changed
+  - Fixed useMemo dependencies in friend-activity.tsx and index.tsx to include getAllReposts
+  - All pages now fully functional: Home, Profile, Search, and Friend Activity tabs working correctly
+  - Pages render 2-3 times on initial load due to normal DataContext initialization (AsyncStorage, auth checks) - acceptable performance
+
+## Previous Changes (October 28, 2025)
 - Fixed TabSelector component to use height: 100% instead of fixed 34px, improving padding across all toggle tab bars site-wide
 - Completed Profile page redesign with all 4 sections matching Figma specifications
 - Created EditProfileModal component with full profile editing functionality

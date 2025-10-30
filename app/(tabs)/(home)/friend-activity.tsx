@@ -25,7 +25,7 @@ export default function FriendActivityFeed() {
   };
 
   // Get all reposts
-  const allReposts = useMemo(() => getAllReposts(), []);
+  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
   
   // Filter posts from users the current user is following (original posts)
   const friendPosts = useMemo(() => 
