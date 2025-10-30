@@ -46,24 +46,29 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
 ## Recent Changes (October 30, 2025)
-- **ARCHITECTURAL ISSUE: DataContext stability problems requiring refactor**
-  - **Problem**: App experiencing instability where different memoization strategies cause different pages to break:
+- **RESOLVED: DataContext stability issue fixed with state/actions/selectors architecture**
+  - **Original Problem**: App experiencing instability where different memoization strategies caused different pages to break:
     - No useMemo on contextValue → Home + Search work, Profile + Friend Activity blank
     - useMemo with state-only deps → All pages blank (stale closures)
     - useMemo with all deps → Would cause circular dependencies/excessive re-renders
   - **Root Causes** (identified by architect):
-    1. Mixed architecture: Provider value combines mutable state, derived collections, and callbacks in single object
-    2. Removing useMemo propagates fresh object identities causing re-renders; adding useMemo creates stale closures
-    3. Callbacks close over transient data/other callbacks, creating circular dependencies
-    4. Derived data recomputes eagerly, causing render storms when dependencies change
-  - **Partial Fixes Applied** (addressing symptoms, not root cause):
+    1. Mixed architecture: Provider value combined mutable state, derived collections, and callbacks in single object
+    2. Removing useMemo propagated fresh object identities causing re-renders; adding useMemo created stale closures
+    3. Callbacks closed over transient data/other callbacks, creating circular dependencies
+    4. Derived data recomputed eagerly, causing render storms when dependencies changed
+  - **Solution Implemented**: Comprehensive state/actions/selectors refactor
+    - **State Layer**: Memoized object containing all raw state slices (posts, reposts, playlists, userData, currentUserData, isLoading, authUserId)
+    - **Selectors Layer**: Memoized derived data and read operations (currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing)
+    - **Actions Layer**: Memoized action callbacks, all using functional updates (setPosts(prev => ...)) to avoid stale closures
+    - **Provider Value**: Final assembly using useMemo with dependencies on the three stable layers
+  - **Additional Fixes**:
     - Fixed `allReposts` to filter out invalid user lookups
     - Added defensive checks in Home/Friend Activity for repost filtering
-    - Memoized `currentUser` object
+    - Updated all state setters to use functional updates consistently
+    - Removed state dependencies from action callback dependency arrays
     - Cloned arrays before sorting to prevent state mutation
-  - **Architect Recommendation**: Implement state/actions/selectors architecture where state, selectors, and actions are memoized independently, preventing both stale closures and runaway renders
-  - **Current Status**: Partial functionality - some pages work depending on memoization approach, but no approach works for all pages
-  - **Next Steps**: Either (1) implement full state/actions/selectors refactor for long-term stability, or (2) continue targeted fixes with acceptance of intermittent instability
+  - **Result**: ✅ All four tabs (Home, Friend Activity, Profile, Search) now render consistently and reliably across all memoization scenarios
+  - **Testing**: Verified all pages load without blank screens or crashes; data flows correctly through the layered architecture
 
 ## Previous Changes (October 28, 2025)
 - Fixed TabSelector component to use height: 100% instead of fixed 34px, improving padding across all toggle tab bars site-wide
