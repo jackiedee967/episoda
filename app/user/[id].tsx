@@ -125,18 +125,11 @@ export default function UserProfile() {
   // Mock mutual followers
   const mutualFollowers = mockUsers.slice(0, 3);
 
-  // Load playlists and stats when component mounts or user changes
+  // Effect 1: Load data when user changes (doesn't read from context to avoid stale data)
   useEffect(() => {
     const loadUserData = async () => {
-      // Load playlists
-      if (isCurrentUser) {
-        await loadPlaylists();
-        setUserPlaylists(playlists);
-      } else {
-        await loadPlaylists(id as string);
-        const publicPlaylists = playlists.filter(p => p.userId === id && p.isPublic);
-        setUserPlaylists(publicPlaylists);
-      }
+      // Trigger playlist loading
+      await loadPlaylists(id as string);
 
       // Load stats
       try {
@@ -163,7 +156,15 @@ export default function UserProfile() {
     };
 
     loadUserData();
-  }, [id, isCurrentUser, loadPlaylists, playlists, getEpisodesWatchedCount, getTotalLikesReceived, getFollowers, getFollowing]);
+  }, [id]);
+
+  // Effect 2: Update local playlists when context playlists change (no loading, just filtering)
+  useEffect(() => {
+    const userPlaylistsData = playlists.filter(p => 
+      p.userId === id && (isCurrentUser || p.isPublic)
+    );
+    setUserPlaylists(userPlaylistsData);
+  }, [id, playlists, isCurrentUser]);
 
   // Determine if we should show the playlists tab
   const shouldShowPlaylistsTab = userPlaylists.length > 0;
