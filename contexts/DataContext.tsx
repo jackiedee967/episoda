@@ -77,6 +77,9 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  // DIAGNOSTIC: Track renders
+  console.count('[DataProvider] RENDER');
+  
   const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [userData, setUserData] = useState<UserData>({
     following: mockCurrentUser.following || [],
@@ -91,11 +94,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
   // Memoize currentUser to prevent recreation on every render
-  const currentUser = useMemo(() => ({
-    ...currentUserData,
-    following: userData.following,
-    followers: userData.followers,
-  }), [currentUserData, userData.following, userData.followers]);
+  const currentUser = useMemo(() => {
+    console.log('[DataProvider] currentUser memoized');
+    return {
+      ...currentUserData,
+      following: userData.following,
+      followers: userData.followers,
+    };
+  }, [currentUserData, userData.following, userData.followers]);
 
   const loadData = useCallback(async () => {
     try {
