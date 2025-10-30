@@ -46,13 +46,13 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
 ## Recent Changes (October 30, 2025)
-- **Critical Performance Fix**: Resolved infinite re-render loop by fixing circular dependencies in DataContext
-  - Root cause: `getAllReposts` was a function that recreated on every state change, causing infinite re-render loops
-  - Solution: Converted `getAllReposts` from useCallback function to useMemo data (`allReposts`)
-  - Added useMemo import to DataContext
-  - Updated all consuming components (friend-activity.tsx, index.tsx, profile.tsx) to use `allReposts` data directly instead of calling `getAllReposts()`
-  - Removed debug console.log statements from friend-activity page
-  - Status: Profile and Search pages working perfectly, Home and Friend Activity pages need further investigation
+- **FIXED: Critical infinite loop causing app freezes**
+  - Root cause: `loadFollowDataFromSupabase` was calling `Array.sort()` directly on state arrays, mutating React state
+  - This triggered React to detect "changes" even when data was identical, causing infinite re-render loops
+  - Solution: Clone arrays before sorting (`[...prev.following].sort()`) to prevent state mutation
+  - Result: Friend Activity and Profile pages now load successfully without freezing
+  - Also converted `getAllReposts` from callback to useMemo for better performance
+  - Status: Friend Activity, Profile, and Search working. Home page still blank - investigating
 
 ## Previous Changes (October 28, 2025)
 - Fixed TabSelector component to use height: 100% instead of fixed 34px, improving padding across all toggle tab bars site-wide
