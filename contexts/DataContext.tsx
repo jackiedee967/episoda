@@ -90,59 +90,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  // Load data from storage on mount
-  useEffect(() => {
-    loadData();
-    checkAuthStatus();
-  }, []);
-
-  // Check if user is authenticated in Supabase
-  const checkAuthStatus = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        console.log('✅ User authenticated in Supabase:', user.id);
-        setAuthUserId(user.id);
-        
-        // Load user's follow data from Supabase
-        await loadFollowDataFromSupabase(user.id);
-      } else {
-        console.log('⚠️ No authenticated user - using mock data only');
-        setAuthUserId(null);
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      setAuthUserId(null);
-    }
-  };
-
-  // Load follow data from Supabase
-  const loadFollowDataFromSupabase = async (userId: string) => {
-    try {
-      console.log('Loading follow data from Supabase for user:', userId);
-      
-      // Get users this user is following
-      const { data: followingData, error: followingError } = await supabase
-        .from('follows')
-        .select('following_id')
-        .eq('follower_id', userId);
-
-      if (followingError) {
-        console.error('Error loading following data:', followingError);
-      } else {
-        const followingIds = followingData?.map(f => f.following_id) || [];
-        console.log('✅ Loaded following from Supabase:', followingIds.length, 'users');
-        
-        setUserData(prev => ({
-          ...prev,
-          following: followingIds,
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading follow data from Supabase:', error);
-    }
-  };
-
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -187,6 +134,67 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  // Load follow data from Supabase - wrapped in useCallback to prevent infinite loops
+  const loadFollowDataFromSupabase = useCallback(async (userId: string) => {
+    try {
+      console.log('Loading follow data from Supabase for user:', userId);
+      
+      // Get users this user is following
+      const { data: followingData, error: followingError } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId);
+
+      if (followingError) {
+        console.error('Error loading following data:', followingError);
+      } else {
+        const followingIds = followingData?.map(f => f.following_id) || [];
+        console.log('✅ Loaded following from Supabase:', followingIds.length, 'users');
+        
+        // Only update state if the data actually changed (prevents unnecessary re-renders)
+        setUserData(prev => {
+          const followingChanged = JSON.stringify(prev.following.sort()) !== JSON.stringify(followingIds.sort());
+          if (followingChanged) {
+            return {
+              ...prev,
+              following: followingIds,
+            };
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading follow data from Supabase:', error);
+    }
+  }, []);
+
+  // Check if user is authenticated in Supabase - wrapped in useCallback to prevent infinite loops
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        console.log('✅ User authenticated in Supabase:', user.id);
+        setAuthUserId(user.id);
+        
+        // Load user's follow data from Supabase
+        await loadFollowDataFromSupabase(user.id);
+      } else {
+        console.log('⚠️ No authenticated user - using mock data only');
+        setAuthUserId(null);
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setAuthUserId(null);
+    }
+  }, [loadFollowDataFromSupabase]);
+
+  // Load data from storage on mount
+  useEffect(() => {
+    loadData();
+    checkAuthStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveRepostsToStorage = async (reposts: RepostData[]) => {
