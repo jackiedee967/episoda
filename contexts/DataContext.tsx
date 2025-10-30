@@ -387,27 +387,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local state
-      setPlaylists(prev => prev.map(p => {
-        if (p.id === playlistId) {
-          const newShows = (p.shows || []).filter(id => id !== showId);
-          return { ...p, shows: newShows, showCount: newShows.length };
-        }
-        return p;
-      }));
-
-      const updatedPlaylists = playlists.map(p => {
-        if (p.id === playlistId) {
-          const newShows = (p.shows || []).filter(id => id !== showId);
-          return { ...p, shows: newShows, showCount: newShows.length };
-        }
-        return p;
+      setPlaylists(prev => {
+        const updatedPlaylists = prev.map(p => {
+          if (p.id === playlistId) {
+            const newShows = (p.shows || []).filter(id => id !== showId);
+            return { ...p, shows: newShows, showCount: newShows.length };
+          }
+          return p;
+        });
+        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+        return updatedPlaylists;
       });
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('❌ Error removing show from playlist:', error);
       throw error;
     }
-  }, [playlists, authUserId]);
+  }, [authUserId]);
 
   const deletePlaylist = useCallback(async (playlistId: string) => {
     try {
@@ -428,14 +423,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local state
-      const updatedPlaylists = playlists.filter(p => p.id !== playlistId);
-      setPlaylists(updatedPlaylists);
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+      setPlaylists(prev => {
+        const updatedPlaylists = prev.filter(p => p.id !== playlistId);
+        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+        return updatedPlaylists;
+      });
     } catch (error) {
       console.error('❌ Error deleting playlist:', error);
       throw error;
     }
-  }, [playlists, authUserId]);
+  }, [authUserId]);
 
   const updatePlaylistPrivacy = useCallback(async (playlistId: string, isPublic: boolean) => {
     try {
@@ -456,18 +453,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local state
-      const updatedPlaylists = playlists.map(p => 
-        p.id === playlistId 
-          ? { ...p, isPublic }
-          : p
-      );
-      setPlaylists(updatedPlaylists);
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+      setPlaylists(prev => {
+        const updatedPlaylists = prev.map(p => 
+          p.id === playlistId 
+            ? { ...p, isPublic }
+            : p
+        );
+        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+        return updatedPlaylists;
+      });
     } catch (error) {
       console.error('❌ Error updating playlist privacy:', error);
       throw error;
     }
-  }, [playlists, authUserId]);
+  }, [authUserId]);
 
   const isShowInPlaylist = useCallback((playlistId: string, showId: string): boolean => {
     const playlist = playlists.find(p => p.id === playlistId);
@@ -586,12 +585,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('Error saving post to Supabase:', error);
     }
 
-    const updatedPosts = [newPost, ...posts];
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+    setPosts(prev => {
+      const updatedPosts = [newPost, ...prev];
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
 
     return newPost;
-  }, [posts]);
+  }, []);
 
   const likePost = useCallback(async (postId: string) => {
     // Try to save to Supabase
@@ -623,14 +624,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('Error liking post in Supabase:', error);
     }
 
-    const updatedPosts = posts.map(post =>
-      post.id === postId
-        ? { ...post, likes: post.likes + 1, isLiked: true }
-        : post
-    );
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-  }, [posts]);
+    setPosts(prev => {
+      const updatedPosts = prev.map(post =>
+        post.id === postId
+          ? { ...post, likes: post.likes + 1, isLiked: true }
+          : post
+      );
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+  }, []);
 
   const unlikePost = useCallback(async (postId: string) => {
     // Try to remove from Supabase
@@ -661,14 +664,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('Error unliking post in Supabase:', error);
     }
 
-    const updatedPosts = posts.map(post =>
-      post.id === postId
-        ? { ...post, likes: Math.max(0, post.likes - 1), isLiked: false }
-        : post
-    );
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-  }, [posts]);
+    setPosts(prev => {
+      const updatedPosts = prev.map(post =>
+        post.id === postId
+          ? { ...post, likes: Math.max(0, post.likes - 1), isLiked: false }
+          : post
+      );
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+  }, []);
 
   const repostPost = useCallback(async (postId: string) => {
     const newRepost: RepostData = {
@@ -677,34 +682,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
       timestamp: new Date(),
     };
 
-    const updatedReposts = [...reposts, newRepost];
-    setReposts(updatedReposts);
-    await saveRepostsToStorage(updatedReposts);
+    setReposts(prev => {
+      const updatedReposts = [...prev, newRepost];
+      saveRepostsToStorage(updatedReposts);
+      return updatedReposts;
+    });
 
-    const updatedPosts = posts.map(post =>
-      post.id === postId
-        ? { ...post, reposts: post.reposts + 1 }
-        : post
-    );
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-  }, [posts, reposts, currentUser.id]);
+    setPosts(prev => {
+      const updatedPosts = prev.map(post =>
+        post.id === postId
+          ? { ...post, reposts: post.reposts + 1 }
+          : post
+      );
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+  }, [currentUser.id]);
 
   const unrepostPost = useCallback(async (postId: string) => {
-    const updatedReposts = reposts.filter(
-      r => !(r.postId === postId && r.userId === currentUser.id)
-    );
-    setReposts(updatedReposts);
-    await saveRepostsToStorage(updatedReposts);
+    setReposts(prev => {
+      const updatedReposts = prev.filter(
+        r => !(r.postId === postId && r.userId === currentUser.id)
+      );
+      saveRepostsToStorage(updatedReposts);
+      return updatedReposts;
+    });
 
-    const updatedPosts = posts.map(post =>
-      post.id === postId
-        ? { ...post, reposts: Math.max(0, post.reposts - 1) }
-        : post
-    );
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-  }, [posts, reposts, currentUser.id]);
+    setPosts(prev => {
+      const updatedPosts = prev.map(post =>
+        post.id === postId
+          ? { ...post, reposts: Math.max(0, post.reposts - 1) }
+          : post
+      );
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+  }, [currentUser.id]);
 
   const hasUserReposted = useCallback((postId: string): boolean => {
     return reposts.some(r => r.postId === postId && r.userId === currentUser.id);
@@ -735,14 +748,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [posts, reposts]);
 
   const updateCommentCount = useCallback(async (postId: string, count: number) => {
-    const updatedPosts = posts.map(post =>
-      post.id === postId
-        ? { ...post, comments: count }
-        : post
-    );
-    setPosts(updatedPosts);
-    await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-  }, [posts]);
+    setPosts(prev => {
+      const updatedPosts = prev.map(post =>
+        post.id === postId
+          ? { ...post, comments: count }
+          : post
+      );
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+  }, []);
 
   const getPost = useCallback((postId: string): Post | undefined => {
     return posts.find(p => p.id === postId);
@@ -762,12 +777,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
         
         // Update local state only
-        const updatedUserData = {
-          ...userData,
-          following: [...userData.following, userId],
-        };
-        setUserData(updatedUserData);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+        setUserData(prev => {
+          const updatedUserData = {
+            ...prev,
+            following: [...prev.following, userId],
+          };
+          AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+          return updatedUserData;
+        });
         return;
       }
 
@@ -814,19 +831,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local state
-      const updatedUserData = {
-        ...userData,
-        following: [...userData.following, userId],
-      };
-      setUserData(updatedUserData);
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+      setUserData(prev => {
+        const updatedUserData = {
+          ...prev,
+          following: [...prev.following, userId],
+        };
+        AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+        return updatedUserData;
+      });
 
       console.log('✅ Follow completed successfully');
     } catch (error) {
       console.error('❌ Error following user:', error);
       throw error;
     }
-  }, [userData, authUserId]);
+  }, [authUserId]);
 
   const unfollowUser = useCallback(async (userId: string) => {
     console.log('🔴 unfollowUser called for userId:', userId);
@@ -837,12 +856,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.log('⚠️ No authenticated user - cannot unfollow');
         
         // Update local state only
-        const updatedUserData = {
-          ...userData,
-          following: userData.following.filter(id => id !== userId),
-        };
-        setUserData(updatedUserData);
-        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+        setUserData(prev => {
+          const updatedUserData = {
+            ...prev,
+            following: prev.following.filter(id => id !== userId),
+          };
+          AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+          return updatedUserData;
+        });
         return;
       }
 
@@ -886,19 +907,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local state
-      const updatedUserData = {
-        ...userData,
-        following: userData.following.filter(id => id !== userId),
-      };
-      setUserData(updatedUserData);
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+      setUserData(prev => {
+        const updatedUserData = {
+          ...prev,
+          following: prev.following.filter(id => id !== userId),
+        };
+        AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
+        return updatedUserData;
+      });
 
       console.log('✅ Unfollow completed successfully');
     } catch (error) {
       console.error('❌ Error unfollowing user:', error);
       throw error;
     }
-  }, [userData, authUserId]);
+  }, [authUserId]);
 
   const isFollowing = useCallback((userId: string): boolean => {
     return userData.following.includes(userId);
