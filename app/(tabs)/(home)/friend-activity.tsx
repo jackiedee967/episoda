@@ -69,10 +69,6 @@ export default function FriendActivityFeed() {
     }
   }), [allActivity, sortBy]);
 
-  console.log('Friend Activity - Original posts:', friendPosts.length);
-  console.log('Friend Activity - Reposts:', friendReposts.length);
-  console.log('Friend Activity - Total:', sortedActivity.length);
-
   return (
     <View style={styles.container}>
       <Stack.Screen

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { mockPosts, mockUsers, currentUser as mockCurrentUser, mockEpisodes } from '@/data/mockData';
 import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
