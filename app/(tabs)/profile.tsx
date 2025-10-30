@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, Linking } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
@@ -135,11 +135,19 @@ export default function ProfileScreen() {
     }
   };
 
-  const userPosts = posts.filter((p) => p.user.id === profileUser.id);
-  const allReposts = getAllReposts();
-  const userReposts = allReposts.filter(repost => repost.repostedBy.id === profileUser.id);
+  const userPosts = useMemo(() => 
+    posts.filter((p) => p.user.id === profileUser.id),
+    [posts, profileUser.id]
+  );
+
+  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
   
-  const allUserActivity = [
+  const userReposts = useMemo(() => 
+    allReposts.filter(repost => repost.repostedBy.id === profileUser.id),
+    [allReposts, profileUser.id]
+  );
+  
+  const allUserActivity = useMemo(() => [
     ...userPosts.map(post => ({ 
       post, 
       isRepost: false, 
@@ -152,9 +160,9 @@ export default function ProfileScreen() {
       timestamp: repost.timestamp,
       repostedBy: { id: profileUser.id, displayName: profileUser.displayName }
     }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [userPosts, userReposts, profileUser.id, profileUser.displayName]);
 
-  const getMyRotation = (): Show[] => {
+  const myRotation = useMemo((): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === profileUser.id);
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
@@ -175,11 +183,12 @@ export default function ProfileScreen() {
     }
     
     return uniqueShows;
-  };
+  }, [posts, profileUser.id]);
 
-  const myRotation = getMyRotation();
-
-  const watchHistory = getWatchHistoryFromContext(profileUser.id);
+  const watchHistory = useMemo(() => 
+    getWatchHistoryFromContext(profileUser.id),
+    [getWatchHistoryFromContext, profileUser.id]
+  );
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
