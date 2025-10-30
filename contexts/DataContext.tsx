@@ -44,7 +44,7 @@ interface DataContextType {
   getPost: (postId: string) => Post | undefined;
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
-  getAllReposts: () => { post: Post; repostedBy: User; timestamp: Date }[];
+  allReposts: { post: Post; repostedBy: User; timestamp: Date }[];
   currentUser: User;
   followUser: (userId: string) => Promise<void>;
   unfollowUser: (userId: string) => Promise<void>;
@@ -707,7 +707,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return posts.filter(p => userRepostIds.includes(p.id));
   }, [posts, reposts, currentUser.id]);
 
-  const getAllReposts = useCallback(() => {
+  // Memoize the reposts data directly instead of wrapping in a callback
+  const allReposts = useMemo(() => {
     return reposts.map(repost => {
       const post = posts.find(p => p.id === repost.postId);
       const user = mockUsers.find(u => u.id === repost.userId) || currentUser;
@@ -1199,7 +1200,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         getPost,
         hasUserReposted,
         getUserReposts,
-        getAllReposts,
+        allReposts,
         currentUser,
         followUser,
         unfollowUser,

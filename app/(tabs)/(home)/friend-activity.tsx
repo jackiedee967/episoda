@@ -9,7 +9,7 @@ import { colors } from '@/styles/commonStyles';
 import { Post } from '@/types';
 
 export default function FriendActivityFeed() {
-  const { posts, currentUser, getAllReposts } = useData();
+  const { posts, currentUser, allReposts } = useData();
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
   const handleLike = (postId: string) => {
@@ -23,9 +23,6 @@ export default function FriendActivityFeed() {
   const handleShare = (postId: string) => {
     console.log('Share post:', postId);
   };
-
-  // Get all reposts
-  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
   
   // Filter posts from users the current user is following (original posts)
   const friendPosts = useMemo(() => 

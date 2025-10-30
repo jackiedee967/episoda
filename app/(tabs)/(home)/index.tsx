@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing, getAllReposts, isShowInPlaylist, playlists } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
@@ -248,8 +248,6 @@ export default function HomeScreen() {
       </View>
     );
   };
-
-  const allReposts = useMemo(() => getAllReposts(), [getAllReposts]);
 
   const friendActivityData = useMemo(() => {
     const friendPosts = posts.filter(post => 
