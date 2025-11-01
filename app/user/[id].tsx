@@ -350,9 +350,20 @@ export default function UserProfile() {
   ];
 
   // Section 1: Profile Info
-  const renderProfileInfo = () => (
+  const renderProfileInfo = () => {
+    if (!profileUser) return null;
+    
+    return (
     <View style={styles.profileInfoSection}>
-      <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
+      {profileUser.avatar ? (
+        <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+          <Text style={styles.avatarPlaceholderText}>
+            {(profileUser.displayName || profileUser.username || '?').charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
       
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>
@@ -375,6 +386,7 @@ export default function UserProfile() {
       </View>
     </View>
   );
+  };
 
   // Section 2: Action Buttons - CONDITIONAL
   const renderActionButtons = () => {
@@ -438,14 +450,29 @@ export default function UserProfile() {
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowers.slice(0, 3).map((follower, index) => (
-              <Image
-                key={follower.id}
-                source={{ uri: follower.avatar }}
-                style={[
-                  styles.miniAvatar,
-                  index > 0 && { marginLeft: -8 }
-                ]}
-              />
+              follower.avatar ? (
+                <Image
+                  key={follower.id}
+                  source={{ uri: follower.avatar }}
+                  style={[
+                    styles.miniAvatar,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                />
+              ) : (
+                <View
+                  key={follower.id}
+                  style={[
+                    styles.miniAvatar,
+                    styles.miniAvatarPlaceholder,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                >
+                  <Text style={styles.miniAvatarText}>
+                    {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )
             ))}
           </View>
           <Text style={styles.statValue}>
@@ -458,14 +485,29 @@ export default function UserProfile() {
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowing.slice(0, 3).map((user, index) => (
-              <Image
-                key={user.id}
-                source={{ uri: user.avatar }}
-                style={[
-                  styles.miniAvatar,
-                  index > 0 && { marginLeft: -8 }
-                ]}
-              />
+              user.avatar ? (
+                <Image
+                  key={user.id}
+                  source={{ uri: user.avatar }}
+                  style={[
+                    styles.miniAvatar,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                />
+              ) : (
+                <View
+                  key={user.id}
+                  style={[
+                    styles.miniAvatar,
+                    styles.miniAvatarPlaceholder,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                >
+                  <Text style={styles.miniAvatarText}>
+                    {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )
             ))}
           </View>
           <Text style={styles.statValue}>
@@ -643,6 +685,17 @@ export default function UserProfile() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.pageContainer}>
+        {/* Back Button - Top Left */}
+        <Pressable 
+          style={styles.backButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+        >
+          <IconSymbol name="chevron.left" size={24} color={colors.pageBackground} />
+        </Pressable>
+
         {/* Top-Right Header Button - CONDITIONAL */}
         {isCurrentUser ? (
           <Pressable 
@@ -782,6 +835,18 @@ const styles = StyleSheet.create({
     height: 127,
     borderRadius: 20,
     marginBottom: 10,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+  },
+  avatarPlaceholderText: {
+    ...typography.largeTitle,
+    color: colors.greenHighlight,
+    fontSize: 48,
   },
   profileTextContainer: {
     width: 331,
@@ -928,6 +993,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBackground,
   },
+  miniAvatarPlaceholder: {
+    backgroundColor: colors.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  miniAvatarText: {
+    ...typography.p1,
+    color: colors.greenHighlight,
+    fontSize: 10,
+    fontWeight: '600',
+  },
 
   // Section 4: My Rotation
   rotationSection: {
@@ -951,7 +1027,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   commonShowPoster: {
-    borderWidth: 2,
+    borderWidth: 0.5,
     borderColor: colors.greenHighlight,
   },
   rotationPosterImage: {
@@ -1047,7 +1123,19 @@ const styles = StyleSheet.create({
     borderColor: colors.cardStroke,
   },
 
-  // Floating Buttons - Top Right
+  // Floating Buttons - Top Left & Right
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   inviteFloatingButton: {
     position: 'absolute',
     top: 20,
@@ -1077,13 +1165,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: colors.greenHighlight,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
 });

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, Linking } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
+import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
@@ -56,17 +57,24 @@ export default function ProfileScreen() {
   const [following, setFollowing] = useState<any[]>([]);
   const [topFollowers, setTopFollowers] = useState<any[]>([]);
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
-  const [profileUser, setProfileUser] = useState<User>(contextCurrentUser);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist ? isShowInPlaylist(pl.id, showId) : false);
   };
 
   useEffect(() => {
-    // Load data on mount
+    if (contextCurrentUser) {
+      setProfileUser(contextCurrentUser);
+    }
+  }, [contextCurrentUser]);
+
+  useEffect(() => {
+    if (!profileUser) return;
+    // Load data when profile user is set
     loadStats();
     loadFollowData();
-  }, []);
+  }, [profileUser]);
 
   const loadProfileData = async () => {
     try {
@@ -105,6 +113,7 @@ export default function ProfileScreen() {
   };
 
   const loadStats = async () => {
+    if (!profileUser) return;
     try {
       const episodesCount = await getEpisodesWatchedCount(profileUser.id);
       const likesCount = await getTotalLikesReceived(profileUser.id);
@@ -116,6 +125,7 @@ export default function ProfileScreen() {
   };
 
   const loadFollowData = async () => {
+    if (!profileUser) return;
     try {
       const followersData = await getFollowers(profileUser.id);
       const followingData = await getFollowing(profileUser.id);
@@ -136,13 +146,13 @@ export default function ProfileScreen() {
   };
 
   const userPosts = useMemo(() => 
-    posts.filter((p) => p.user.id === profileUser.id),
-    [posts, profileUser.id]
+    posts.filter((p) => p.user.id === profileUser?.id),
+    [posts, profileUser?.id]
   );
   
   const userReposts = useMemo(() => 
-    allReposts.filter(repost => repost.repostedBy.id === profileUser.id),
-    [allReposts, profileUser.id]
+    allReposts.filter(repost => repost.repostedBy.id === profileUser?.id),
+    [allReposts, profileUser?.id]
   );
   
   const allUserActivity = useMemo(() => [
@@ -156,11 +166,12 @@ export default function ProfileScreen() {
       post: repost.post, 
       isRepost: true, 
       timestamp: repost.timestamp,
-      repostedBy: { id: profileUser.id, displayName: profileUser.displayName }
+      repostedBy: { id: profileUser?.id || '', displayName: profileUser?.displayName || '' }
     }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [userPosts, userReposts, profileUser.id, profileUser.displayName]);
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [userPosts, userReposts, profileUser?.id, profileUser?.displayName]);
 
   const myRotation = useMemo((): Show[] => {
+    if (!profileUser) return [];
     const userShowPosts = posts.filter((p) => p.user.id === profileUser.id);
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
@@ -181,12 +192,12 @@ export default function ProfileScreen() {
     }
     
     return uniqueShows;
-  }, [posts, profileUser.id]);
+  }, [posts, profileUser?.id]);
 
-  const watchHistory = useMemo(() => 
-    getWatchHistoryFromContext(profileUser.id),
-    [profileUser.id]
-  );
+  const watchHistory = useMemo(() => {
+    if (!profileUser) return [];
+    return getWatchHistoryFromContext(profileUser.id);
+  }, [profileUser?.id]);
 
   const handleShowFollowers = () => {
     setFollowersType('followers');
@@ -301,9 +312,20 @@ export default function ProfileScreen() {
   ];
 
   // Section 1: Profile Info
-  const renderProfileInfo = () => (
+  const renderProfileInfo = () => {
+    if (!profileUser) return null;
+    
+    return (
     <View style={styles.profileInfoSection}>
-      <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
+      {profileUser.avatar ? (
+        <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, styles.avatarPlaceholder]}>
+          <Text style={styles.avatarPlaceholderText}>
+            {(profileUser.displayName || profileUser.username || '?').charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
       
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>
@@ -326,6 +348,7 @@ export default function ProfileScreen() {
       </View>
     </View>
   );
+  };
 
   // Section 2: Action Buttons
   const renderActionButtons = () => (
@@ -372,14 +395,29 @@ export default function ProfileScreen() {
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowers.slice(0, 3).map((follower, index) => (
-              <Image
-                key={follower.id}
-                source={{ uri: follower.avatar }}
-                style={[
-                  styles.miniAvatar,
-                  index > 0 && { marginLeft: -8 }
-                ]}
-              />
+              follower.avatar ? (
+                <Image
+                  key={follower.id}
+                  source={{ uri: follower.avatar }}
+                  style={[
+                    styles.miniAvatar,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                />
+              ) : (
+                <View
+                  key={follower.id}
+                  style={[
+                    styles.miniAvatar,
+                    styles.miniAvatarPlaceholder,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                >
+                  <Text style={styles.miniAvatarText}>
+                    {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )
             ))}
           </View>
           <Text style={styles.statValue}>
@@ -392,14 +430,29 @@ export default function ProfileScreen() {
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowing.slice(0, 3).map((user, index) => (
-              <Image
-                key={user.id}
-                source={{ uri: user.avatar }}
-                style={[
-                  styles.miniAvatar,
-                  index > 0 && { marginLeft: -8 }
-                ]}
-              />
+              user.avatar ? (
+                <Image
+                  key={user.id}
+                  source={{ uri: user.avatar }}
+                  style={[
+                    styles.miniAvatar,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                />
+              ) : (
+                <View
+                  key={user.id}
+                  style={[
+                    styles.miniAvatar,
+                    styles.miniAvatarPlaceholder,
+                    index > 0 && { marginLeft: -8 }
+                  ]}
+                >
+                  <Text style={styles.miniAvatarText}>
+                    {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )
             ))}
           </View>
           <Text style={styles.statValue}>
@@ -556,6 +609,14 @@ export default function ProfileScreen() {
     </View>
   );
 
+  if (!profileUser) {
+    return (
+      <View style={styles.pageContainer}>
+        <Stack.Screen options={{ headerShown: false }} />
+      </View>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -668,6 +729,18 @@ const styles = StyleSheet.create({
     height: 127,
     borderRadius: 20,
     marginBottom: 10,
+  },
+  avatarPlaceholder: {
+    backgroundColor: colors.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+  },
+  avatarPlaceholderText: {
+    ...typography.largeTitle,
+    color: colors.greenHighlight,
+    fontSize: 48,
   },
   profileTextContainer: {
     width: 331,
@@ -787,6 +860,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.cardBackground,
+  },
+  miniAvatarPlaceholder: {
+    backgroundColor: colors.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  miniAvatarText: {
+    ...typography.p1,
+    color: colors.greenHighlight,
+    fontSize: 10,
+    fontWeight: '600',
   },
 
   // Section 4: My Rotation
