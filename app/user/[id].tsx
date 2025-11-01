@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,19 +7,26 @@ import {
   Image,
   Pressable,
   Alert,
+  Platform,
+  Linking,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors, commonStyles, typography, spacing, components } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/tokens';
+import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
+import PlaylistModal from '@/components/PlaylistModal';
 import FollowersModal from '@/components/FollowersModal';
-import Button from '@/components/Button';
-import TabSelector, { Tab as TabType } from '@/components/TabSelector';
+import EditProfileModal from '@/components/EditProfileModal';
+import InviteFriendsModal from '@/components/InviteFriendsModal';
 import BlockReportModal from '@/components/BlockReportModal';
+import Button from '@/components/Button';
+import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
+import WatchHistoryCard from '@/components/WatchHistoryCard';
 import { mockUsers, currentUser, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
-import { User, Playlist, ReportReason, Show } from '@/types';
+import { User, Playlist, ReportReason, Show, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe, Eye, EyeOff } from 'lucide-react-native';
 import { supabase } from '@/app/integrations/supabase/client';
@@ -35,15 +41,19 @@ export default function UserProfile() {
     followUser, 
     unfollowUser, 
     isFollowing, 
-    currentUser: contextCurrentUser, 
+    currentUser: contextCurrentUser,
+    allReposts, 
     playlists, 
     loadPlaylists, 
     updatePlaylistPrivacy, 
-    createPlaylist,
     getFollowers,
     getFollowing,
+    getTopFollowers,
+    getTopFollowing,
     getEpisodesWatchedCount,
-    getTotalLikesReceived
+    getTotalLikesReceived,
+    isShowInPlaylist,
+    getWatchHistory: getWatchHistoryFromContext,
   } = useData();
 
   const [activeTab, setActiveTab] = useState<Tab>('posts');
@@ -53,30 +63,111 @@ export default function UserProfile() {
   const [showBlockReportModal, setShowBlockReportModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
+  const [showPlaylistModal, setShowPlaylistModal] = useState<Show | null>(null);
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
   const [episodesWatched, setEpisodesWatched] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
+  const [topFollowers, setTopFollowers] = useState<any[]>([]);
+  const [topFollowing, setTopFollowing] = useState<any[]>([]);
+  const [profileUser, setProfileUser] = useState<User | null>(null);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
-  
-  // Get user's original posts
-  const userPosts = posts.filter((p) => p.user.id === id);
-  
   const isCurrentUser = id === currentUser.id;
   const isUserFollowing = isFollowing(id as string);
 
-  // Get last 4 unique shows from user's posts (rotation)
-  const getMyRotation = (): Show[] => {
+  useEffect(() => {
+    if (user) {
+      setProfileUser(user);
+    }
+  }, [user]);
+
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist ? isShowInPlaylist(pl.id, showId) : false);
+  };
+
+  const loadStats = async () => {
+    try {
+      const episodesCount = await getEpisodesWatchedCount(id as string);
+      const likesCount = await getTotalLikesReceived(id as string);
+      setEpisodesWatched(episodesCount);
+      setTotalLikes(likesCount);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const loadFollowData = async () => {
+    try {
+      const followersData = await getFollowers(id as string);
+      const followingData = await getFollowing(id as string);
+      const topFollowersData = await getTopFollowers(id as string, 3);
+      const topFollowingData = await getTopFollowing(id as string, 3);
+      
+      setFollowers(followersData || []);
+      setFollowing(followingData || []);
+      setTopFollowers(topFollowersData || []);
+      setTopFollowing(topFollowingData || []);
+    } catch (error) {
+      console.error('Error loading follow data:', error);
+      setFollowers([]);
+      setFollowing([]);
+      setTopFollowers([]);
+      setTopFollowing([]);
+    }
+  };
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      await loadPlaylists(id as string);
+      await loadStats();
+      await loadFollowData();
+    };
+
+    loadUserData();
+  }, [id]);
+
+  useEffect(() => {
+    const userPlaylistsData = playlists.filter(p => 
+      p.userId === id && (isCurrentUser || p.isPublic)
+    );
+    setUserPlaylists(userPlaylistsData);
+  }, [id, playlists, isCurrentUser]);
+
+  const userPosts = useMemo(() => 
+    posts.filter((p) => p.user.id === id),
+    [posts, id]
+  );
+  
+  const userReposts = useMemo(() => 
+    allReposts.filter(repost => repost.repostedBy.id === id),
+    [allReposts, id]
+  );
+  
+  const allUserActivity = useMemo(() => [
+    ...userPosts.map(post => ({ 
+      post, 
+      isRepost: false, 
+      timestamp: post.timestamp,
+      repostedBy: undefined
+    })),
+    ...userReposts.map(repost => ({ 
+      post: repost.post, 
+      isRepost: true, 
+      timestamp: repost.timestamp,
+      repostedBy: { id: id as string, displayName: user?.displayName || '' }
+    }))
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [userPosts, userReposts, id, user?.displayName]);
+
+  const myRotation = useMemo((): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === id);
-    
-    // Sort by timestamp (most recent first)
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
     
-    // Get unique shows (last 4)
     const uniqueShows: Show[] = [];
     const seenShowIds = new Set<string>();
     
@@ -85,132 +176,44 @@ export default function UserProfile() {
         uniqueShows.push(post.show);
         seenShowIds.add(post.show.id);
         
-        if (uniqueShows.length === 4) {
+        if (uniqueShows.length === 3) {
           break;
         }
       }
     }
     
     return uniqueShows;
-  };
+  }, [posts, id]);
 
-  const myRotation = getMyRotation();
   const commonShows = isCurrentUser ? [] : mockShows.slice(0, 2);
 
-  // Get watch history - all unique shows the user has logged, sorted chronologically
-  const getWatchHistory = (): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === id);
-    
-    // Sort by timestamp (most recent first)
-    const sortedPosts = [...userShowPosts].sort((a, b) => 
-      b.timestamp.getTime() - a.timestamp.getTime()
-    );
-    
-    // Get unique shows in chronological order
-    const uniqueShows: Show[] = [];
-    const seenShowIds = new Set<string>();
-    
-    for (const post of sortedPosts) {
-      if (!seenShowIds.has(post.show.id)) {
-        uniqueShows.push(post.show);
-        seenShowIds.add(post.show.id);
-      }
-    }
-    
-    return uniqueShows;
-  };
+  const watchHistory = useMemo(() => 
+    getWatchHistoryFromContext(id as string),
+    [id]
+  );
 
-  const watchHistory = getWatchHistory();
-
-  // Mock mutual followers
-  const mutualFollowers = mockUsers.slice(0, 3);
-
-  // Effect 1: Load data when user changes (doesn't read from context to avoid stale data)
-  useEffect(() => {
-    const loadUserData = async () => {
-      // Trigger playlist loading
-      await loadPlaylists(id as string);
-
-      // Load stats
-      try {
-        const episodesCount = await getEpisodesWatchedCount(id as string);
-        const likesCount = await getTotalLikesReceived(id as string);
-        setEpisodesWatched(episodesCount);
-        setTotalLikes(likesCount);
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      }
-
-      // Load follow data
-      try {
-        console.log('UserProfile - Loading follow data for user:', id);
-        const followersData = await getFollowers(id as string);
-        const followingData = await getFollowing(id as string);
-        console.log('UserProfile - Followers:', followersData.length);
-        console.log('UserProfile - Following:', followingData.length);
-        setFollowers(followersData);
-        setFollowing(followingData);
-      } catch (error) {
-        console.error('Error loading follow data:', error);
-      }
-    };
-
-    loadUserData();
-  }, [id]);
-
-  // Effect 2: Update local playlists when context playlists change (no loading, just filtering)
-  useEffect(() => {
-    const userPlaylistsData = playlists.filter(p => 
-      p.userId === id && (isCurrentUser || p.isPublic)
-    );
-    setUserPlaylists(userPlaylistsData);
-  }, [id, playlists, isCurrentUser]);
-
-  // Determine if we should show the playlists tab
-  const shouldShowPlaylistsTab = userPlaylists.length > 0;
-
-  console.log('UserProfile - User ID:', id);
-  console.log('UserProfile - User posts:', userPosts.length);
-  console.log('UserProfile - My Rotation:', myRotation.length, myRotation.map(s => s.title));
-  console.log('UserProfile - Watch History:', watchHistory.length, watchHistory.map(s => s.title));
-
-  if (!user) {
+  if (!user || !profileUser) {
     return (
-      <View style={commonStyles.container}>
-        <Stack.Screen options={{ title: 'User Not Found' }} />
-        <Text style={commonStyles.text}>User not found</Text>
+      <View style={styles.pageContainer}>
+        <Stack.Screen options={{ title: 'User Not Found', headerShown: false }} />
+        <Text style={styles.errorText}>User not found</Text>
       </View>
     );
   }
 
   const handleFollowToggle = async (userId: string) => {
-    console.log('UserProfile - handleFollowToggle called for userId:', userId);
-    console.log('UserProfile - Currently following?', isFollowing(userId));
-    
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       if (isFollowing(userId)) {
-        console.log('UserProfile - Unfollowing user...');
         await unfollowUser(userId);
       } else {
-        console.log('UserProfile - Following user...');
         await followUser(userId);
       }
       
-      console.log('UserProfile - Follow action completed, reloading follow data...');
-      
-      // Reload follow data
-      const followersData = await getFollowers(id as string);
-      const followingData = await getFollowing(id as string);
-      console.log('UserProfile - Updated followers:', followersData.length);
-      console.log('UserProfile - Updated following:', followingData.length);
-      setFollowers(followersData);
-      setFollowing(followingData);
-      
-      console.log('UserProfile - Follow data reloaded successfully');
+      await loadFollowData();
     } catch (error) {
-      console.error('UserProfile - Error toggling follow:', error);
+      console.error('Error toggling follow:', error);
       Alert.alert('Error', 'Failed to update follow status. Please try again.');
     }
   };
@@ -224,19 +227,14 @@ export default function UserProfile() {
 
   const handleReport = async (reason: ReportReason, details: string) => {
     try {
-      console.log('Submitting report:', { userId: id, reason, details });
-      
-      // Get the current authenticated user
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !authUser) {
-        console.error('Error getting authenticated user:', authError);
         Alert.alert('Error', 'You must be logged in to report users.');
         return;
       }
 
-      // Insert the report into the database
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('reports')
         .insert({
           reporter_id: authUser.id,
@@ -244,19 +242,14 @@ export default function UserProfile() {
           reason: reason,
           details: details || null,
           status: 'pending',
-        })
-        .select()
-        .single();
+        });
 
       if (error) {
-        console.error('Error submitting report:', error);
         Alert.alert('Error', 'Failed to submit report. Please try again.');
         return;
       }
 
-      console.log('Report submitted successfully:', data);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
-      
     } catch (error) {
       console.error('Error in handleReport:', error);
       Alert.alert('Error', 'An unexpected error occurred.');
@@ -273,9 +266,45 @@ export default function UserProfile() {
     setShowFollowingModal(true);
   };
 
-  const handleSocialLink = (platform: string, url: string) => {
+  const handleSettingsPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log('Opening social link:', platform, url);
+    router.push('/settings');
+  };
+
+  const handleHelpPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/settings/help');
+  };
+
+  const handleEditProfile = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowEditProfileModal(true);
+  };
+
+  const handleSaveProfile = async (data: {
+    displayName: string;
+    username: string;
+    bio: string;
+    socialLinks: SocialLink[];
+  }) => {
+    try {
+      setProfileUser(prev => prev ? ({
+        ...prev,
+        displayName: data.displayName,
+        username: data.username,
+        bio: data.bio,
+        socialLinks: data.socialLinks,
+      }) : null);
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Error handling profile save:', error);
+    }
+  };
+
+  const handleSocialLinkPress = (url: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Linking.openURL(url).catch(err => console.error('Error opening URL:', err));
   };
 
   const handlePlaylistToggle = async (playlistId: string, isPublic: boolean) => {
@@ -297,144 +326,164 @@ export default function UserProfile() {
     router.push(`/playlist/${playlistId}`);
   };
 
-  const renderOnlineStatus = () => {
-    if (isCurrentUser) return null;
-
-    const isOnline = Math.random() > 0.5;
-    if (!isOnline) return null;
-
-    return (
-      <View style={styles.onlineStatus}>
-        <View style={styles.onlineDot} />
-        <Text style={styles.onlineText}>Online now</Text>
-      </View>
-    );
+  const getSocialIcon = (platform: SocialLink['platform']) => {
+    const iconProps = { size: 16, color: colors.almostWhite };
+    switch (platform) {
+      case 'instagram':
+        return <Instagram {...iconProps} />;
+      case 'tiktok':
+      case 'spotify':
+        return <Music {...iconProps} />;
+      case 'x':
+        return <Text style={styles.xIconSmall}>𝕏</Text>;
+      case 'website':
+        return <Globe {...iconProps} />;
+      default:
+        return null;
+    }
   };
 
-  const renderProfileActions = () => {
-    if (isCurrentUser) return null;
+  const tabs: TabSelectorTab[] = [
+    { key: 'posts', label: 'Posts' },
+    { key: 'shows', label: 'Shows' },
+    { key: 'playlists', label: 'Playlists' },
+  ];
 
-    return (
-      <View style={styles.profileActions}>
-        <Pressable
-          style={[styles.actionButton, isBlocked && styles.actionButtonBlocked]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowBlockReportModal(true);
-          }}
-        >
-          <Image 
-            source={require('@/assets/images/6301ea24-0c77-488f-9baa-c180e58d5023.png')} 
-            style={styles.prohibitionIcon}
-          />
-        </Pressable>
-      </View>
-    );
-  };
-
-  const renderHeader = () => (
-    <View style={[styles.header, isBlocked && styles.blockedProfile]}>
-      {renderOnlineStatus()}
-      {renderProfileActions()}
-
-      <Image
-        source={{ uri: user.avatar }}
-        style={styles.avatar}
-      />
-      <Text style={styles.displayName}>{user.displayName}</Text>
-      <Text style={styles.username}>@{user.username}</Text>
-      {user.bio && (
-        <Text style={styles.bio} numberOfLines={3}>
-          {user.bio}
-        </Text>
-      )}
-
-      {isBlocked && (
-        <View style={styles.blockedBadge}>
-          <Text style={styles.blockedBadgeText}>Blocked</Text>
-        </View>
-      )}
-
-      <View style={styles.statsContainer}>
-        <Pressable style={styles.statItem} onPress={handleShowFollowers}>
-          <Text style={styles.statValue}>{followers.length}</Text>
-          <Text style={styles.statLabel}>Followers</Text>
-        </Pressable>
-        <Pressable style={styles.statItem} onPress={handleShowFollowing}>
-          <Text style={styles.statValue}>{following.length}</Text>
-          <Text style={styles.statLabel}>Following</Text>
-        </Pressable>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{episodesWatched}</Text>
-          <Text style={styles.statLabel}>Episodes</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statValue}>{totalLikes}</Text>
-          <Text style={styles.statLabel}>Likes</Text>
-        </View>
-      </View>
-
-      {user.socialLinks && user.socialLinks.length > 0 && (
-        <View style={styles.socialLinks}>
-          {user.socialLinks.map((link) => (
-            <Pressable
-              key={link.platform}
-              style={styles.socialIcon}
-              onPress={() => handleSocialLink(link.platform, link.url)}
-            >
-              {link.platform === 'instagram' && <Instagram size={24} color={colors.text} />}
-              {link.platform === 'tiktok' && <Music size={24} color={colors.text} />}
-              {link.platform === 'x' && <IconSymbol name="xmark" size={24} color={colors.text} />}
-              {link.platform === 'spotify' && <Music size={24} color={colors.text} />}
-              {link.platform === 'website' && <Globe size={24} color={colors.text} />}
-            </Pressable>
-          ))}
-        </View>
-      )}
-
-      {!isCurrentUser && mutualFollowers.length > 0 && (
-        <Pressable style={styles.mutualFollowers} onPress={handleShowFollowers}>
-          <View style={styles.mutualAvatars}>
-            {mutualFollowers.slice(0, 3).map((follower, index) => (
-              <Image
-                key={follower.id}
-                source={{ uri: follower.avatar }}
-                style={[styles.mutualAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-              />
+  // Section 1: Profile Info
+  const renderProfileInfo = () => (
+    <View style={styles.profileInfoSection}>
+      <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
+      
+      <View style={styles.profileTextContainer}>
+        <Text style={styles.username}>@{profileUser.username}</Text>
+        <Text style={styles.displayName}>{profileUser.displayName}</Text>
+        {profileUser.bio && <Text style={styles.bio}>{profileUser.bio}</Text>}
+        
+        {profileUser.socialLinks && profileUser.socialLinks.length > 0 && (
+          <View style={styles.socialLinksRow}>
+            {profileUser.socialLinks.map((link, index) => (
+              <Pressable
+                key={index}
+                style={styles.socialIconButton}
+                onPress={() => handleSocialLinkPress(link.url)}
+              >
+                {getSocialIcon(link.platform)}
+              </Pressable>
             ))}
           </View>
-          <Text style={styles.mutualText}>
-            Followed by @{mutualFollowers[0].username}
-            {mutualFollowers.length > 1 && ` & ${mutualFollowers.length - 1} others`}
-          </Text>
-        </Pressable>
-      )}
-
-      {!isCurrentUser && (
-        <View style={styles.followButtonContainer}>
-          <Button
-            variant={isUserFollowing ? 'secondary' : 'primary'}
-            size="large"
-            onPress={() => handleFollowToggle(id as string)}
-            fullWidth
-          >
-            {isUserFollowing ? 'Following' : 'Follow'}
-          </Button>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 
+  // Section 2: Action Buttons - CONDITIONAL
+  const renderActionButtons = () => {
+    if (isCurrentUser) {
+      return (
+        <View style={styles.actionButtonsSection}>
+          <Pressable style={styles.actionButton} onPress={handleEditProfile}>
+            <Image source={require('@/assets/images/edit_1761625354124.png')} style={styles.actionIcon} />
+            <Text style={styles.actionButtonLabel}>Edit</Text>
+          </Pressable>
+          
+          <Pressable style={styles.actionButton} onPress={handleSettingsPress}>
+            <Image source={require('@/assets/images/Setting_line_light_1761625354125.png')} style={styles.actionIcon} />
+            <Text style={styles.actionButtonLabel}>Settings</Text>
+          </Pressable>
+          
+          <Pressable style={styles.actionButton} onPress={handleHelpPress}>
+            <Image source={require('@/assets/images/Question_light_1761625354125.png')} style={styles.actionIcon} />
+            <Text style={styles.actionButtonLabel}>Help</Text>
+          </Pressable>
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.actionButtonsSection}>
+          <Pressable 
+            style={[styles.followButton, isUserFollowing && styles.followButtonActive]} 
+            onPress={() => handleFollowToggle(id as string)}
+          >
+            <Text style={[styles.followButtonText, isUserFollowing && styles.followButtonTextActive]}>
+              {isUserFollowing ? 'Following' : 'Follow'}
+            </Text>
+          </Pressable>
+        </View>
+      );
+    }
+  };
+
+  // Section 3: Stats Grid
+  const renderStatsGrid = () => (
+    <View style={styles.statsSection}>
+      <View style={styles.statCard}>
+        <View style={styles.statContent}>
+          <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.statCard}>
+        <View style={styles.statContent}>
+          <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+          </Text>
+        </View>
+      </View>
+
+      <Pressable style={styles.statCard} onPress={handleShowFollowers}>
+        <View style={styles.statContent}>
+          <View style={styles.avatarRow}>
+            {topFollowers.slice(0, 3).map((follower, index) => (
+              <Image
+                key={follower.id}
+                source={{ uri: follower.avatar }}
+                style={[
+                  styles.miniAvatar,
+                  index > 0 && { marginLeft: -8 }
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{followers.length}</Text> Followers
+          </Text>
+        </View>
+      </Pressable>
+
+      <Pressable style={styles.statCard} onPress={handleShowFollowing}>
+        <View style={styles.statContent}>
+          <View style={styles.avatarRow}>
+            {topFollowing.slice(0, 3).map((user, index) => (
+              <Image
+                key={user.id}
+                source={{ uri: user.avatar }}
+                style={[
+                  styles.miniAvatar,
+                  index > 0 && { marginLeft: -8 }
+                ]}
+              />
+            ))}
+          </View>
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{following.length}</Text> Following
+          </Text>
+        </View>
+      </Pressable>
+    </View>
+  );
+
+  // Section 4: My Rotation
   const renderMyRotation = () => {
-    // Only show rotation section if there are shows to display
     if (myRotation.length === 0) return null;
 
     return (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          {isCurrentUser ? 'My Rotation' : `${user.displayName}'s Rotation`}
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rotationScroll}>
+      <View style={styles.rotationSection}>
+        <Text style={styles.rotationTitle}>Currently Watching</Text>
+        <View style={styles.rotationRow}>
           {myRotation.map((show) => {
             const isCommon = commonShows.some((s) => s.id === show.id);
             return (
@@ -443,56 +492,57 @@ export default function UserProfile() {
                 style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <Image source={{ uri: show.poster }} style={styles.posterImage} />
+                <Image source={{ uri: show.poster }} style={styles.rotationPosterImage} />
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.saveIconRotation,
+                    pressed && styles.saveIconPressed,
+                  ]} 
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowPlaylistModal(show);
+                  }}
+                >
+                  <IconSymbol 
+                    name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                    size={16} 
+                    color={colors.pureWhite} 
+                  />
+                </Pressable>
               </Pressable>
             );
           })}
-        </ScrollView>
-      </View>
-    );
-  };
-
-  const renderTabs = () => {
-    const tabs: TabType[] = [
-      { key: 'posts', label: 'Posts' },
-      { key: 'shows', label: 'Watch History' },
-    ];
-    
-    if (shouldShowPlaylistsTab) {
-      tabs.push({ key: 'playlists', label: 'Playlists' });
-    }
-
-    return (
-      <View style={styles.tabsWrapper}>
-        <TabSelector
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={(tabKey) => setActiveTab(tabKey as Tab)}
-          variant="default"
-        />
+        </View>
       </View>
     );
   };
 
   const renderPostsTab = () => (
     <View style={styles.tabContent}>
-      {userPosts.length > 0 ? (
-        userPosts.map((post) => <PostCard key={post.id} post={post} />)
+      {allUserActivity.length > 0 ? (
+        allUserActivity.map((item, index) => (
+          <PostCard 
+            key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} 
+            post={item.post}
+            isRepost={item.isRepost}
+            repostedBy={item.repostedBy}
+          />
+        ))
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="bubble.left" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateTitle}>
-            {isCurrentUser ? 'No posts yet' : 'No posts yet'}
-          </Text>
+          <IconSymbol name="bubble.left" size={48} color={colors.grey1} />
+          <Text style={styles.emptyStateTitle}>No posts yet</Text>
           <Text style={styles.emptyStateText}>
-            {isCurrentUser
+            {isCurrentUser 
               ? 'Start logging shows to see your posts here!'
-              : `${user.displayName} hasn't posted anything yet.`}
+              : `${user.displayName} hasn't posted anything yet.`
+            }
           </Text>
           {isCurrentUser && (
-            <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-              <Text style={styles.logShowButtonText}>Log your first show</Text>
-            </Pressable>
+            <Button variant="primary" onPress={() => setShowPostModal(true)}>
+              Log your first show
+            </Button>
           )}
         </View>
       )}
@@ -502,27 +552,31 @@ export default function UserProfile() {
   const renderShowsTab = () => (
     <View style={styles.tabContent}>
       {watchHistory.length > 0 ? (
-        <View style={styles.showsGrid}>
-          {watchHistory.map((show) => (
-            <Pressable
-              key={show.id}
-              style={styles.showGridItem}
-              onPress={() => router.push(`/show/${show.id}`)}
-            >
-              <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
-            </Pressable>
+        <View style={styles.watchHistoryList}>
+          {watchHistory.map((item) => (
+            <WatchHistoryCard
+              key={item.show.id}
+              show={item.show}
+              mostRecentEpisode={item.mostRecentEpisode || undefined}
+              loggedCount={item.loggedCount}
+              totalCount={item.totalCount}
+            />
           ))}
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="tv" size={48} color={colors.textSecondary} />
-          <Text style={styles.emptyStateTitle}>
-            {isCurrentUser ? 'No shows yet' : "Haven't watched anything yet"}
+          <IconSymbol name="tv" size={48} color={colors.grey1} />
+          <Text style={styles.emptyStateTitle}>No shows yet</Text>
+          <Text style={styles.emptyStateText}>
+            {isCurrentUser 
+              ? 'Start logging shows to see them here!'
+              : `${user.displayName} hasn't watched anything yet.`
+            }
           </Text>
           {isCurrentUser && (
-            <Pressable style={styles.logShowButton} onPress={() => setShowPostModal(true)}>
-              <Text style={styles.logShowButtonText}>Log your first show</Text>
-            </Pressable>
+            <Button variant="primary" onPress={() => setShowPostModal(true)}>
+              Log your first show
+            </Button>
           )}
         </View>
       )}
@@ -534,7 +588,7 @@ export default function UserProfile() {
       {userPlaylists.length > 0 ? (
         <>
           {userPlaylists.map((playlist) => {
-            const showCount = playlist.shows?.length || 0;
+            const showCount = playlist.showCount || 0;
             return (
               <Pressable
                 key={playlist.id}
@@ -553,31 +607,19 @@ export default function UserProfile() {
                 {isCurrentUser && (
                   <View style={styles.playlistActions}>
                     <Pressable
-                      style={styles.eyeIconButton}
+                      style={styles.iconButton}
                       onPress={(e) => {
                         e.stopPropagation();
                         handlePlaylistToggle(playlist.id, !playlist.isPublic);
                       }}
                     >
                       {playlist.isPublic ? (
-                        <Eye size={24} color={colors.text} />
+                        <Eye size={20} color={colors.almostWhite} />
                       ) : (
-                        <EyeOff size={24} color={colors.textSecondary} />
+                        <EyeOff size={20} color={colors.grey1} />
                       )}
                     </Pressable>
-                    <Pressable
-                      style={styles.playlistActionButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleSharePlaylist(playlist.id);
-                      }}
-                    >
-                      <IconSymbol name="square.and.arrow.up" size={20} color={colors.text} />
-                    </Pressable>
                   </View>
-                )}
-                {!isCurrentUser && (
-                  <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
                 )}
               </Pressable>
             );
@@ -585,8 +627,13 @@ export default function UserProfile() {
         </>
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="list.bullet" size={48} color={colors.textSecondary} />
+          <IconSymbol name="list.bullet" size={48} color={colors.grey1} />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
+          {isCurrentUser && (
+            <Text style={styles.emptyStateText}>
+              Tap the bookmark icon on any show's poster to save it a playlist!
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -594,300 +641,383 @@ export default function UserProfile() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: user.username,
-        }}
-      />
-      <View style={commonStyles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.pageContainer}>
+        {/* Top-Right Header Button - CONDITIONAL */}
+        {isCurrentUser ? (
+          <Pressable 
+            style={styles.inviteFloatingButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowInviteFriendsModal(true);
+            }}
+          >
+            <Image 
+              source={require('@/assets/images/user-plus.png')} 
+              style={styles.inviteButtonIcon}
+            />
+          </Pressable>
+        ) : (
+          <Pressable 
+            style={styles.menuFloatingButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowBlockReportModal(true);
+            }}
+          >
+            <IconSymbol name="ellipsis" size={20} color={colors.pageBackground} />
+          </Pressable>
+        )}
+
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {renderHeader()}
+          {renderProfileInfo()}
+          {renderActionButtons()}
+          {renderStatsGrid()}
           {renderMyRotation()}
-          {renderTabs()}
+          
+          <View style={styles.tabSelectorContainer}>
+            <TabSelector
+              tabs={tabs}
+              activeTab={activeTab}
+              onTabChange={(tabKey) => setActiveTab(tabKey as Tab)}
+              variant="default"
+            />
+          </View>
+
           {activeTab === 'posts' && renderPostsTab()}
           {activeTab === 'shows' && renderShowsTab()}
           {activeTab === 'playlists' && renderPlaylistsTab()}
           <View style={{ height: 100 }} />
         </ScrollView>
+
+        <FollowersModal
+          visible={showFollowersModal || showFollowingModal}
+          onClose={() => {
+            setShowFollowersModal(false);
+            setShowFollowingModal(false);
+          }}
+          users={followersType === 'followers' ? followers : following}
+          title={followersType === 'followers' ? 'Followers' : 'Following'}
+          currentUserId={currentUser.id}
+          followingIds={following.map(u => u.id)}
+          onFollowToggle={handleFollowToggle}
+        />
+
+        <BlockReportModal
+          visible={showBlockReportModal}
+          onClose={() => setShowBlockReportModal(false)}
+          username={user.username}
+          onBlock={handleBlock}
+          onReport={handleReport}
+        />
+
+        <PostModal
+          visible={showPostModal}
+          onClose={() => setShowPostModal(false)}
+        />
+
+        {isCurrentUser && (
+          <>
+            <EditProfileModal
+              visible={showEditProfileModal}
+              onClose={() => setShowEditProfileModal(false)}
+              displayName={profileUser.displayName}
+              username={profileUser.username}
+              bio={profileUser.bio || ''}
+              socialLinks={profileUser.socialLinks || []}
+              onSave={handleSaveProfile}
+            />
+
+            <InviteFriendsModal
+              visible={showInviteFriendsModal}
+              onClose={() => setShowInviteFriendsModal(false)}
+            />
+          </>
+        )}
+
+        {showPlaylistModal && (
+          <PlaylistModal
+            visible={!!showPlaylistModal}
+            onClose={() => setShowPlaylistModal(null)}
+            show={showPlaylistModal}
+            onAddToPlaylist={() => {}}
+          />
+        )}
       </View>
-
-      <FollowersModal
-        visible={showFollowersModal || showFollowingModal}
-        onClose={() => {
-          setShowFollowersModal(false);
-          setShowFollowingModal(false);
-        }}
-        users={followersType === 'followers' ? followers : following}
-        title={followersType === 'followers' ? 'Followers' : 'Following'}
-        currentUserId={currentUser.id}
-        followingIds={following.map(u => u.id)}
-        onFollowToggle={handleFollowToggle}
-      />
-
-      <BlockReportModal
-        visible={showBlockReportModal}
-        onClose={() => setShowBlockReportModal(false)}
-        username={user.username}
-        onBlock={handleBlock}
-        onReport={handleReport}
-      />
-
-      <PostModal
-        visible={showPostModal}
-        onClose={() => setShowPostModal(false)}
-      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  pageContainer: {
+    flex: 1,
+    backgroundColor: colors.pageBackground,
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+      } as any,
+    }),
+  },
   scrollView: {
     flex: 1,
   },
-  header: {
+  errorText: {
+    ...typography.subtitle,
+    color: colors.almostWhite,
+    textAlign: 'center',
+    marginTop: 100,
+  },
+  
+  // Section 1: Profile Info
+  profileInfoSection: {
     alignItems: 'center',
-    padding: spacing.gapXLarge,
-    backgroundColor: colors.cardBackground,
-    position: 'relative',
-  },
-  blockedProfile: {
-    opacity: 0.5,
-  },
-  onlineStatus: {
-    position: 'absolute',
-    top: spacing.gapLarge,
-    left: spacing.gapLarge,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: `${colors.greenHighlight}20`,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: spacing.gapSmall,
-    borderRadius: components.borderRadiusButton,
-  },
-  onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.greenHighlight,
-    marginRight: spacing.gapSmall,
-  },
-  onlineText: {
-    ...typography.p2Bold,
-    color: colors.greenHighlight,
-  },
-  profileActions: {
-    position: 'absolute',
-    top: spacing.gapLarge,
-    right: spacing.gapLarge,
-  },
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.pageBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-  },
-  actionButtonBlocked: {
-    backgroundColor: `${colors.error}20`,
-    borderColor: colors.error,
-  },
-  prohibitionIcon: {
-    width: 24,
-    height: 24,
-    tintColor: colors.text,
+    paddingTop: 60,
+    paddingBottom: 20,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: spacing.gapLarge,
+    width: 127,
+    height: 127,
+    borderRadius: 20,
+    marginBottom: 10,
   },
-  displayName: {
-    ...typography.titleL,
-    color: colors.text,
-    marginBottom: spacing.gapSmall,
+  profileTextContainer: {
+    width: 331,
+    alignItems: 'center',
+    gap: 10,
   },
   username: {
-    ...typography.subtitle,
-    color: colors.textSecondary,
-    marginBottom: spacing.gapMedium,
+    ...typography.p1B,
+    color: colors.greenHighlight,
+    textAlign: 'center',
+  },
+  displayName: {
+    fontFamily: 'Instrument Serif',
+    fontSize: 25,
+    fontWeight: '400',
+    color: colors.pureWhite,
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   bio: {
     ...typography.p1,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.gapLarge,
-    paddingHorizontal: spacing.gapLarge,
-  },
-  blockedBadge: {
-    backgroundColor: colors.error,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: spacing.gapSmall,
-    borderRadius: components.borderRadiusButton,
-    marginBottom: spacing.gapLarge,
-  },
-  blockedBadgeText: {
-    ...typography.p2Bold,
     color: colors.pureWhite,
+    textAlign: 'center',
+    maxWidth: 308,
   },
-  statsContainer: {
+  socialLinksRow: {
     flexDirection: 'row',
-    gap: spacing.gapXLarge,
-    marginBottom: spacing.gapLarge,
+    gap: 13,
+    marginTop: 4,
   },
-  statItem: {
-    alignItems: 'center',
+  socialIconButton: {
+    padding: 6,
   },
-  statValue: {
-    ...typography.titleL,
-    color: colors.text,
+  xIconSmall: {
+    fontSize: 16,
+    color: colors.almostWhite,
+    fontWeight: '600',
   },
-  statLabel: {
-    ...typography.p1,
-    color: colors.textSecondary,
-  },
-  socialLinks: {
+
+  // Section 2: Action Buttons
+  actionButtonsSection: {
     flexDirection: 'row',
-    gap: spacing.gapLarge,
-    marginBottom: spacing.gapLarge,
+    gap: 6,
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
-  socialIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.pageBackground,
-    alignItems: 'center',
+  actionButton: {
+    flexDirection: 'row',
+    flex: 1,
+    height: 46,
+    paddingVertical: 11,
+    paddingHorizontal: 34,
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
+    backgroundColor: colors.cardBackground,
   },
-  mutualFollowers: {
-    flexDirection: 'row',
+  actionButtonLabel: {
+    ...typography.p1,
+    color: colors.pureWhite,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  actionIcon: {
+    width: 19,
+    height: 19,
+  },
+  followButton: {
+    flex: 1,
+    height: 46,
+    paddingVertical: 11,
+    paddingHorizontal: 34,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.gapLarge,
-    paddingHorizontal: spacing.gapLarge,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.greenHighlight,
+    backgroundColor: colors.greenHighlight,
   },
-  mutualAvatars: {
+  followButtonActive: {
+    backgroundColor: colors.cardBackground,
+    borderColor: colors.cardStroke,
+  },
+  followButtonText: {
+    ...typography.p1,
+    color: colors.pageBackground,
+    textAlign: 'center',
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  followButtonTextActive: {
+    color: colors.pureWhite,
+  },
+
+  // Section 3: Stats Grid
+  statsSection: {
     flexDirection: 'row',
-    marginRight: spacing.gapSmall,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
-  mutualAvatar: {
+  statCard: {
+    width: 'calc(50% - 4px)' as any,
+    height: 57,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    backgroundColor: colors.cardBackground,
+  },
+  statContent: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 3,
+  },
+  statValue: {
+    ...typography.p1,
+    height: 15,
+    color: colors.grey1,
+    textAlign: 'center',
+  },
+  statNumber: {
+    color: colors.pureWhite,
+  },
+  statIcon: {
     width: 24,
     height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  miniAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
     borderColor: colors.cardBackground,
   },
-  mutualText: {
-    ...typography.p2,
-    color: colors.textSecondary,
+
+  // Section 4: My Rotation
+  rotationSection: {
+    marginTop: 30,
+    paddingHorizontal: 16,
   },
-  followButtonContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingHorizontal: spacing.pageMargin,
+  rotationTitle: {
+    ...typography.smallSubtitle,
+    color: colors.pureWhite,
+    marginBottom: 16,
   },
-  section: {
-    padding: spacing.gapLarge,
-  },
-  sectionTitle: {
-    ...typography.titleL,
-    color: colors.text,
-    marginBottom: spacing.gapLarge,
-  },
-  rotationScroll: {
-    marginHorizontal: -spacing.gapLarge,
-    paddingHorizontal: spacing.gapLarge,
+  rotationRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   rotationPoster: {
-    width: 120,
-    height: 180,
-    borderRadius: components.borderRadiusButton,
-    marginRight: spacing.gapMedium,
+    position: 'relative',
+    width: 128.67,
+    height: 162.25,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   commonShowPoster: {
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: colors.greenHighlight,
   },
-  posterImage: {
+  rotationPosterImage: {
     width: '100%',
     height: '100%',
   },
-  emptyRotation: {
+  saveIconRotation: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.sectionSpacing,
-    backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 6,
   },
-  emptyRotationText: {
-    ...typography.subtitle,
-    color: colors.textSecondary,
-    marginTop: spacing.gapMedium,
-    marginBottom: spacing.gapLarge,
+  saveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
-  logShowButton: {
-    backgroundColor: colors.greenHighlight,
-    paddingHorizontal: spacing.gapXLarge,
-    paddingVertical: spacing.gapMedium,
-    borderRadius: components.borderRadiusButton,
+
+  // Tab Selector
+  tabSelectorContainer: {
+    paddingHorizontal: 16,
+    marginTop: 30,
+    marginBottom: 18,
   },
-  logShowButtonText: {
-    ...typography.p1Bold,
-    color: colors.black,
-  },
-  tabsWrapper: {
-    padding: spacing.gapLarge,
-  },
+  
+  // Tab Content
   tabContent: {
-    padding: spacing.gapLarge,
+    paddingHorizontal: 16,
   },
   emptyState: {
     alignItems: 'center',
-    padding: spacing.sectionSpacing,
+    padding: 32,
     backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusCard,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
   },
   emptyStateTitle: {
     ...typography.subtitle,
-    color: colors.text,
-    marginTop: spacing.gapLarge,
-    marginBottom: spacing.gapSmall,
+    color: colors.almostWhite,
+    marginTop: 16,
+    marginBottom: 8,
   },
   emptyStateText: {
     ...typography.p1,
-    color: colors.textSecondary,
+    color: colors.grey1,
     textAlign: 'center',
-    marginBottom: spacing.gapLarge,
+    marginBottom: 16,
   },
-  showsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.gapMedium,
-  },
-  showGridItem: {
-    width: '31%',
-    aspectRatio: 2 / 3,
-    borderRadius: components.borderRadiusTag,
-    overflow: 'hidden',
-  },
-  showGridPoster: {
-    width: '100%',
-    height: '100%',
+  watchHistoryList: {
+    gap: 8,
   },
   playlistItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.cardPadding,
+    padding: 15,
     backgroundColor: colors.cardBackground,
-    borderRadius: components.borderRadiusButton,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
-    marginBottom: spacing.gapMedium,
+    marginBottom: 12,
   },
   playlistItemPressed: {
     opacity: 0.7,
@@ -896,31 +1026,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playlistName: {
-    ...typography.p1Bold,
-    color: colors.text,
-    marginBottom: spacing.gapSmall,
+    ...typography.subtitle,
+    color: colors.almostWhite,
+    marginBottom: 4,
   },
   playlistCount: {
-    ...typography.p2,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.grey1,
   },
   playlistActions: {
     flexDirection: 'row',
-    gap: spacing.gapMedium,
+    gap: 12,
     alignItems: 'center',
   },
-  eyeIconButton: {
-    padding: spacing.gapSmall,
+  iconButton: {
+    padding: 8,
     backgroundColor: colors.pageBackground,
-    borderRadius: components.borderRadiusTag,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.cardStroke,
   },
-  playlistActionButton: {
-    padding: spacing.gapSmall,
-    backgroundColor: colors.pageBackground,
-    borderRadius: components.borderRadiusTag,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
+
+  // Floating Buttons - Top Right
+  inviteFloatingButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.greenHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  inviteButtonIcon: {
+    width: 20,
+    height: 20,
+  },
+  menuFloatingButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: colors.greenHighlight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });
