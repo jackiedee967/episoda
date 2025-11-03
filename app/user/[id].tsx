@@ -21,6 +21,8 @@ import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
 import BlockReportModal from '@/components/BlockReportModal';
+import FriendsInCommonBar from '@/components/FriendsInCommonBar';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import Button from '@/components/Button';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import WatchHistoryCard from '@/components/WatchHistoryCard';
@@ -73,6 +75,7 @@ export default function UserProfile() {
   const [following, setFollowing] = useState<any[]>([]);
   const [topFollowers, setTopFollowers] = useState<any[]>([]);
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
+  const [currentUserFollowing, setCurrentUserFollowing] = useState<any[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
 
   const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
@@ -107,16 +110,21 @@ export default function UserProfile() {
       const topFollowersData = await getTopFollowers(id as string, 3);
       const topFollowingData = await getTopFollowing(id as string, 3);
       
+      // Also fetch current user's following list for friends in common calculation
+      const currentUserFollowingData = !isCurrentUser ? await getFollowing(currentUser.id) : [];
+      
       setFollowers(followersData || []);
       setFollowing(followingData || []);
       setTopFollowers(topFollowersData || []);
       setTopFollowing(topFollowingData || []);
+      setCurrentUserFollowing(currentUserFollowingData || []);
     } catch (error) {
       console.error('Error loading follow data:', error);
       setFollowers([]);
       setFollowing([]);
       setTopFollowers([]);
       setTopFollowing([]);
+      setCurrentUserFollowing([]);
     }
   };
 
@@ -191,6 +199,33 @@ export default function UserProfile() {
     getWatchHistoryFromContext(id as string),
     [id]
   );
+
+  // Calculate friends in common (people who follow the profile user AND are followed by the current viewer)
+  const friendsInCommon = useMemo(() => {
+    if (isCurrentUser || !followers.length || !currentUserFollowing.length) return [];
+    
+    // Find mutual friends (people who follow this profile user AND are followed by the current viewer)
+    const mutualFriends = followers.filter(follower => 
+      currentUserFollowing.some(f => f.id === follower.id)
+    );
+    
+    return mutualFriends;
+  }, [isCurrentUser, followers, currentUserFollowing]);
+
+  // Calculate tabs - MUST be before early return to maintain hook order
+  const tabs: TabSelectorTab[] = useMemo(() => {
+    const baseTabs = [
+      { key: 'posts', label: 'Posts' },
+      { key: 'shows', label: 'Shows' },
+    ];
+    
+    // Only show playlists tab if user has playlists OR if viewing own profile
+    if (isCurrentUser || (userPlaylists && userPlaylists.length > 0)) {
+      baseTabs.push({ key: 'playlists', label: 'Playlists' });
+    }
+    
+    return baseTabs;
+  }, [isCurrentUser, userPlaylists]);
 
   if (!user || !profileUser) {
     return (
@@ -342,12 +377,6 @@ export default function UserProfile() {
         return null;
     }
   };
-
-  const tabs: TabSelectorTab[] = [
-    { key: 'posts', label: 'Posts' },
-    { key: 'shows', label: 'Shows' },
-    { key: 'playlists', label: 'Playlists' },
-  ];
 
   // Section 1: Profile Info
   const renderProfileInfo = () => {
@@ -693,7 +722,7 @@ export default function UserProfile() {
             router.back();
           }}
         >
-          <IconSymbol name="chevron.left" size={24} color={colors.pageBackground} />
+          <IconSymbol name="chevron.left" size={24} color="#FFFFFF" />
         </Pressable>
 
         {/* Top-Right Header Button - CONDITIONAL */}
@@ -724,6 +753,12 @@ export default function UserProfile() {
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderProfileInfo()}
+          
+          {/* Friends in Common Bar - Only for other users' profiles */}
+          {!isCurrentUser && friendsInCommon.length > 0 && (
+            <FriendsInCommonBar friends={friendsInCommon} variant="small" />
+          )}
+          
           {renderActionButtons()}
           {renderStatsGrid()}
           {renderMyRotation()}
@@ -797,6 +832,16 @@ export default function UserProfile() {
           />
         )}
       </View>
+      
+      {/* FloatingTabBar - Show main menu on profile pages */}
+      <FloatingTabBar 
+        tabs={[
+          { name: 'Home', icon: 'house.fill', route: '/(home)' },
+          { name: 'Search', icon: 'magnifyingglass', route: '/search' },
+          { name: 'Notifications', icon: 'bell.fill', route: '/notifications' },
+          { name: 'Profile', icon: 'person.fill', route: '/profile' },
+        ]} 
+      />
     </>
   );
 }
