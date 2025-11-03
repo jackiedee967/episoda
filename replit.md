@@ -46,6 +46,17 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
 ## Recent Changes (November 3, 2025)
+- **Help Desk Admin Features** - Admin announcement system and navigation fixes
+  - Created `config/admins.ts` with admin user ID list and `isAdmin()` helper function for temporary admin privileges
+  - Fixed Help button navigation on profile pages to correctly route to `/settings/help`
+  - Added admin-only "FROM THE TEAM" section at top of Help Desk page with horizontal scrolling announcement cards
+  - Created `/settings/help/create-announcement` page for admin-only announcement posting
+  - Updated Help Desk post creation button to use ButtonL component (green styling) for consistency
+  - Admin announcements display in separate section with category "Admin Announcement"
+  - Admin badge changed from "Admin" to "Team" for community posts by admins
+  - Both community posts and admin announcements persist to `help_desk_posts` Supabase table
+  - Admin check uses centralized config file; will be replaced with role-based auth when authentication is implemented
+
 - **Friends in Common Component (FriendsInCommonBar)** - Following exact Figma code structure
   - Created Friends component with variant-based styling system (Small/Large, FriendsInCommonBar/FriendsWatchingBar)
   - Username text highlighted in greenHighlight color (e.g., "Jackie and 2 others follow" - "Jackie" is green)
