@@ -270,6 +270,45 @@ export type Database = {
         }
         Relationships: []
       }
+      help_desk_posts: {
+        Row: {
+          id: string
+          user_id: string
+          username: string
+          title: string
+          details: string
+          category: string
+          likes_count: number
+          comments_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          username: string
+          title: string
+          details: string
+          category: string
+          likes_count?: number
+          comments_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          username?: string
+          title?: string
+          details?: string
+          category?: string
+          likes_count?: number
+          comments_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
