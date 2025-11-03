@@ -1,0 +1,106 @@
+import {useVariants} from 'react-exo/utils';
+import {StyleSheet} from 'react-native-unistyles';
+import {View, Text} from 'react-native';
+
+import {Friends} from 'components/ui-pages/base/friends';
+
+import type {ViewStyle, StyleProp} from 'react-native';
+
+export interface FriendsProps {
+  prop: typeof FriendsVariants.prop[number],
+  state: typeof FriendsVariants.state[number],
+  /** Used to override the default root style. */
+  style?: StyleProp<ViewStyle>,
+  /** Used to locate this view in end-to-end tests. */
+  testID?: string,
+}
+
+export const FriendsVariants = {
+  prop: ['Small', 'Large'],
+  state: ['FriendsInCommonBar', 'FriendsWatchingBar'],
+} as const;
+
+export function Friends(props: FriendsProps) {
+  const {state, prop} = props;
+  const {vstyles} = useVariants(FriendsVariants, {state, prop}, styles);
+
+  return (
+    <View testID={props.testID ?? "342:4191"} style={[vstyles.root(), props.style]}>
+      <Friends testID="342:4152"
+        prop="Large"
+        state="Mutual_Friends"
+      />
+      <Text testID="342:4153" style={styles.$5FriendsWatching}>
+        {`5 friends watching`}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create(theme => ({
+  root: {
+    flexDirection: 'row',
+    width: 191,
+    paddingTop: 9,
+    paddingLeft: 14,
+    paddingBottom: 9,
+    paddingRight: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    rowGap: 8,
+    columnGap: 8,
+    borderBottomLeftRadius: 11,
+    borderBottomRightRadius: 11,
+    borderTopLeftRadius: 11,
+    borderTopRightRadius: 11,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'Card.Stroke',
+    backgroundColor: 'Card.Background',
+  },
+  rootStateFriendsWatchingBarPropSmall: {
+    width: undefined,
+    height: 25,
+    flexShrink: 0,
+  },
+  rootStateFriendsInCommonBarPropSmall: {
+    width: undefined,
+    height: 25,
+    flexShrink: 0,
+  },
+  friends: {
+    flexDirection: 'row',
+    width: 56,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  friendsStateFriendsWatchingBarPropSmall: {
+    flexShrink: undefined,
+    width: 36,
+    height: 16,
+    paddingTop: 0.5,
+    paddingLeft: 0,
+    paddingBottom: 0.5,
+    paddingRight: 0,
+  },
+  friendsStateFriendsInCommonBarPropSmall: {
+    flexShrink: undefined,
+    width: 36,
+    height: 16,
+    paddingTop: 0.5,
+    paddingLeft: 0,
+    paddingBottom: 0.5,
+    paddingRight: 0,
+  },
+  $5FriendsWatching: {
+    color: 'Almost.White',
+    textAlign: 'center',
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontStyle: 'normal',
+    fontWeight: '400',
+    letterSpacing: -0.2,
+  },
+}));
