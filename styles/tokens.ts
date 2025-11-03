@@ -56,17 +56,17 @@ export const colors = {
 export const typography = {
   // Titles
   titleXl: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'Instrument Serif',
     fontSize: 43,
-    fontWeight: '700' as const,
+    fontWeight: '400' as const,
     fontStyle: 'normal' as const,
     letterSpacing: -0.86,
     lineHeight: 43,
   },
   titleL: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'Instrument Serif',
     fontSize: 25,
-    fontWeight: '700' as const,
+    fontWeight: '400' as const,
     fontStyle: 'normal' as const,
     letterSpacing: -0.5,
     lineHeight: 30,

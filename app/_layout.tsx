@@ -21,6 +21,10 @@ import {
   FunnelDisplay_600SemiBold,
   FunnelDisplay_700Bold,
 } from '@expo-google-fonts/funnel-display';
+import {
+  InstrumentSerif_400Regular,
+  InstrumentSerif_400Regular_Italic,
+} from '@expo-google-fonts/instrument-serif';
 import "react-native-reanimated";
 import { Stack, router, useSegments, useRootNavigationState } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -128,6 +132,8 @@ export default function RootLayout() {
     FunnelDisplay_500Medium,
     FunnelDisplay_600SemiBold,
     FunnelDisplay_700Bold,
+    InstrumentSerif_400Regular,
+    InstrumentSerif_400Regular_Italic,
   });
 
   useEffect(() => {
