@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import {colors, typography} from '@/styles/tokens';
 
 import {Friends as BaseFriends} from './ui-pages/base/friends';
@@ -22,6 +22,8 @@ export interface FriendsProps {
   }>;
   /** Text to display (e.g., "Jackie and 2 others follow") */
   text?: string;
+  /** Called when the component is pressed */
+  onPress?: () => void;
 }
 
 export const FriendsVariants = {
@@ -51,27 +53,59 @@ function useVariants(
 }
 
 export function Friends(props: FriendsProps) {
-  const {state, prop, friends = [], text = ''} = props;
+  const {state, prop, friends = [], text = '', onPress} = props;
   const {vstyles} = useVariants(FriendsVariants, {state, prop}, styles);
 
+  // Parse text to highlight username in green
+  const renderText = () => {
+    // Extract username (everything before " and " or " follow")
+    const andIndex = text.indexOf(' and ');
+    const followIndex = text.indexOf(' follow');
+    
+    let usernameEndIndex = -1;
+    if (andIndex !== -1 && followIndex !== -1) {
+      usernameEndIndex = Math.min(andIndex, followIndex);
+    } else if (andIndex !== -1) {
+      usernameEndIndex = andIndex;
+    } else if (followIndex !== -1) {
+      usernameEndIndex = followIndex;
+    }
+    
+    if (usernameEndIndex === -1) {
+      return <Text style={styles.friendsText}>{text}</Text>;
+    }
+
+    const username = text.substring(0, usernameEndIndex);
+    const rest = text.substring(usernameEndIndex);
+
+    return (
+      <Text style={styles.friendsText}>
+        <Text style={styles.usernameText}>{username}</Text>
+        {rest}
+      </Text>
+    );
+  };
+
   return (
-    <View testID={props.testID ?? "342:4191"} style={[vstyles.root(), props.style]}>
+    <TouchableOpacity 
+      testID={props.testID ?? "342:4191"} 
+      style={[vstyles.root(), props.style]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <BaseFriends testID="342:4152"
         prop={prop}
         state="Mutual_Friends"
         friends={friends}
       />
-      <Text testID="342:4153" style={styles.friendsText}>
-        {text}
-      </Text>
-    </View>
+      {renderText()}
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
-    width: 191,
     paddingTop: 9,
     paddingLeft: 14,
     paddingBottom: 9,
@@ -90,12 +124,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
   },
   rootStateFriendsWatchingBarPropSmall: {
-    width: undefined,
     height: 25,
     flexShrink: 0,
   },
   rootStateFriendsInCommonBarPropSmall: {
-    width: undefined,
     height: 25,
     flexShrink: 0,
   },
@@ -107,5 +139,8 @@ const styles = StyleSheet.create({
     fontStyle: 'normal',
     fontWeight: '400',
     letterSpacing: -0.2,
+  },
+  usernameText: {
+    color: colors.greenHighlight,
   },
 });

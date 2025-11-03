@@ -21,6 +21,7 @@ import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
 import BlockReportModal from '@/components/BlockReportModal';
+import FriendsInCommonModal from '@/components/FriendsInCommonModal';
 import { Friends } from '@/components/Friends';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import Button from '@/components/Button';
@@ -67,6 +68,7 @@ export default function UserProfile() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
+  const [showFriendsInCommonModal, setShowFriendsInCommonModal] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState<Show | null>(null);
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
   const [episodesWatched, setEpisodesWatched] = useState(0);
@@ -773,6 +775,10 @@ export default function UserProfile() {
                     return `${firstName} and ${othersCount} other${othersCount !== 1 ? 's' : ''} follow`;
                   }
                 })()}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setShowFriendsInCommonModal(true);
+                }}
               />
             </View>
           )}
@@ -807,6 +813,13 @@ export default function UserProfile() {
           currentUserId={currentUser.id}
           followingIds={following.map(u => u.id)}
           onFollowToggle={handleFollowToggle}
+        />
+
+        <FriendsInCommonModal
+          visible={showFriendsInCommonModal}
+          onClose={() => setShowFriendsInCommonModal(false)}
+          friends={friendsInCommon}
+          profileUsername={user?.username || ''}
         />
 
         <BlockReportModal
