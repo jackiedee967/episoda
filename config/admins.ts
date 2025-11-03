@@ -8,7 +8,7 @@
  */
 
 export const ADMIN_USER_IDS = [
-  '1', // Jacqueline (current user)
+  'a0000000-0000-0000-0000-000000000001', // Jacqueline (current user - jvckie)
 ];
 
 /**
