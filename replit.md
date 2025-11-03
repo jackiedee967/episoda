@@ -40,12 +40,24 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 
 ### System Design Choices
 - **Modular Structure**: Organized into logical directories for tabs, authentication, episodes, integrations, playlists, posts, settings, shows, and users.
-- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon), StarRatings (consistent star rating display using Lucide icons and design tokens), EditProfileModal (profile editing interface), TabSelector (height: 100% fix for proper padding).
+- **Component-Based**: Reusable UI components are stored in the `components/` directory. Recently added: PostTags (episode/show tags with multiple states and colors), ButtonL (large button variant), Vector3Divider (horizontal divider), SearchDuotoneLine (search icon), StarRatings (consistent star rating display using Lucide icons and design tokens), EditProfileModal (profile editing interface), TabSelector (height: 100% fix for proper padding), Friends (mutual friends bar with variant system and greenHighlight username), FriendsInCommonModal (slide-up modal for viewing full mutual friends list).
 - **Centralized Styling**: All styling uses a design token system to ensure consistency and maintainability.
 - **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates. Engagement actions (likes, reposts) trigger reactive UI updates through context subscriptions. DataContext includes helper functions for getting top followers/following by follower_count.
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
-## Recent Changes (October 30, 2025)
+## Recent Changes (November 3, 2025)
+- **Friends in Common Component (FriendsInCommonBar)** - Following exact Figma code structure
+  - Created Friends component with variant-based styling system (Small/Large, FriendsInCommonBar/FriendsWatchingBar)
+  - Username text highlighted in greenHighlight color (e.g., "Jackie and 2 others follow" - "Jackie" is green)
+  - Component hugs contents (no fixed width) for responsive sizing
+  - Entire component is pressable/clickable with TouchableOpacity wrapper
+  - Created FriendsInCommonModal - slide-up modal displaying full list of mutual friends
+  - Modal features user avatars, names, bios, and navigation to friend profiles
+  - Displays centered below bio on other users' profiles when mutual friends exist
+  - Integrated haptic feedback on press
+  - Text parsing logic handles multi-word names, hyphens, and special characters correctly
+
+## Previous Changes (October 30, 2025)
 - **RESOLVED: DataContext stability issue fixed with state/actions/selectors architecture**
   - **Original Problem**: App experiencing instability where different memoization strategies caused different pages to break:
     - No useMemo on contextValue → Home + Search work, Profile + Friend Activity blank
