@@ -18,6 +18,8 @@ import { supabase } from '@/app/integrations/supabase/client';
 import { HelpDeskPost } from '@/types';
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
+import { isAdmin } from '@/config/admins';
+import ButtonL from '@/components/ButtonL';
 
 export default function HelpDeskScreen() {
   const router = useRouter();
@@ -25,6 +27,7 @@ export default function HelpDeskScreen() {
   const [posts, setPosts] = useState<HelpDeskPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const userIsAdmin = isAdmin(currentUser?.id);
 
   useEffect(() => {
     loadPosts();
@@ -58,6 +61,11 @@ export default function HelpDeskScreen() {
   const handleCreatePost = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/settings/help/create-post');
+  };
+
+  const handleCreateAnnouncement = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/settings/help/create-announcement');
   };
 
   const handlePostPress = (postId: string) => {
@@ -146,7 +154,7 @@ export default function HelpDeskScreen() {
             <Text style={styles.communityPostUsername}>{post.username}</Text>
             {post.username === 'jvckie' && (
               <View style={styles.adminBadge}>
-                <Text style={styles.adminBadgeText}>Admin</Text>
+                <Text style={styles.adminBadgeText}>Team</Text>
               </View>
             )}
           </View>
@@ -224,9 +232,17 @@ export default function HelpDeskScreen() {
         </View>
 
         {/* From the Team Section */}
-        {adminPosts.length > 0 && (
-          <View style={styles.section}>
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>FROM THE TEAM</Text>
+            {userIsAdmin && (
+              <Pressable style={styles.createButton} onPress={handleCreateAnnouncement}>
+                <Plus size={16} color={colors.background} />
+                <Text style={styles.createButtonText}>Announce</Text>
+              </Pressable>
+            )}
+          </View>
+          {adminPosts.length > 0 ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -234,8 +250,10 @@ export default function HelpDeskScreen() {
             >
               {adminPosts.map(renderAdminCard)}
             </ScrollView>
-          </View>
-        )}
+          ) : (
+            <Text style={styles.emptyAdminText}>No announcements yet.</Text>
+          )}
+        </View>
 
         {/* Community Posts Section */}
         <View style={styles.section}>
@@ -444,5 +462,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 40,
+  },
+  emptyAdminText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
 });

@@ -216,7 +216,7 @@ export default function ProfileScreen() {
 
   const handleHelpPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/help');
+    router.push('/settings/help');
   };
 
   const handleEditProfile = () => {

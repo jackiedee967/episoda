@@ -18,6 +18,8 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/app/integrations/supabase/client';
 import { HelpDeskCategory } from '@/types';
 import { useData } from '@/contexts/DataContext';
+import { isAdmin } from '@/config/admins';
+import ButtonL from '@/components/ButtonL';
 
 export default function CreatePostScreen() {
   const router = useRouter();
@@ -30,14 +32,14 @@ export default function CreatePostScreen() {
 
   // AUTHENTICATION BYPASSED - Using mock user from DataContext
   const currentUsername = currentUser.username;
-  const isAdmin = currentUsername === 'jvckie';
+  const userIsAdmin = isAdmin(currentUser.id);
 
   const categories: HelpDeskCategory[] = [
     'Feature Request',
     'Support',
     'Feedback',
     'Misc',
-    ...(isAdmin ? ['Admin Announcement' as HelpDeskCategory] : []),
+    ...(userIsAdmin ? ['Admin Announcement' as HelpDeskCategory] : []),
   ];
 
   const handleCreatePost = async () => {
@@ -172,17 +174,9 @@ export default function CreatePostScreen() {
           </View>
 
           {/* Create Button */}
-          <Pressable
-            style={[styles.createButton, loading && styles.createButtonDisabled]}
-            onPress={handleCreatePost}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={colors.background} />
-            ) : (
-              <Text style={styles.createButtonText}>Create Post</Text>
-            )}
-          </Pressable>
+          <ButtonL onPress={handleCreatePost} disabled={loading}>
+            {loading ? 'Posting...' : 'Create Post'}
+          </ButtonL>
         </View>
       </ScrollView>
 
