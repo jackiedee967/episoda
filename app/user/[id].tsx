@@ -21,7 +21,7 @@ import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
 import BlockReportModal from '@/components/BlockReportModal';
-import FriendsInCommonBar from '@/components/FriendsInCommonBar';
+import { Friends } from '@/components/Friends';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import Button from '@/components/Button';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
@@ -756,7 +756,25 @@ export default function UserProfile() {
           
           {/* Friends in Common Bar - Only for other users' profiles */}
           {!isCurrentUser && friendsInCommon.length > 0 && (
-            <FriendsInCommonBar friends={friendsInCommon} variant="small" />
+            <View style={styles.friendsInCommonContainer}>
+              <Friends 
+                state="FriendsInCommonBar"
+                prop="Small"
+                friends={friendsInCommon}
+                text={(() => {
+                  const firstName = friendsInCommon[0]?.displayName || friendsInCommon[0]?.username || 'Someone';
+                  if (friendsInCommon.length === 1) {
+                    return `${firstName} follows`;
+                  } else if (friendsInCommon.length === 2) {
+                    const secondName = friendsInCommon[1]?.displayName || friendsInCommon[1]?.username;
+                    return `${firstName} and ${secondName} follow`;
+                  } else {
+                    const othersCount = friendsInCommon.length - 1;
+                    return `${firstName} and ${othersCount} other${othersCount !== 1 ? 's' : ''} follow`;
+                  }
+                })()}
+              />
+            </View>
           )}
           
           {renderActionButtons()}
@@ -929,6 +947,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.almostWhite,
     fontWeight: '600',
+  },
+
+  // Friends in Common Container - Centered
+  friendsInCommonContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
   },
 
   // Section 2: Action Buttons
