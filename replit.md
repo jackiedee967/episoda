@@ -45,8 +45,16 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **Data Management**: React Context API is used for global state, and Supabase handles data persistence and real-time updates. Engagement actions (likes, reposts) trigger reactive UI updates through context subscriptions. DataContext includes helper functions for getting top followers/following by follower_count.
 - **Development Environment**: Configured for Replit with specific port and host settings, and includes custom Babel plugins for editable components in development.
 
-## Recent Changes (November 3, 2025)
-- **Help Desk Admin Features** - Admin announcement system and navigation fixes
+## Recent Changes (November 4, 2025)
+- **Typography Update: Instrument Serif Font Implementation**
+  - Installed `@expo-google-fonts/instrument-serif` package for titleXl and titleL typography tokens
+  - Updated `titleXl` and `titleL` in `styles/tokens.ts` to use `'InstrumentSerif_400Regular'` font family (previously Funnel Display)
+  - Font weight changed from 700 to 400 to match Instrument Serif's regular weight
+  - Loaded InstrumentSerif_400Regular and InstrumentSerif_400Regular_Italic in `app/_layout.tsx`
+  - All title components (43px and 25px sizes) now render in Instrument Serif serif font
+  - Note: Must use exact font variable name (`InstrumentSerif_400Regular`) not display name (`'Instrument Serif'`) for React Native font rendering
+
+- **Help Desk Admin Features** - Admin announcement system and navigation fixes (November 3, 2025)
   - Created `config/admins.ts` with admin user ID list and `isAdmin()` helper function for temporary admin privileges
   - Fixed Help button navigation on profile pages to correctly route to `/settings/help`
   - Added admin-only "FROM THE TEAM" section at top of Help Desk page with horizontal scrolling announcement cards
