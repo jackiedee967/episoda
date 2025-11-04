@@ -753,9 +753,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   displayName: {
-    ...typography.titleL,
+    fontFamily: 'InstrumentSerif_400Regular',
+    fontSize: 25,
+    fontWeight: '400',
     color: colors.pureWhite,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   bio: {
     ...typography.p1,

@@ -1100,7 +1100,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Fallback to mock data
     console.log('⚠️ Using mock data for top followers');
+    console.log('📊 mockUsers length:', mockUsers.length);
+    console.log('📊 userId to match:', userId);
     const followers = mockUsers.filter(u => u.following?.includes(userId)) || [];
+    console.log('📊 Filtered followers:', followers.length, followers.map(f => f.username));
     return followers.slice(0, limit);
   }, []);
 
