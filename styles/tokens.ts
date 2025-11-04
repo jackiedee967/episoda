@@ -56,7 +56,7 @@ export const colors = {
 export const typography = {
   // Titles
   titleXl: {
-    fontFamily: 'Instrument Serif',
+    fontFamily: 'InstrumentSerif_400Regular',
     fontSize: 43,
     fontWeight: '400' as const,
     fontStyle: 'normal' as const,
@@ -64,7 +64,7 @@ export const typography = {
     lineHeight: 43,
   },
   titleL: {
-    fontFamily: 'Instrument Serif',
+    fontFamily: 'InstrumentSerif_400Regular',
     fontSize: 25,
     fontWeight: '400' as const,
     fontStyle: 'normal' as const,
