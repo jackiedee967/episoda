@@ -753,12 +753,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   displayName: {
-    fontFamily: 'Instrument Serif',
-    fontSize: 25,
-    fontWeight: '400',
+    ...typography.titleL,
     color: colors.pureWhite,
     textAlign: 'center',
-    letterSpacing: -0.5,
   },
   bio: {
     ...typography.p1,
