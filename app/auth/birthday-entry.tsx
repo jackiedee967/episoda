@@ -34,7 +34,7 @@ export default function BirthdayEntryScreen() {
   const [year, setYear] = useState('');
   const [isInputValid, setIsInputValid] = useState(false);
   
-  const monthRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInput>(null);
   const yearRef = useRef<TextInput>(null);
 
   const calculateAge = (birthDate: Date): number => {
@@ -144,20 +144,20 @@ export default function BirthdayEntryScreen() {
     setIsInputValid(true);
   };
 
-  const handleDayChange = (value: string) => {
-    const cleaned = value.replace(/\D/g, '').slice(0, 2);
-    setDay(cleaned);
-    updateDateFromInputs(cleaned, month, year);
-    
-    if (cleaned.length === 2) {
-      monthRef.current?.focus();
-    }
-  };
-
   const handleMonthChange = (value: string) => {
     const cleaned = value.replace(/\D/g, '').slice(0, 2);
     setMonth(cleaned);
     updateDateFromInputs(day, cleaned, year);
+    
+    if (cleaned.length === 2) {
+      dayRef.current?.focus();
+    }
+  };
+
+  const handleDayChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 2);
+    setDay(cleaned);
+    updateDateFromInputs(cleaned, month, year);
     
     if (cleaned.length === 2) {
       yearRef.current?.focus();
@@ -190,22 +190,22 @@ export default function BirthdayEntryScreen() {
               <View style={styles.webInputContainer}>
                 <TextInput
                   style={styles.webDateBox}
-                  value={day}
-                  onChangeText={handleDayChange}
+                  value={month}
+                  onChangeText={handleMonthChange}
                   keyboardType="number-pad"
-                  placeholder="DD"
+                  placeholder="MM"
                   placeholderTextColor={colors.grey1}
                   maxLength={2}
                   autoFocus
                 />
                 <Text style={styles.separator}>/</Text>
                 <TextInput
-                  ref={monthRef}
+                  ref={dayRef}
                   style={styles.webDateBox}
-                  value={month}
-                  onChangeText={handleMonthChange}
+                  value={day}
+                  onChangeText={handleDayChange}
                   keyboardType="number-pad"
-                  placeholder="MM"
+                  placeholder="DD"
                   placeholderTextColor={colors.grey1}
                   maxLength={2}
                 />

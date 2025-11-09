@@ -85,7 +85,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [reposts, setReposts] = useState<RepostData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   
-  // MOCK USER - Always use jvckie as the current user (authentication bypassed)
+  // Current user data - loaded from Supabase when authenticated, falls back to mock user
   const [currentUserData, setCurrentUserData] = useState<User>(mockCurrentUser);
   const [isLoading, setIsLoading] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
@@ -143,6 +143,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Load current user's profile from Supabase
+  const loadCurrentUserProfile = useCallback(async (userId: string) => {
+    try {
+      console.log('Loading current user profile from Supabase:', userId);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles' as any)
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return;
+      }
+
+      if (profile) {
+        const profileData = profile as any;
+        console.log('✅ Loaded user profile:', profileData.username);
+        
+        // Update currentUserData with real profile data
+        setCurrentUserData({
+          id: userId,
+          username: profileData.username || 'user',
+          displayName: profileData.display_name || profileData.username || 'User',
+          avatar: profileData.avatar_url || mockCurrentUser.avatar,
+          bio: profileData.bio || '',
+          socialLinks: profileData.social_links || {},
+          following: [],
+          followers: [],
+          isFollowing: false,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user profile from Supabase:', error);
+    }
+  }, []);
+
   // Load follow data from Supabase - wrapped in useCallback to prevent infinite loops
   const loadFollowDataFromSupabase = useCallback(async (userId: string) => {
     try {
@@ -188,7 +226,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.log('✅ User authenticated in Supabase:', user.id);
         setAuthUserId(user.id);
         
-        // Load user's follow data from Supabase
+        // Load user's profile and follow data from Supabase
+        await loadCurrentUserProfile(user.id);
         await loadFollowDataFromSupabase(user.id);
       } else {
         console.log('⚠️ No authenticated user - using mock data only');
@@ -198,7 +237,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Error checking auth status:', error);
       setAuthUserId(null);
     }
-  }, [loadFollowDataFromSupabase]);
+  }, [loadCurrentUserProfile, loadFollowDataFromSupabase]);
 
   // Load data from storage on mount
   useEffect(() => {
