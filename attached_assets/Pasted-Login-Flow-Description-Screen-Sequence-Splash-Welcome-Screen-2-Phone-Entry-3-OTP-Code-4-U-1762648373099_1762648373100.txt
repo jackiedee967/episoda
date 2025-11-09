@@ -1,0 +1,97 @@
+Login Flow Description
+Screen Sequence:
+
+Splash/Welcome Screen → 2. Phone Entry → 3. OTP Code → 4. Username Selection → 5. Birthday Entry → 6. Onboarding Carousel (4 screens) → 7. Home Feed
+
+
+Screen Details:
+1. Splash/Welcome Screen
+
+Elements:
+
+App logo/branding at top
+Tagline: "Make every episode social"
+"Sign in with phone" button (primary)
+"Sign in with Apple" button (secondary)
+
+
+Navigation: User taps either button to proceed
+
+2. Phone Entry Screen
+
+Elements:
+
+Header: "Enter your phone number"
+Subtext: "[Brief explanation of why we need phone]"
+Phone number input field (with country code selector)
+"Continue" button (green, disabled until valid phone entered)
+Progress dots at bottom (1 of 4 active)
+Back button (top left)
+
+
+Navigation: Continues to OTP screen after valid phone entered
+
+3. OTP Code Screen
+
+Elements:
+
+Header: "Enter the code"
+Subtext: "Sent to [phone number entered]" with edit option
+OTP input field (4-6 digits)
+"Continue" button (green, disabled until code entered)
+Progress dots at bottom (2 of 4 active)
+"Resend code" link
+Back button (top left)
+
+
+Navigation: Verifies code and continues to username selection
+
+4. Username Selection Screen
+
+Elements:
+
+Header: "Pick your username"
+Subtext: "[Something about choosing wisely]"
+Username input field
+"Continue" button (green, disabled until valid username)
+Progress dots at bottom (3 of 4 active)
+Back button (top left)
+
+
+Navigation: Validates username availability and continues
+
+5. Birthday Entry Screen
+
+Elements:
+
+Header: "Enter your birthday"
+Subtext: "[Age requirement or why we need it]"
+Birthday input field (date picker)
+"Continue" button (green, disabled until valid date)
+Progress dots at bottom (4 of 4 active)
+Back button (top left)
+
+
+Navigation: Validates age requirement and continues to onboarding
+
+6. Onboarding Carousel (4 screens, swipeable)
+
+Screen 1: "Log your shows" + [placeholder image] + description
+Screen 2: "See what friends are currently watching" + [placeholder image] + description
+Screen 3: "Talk theories, hot takes, and delusions" + [placeholder image] + description
+Screen 4: "Find your next obsession" + [placeholder image] + description
+Elements (all screens):
+
+Skip button (top right)
+Progress dots showing which screen (1-4)
+Swipe gesture or "Next" button
+"Get Started" button on final screen
+
+
+Navigation: User can swipe through or skip to home
+
+7. Home Feed
+
+Main app interface
+
+
