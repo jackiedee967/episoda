@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { GradientBackground } from '@/components/auth/GradientBackground';
@@ -44,6 +44,10 @@ export default function SplashScreen() {
     }
   };
 
+  const handleReset = () => {
+    router.replace('/auth/reset' as any);
+  };
+
   return (
     <GradientBackground>
       <View style={styles.container}>
@@ -77,6 +81,12 @@ export default function SplashScreen() {
             <Text style={styles.termsText}>
               By continuing, you agree to our Terms of Service and Privacy Policy
             </Text>
+
+            <Pressable onPress={handleReset} style={styles.resetButton}>
+              <Text style={styles.resetText}>
+                Trouble signing in? Reset session
+              </Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -132,5 +142,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.8,
     marginTop: 8,
+  },
+  resetButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  resetText: {
+    ...typography.p1,
+    color: colors.pureWhite,
+    textDecorationLine: 'underline',
+    opacity: 0.9,
   },
 });
