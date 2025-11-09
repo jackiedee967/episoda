@@ -1,0 +1,306 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/app/integrations/supabase/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Session, User } from '@supabase/supabase-js';
+
+type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'birthday_set' | 'completed';
+
+interface AuthContextType {
+  session: Session | null;
+  user: User | null;
+  isLoading: boolean;
+  onboardingStatus: OnboardingStatus;
+  signInWithPhone: (phoneNumber: string) => Promise<{ error: any }>;
+  verifyOTP: (phoneNumber: string, code: string) => Promise<{ error: any }>;
+  signInWithApple: () => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
+  setUsername: (username: string) => Promise<{ error: any }>;
+  setBirthday: (birthday: string) => Promise<{ error: any }>;
+  completeOnboarding: () => Promise<void>;
+  checkUsernameAvailability: (username: string) => Promise<boolean>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>('not_started');
+
+  useEffect(() => {
+    console.log('🔐 AuthContext initializing...');
+    
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.id || 'null');
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        loadOnboardingStatus(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session?.user?.id || 'null');
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        loadOnboardingStatus(session.user.id);
+      } else {
+        setOnboardingStatus('not_started');
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loadOnboardingStatus = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles' as any)
+        .select('username, onboarding_completed')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.log('⚠️ Error loading onboarding status:', error);
+        setOnboardingStatus('phone_verified');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!profile) {
+        setOnboardingStatus('phone_verified');
+      } else if (!(profile as any).username) {
+        setOnboardingStatus('phone_verified');
+      } else if (!(profile as any).onboarding_completed) {
+        setOnboardingStatus('birthday_set');
+      } else {
+        setOnboardingStatus('completed');
+      }
+    } catch (error) {
+      console.log('⚠️ Error loading onboarding status:', error);
+      setOnboardingStatus('phone_verified');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithPhone = useCallback(async (phoneNumber: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phoneNumber,
+        options: {
+          channel: 'sms',
+        },
+      });
+      
+      if (error) {
+        console.log('❌ Phone sign-in error:', error);
+        return { error };
+      }
+      
+      console.log('✅ OTP sent to', phoneNumber);
+      return { error: null };
+    } catch (error) {
+      console.log('❌ Phone sign-in exception:', error);
+      return { error };
+    }
+  }, []);
+
+  const verifyOTP = useCallback(async (phoneNumber: string, code: string) => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: phoneNumber,
+        token: code,
+        type: 'sms',
+      });
+      
+      if (error) {
+        console.log('❌ OTP verification error:', error);
+        return { error };
+      }
+      
+      console.log('✅ OTP verified for user:', data.user?.id);
+      
+      if (data.user) {
+        const { data: existingProfile } = await supabase
+          .from('profiles' as any)
+          .select('user_id')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+        
+        if (!existingProfile) {
+          await supabase.from('profiles' as any).insert({
+            user_id: data.user.id,
+            username: '',
+            display_name: '',
+            avatar: '',
+            bio: '',
+            onboarding_completed: false,
+          });
+        }
+      }
+      
+      return { error: null };
+    } catch (error) {
+      console.log('❌ OTP verification exception:', error);
+      return { error };
+    }
+  }, []);
+
+  const signInWithApple = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
+      
+      if (error) {
+        console.log('❌ Apple sign-in error:', error);
+        return { error };
+      }
+      
+      console.log('✅ Apple sign-in initiated');
+      return { error: null };
+    } catch (error) {
+      console.log('❌ Apple sign-in exception:', error);
+      return { error };
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+      console.log('✅ User signed out');
+    } catch (error) {
+      console.log('❌ Sign out error:', error);
+    }
+  }, []);
+
+  const checkUsernameAvailability = useCallback(async (username: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles' as any)
+        .select('username')
+        .eq('username', username)
+        .maybeSingle();
+      
+      return !data;
+    } catch (error) {
+      return true;
+    }
+  }, []);
+
+  const setUsername = useCallback(async (username: string) => {
+    if (!user) return { error: new Error('No user logged in') };
+    
+    try {
+      const isAvailable = await checkUsernameAvailability(username);
+      if (!isAvailable) {
+        return { error: new Error('Username already taken') };
+      }
+      
+      const { error } = await supabase
+        .from('profiles' as any)
+        .update({ username, display_name: username })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.log('❌ Username update error:', error);
+        return { error };
+      }
+      
+      console.log('✅ Username set:', username);
+      setOnboardingStatus('username_set');
+      return { error: null };
+    } catch (error) {
+      console.log('❌ Username update exception:', error);
+      return { error };
+    }
+  }, [user, checkUsernameAvailability]);
+
+  const setBirthday = useCallback(async (birthday: string) => {
+    if (!user) return { error: new Error('No user logged in') };
+    
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      if (age - 1 < 13) {
+        return { error: new Error('You must be at least 13 years old to use this app') };
+      }
+    } else if (age < 13) {
+      return { error: new Error('You must be at least 13 years old to use this app') };
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('profiles' as any)
+        .update({ birthday: birthday })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.log('❌ Birthday update error:', error);
+        return { error };
+      }
+      
+      console.log('✅ Birthday set:', birthday);
+      setOnboardingStatus('birthday_set');
+      return { error: null };
+    } catch (error) {
+      console.log('❌ Birthday update exception:', error);
+      return { error };
+    }
+  }, [user]);
+
+  const completeOnboarding = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      await supabase
+        .from('profiles' as any)
+        .update({ onboarding_completed: true })
+        .eq('user_id', user.id);
+      
+      console.log('✅ Onboarding completed');
+      setOnboardingStatus('completed');
+    } catch (error) {
+      console.log('❌ Complete onboarding error:', error);
+    }
+  }, [user]);
+
+  const value = {
+    session,
+    user,
+    isLoading,
+    onboardingStatus,
+    signInWithPhone,
+    verifyOTP,
+    signInWithApple,
+    signOut,
+    setUsername,
+    setBirthday,
+    completeOnboarding,
+    checkUsernameAvailability,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

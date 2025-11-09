@@ -15,11 +15,13 @@
 -- Stores user profile information
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT UNIQUE NOT NULL,
   display_name TEXT NOT NULL,
   avatar TEXT,
   bio TEXT,
+  birthday DATE,
+  onboarding_completed BOOLEAN DEFAULT false,
   episodes_watched_count INTEGER DEFAULT 0,
   total_likes_received INTEGER DEFAULT 0,
   is_online BOOLEAN DEFAULT false,

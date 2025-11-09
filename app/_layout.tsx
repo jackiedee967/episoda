@@ -1,6 +1,7 @@
 
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DataProvider } from "@/contexts/DataContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Button from "@/components/Button";
 import { useNetworkState } from "expo-network";
 import {
@@ -168,9 +169,10 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={EpisodaDarkTheme}>
-        <DataProvider>
-          <WidgetProvider>
-            <Stack
+        <AuthProvider>
+          <DataProvider>
+            <WidgetProvider>
+              <Stack
               screenOptions={{
                 animation: "slide_from_right",
                 headerShown: true,
@@ -247,10 +249,11 @@ export default function RootLayout() {
                 }}
               />
             </Stack>
-            <StatusBar style="light" />
-            <SystemBars style="light" />
-          </WidgetProvider>
-        </DataProvider>
+              <StatusBar style="light" />
+              <SystemBars style="light" />
+            </WidgetProvider>
+          </DataProvider>
+        </AuthProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
