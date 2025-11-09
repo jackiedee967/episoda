@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
@@ -9,15 +8,27 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { colors, typography } from '@/styles/tokens';
+import { GradientBackground } from './components/GradientBackground';
+import { AuthButton } from './components/AuthButton';
 import { supabase } from '@/app/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-import { IconSymbol } from '@/components/IconSymbol';
 
+/**
+ * OTP Verification Screen - Step 3 in auth flow
+ * Features:
+ * - Six-digit OTP input boxes
+ * - Auto-advance between inputs
+ * - Resend code with countdown timer
+ * - Validates OTP with Supabase
+ * - Navigates to username-select on success
+ */
 export default function VerifyOTPScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { verifyPhoneOTP } = useAuth();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -25,12 +36,10 @@ export default function VerifyOTPScreen() {
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
-    // Focus first input on mount
     inputRefs.current[0]?.focus();
   }, []);
 
   useEffect(() => {
-    // Countdown timer for resend button
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
@@ -38,21 +47,16 @@ export default function VerifyOTPScreen() {
   }, [countdown]);
 
   const handleOtpChange = (value: string, index: number) => {
-    // Only allow numbers
-    if (value && !/^\d+$/.test(value)) {
-      return;
-    }
+    if (value && !/^\d+$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all digits are entered
     if (index === 5 && value) {
       const fullOtp = newOtp.join('');
       if (fullOtp.length === 6) {
@@ -62,7 +66,6 @@ export default function VerifyOTPScreen() {
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    // Handle backspace
     if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -80,78 +83,30 @@ export default function VerifyOTPScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      console.log('Verifying OTP:', { phone, code });
-
       const { data, error } = await supabase.auth.verifyOtp({
         phone: phone,
         token: code,
         type: 'sms',
       });
 
-      console.log('OTP verification response:', { data, error });
-
       if (error) {
-        console.error('OTP verification error:', error);
-        
         if (error.message.includes('expired')) {
-          Alert.alert(
-            'Code Expired',
-            'This verification code has expired. Please request a new one.'
-          );
+          Alert.alert('Code Expired', 'This verification code has expired. Please request a new one.');
         } else if (error.message.includes('invalid')) {
-          Alert.alert(
-            'Invalid Code',
-            'The code you entered is incorrect. Please try again.'
-          );
+          Alert.alert('Invalid Code', 'The code you entered is incorrect. Please try again.');
         } else {
           Alert.alert('Error', error.message);
         }
-        
-        // Clear OTP inputs on error
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       } else {
-        console.log('OTP verification successful:', data);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
-        // Create or update user profile
-        if (data.user) {
-          console.log('Creating/updating profile for user:', data.user.id);
-          
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              user_id: data.user.id,
-              username: `user_${data.user.id.slice(0, 8)}`,
-              display_name: phone.slice(-10), // Use last 10 digits as display name initially
-              avatar_url: null,
-              bio: null,
-            }, {
-              onConflict: 'user_id',
-              ignoreDuplicates: false,
-            });
-
-          if (profileError) {
-            console.error('Profile creation error:', profileError);
-            // Don't block login if profile creation fails
-          } else {
-            console.log('Profile created/updated successfully');
-          }
+        if (verifyPhoneOTP && data.user) {
+          await verifyPhoneOTP(data.user.id);
         }
         
-        // User is now signed in, navigation will be handled by auth state change in _layout.tsx
-        Alert.alert(
-          'Success!',
-          'You have been successfully signed in.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Navigation will be handled automatically by _layout.tsx
-              },
-            },
-          ]
-        );
+        router.replace('/auth/username-select');
       }
     } catch (error: any) {
       console.error('OTP verification exception:', error);
@@ -170,14 +125,9 @@ export default function VerifyOTPScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      console.log('Resending OTP to:', phone);
-
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: phone,
-      });
+      const { error } = await supabase.auth.signInWithOtp({ phone: phone });
 
       if (error) {
-        console.error('Resend OTP error:', error);
         Alert.alert('Error', error.message);
       } else {
         Alert.alert('Success', 'Verification code sent!');
@@ -186,7 +136,6 @@ export default function VerifyOTPScreen() {
         inputRefs.current[0]?.focus();
       }
     } catch (error: any) {
-      console.error('Resend OTP exception:', error);
       Alert.alert('Error', 'Failed to resend code. Please try again.');
     } finally {
       setResending(false);
@@ -194,139 +143,109 @@ export default function VerifyOTPScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: 'Verify Code',
-          headerShown: true,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-        }}
-      />
-
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <IconSymbol name="message.fill" size={48} color={colors.primary} />
+    <GradientBackground>
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Enter Verification Code</Text>
+            <Text style={styles.subtitle}>
+              We sent a 6-digit code to{'\n'}
+              {phone}
+            </Text>
           </View>
-          <Text style={styles.title}>Enter Verification Code</Text>
-          <Text style={styles.subtitle}>
-            We sent a 6-digit code to{'\n'}
-            <Text style={styles.phoneNumber}>{phone}</Text>
+
+          <View style={styles.otpContainer}>
+            {otp.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => {
+                  inputRefs.current[index] = ref;
+                }}
+                style={[
+                  styles.otpInput,
+                  digit && styles.otpInputFilled,
+                  loading && styles.otpInputDisabled,
+                ]}
+                value={digit}
+                onChangeText={(value) => handleOtpChange(value, index)}
+                onKeyPress={(e) => handleKeyPress(e, index)}
+                keyboardType="number-pad"
+                maxLength={1}
+                selectTextOnFocus
+                editable={!loading}
+              />
+            ))}
+          </View>
+
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.pureWhite} />
+              <Text style={styles.loadingText}>Verifying code...</Text>
+            </View>
+          )}
+
+          <View style={styles.resendContainer}>
+            <Text style={styles.resendText}>Didn't receive the code?</Text>
+            <Pressable
+              onPress={handleResendCode}
+              disabled={countdown > 0 || resending}
+            >
+              {resending ? (
+                <ActivityIndicator size="small" color={colors.pureWhite} />
+              ) : (
+                <Text style={[styles.resendButtonText, countdown > 0 && styles.resendButtonTextDisabled]}>
+                  {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
+                </Text>
+              )}
+            </Pressable>
+          </View>
+
+          <AuthButton
+            title="Verify"
+            onPress={() => handleVerifyOtp()}
+            loading={loading}
+            disabled={otp.join('').length !== 6}
+          />
+
+          <Text style={styles.helperText}>
+            Enter the 6-digit code sent to your phone.{'\n'}
+            The code expires in 60 seconds.
           </Text>
         </View>
-
-        <View style={styles.otpContainer}>
-          {otp.map((digit, index) => (
-            <TextInput
-              key={index}
-              ref={(ref) => (inputRefs.current[index] = ref)}
-              style={[
-                styles.otpInput,
-                digit && styles.otpInputFilled,
-                loading && styles.otpInputDisabled,
-              ]}
-              value={digit}
-              onChangeText={(value) => handleOtpChange(value, index)}
-              onKeyPress={(e) => handleKeyPress(e, index)}
-              keyboardType="number-pad"
-              maxLength={1}
-              selectTextOnFocus
-              editable={!loading}
-            />
-          ))}
-        </View>
-
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Verifying code...</Text>
-          </View>
-        )}
-
-        <View style={styles.resendContainer}>
-          <Text style={styles.resendText}>Didn&apos;t receive the code?</Text>
-          <Pressable
-            onPress={handleResendCode}
-            disabled={countdown > 0 || resending}
-            style={styles.resendButton}
-          >
-            {resending ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Text
-                style={[
-                  styles.resendButtonText,
-                  countdown > 0 && styles.resendButtonTextDisabled,
-                ]}
-              >
-                {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
-              </Text>
-            )}
-          </Pressable>
-        </View>
-
-        <Pressable
-          style={[styles.button, (loading || otp.join('').length !== 6) && styles.buttonDisabled]}
-          onPress={() => handleVerifyOtp()}
-          disabled={loading || otp.join('').length !== 6}
-        >
-          <Text style={styles.buttonText}>Verify</Text>
-        </Pressable>
-
-        <Text style={styles.helperText}>
-          Enter the 6-digit code sent to your phone.{'\n'}
-          The code expires in 60 seconds.
-        </Text>
       </View>
-    </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 48,
     justifyContent: 'center',
+    gap: 32,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+    gap: 12,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
+    ...typography.titleL,
+    color: colors.pureWhite,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.almostWhite,
     textAlign: 'center',
-    lineHeight: 24,
-  },
-  phoneNumber: {
-    fontWeight: '600',
-    color: colors.text,
+    opacity: 0.9,
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 32,
     gap: 8,
   },
   otpInput: {
@@ -334,68 +253,46 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-    fontSize: 24,
-    fontWeight: '600',
+    borderColor: colors.almostWhite,
+    backgroundColor: colors.pureWhite,
+    ...typography.titleL,
     textAlign: 'center',
-    color: colors.text,
+    color: colors.black,
   },
   otpInputFilled: {
-    borderColor: colors.primary,
+    borderColor: colors.greenHighlight,
   },
   otpInputDisabled: {
     opacity: 0.6,
   },
   loadingContainer: {
     alignItems: 'center',
-    marginBottom: 24,
   },
   loadingText: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.almostWhite,
     marginTop: 12,
   },
   resendContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    gap: 8,
   },
   resendText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  resendButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    ...typography.p1,
+    color: colors.almostWhite,
   },
   resendButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
+    ...typography.subtitle,
+    color: colors.greenHighlight,
   },
   resendButtonTextDisabled: {
-    color: colors.textSecondary,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
+    color: colors.almostWhite,
     opacity: 0.6,
   },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
   helperText: {
-    fontSize: 12,
-    color: colors.textSecondary,
+    ...typography.p1,
+    color: colors.almostWhite,
     textAlign: 'center',
-    lineHeight: 18,
+    opacity: 0.8,
   },
 });

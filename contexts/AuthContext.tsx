@@ -12,10 +12,11 @@ interface AuthContextType {
   onboardingStatus: OnboardingStatus;
   signInWithPhone: (phoneNumber: string) => Promise<{ error: any }>;
   verifyOTP: (phoneNumber: string, code: string) => Promise<{ error: any }>;
+  verifyPhoneOTP: (userId: string) => Promise<void>;
   signInWithApple: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   setUsername: (username: string) => Promise<{ error: any }>;
-  setBirthday: (birthday: string) => Promise<{ error: any }>;
+  setBirthday: (birthday: Date) => Promise<{ error: any }>;
   completeOnboarding: () => Promise<void>;
   checkUsernameAvailability: (username: string) => Promise<boolean>;
 }
@@ -227,15 +228,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, checkUsernameAvailability]);
 
-  const setBirthday = useCallback(async (birthday: string) => {
+  const verifyPhoneOTP = useCallback(async (userId: string) => {
+    setOnboardingStatus('phone_verified');
+    await loadOnboardingStatus(userId);
+  }, []);
+
+  const setBirthday = useCallback(async (birthday: Date) => {
     if (!user) return { error: new Error('No user logged in') };
     
-    const birthDate = new Date(birthday);
     const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const age = today.getFullYear() - birthday.getFullYear();
+    const monthDiff = today.getMonth() - birthday.getMonth();
     
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthday.getDate())) {
       if (age - 1 < 13) {
         return { error: new Error('You must be at least 13 years old to use this app') };
       }
@@ -244,9 +249,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      const birthdayString = birthday.toISOString().split('T')[0];
       const { error } = await supabase
         .from('profiles' as any)
-        .update({ birthday: birthday })
+        .update({ birthday: birthdayString })
         .eq('user_id', user.id);
       
       if (error) {
@@ -254,7 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error };
       }
       
-      console.log('✅ Birthday set:', birthday);
+      console.log('✅ Birthday set:', birthdayString);
       setOnboardingStatus('birthday_set');
       return { error: null };
     } catch (error) {
@@ -286,6 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     onboardingStatus,
     signInWithPhone,
     verifyOTP,
+    verifyPhoneOTP,
     signInWithApple,
     signOut,
     setUsername,
