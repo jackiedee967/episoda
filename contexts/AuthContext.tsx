@@ -183,10 +183,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async () => {
     try {
-      await supabase.auth.signOut();
-      console.log('✅ User signed out');
+      console.log('🔐 Signing out...');
+      
+      // Clear local state immediately (before Supabase call)
+      setSession(null);
+      setUser(null);
+      setOnboardingStatus('not_started');
+      setIsLoading(false);
+      
+      // Clear any cached auth data from AsyncStorage
+      try {
+        await AsyncStorage.multiRemove([
+          'supabase.auth.token',
+          '@natively_session',
+          '@natively_user'
+        ]);
+      } catch (storageError) {
+        console.log('⚠️ Error clearing AsyncStorage:', storageError);
+      }
+      
+      // Call Supabase sign out
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.log('❌ Supabase sign out error:', error);
+      }
+      
+      console.log('✅ User signed out successfully');
     } catch (error) {
       console.log('❌ Sign out error:', error);
+      // Still clear local state even if Supabase call fails
+      setSession(null);
+      setUser(null);
+      setOnboardingStatus('not_started');
+      setIsLoading(false);
     }
   }, []);
 

@@ -5,6 +5,7 @@ import { mockPosts, mockUsers, currentUser as mockCurrentUser, mockEpisodes } fr
 import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserData {
   following: string[];
@@ -77,6 +78,8 @@ export function useData() {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  
   const [posts, setPosts] = useState<Post[]>(mockPosts);
   const [userData, setUserData] = useState<UserData>({
     following: mockCurrentUser.following || [],
@@ -217,59 +220,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Check if user is authenticated in Supabase - wrapped in useCallback to prevent infinite loops
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        console.log('✅ User authenticated in Supabase:', user.id);
-        setAuthUserId(user.id);
-        
-        // Load user's profile and follow data from Supabase
-        await loadCurrentUserProfile(user.id);
-        await loadFollowDataFromSupabase(user.id);
-      } else {
-        console.log('⚠️ No authenticated user - using mock data only');
-        setAuthUserId(null);
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      setAuthUserId(null);
-    }
-  }, [loadCurrentUserProfile, loadFollowDataFromSupabase]);
-
   // Load data from storage on mount
   useEffect(() => {
     loadData();
-    checkAuthStatus();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Listen for auth state changes and update user data
+  // Watch AuthContext.user and load real profile data when user signs in
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth state changed:', event, session?.user?.id);
+    // Guard against undefined->null transition on initial render
+    if (user === undefined) return;
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('✅ User signed in - loading real profile data');
-        setAuthUserId(session.user.id);
-        await loadCurrentUserProfile(session.user.id);
-        await loadFollowDataFromSupabase(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        console.log('⚠️ User signed out - reverting to mock data');
-        setAuthUserId(null);
-        setCurrentUserData(mockCurrentUser);
-        setUserData({
-          following: mockCurrentUser.following || [],
-          followers: mockCurrentUser.followers || [],
-        });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [loadCurrentUserProfile, loadFollowDataFromSupabase]);
+    if (user) {
+      console.log('✅ User authenticated - loading real profile data:', user.id);
+      setAuthUserId(user.id);
+      loadCurrentUserProfile(user.id);
+      loadFollowDataFromSupabase(user.id);
+    } else {
+      console.log('⚠️ User signed out - reverting to mock data');
+      setAuthUserId(null);
+      setCurrentUserData(mockCurrentUser);
+      setUserData({
+        following: mockCurrentUser.following || [],
+        followers: mockCurrentUser.followers || [],
+      });
+    }
+  }, [user, loadCurrentUserProfile, loadFollowDataFromSupabase]);
 
   const saveRepostsToStorage = async (reposts: RepostData[]) => {
     try {
