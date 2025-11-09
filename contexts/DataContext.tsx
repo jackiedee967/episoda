@@ -1,7 +1,7 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { mockPosts, mockUsers, currentUser as mockCurrentUser, mockEpisodes } from '@/data/mockData';
+import { mockUsers, mockEpisodes } from '@/data/mockData';
 import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
@@ -77,19 +77,29 @@ export function useData() {
   return context;
 }
 
+const EMPTY_USER: User = {
+  id: '',
+  username: '',
+  displayName: '',
+  avatar: '',
+  bio: '',
+  socialLinks: [],
+  following: [],
+  followers: [],
+};
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [userData, setUserData] = useState<UserData>({
-    following: mockCurrentUser.following || [],
-    followers: mockCurrentUser.followers || [],
+    following: [],
+    followers: [],
   });
   const [reposts, setReposts] = useState<RepostData[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   
-  // Current user data - loaded from Supabase when authenticated, falls back to mock user
-  const [currentUserData, setCurrentUserData] = useState<User>(mockCurrentUser);
+  const [currentUserData, setCurrentUserData] = useState<User>(EMPTY_USER);
   const [isLoading, setIsLoading] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
@@ -166,12 +176,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const profileData = profile as any;
         console.log('✅ Loaded user profile:', profileData.username);
         
-        // Update currentUserData with real profile data
         setCurrentUserData({
           id: userId,
           username: profileData.username || 'user',
           displayName: profileData.display_name || profileData.username || 'User',
-          avatar: profileData.avatar_url || mockCurrentUser.avatar,
+          avatar: profileData.avatar_url || '',
           bio: profileData.bio || '',
           socialLinks: profileData.social_links || {},
           following: [],
@@ -226,9 +235,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Watch AuthContext.user and load real profile data when user signs in
   useEffect(() => {
-    // Guard against undefined->null transition on initial render
     if (user === undefined) return;
 
     if (user) {
@@ -237,13 +244,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loadCurrentUserProfile(user.id);
       loadFollowDataFromSupabase(user.id);
     } else {
-      console.log('⚠️ User signed out - reverting to mock data');
+      console.log('⚠️ User signed out - clearing all data');
       setAuthUserId(null);
-      setCurrentUserData(mockCurrentUser);
+      setCurrentUserData(EMPTY_USER);
       setUserData({
-        following: mockCurrentUser.following || [],
-        followers: mockCurrentUser.followers || [],
+        following: [],
+        followers: [],
       });
+      setPosts([]);
+      setReposts([]);
+      setPlaylists([]);
     }
   }, [user, loadCurrentUserProfile, loadFollowDataFromSupabase]);
 
@@ -992,7 +1002,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           id: follow.profiles.user_id,
           username: follow.profiles.username,
           displayName: follow.profiles.display_name,
-          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          avatar: follow.profiles.avatar_url || '',
           bio: follow.profiles.bio || '',
           followers: [],
           following: [],
@@ -1002,9 +1012,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('⚠️ Error fetching followers from Supabase:', error);
     }
 
-    // Fallback to mock data
-    console.log('⚠️ Using mock data for followers');
-    return mockUsers.filter(u => u.following?.includes(userId));
+    return [];
   }, []);
 
   const getFollowing = useCallback(async (userId: string): Promise<User[]> => {
@@ -1032,7 +1040,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           id: follow.profiles.user_id,
           username: follow.profiles.username,
           displayName: follow.profiles.display_name,
-          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          avatar: follow.profiles.avatar_url || '',
           bio: follow.profiles.bio || '',
           followers: [],
           following: [],
@@ -1042,10 +1050,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('⚠️ Error fetching following from Supabase:', error);
     }
 
-    // Fallback to mock data
-    console.log('⚠️ Using mock data for following');
-    const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
-    return mockUsers.filter(u => user.following?.includes(u.id));
+    return [];
   }, []);
 
   const getEpisodesWatchedCount = useCallback(async (userId: string): Promise<number> => {
@@ -1128,7 +1133,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           id: follow.profiles.user_id,
           username: follow.profiles.username,
           displayName: follow.profiles.display_name,
-          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          avatar: follow.profiles.avatar_url || '',
           bio: follow.profiles.bio || '',
           followers: [],
           following: [],
@@ -1138,13 +1143,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('⚠️ Error fetching top followers from Supabase:', error);
     }
 
-    // Fallback to mock data
-    console.log('⚠️ Using mock data for top followers');
-    console.log('📊 mockUsers length:', mockUsers.length);
-    console.log('📊 userId to match:', userId);
-    const followers = mockUsers.filter(u => u.following?.includes(userId)) || [];
-    console.log('📊 Filtered followers:', followers.length, followers.map(f => f.username));
-    return followers.slice(0, limit);
+    return [];
   }, []);
 
   const getTopFollowing = useCallback(async (userId: string, limit: number = 3): Promise<User[]> => {
@@ -1179,7 +1178,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           id: follow.profiles.user_id,
           username: follow.profiles.username,
           displayName: follow.profiles.display_name,
-          avatar: follow.profiles.avatar_url || mockCurrentUser.avatar,
+          avatar: follow.profiles.avatar_url || '',
           bio: follow.profiles.bio || '',
           followers: [],
           following: [],
@@ -1189,11 +1188,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('⚠️ Error fetching top following from Supabase:', error);
     }
 
-    // Fallback to mock data
-    console.log('⚠️ Using mock data for top following');
-    const user = mockUsers.find(u => u.id === userId) || mockCurrentUser;
-    const following = mockUsers.filter(u => user.following?.includes(u.id)) || [];
-    return following.slice(0, limit);
+    return [];
   }, []);
 
   const getWatchHistory = useCallback((userId: string): WatchHistoryItem[] => {
