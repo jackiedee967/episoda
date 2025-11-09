@@ -16,7 +16,14 @@ export default function ResetScreen() {
       try {
         console.log('🧹 Clearing all data...');
         
-        await supabase.auth.signOut();
+        await AsyncStorage.clear();
+        
+        if (typeof window !== 'undefined') {
+          localStorage.clear();
+          sessionStorage.clear();
+        }
+        
+        await signOut();
         
         await AsyncStorage.clear();
         
@@ -25,19 +32,25 @@ export default function ResetScreen() {
           sessionStorage.clear();
         }
         
-        console.log('✅ All data cleared');
+        console.log('✅ All data cleared - forcing page reload');
         
-        setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth';
+        } else {
           router.replace('/auth' as any);
-        }, 1000);
+        }
       } catch (error) {
         console.error('Error clearing data:', error);
-        router.replace('/auth' as any);
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth';
+        } else {
+          router.replace('/auth' as any);
+        }
       }
     };
 
     clearEverything();
-  }, []);
+  }, [signOut]);
 
   return (
     <GradientBackground>
