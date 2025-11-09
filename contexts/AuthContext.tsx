@@ -120,6 +120,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyOTP = useCallback(async (phoneNumber: string, code: string) => {
     try {
+      console.log('🔐 Verifying OTP for:', phoneNumber);
+      
       const { data, error } = await supabase.auth.verifyOtp({
         phone: phoneNumber,
         token: code,
@@ -132,16 +134,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('✅ OTP verified for user:', data.user?.id);
+      console.log('Session acquired:', !!data.session);
       
-      if (data.user) {
+      if (data.user && data.session) {
+        // Wait a moment for session to be fully set in Supabase client
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('🔍 Checking for existing profile...');
+        
         const { data: existingProfile, error: fetchError } = await supabase
           .from('profiles' as any)
           .select('user_id')
           .eq('user_id', data.user.id)
           .single();
         
+        console.log('Profile check result - exists:', !!existingProfile, 'error:', fetchError?.code || 'none');
+        
         if (fetchError && fetchError.code === 'PGRST116') {
-          await supabase.from('profiles' as any).insert({
+          console.log('📝 Creating new profile...');
+          const { error: insertError } = await supabase.from('profiles' as any).insert({
             user_id: data.user.id,
             username: '',
             display_name: '',
@@ -149,12 +160,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             bio: '',
             onboarding_completed: false,
           });
-          console.log('✅ Created new profile for user:', data.user.id);
+          
+          if (insertError) {
+            console.log('❌ Profile insert error:', insertError);
+          } else {
+            console.log('✅ Created new profile for user:', data.user.id);
+          }
         } else if (existingProfile) {
           console.log('✅ Profile already exists for user:', data.user.id);
         } else if (fetchError) {
           console.log('⚠️ Unexpected error fetching profile:', fetchError);
+          console.log('Full error details:', JSON.stringify(fetchError, null, 2));
         }
+      } else {
+        console.log('⚠️ No session returned from verifyOtp');
       }
       
       return { error: null };
