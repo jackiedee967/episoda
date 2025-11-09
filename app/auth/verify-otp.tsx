@@ -29,14 +29,14 @@ export default function VerifyOTPScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const { verifyPhoneOTP } = useAuth();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    inputRefs.current[0]?.focus();
+    inputRef.current?.focus();
   }, []);
 
   useEffect(() => {
@@ -46,33 +46,17 @@ export default function VerifyOTPScreen() {
     }
   }, [countdown]);
 
-  const handleOtpChange = (value: string, index: number) => {
-    if (value && !/^\d+$/.test(value)) return;
+  const handleOtpChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 6);
+    setOtp(cleaned);
 
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    if (index === 5 && value) {
-      const fullOtp = newOtp.join('');
-      if (fullOtp.length === 6) {
-        handleVerifyOtp(fullOtp);
-      }
-    }
-  };
-
-  const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (cleaned.length === 6) {
+      handleVerifyOtp(cleaned);
     }
   };
 
   const handleVerifyOtp = async (otpCode?: string) => {
-    const code = otpCode || otp.join('');
+    const code = otpCode || otp;
 
     if (code.length !== 6) {
       Alert.alert('Error', 'Please enter the complete 6-digit code');
@@ -97,8 +81,8 @@ export default function VerifyOTPScreen() {
         } else {
           Alert.alert('Error', error.message);
         }
-        setOtp(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setOtp('');
+        inputRef.current?.focus();
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
@@ -111,8 +95,8 @@ export default function VerifyOTPScreen() {
     } catch (error: any) {
       console.error('OTP verification exception:', error);
       Alert.alert('Error', 'Failed to verify code. Please try again.');
-      setOtp(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
+      setOtp('');
+      inputRef.current?.focus();
     } finally {
       setLoading(false);
     }
@@ -132,8 +116,8 @@ export default function VerifyOTPScreen() {
       } else {
         Alert.alert('Success', 'Verification code sent!');
         setCountdown(60);
-        setOtp(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setOtp('');
+        inputRef.current?.focus();
       }
     } catch (error: any) {
       Alert.alert('Error', 'Failed to resend code. Please try again.');
@@ -155,26 +139,23 @@ export default function VerifyOTPScreen() {
           </View>
 
           <View style={styles.otpContainer}>
-            {otp.map((digit, index) => (
-              <TextInput
-                key={index}
-                ref={(ref) => {
-                  inputRefs.current[index] = ref;
-                }}
-                style={[
-                  styles.otpInput,
-                  digit && styles.otpInputFilled,
-                  loading && styles.otpInputDisabled,
-                ]}
-                value={digit}
-                onChangeText={(value) => handleOtpChange(value, index)}
-                onKeyPress={(e) => handleKeyPress(e, index)}
-                keyboardType="number-pad"
-                maxLength={1}
-                selectTextOnFocus
-                editable={!loading}
-              />
-            ))}
+            <TextInput
+              ref={inputRef}
+              style={[
+                styles.otpInput,
+                otp.length > 0 && styles.otpInputFilled,
+                loading && styles.otpInputDisabled,
+              ]}
+              value={otp}
+              onChangeText={handleOtpChange}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="Enter 6-digit code"
+              placeholderTextColor={colors.grey1}
+              selectTextOnFocus
+              editable={!loading}
+              autoFocus
+            />
           </View>
 
           {loading && (
@@ -204,7 +185,7 @@ export default function VerifyOTPScreen() {
             title="Verify"
             onPress={() => handleVerifyOtp()}
             loading={loading}
-            disabled={otp.join('').length !== 6}
+            disabled={otp.length !== 6}
           />
 
           <Text style={styles.helperText}>
@@ -244,12 +225,10 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
+    width: '100%',
   },
   otpInput: {
-    flex: 1,
+    width: '100%',
     height: 60,
     borderRadius: 12,
     borderWidth: 2,
@@ -258,6 +237,9 @@ const styles = StyleSheet.create({
     ...typography.titleL,
     textAlign: 'center',
     color: colors.black,
+    fontSize: 24,
+    letterSpacing: 8,
+    paddingHorizontal: 16,
   },
   otpInputFilled: {
     borderColor: colors.greenHighlight,
