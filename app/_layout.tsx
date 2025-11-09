@@ -1,7 +1,7 @@
 
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DataProvider } from "@/contexts/DataContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Button from "@/components/Button";
 import { useNetworkState } from "expo-network";
 import {
@@ -31,61 +31,71 @@ import { Stack, router, useSegments, useRootNavigationState } from "expo-router"
 import { StatusBar } from "expo-status-bar";
 import { SystemBars } from "react-native-edge-to-edge";
 import { colors } from "@/styles/commonStyles";
-import { supabase } from "@/app/integrations/supabase/client";
-import type { Session } from "@supabase/supabase-js";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-function useProtectedRoute(session: Session | null) {
+function AuthNavigator() {
+  const { session, user, isLoading, onboardingStatus } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
-  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
-    // TEMPORARILY DISABLED - Authentication flow bypassed for development
-    // Uncomment the code below to re-enable authentication
-    
-    /*
-    // Wait for navigation to be fully ready
-    if (!navigationState?.key) {
-      console.log('Navigation not ready yet');
+    if (!navigationState?.key || isLoading) {
       return;
     }
 
-    // Prevent multiple navigation attempts
-    if (hasNavigated) {
-      return;
-    }
+    const STATUS_ROUTE_MAP: Record<string, { allowed: string[]; required: string }> = {
+      'not_started': { allowed: ['index', 'phone-entry'], required: '/auth' },
+      'phone_verified': { allowed: ['phone-entry', 'verify-otp', 'username-select'], required: '/auth/username-select' },
+      'username_set': { allowed: ['birthday-entry'], required: '/auth/birthday-entry' },
+      'birthday_set': { allowed: ['onboarding-carousel'], required: '/auth/onboarding-carousel' },
+      'completed': { allowed: [], required: '/(tabs)/' },
+    };
 
     const inAuthGroup = segments[0] === 'auth';
-    console.log('Protected route check:', { session: !!session, inAuthGroup, segments });
-
-    // Use setTimeout to ensure navigation happens after render
+    const inTabGroup = segments[0] === '(tabs)';
+    const currentAuthScreen = segments[1] || 'index';
+    
     const timeoutId = setTimeout(() => {
-      if (!session && !inAuthGroup) {
-        // Redirect to login if not authenticated
-        console.log('Redirecting to login');
-        router.replace('/auth/login');
-        setHasNavigated(true);
-      } else if (session && inAuthGroup) {
-        // Redirect to home if authenticated and trying to access auth screens
-        console.log('Redirecting to home');
-        router.replace('/(tabs)');
-        setHasNavigated(true);
+      if (!session) {
+        if (!inAuthGroup) {
+          console.log('🔒 No session - redirecting to splash');
+          router.replace('/auth' as any);
+        }
+        return;
+      }
+
+      const statusConfig = STATUS_ROUTE_MAP[onboardingStatus];
+      if (!statusConfig) {
+        console.log('⚠️ Unknown onboarding status:', onboardingStatus);
+        return;
+      }
+
+      if (inTabGroup && onboardingStatus !== 'completed') {
+        console.log('⚠️ Onboarding incomplete - blocking tab access, redirecting to:', statusConfig.required);
+        router.replace(statusConfig.required as any);
+        return;
+      }
+
+      if (onboardingStatus === 'completed') {
+        if (inAuthGroup) {
+          console.log('✅ Onboarding complete - redirecting to home');
+          router.replace('/(tabs)/' as any);
+        }
+        return;
+      }
+
+      if (inAuthGroup && !statusConfig.allowed.includes(currentAuthScreen)) {
+        console.log(`🔄 Status=${onboardingStatus}, screen=${currentAuthScreen} not allowed. Redirecting to:`, statusConfig.required);
+        router.replace(statusConfig.required as any);
       }
     }, 0);
 
     return () => clearTimeout(timeoutId);
-    */
-    
-    console.log('Authentication temporarily disabled - app accessible without login');
-  }, [session, segments, navigationState?.key, hasNavigated]);
+  }, [session, onboardingStatus, segments, navigationState?.key, isLoading]);
 
-  // Reset hasNavigated when session changes
-  useEffect(() => {
-    setHasNavigated(false);
-  }, [session]);
+  return null;
 }
 
 // Custom dark theme with proper fonts configuration
@@ -123,8 +133,6 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const networkState = Platform.OS === 'web' ? { isConnected: true } : useNetworkState();
   const { isConnected } = networkState;
-  const [session, setSession] = useState<Session | null>(null);
-  const [isReady, setIsReady] = useState(false);
 
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -138,31 +146,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session:', session);
-      setSession(session);
-      setIsReady(true);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state changed:', _event, session);
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (loaded && isReady) {
+    if (loaded) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isReady]);
+  }, [loaded]);
 
-  useProtectedRoute(session);
-
-  if (!loaded || !isReady) {
+  if (!loaded) {
     return null;
   }
 
@@ -172,6 +161,7 @@ export default function RootLayout() {
         <AuthProvider>
           <DataProvider>
             <WidgetProvider>
+              <AuthNavigator />
               <Stack
               screenOptions={{
                 animation: "slide_from_right",
@@ -190,13 +180,37 @@ export default function RootLayout() {
             >
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen 
-                name="auth/login" 
+                name="auth/index" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="auth/phone-entry" 
                 options={{ 
                   headerShown: false,
                 }} 
               />
               <Stack.Screen 
                 name="auth/verify-otp" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="auth/username-select" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="auth/birthday-entry" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="auth/onboarding-carousel" 
                 options={{ 
                   headerShown: false,
                 }} 

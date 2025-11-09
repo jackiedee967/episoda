@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles' as any)
-        .select('username, onboarding_completed')
+        .select('username, birthday, onboarding_completed')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -75,11 +75,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if (!profile) {
+      const hasUsername = profile && (profile as any).username && (profile as any).username.trim() !== '';
+      const hasBirthday = profile && (profile as any).birthday && (profile as any).birthday !== '';
+      const onboardingComplete = profile && (profile as any).onboarding_completed === true;
+
+      if (!profile || !hasUsername) {
         setOnboardingStatus('phone_verified');
-      } else if (!(profile as any).username) {
-        setOnboardingStatus('phone_verified');
-      } else if (!(profile as any).onboarding_completed) {
+      } else if (!hasBirthday) {
+        setOnboardingStatus('username_set');
+      } else if (!onboardingComplete) {
         setOnboardingStatus('birthday_set');
       } else {
         setOnboardingStatus('completed');

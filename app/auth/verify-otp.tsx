@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from './components/GradientBackground';
-import { AuthButton } from './components/AuthButton';
+import { GradientBackground } from './_components/GradientBackground';
+import { AuthButton } from './_components/AuthButton';
 import { supabase } from '@/app/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
