@@ -173,7 +173,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           socialLinks: profileData.social_links || {},
           following: [],
           followers: [],
-          isFollowing: false,
         });
       }
     } catch (error) {
@@ -245,6 +244,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     checkAuthStatus();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Listen for auth state changes and update user data
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔐 Auth state changed:', event, session?.user?.id);
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('✅ User signed in - loading real profile data');
+        setAuthUserId(session.user.id);
+        await loadCurrentUserProfile(session.user.id);
+        await loadFollowDataFromSupabase(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('⚠️ User signed out - reverting to mock data');
+        setAuthUserId(null);
+        setCurrentUserData(mockCurrentUser);
+        setUserData({
+          following: mockCurrentUser.following || [],
+          followers: mockCurrentUser.followers || [],
+        });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [loadCurrentUserProfile, loadFollowDataFromSupabase]);
 
   const saveRepostsToStorage = async (reposts: RepostData[]) => {
     try {
