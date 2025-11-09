@@ -134,22 +134,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ OTP verified for user:', data.user?.id);
       
       if (data.user) {
-        const { data: existingProfile } = await supabase
-          .from('profiles' as any)
-          .select('user_id')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
-        
-        if (!existingProfile) {
-          await supabase.from('profiles' as any).insert({
-            user_id: data.user.id,
-            username: '',
-            display_name: '',
-            avatar: '',
-            bio: '',
-            onboarding_completed: false,
-          });
-        }
+        await supabase.from('profiles' as any).upsert({
+          user_id: data.user.id,
+          username: '',
+          display_name: '',
+          avatar: '',
+          bio: '',
+          onboarding_completed: false,
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: true
+        });
       }
       
       return { error: null };
