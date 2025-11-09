@@ -60,7 +60,10 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - Birthday format changed from DD/MM/YYYY to MM/DD/YYYY (American standard)
 - Moved auth components from `app/auth/_components/` to `components/auth/` to prevent Expo Router treating them as routes
 - Removed setTimeout delay from AuthNavigator for immediate auth redirects
-- DataContext now loads authenticated user's actual profile data via `loadCurrentUserProfile` function
+- **CRITICAL FIX**: Added Supabase auth state listener to DataContext that automatically loads real user profile data when sign-in completes
+  - DataContext now subscribes to `supabase.auth.onAuthStateChange` and calls `loadCurrentUserProfile` on SIGNED_IN events
+  - This fixes the bug where users would complete authentication but continue seeing mock data instead of their real profile
+  - On sign-out, DataContext properly reverts to mock data
 - Added `/auth/reset` page with double-clear approach: clears storage before AND after signOut to prevent Supabase session rehydration
 - Reset flow uses window.location.href for hard page reload on web, ensuring complete session wipe
 - Added "Trouble signing in? Reset session" button on splash screen for easy session reset during development/testing
