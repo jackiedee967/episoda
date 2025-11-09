@@ -60,10 +60,16 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - Birthday format changed from DD/MM/YYYY to MM/DD/YYYY (American standard)
 - Moved auth components from `app/auth/_components/` to `components/auth/` to prevent Expo Router treating them as routes
 - Removed setTimeout delay from AuthNavigator for immediate auth redirects
-- **CRITICAL FIX**: Added Supabase auth state listener to DataContext that automatically loads real user profile data when sign-in completes
-  - DataContext now subscribes to `supabase.auth.onAuthStateChange` and calls `loadCurrentUserProfile` on SIGNED_IN events
+- **CRITICAL FIX - Real Profile Data After Sign-In**: DataContext now watches AuthContext.user via useEffect hook
+  - Uses `const { user } = useAuth()` to access AuthContext state (single source of truth)
+  - When user becomes non-null → automatically calls `loadCurrentUserProfile(user.id)` + `loadFollowDataFromSupabase(user.id)`
+  - When user becomes null → resets state to mockCurrentUser and mock data
+  - Removed broken `supabase.auth.onAuthStateChange` subscription that never fired properly
   - This fixes the bug where users would complete authentication but continue seeing mock data instead of their real profile
-  - On sign-out, DataContext properly reverts to mock data
+- **CRITICAL FIX - Sign Out**: AuthContext.signOut() now clears local state immediately before calling Supabase
+  - Sequence: (1) setSession(null), setUser(null) (2) reset onboarding status (3) clear AsyncStorage (4) call supabase.auth.signOut()
+  - Prevents race condition where UI would lag on sign-out
+  - Settings page sign-out button now calls real signOut() function (was previously broken alert-only)
 - Added `/auth/reset` page with double-clear approach: clears storage before AND after signOut to prevent Supabase session rehydration
 - Reset flow uses window.location.href for hard page reload on web, ensuring complete session wipe
 - Added "Trouble signing in? Reset session" button on splash screen for easy session reset during development/testing
