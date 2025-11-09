@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,14 @@ export default function BirthdayEntryScreen() {
   const [date, setDate] = useState(new Date(2000, 0, 1));
   const [show, setShow] = useState(Platform.OS === 'ios');
   const [loading, setLoading] = useState(false);
+  
+  const [day, setDay] = useState('');
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState('');
+  const [isInputValid, setIsInputValid] = useState(false);
+  
+  const monthRef = useRef<TextInput>(null);
+  const yearRef = useRef<TextInput>(null);
 
   const calculateAge = (birthDate: Date): number => {
     const today = new Date();
@@ -80,24 +88,91 @@ export default function BirthdayEntryScreen() {
     }
   };
 
-  const onWebDateChange = (event: any) => {
-    const dateString = event.target.value;
-    const [year, month, day] = dateString.split('-').map(Number);
-    const selectedDate = new Date(year, month - 1, day);
-    if (!isNaN(selectedDate.getTime())) {
-      setDate(selectedDate);
+  const isLeapYear = (year: number): boolean => {
+    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  };
+
+  const getDaysInMonth = (month: number, year: number): number => {
+    const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (month === 2 && isLeapYear(year)) {
+      return 29;
+    }
+    return daysInMonth[month - 1];
+  };
+
+  const updateDateFromInputs = (d: string, m: string, y: string) => {
+    if (d.length !== 2 || m.length !== 2 || y.length !== 4) {
+      setIsInputValid(false);
+      return;
+    }
+
+    const dayNum = parseInt(d, 10);
+    const monthNum = parseInt(m, 10);
+    const yearNum = parseInt(y, 10);
+    const currentYear = new Date().getFullYear();
+    
+    if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) {
+      setIsInputValid(false);
+      return;
+    }
+    
+    if (monthNum < 1 || monthNum > 12) {
+      setIsInputValid(false);
+      return;
+    }
+    
+    if (yearNum < 1900 || yearNum > currentYear) {
+      setIsInputValid(false);
+      return;
+    }
+    
+    const maxDays = getDaysInMonth(monthNum, yearNum);
+    if (dayNum < 1 || dayNum > maxDays) {
+      setIsInputValid(false);
+      return;
+    }
+    
+    const newDate = new Date(yearNum, monthNum - 1, dayNum);
+    if (newDate.getFullYear() !== yearNum || 
+        newDate.getMonth() !== monthNum - 1 || 
+        newDate.getDate() !== dayNum) {
+      setIsInputValid(false);
+      return;
+    }
+    
+    setDate(newDate);
+    setIsInputValid(true);
+  };
+
+  const handleDayChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 2);
+    setDay(cleaned);
+    updateDateFromInputs(cleaned, month, year);
+    
+    if (cleaned.length === 2) {
+      monthRef.current?.focus();
     }
   };
 
-  const formatDateForWeb = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const handleMonthChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 2);
+    setMonth(cleaned);
+    updateDateFromInputs(day, cleaned, year);
+    
+    if (cleaned.length === 2) {
+      yearRef.current?.focus();
+    }
+  };
+
+  const handleYearChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '').slice(0, 4);
+    setYear(cleaned);
+    updateDateFromInputs(day, month, cleaned);
   };
 
   const age = calculateAge(date);
   const isValidAge = age >= 13;
+  const canContinue = Platform.OS === 'web' ? (isInputValid && isValidAge) : isValidAge;
 
   return (
     <GradientBackground>
@@ -112,15 +187,40 @@ export default function BirthdayEntryScreen() {
 
           <View style={styles.pickerSection}>
             {Platform.OS === 'web' ? (
-              <TextInput
-                style={styles.webDateInput}
-                value={formatDateForWeb(date)}
-                onChange={onWebDateChange}
-                // @ts-ignore - type="date" is valid for web but not in React Native types
-                type="date"
-                max={formatDateForWeb(new Date())}
-                min="1900-01-01"
-              />
+              <View style={styles.webInputContainer}>
+                <TextInput
+                  style={styles.webDateBox}
+                  value={day}
+                  onChangeText={handleDayChange}
+                  keyboardType="number-pad"
+                  placeholder="DD"
+                  placeholderTextColor={colors.grey1}
+                  maxLength={2}
+                  autoFocus
+                />
+                <Text style={styles.separator}>/</Text>
+                <TextInput
+                  ref={monthRef}
+                  style={styles.webDateBox}
+                  value={month}
+                  onChangeText={handleMonthChange}
+                  keyboardType="number-pad"
+                  placeholder="MM"
+                  placeholderTextColor={colors.grey1}
+                  maxLength={2}
+                />
+                <Text style={styles.separator}>/</Text>
+                <TextInput
+                  ref={yearRef}
+                  style={[styles.webDateBox, styles.yearBox]}
+                  value={year}
+                  onChangeText={handleYearChange}
+                  keyboardType="number-pad"
+                  placeholder="YYYY"
+                  placeholderTextColor={colors.grey1}
+                  maxLength={4}
+                />
+              </View>
             ) : (
               <DateTimePicker
                 value={date}
@@ -147,7 +247,7 @@ export default function BirthdayEntryScreen() {
               title="Continue"
               onPress={handleContinue}
               loading={loading}
-              disabled={!isValidAge}
+              disabled={!canContinue}
             />
             
             <Text style={styles.helperText}>
@@ -194,9 +294,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
   },
-  webDateInput: {
+  webInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
     width: '100%',
+  },
+  webDateBox: {
     height: 60,
+    width: 70,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.almostWhite,
@@ -204,8 +311,15 @@ const styles = StyleSheet.create({
     ...typography.titleL,
     textAlign: 'center',
     color: colors.black,
-    fontSize: 20,
-    paddingHorizontal: 16,
+    fontSize: 24,
+  },
+  yearBox: {
+    width: 100,
+  },
+  separator: {
+    ...typography.titleL,
+    color: colors.pureWhite,
+    fontSize: 24,
   },
   errorText: {
     ...typography.p1,
