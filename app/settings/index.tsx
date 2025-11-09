@@ -7,11 +7,13 @@ import { User, Bell, HelpCircle, LogOut } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Sign Out',
@@ -24,9 +26,15 @@ export default function SettingsScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: () => {
-            console.log('User signed out');
-            Alert.alert('Signed Out', 'You have been signed out successfully.');
+          onPress: async () => {
+            try {
+              await signOut();
+              console.log('✅ User signed out successfully');
+              router.replace('/auth');
+            } catch (error) {
+              console.error('❌ Error signing out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
           },
         },
       ]
