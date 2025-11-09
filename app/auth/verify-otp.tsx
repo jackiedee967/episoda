@@ -28,7 +28,7 @@ import * as Haptics from 'expo-haptics';
 export default function VerifyOTPScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
-  const { verifyPhoneOTP } = useAuth();
+  const { verifyOTP } = useAuth();
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -67,11 +67,12 @@ export default function VerifyOTPScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: code,
-        type: 'sms',
-      });
+      if (!verifyOTP) {
+        Alert.alert('Error', 'Authentication system not ready. Please try again.');
+        return;
+      }
+
+      const { error } = await verifyOTP(phone, code);
 
       if (error) {
         if (error.message.includes('expired')) {
@@ -85,11 +86,6 @@ export default function VerifyOTPScreen() {
         inputRef.current?.focus();
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
-        if (verifyPhoneOTP && data.user) {
-          await verifyPhoneOTP(data.user.id);
-        }
-        
         router.replace('/auth/username-select');
       }
     } catch (error: any) {
