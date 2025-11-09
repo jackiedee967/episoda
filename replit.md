@@ -57,6 +57,12 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - `verify-otp.tsx` updated to use `AuthContext.verifyOTP` function for profile creation
 - Username and birthday are saved to the `profiles` table during onboarding
 - Age validation enforced at 13+ years minimum
+- Birthday format changed from DD/MM/YYYY to MM/DD/YYYY (American standard)
+- Moved auth components from `app/auth/_components/` to `components/auth/` to prevent Expo Router treating them as routes
+- Removed setTimeout delay from AuthNavigator for immediate auth redirects
+- DataContext now loads authenticated user's actual profile data via `loadCurrentUserProfile` function
+- Added `/auth/reset` page to clear all cached sessions (localStorage, AsyncStorage, Supabase session)
+- Added "Trouble signing in? Reset session" button on splash screen for easy session reset during development/testing
 
 ## Safe Deployment Checklist
 
