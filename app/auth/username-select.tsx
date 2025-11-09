@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TextInput,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
@@ -12,7 +13,7 @@ import { GradientBackground } from '@/components/auth/GradientBackground';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-import { Check, X } from 'lucide-react-native';
+import { Check, X, ArrowLeft } from 'lucide-react-native';
 
 /**
  * Username Selection Screen - Step 4 in auth flow
@@ -83,6 +84,10 @@ export default function UsernameSelectScreen() {
     return () => clearTimeout(debounceTimer);
   }, [usernameInput, checkUsernameAvailability]);
 
+  const handleBack = () => {
+    router.replace('/auth/reset' as any);
+  };
+
   const handleContinue = async () => {
     const username = usernameInput.trim();
 
@@ -114,6 +119,15 @@ export default function UsernameSelectScreen() {
   return (
     <GradientBackground>
       <View style={styles.container}>
+        <Pressable 
+          style={styles.backButton} 
+          onPress={handleBack}
+          accessibilityRole="button"
+          accessibilityLabel="Go back and reset session"
+        >
+          <ArrowLeft size={24} color={colors.pureWhite} />
+        </Pressable>
+        
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Choose your username</Text>
@@ -166,6 +180,13 @@ export default function UsernameSelectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 48,
+    left: 24,
+    zIndex: 10,
+    padding: 8,
   },
   content: {
     flex: 1,
