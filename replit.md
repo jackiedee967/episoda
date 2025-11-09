@@ -85,6 +85,12 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
   - getWatchHistory uses logged episode count instead of mockEpisodes
   - Sign-out clears userProfileCache along with all other state
   - Result: Users only see real Supabase data - no fake content at any point
+- **CRITICAL FIX - Username Persistence Bug**: Fixed verifyOTP overwriting usernames with blank values (November 2025)
+  - Changed verifyOTP from INSERT to UPSERT with ignoreDuplicates: true
+  - Prevents re-insertion of profile with blank username/display_name after user has set them
+  - Fixed RLS permission issue where existingProfile check would fail and re-insert blank data
+  - Username and display_name now persist correctly through entire onboarding flow
+  - Users can no longer reuse the same username multiple times (uniqueness enforced)
 
 ## Safe Deployment Checklist
 

@@ -134,17 +134,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ OTP verified for user:', data.user?.id);
       
       if (data.user) {
-        await supabase.from('profiles' as any).upsert({
-          user_id: data.user.id,
-          username: '',
-          display_name: '',
-          avatar: '',
-          bio: '',
-          onboarding_completed: false,
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: true
-        });
+        const { data: existingProfile, error: fetchError } = await supabase
+          .from('profiles' as any)
+          .select('user_id')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        if (fetchError && fetchError.code === 'PGRST116') {
+          await supabase.from('profiles' as any).insert({
+            user_id: data.user.id,
+            username: '',
+            display_name: '',
+            avatar: '',
+            bio: '',
+            onboarding_completed: false,
+          });
+          console.log('✅ Created new profile for user:', data.user.id);
+        } else if (existingProfile) {
+          console.log('✅ Profile already exists for user:', data.user.id);
+        } else if (fetchError) {
+          console.log('⚠️ Unexpected error fetching profile:', fetchError);
+        }
       }
       
       return { error: null };
