@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from './_components/GradientBackground';
-import { AuthButton } from './_components/AuthButton';
+import { GradientBackground } from '@/components/auth/GradientBackground';
+import { AuthButton } from '@/components/auth/AuthButton';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '@/contexts/AuthContext';
 

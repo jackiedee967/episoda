@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from './_components/GradientBackground';
-import { AuthButton } from './_components/AuthButton';
-import { CountryCodeSelector, COUNTRIES, Country } from './_components/CountryCodeSelector';
+import { GradientBackground } from '@/components/auth/GradientBackground';
+import { AuthButton } from '@/components/auth/AuthButton';
+import { CountryCodeSelector, COUNTRIES, Country } from '@/components/auth/CountryCodeSelector';
 import { supabase } from '@/app/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 

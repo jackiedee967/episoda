@@ -57,42 +57,38 @@ function AuthNavigator() {
     const inTabGroup = segments[0] === '(tabs)';
     const currentAuthScreen = segments[1] || 'index';
     
-    const timeoutId = setTimeout(() => {
-      if (!session) {
-        if (!inAuthGroup) {
-          console.log('🔒 No session - redirecting to splash');
-          router.replace('/auth' as any);
-        }
-        return;
+    if (!session) {
+      if (!inAuthGroup) {
+        console.log('🔒 No session - redirecting to splash');
+        router.replace('/auth' as any);
       }
+      return;
+    }
 
-      const statusConfig = STATUS_ROUTE_MAP[onboardingStatus];
-      if (!statusConfig) {
-        console.log('⚠️ Unknown onboarding status:', onboardingStatus);
-        return;
+    const statusConfig = STATUS_ROUTE_MAP[onboardingStatus];
+    if (!statusConfig) {
+      console.log('⚠️ Unknown onboarding status:', onboardingStatus);
+      return;
+    }
+
+    if (inTabGroup && onboardingStatus !== 'completed') {
+      console.log('⚠️ Onboarding incomplete - blocking tab access, redirecting to:', statusConfig.required);
+      router.replace(statusConfig.required as any);
+      return;
+    }
+
+    if (onboardingStatus === 'completed') {
+      if (inAuthGroup) {
+        console.log('✅ Onboarding complete - redirecting to home');
+        router.replace('/(tabs)/' as any);
       }
+      return;
+    }
 
-      if (inTabGroup && onboardingStatus !== 'completed') {
-        console.log('⚠️ Onboarding incomplete - blocking tab access, redirecting to:', statusConfig.required);
-        router.replace(statusConfig.required as any);
-        return;
-      }
-
-      if (onboardingStatus === 'completed') {
-        if (inAuthGroup) {
-          console.log('✅ Onboarding complete - redirecting to home');
-          router.replace('/(tabs)/' as any);
-        }
-        return;
-      }
-
-      if (inAuthGroup && !statusConfig.allowed.includes(currentAuthScreen)) {
-        console.log(`🔄 Status=${onboardingStatus}, screen=${currentAuthScreen} not allowed. Redirecting to:`, statusConfig.required);
-        router.replace(statusConfig.required as any);
-      }
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
+    if (inAuthGroup && !statusConfig.allowed.includes(currentAuthScreen)) {
+      console.log(`🔄 Status=${onboardingStatus}, screen=${currentAuthScreen} not allowed. Redirecting to:`, statusConfig.required);
+      router.replace(statusConfig.required as any);
+    }
   }, [session, onboardingStatus, segments, navigationState?.key, isLoading]);
 
   return null;
