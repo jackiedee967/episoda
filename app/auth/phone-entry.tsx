@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { GradientBackground } from './_components/GradientBackground';
 import { AuthButton } from './_components/AuthButton';
+import { CountryCodeSelector, COUNTRIES, Country } from './_components/CountryCodeSelector';
 import { supabase } from '@/app/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 
@@ -34,6 +35,7 @@ export default function PhoneEntryScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [formattedPhoneNumber, setFormattedPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]);
   const phoneInput = useRef<any>(null);
 
   const handleContinue = async () => {
@@ -41,8 +43,9 @@ export default function PhoneEntryScreen() {
     let formattedNumber = '';
 
     if (Platform.OS === 'web') {
-      checkValid = phoneNumber.trim().startsWith('+') && phoneNumber.replace(/\D/g, '').length >= 10;
-      formattedNumber = phoneNumber.trim();
+      const cleanedNumber = phoneNumber.replace(/\D/g, '');
+      checkValid = cleanedNumber.length >= 10;
+      formattedNumber = selectedCountry.dialCode + cleanedNumber;
     } else if (phoneInput.current) {
       checkValid = phoneInput.current?.isValidNumber(phoneNumber);
       formattedNumber = phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber;
@@ -51,7 +54,7 @@ export default function PhoneEntryScreen() {
     if (!checkValid || !formattedNumber) {
       Alert.alert(
         'Invalid Phone Number',
-        'Please enter a valid phone number with country code.\n\nExample: +1 555 123 4567'
+        'Please enter a valid phone number.\n\nExample: 555 123 4567'
       );
       return;
     }
@@ -131,19 +134,26 @@ export default function PhoneEntryScreen() {
             {/* Phone Input */}
             <View style={styles.inputSection}>
               {Platform.OS === 'web' ? (
-                <TextInput
-                  style={styles.webPhoneInput}
-                  placeholder="+1 555 123 4567"
-                  placeholderTextColor={colors.grey1}
-                  value={phoneNumber}
-                  onChangeText={(text) => {
-                    setPhoneNumber(text);
-                    setFormattedPhoneNumber(text);
-                  }}
-                  keyboardType="phone-pad"
-                  editable={!loading}
-                  autoComplete="tel"
-                />
+                <View style={styles.webPhoneContainer}>
+                  <CountryCodeSelector
+                    selectedCountry={selectedCountry}
+                    onSelect={setSelectedCountry}
+                    disabled={loading}
+                  />
+                  <TextInput
+                    style={styles.webPhoneInput}
+                    placeholder="555 123 4567"
+                    placeholderTextColor={colors.grey1}
+                    value={phoneNumber}
+                    onChangeText={(text) => {
+                      const cleaned = text.replace(/[^\d\s-]/g, '');
+                      setPhoneNumber(cleaned);
+                    }}
+                    keyboardType="phone-pad"
+                    editable={!loading}
+                    autoComplete="tel"
+                  />
+                </View>
               ) : PhoneInput ? (
                 <PhoneInput
                   ref={phoneInput}
@@ -168,7 +178,9 @@ export default function PhoneEntryScreen() {
               ) : null}
 
               <Text style={styles.helperText}>
-                Enter your phone number with country code
+                {Platform.OS === 'web' 
+                  ? 'Select your country code and enter your phone number'
+                  : 'Enter your phone number with country code'}
               </Text>
             </View>
 
@@ -218,7 +230,13 @@ const styles = StyleSheet.create({
   inputSection: {
     gap: 12,
   },
+  webPhoneContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
   webPhoneInput: {
+    flex: 1,
     backgroundColor: colors.pureWhite,
     borderRadius: 12,
     paddingHorizontal: 16,
