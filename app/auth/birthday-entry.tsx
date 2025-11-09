@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
@@ -79,6 +80,22 @@ export default function BirthdayEntryScreen() {
     }
   };
 
+  const onWebDateChange = (event: any) => {
+    const dateString = event.target.value;
+    const [year, month, day] = dateString.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day);
+    if (!isNaN(selectedDate.getTime())) {
+      setDate(selectedDate);
+    }
+  };
+
+  const formatDateForWeb = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const age = calculateAge(date);
   const isValidAge = age >= 13;
 
@@ -94,17 +111,29 @@ export default function BirthdayEntryScreen() {
           </View>
 
           <View style={styles.pickerSection}>
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onDateChange}
-              maximumDate={new Date()}
-              minimumDate={new Date(1900, 0, 1)}
-              textColor={colors.pureWhite}
-              themeVariant="dark"
-              style={styles.datePicker}
-            />
+            {Platform.OS === 'web' ? (
+              <TextInput
+                style={styles.webDateInput}
+                value={formatDateForWeb(date)}
+                onChange={onWebDateChange}
+                // @ts-ignore - type="date" is valid for web but not in React Native types
+                type="date"
+                max={formatDateForWeb(new Date())}
+                min="1900-01-01"
+              />
+            ) : (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={onDateChange}
+                maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)}
+                textColor={colors.pureWhite}
+                themeVariant="dark"
+                style={styles.datePicker}
+              />
+            )}
 
             {!isValidAge && (
               <Text style={styles.errorText}>
@@ -164,6 +193,19 @@ const styles = StyleSheet.create({
   datePicker: {
     width: '100%',
     height: 200,
+  },
+  webDateInput: {
+    width: '100%',
+    height: 60,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.almostWhite,
+    backgroundColor: colors.pureWhite,
+    ...typography.titleL,
+    textAlign: 'center',
+    color: colors.black,
+    fontSize: 20,
+    paddingHorizontal: 16,
   },
   errorText: {
     ...typography.p1,
