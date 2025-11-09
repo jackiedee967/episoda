@@ -28,7 +28,7 @@ import * as Haptics from 'expo-haptics';
 export default function VerifyOTPScreen() {
   const router = useRouter();
   const { phone } = useLocalSearchParams<{ phone: string }>();
-  const { verifyOTP } = useAuth();
+  const { verifyOTP, verifyPhoneOTP } = useAuth();
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -72,9 +72,10 @@ export default function VerifyOTPScreen() {
         return;
       }
 
-      const { error } = await verifyOTP(phone, code);
+      const result = await verifyOTP(phone, code);
 
-      if (error) {
+      if (result.error) {
+        const error = result.error;
         if (error.message.includes('expired')) {
           Alert.alert('Code Expired', 'This verification code has expired. Please request a new one.');
         } else if (error.message.includes('invalid')) {
