@@ -47,10 +47,10 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - Real users who sign up on the published app will NOT appear in the dev database
 
 ### Real Users vs Mock Data
-- **Real Users**: Authentication flow now creates actual user profiles in Supabase `profiles` table
-- **Mock Users**: Pre-seeded demo accounts remain in database for feature testing/development
-- When logged in with a real account, you see your own authentic data
-- Mock users continue to be visible for testing social features
+- **Real Users**: Authentication flow creates actual user profiles in Supabase `profiles` table
+- **NO MOCK DATA**: All mock data removed from DataContext - users only see real Supabase data
+- **Empty State**: Signed-out users see empty state (no fake content)
+- **User Profile Cache**: Supabase-backed cache automatically loads user profiles for posts and reposts
 
 ### Recent Changes (November 2025)
 - Fixed signup flow: Phone OTP verification now properly creates user profiles in Supabase
@@ -75,6 +75,16 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - Added "Trouble signing in? Reset session" button on splash screen for easy session reset during development/testing
 - Added back button to username selection page that triggers reset flow, allowing users to escape cached session loops
 - Fixed reset bug where users were redirected back to username page due to cached Supabase session data
+- **CRITICAL FIX - Removed All Mock Data**: Completely eliminated mock data from DataContext
+  - Removed mockPosts, mockCurrentUser, mockUsers, mockEpisodes imports and usage
+  - Initial state now uses empty arrays and EMPTY_USER object (no mock fallbacks)
+  - Added Supabase-backed userProfileCache that automatically loads user profiles for posts and reposts
+  - Created loadUserProfiles() function for batch-fetching user profiles from Supabase
+  - allReposts now uses userProfileCache instead of mockUsers
+  - getFollowers/getFollowing/getTopFollowers/getTopFollowing return empty arrays on Supabase failure (no mock fallback)
+  - getWatchHistory uses logged episode count instead of mockEpisodes
+  - Sign-out clears userProfileCache along with all other state
+  - Result: Users only see real Supabase data - no fake content at any point
 
 ## Safe Deployment Checklist
 
