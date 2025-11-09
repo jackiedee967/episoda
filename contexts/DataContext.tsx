@@ -1,7 +1,6 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
-import { mockUsers, mockEpisodes } from '@/data/mockData';
 import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
@@ -103,6 +102,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
+  const [userProfileCache, setUserProfileCache] = useState<Record<string, User>>({});
+  
   // Memoize currentUser to prevent recreation on every render
   const currentUser = useMemo(() => ({
     ...currentUserData,
@@ -192,12 +193,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Load follow data from Supabase - wrapped in useCallback to prevent infinite loops
   const loadFollowDataFromSupabase = useCallback(async (userId: string) => {
     try {
       console.log('Loading follow data from Supabase for user:', userId);
       
-      // Get users this user is following
       const { data: followingData, error: followingError } = await supabase
         .from('follows')
         .select('following_id')
@@ -209,9 +208,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const followingIds = followingData?.map(f => f.following_id) || [];
         console.log('✅ Loaded following from Supabase:', followingIds.length, 'users');
         
-        // Only update state if the data actually changed (prevents unnecessary re-renders)
         setUserData(prev => {
-          // Clone arrays before sorting to avoid mutating state
           const prevSorted = [...prev.following].sort();
           const newSorted = [...followingIds].sort();
           const followingChanged = JSON.stringify(prevSorted) !== JSON.stringify(newSorted);
@@ -226,6 +223,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error loading follow data from Supabase:', error);
+    }
+  }, []);
+
+  const loadUserProfiles = useCallback(async (userIds: string[]) => {
+    if (userIds.length === 0) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles' as any)
+        .select('*')
+        .in('user_id', userIds);
+
+      if (error) {
+        console.error('Error batch-loading user profiles:', error);
+        return;
+      }
+
+      if (data) {
+        const newProfiles: Record<string, User> = {};
+        data.forEach((profile: any) => {
+          newProfiles[profile.user_id] = {
+            id: profile.user_id,
+            username: profile.username || 'user',
+            displayName: profile.display_name || profile.username || 'User',
+            avatar: profile.avatar_url || '',
+            bio: profile.bio || '',
+            socialLinks: profile.social_links || [],
+            following: [],
+            followers: [],
+          };
+        });
+        
+        setUserProfileCache(prev => ({ ...prev, ...newProfiles }));
+      }
+    } catch (error) {
+      console.error('Error batch-loading user profiles:', error);
     }
   }, []);
 
@@ -254,8 +287,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setPosts([]);
       setReposts([]);
       setPlaylists([]);
+      setUserProfileCache({});
     }
   }, [user, loadCurrentUserProfile, loadFollowDataFromSupabase]);
+
+  useEffect(() => {
+    const repostUserIds = reposts.map(r => r.userId);
+    const postAuthorIds = posts.map(p => p.user.id);
+    const allUserIds = [...repostUserIds, ...postAuthorIds];
+    
+    const missingUserIds = allUserIds.filter(userId => !userProfileCache[userId]);
+    const uniqueIds = Array.from(new Set(missingUserIds));
+    
+    if (uniqueIds.length > 0) {
+      loadUserProfiles(uniqueIds);
+    }
+  }, [posts, reposts, userProfileCache, loadUserProfiles]);
 
   const saveRepostsToStorage = async (reposts: RepostData[]) => {
     try {
@@ -780,13 +827,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return posts.filter(p => userRepostIds.includes(p.id));
   }, [posts, reposts, currentUser.id]);
 
-  // Memoize the reposts data directly instead of wrapping in a callback
   const allReposts = useMemo(() => {
     return reposts
       .map(repost => {
         const post = posts.find(p => p.id === repost.postId);
-        const user = mockUsers.find(u => u.id === repost.userId);
-        // Filter out invalid reposts where either post or user is missing
+        const user = userProfileCache[repost.userId];
         if (!post || !user) return null;
         return {
           post,
@@ -795,7 +840,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
-  }, [posts, reposts]);
+  }, [posts, reposts, userProfileCache]);
 
   const updateCommentCount = useCallback(async (postId: string, count: number) => {
     setPosts(prev => {
@@ -1222,14 +1267,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     });
     
-    // Convert to array and calculate stats
     const watchHistory: WatchHistoryItem[] = Array.from(showMap.values()).map(item => {
-      const totalEpisodes = mockEpisodes.filter(ep => ep.showId === item.show.id);
-      
-      // Get most recent episode from the latest post
       let mostRecentEpisode: Episode | null = null;
       if (item.latestPost.episodes && item.latestPost.episodes.length > 0) {
-        // Sort episodes by season and episode number to get the highest
         const sortedEpisodes = [...item.latestPost.episodes].sort((a, b) => {
           if (a.seasonNumber !== b.seasonNumber) {
             return b.seasonNumber - a.seasonNumber;
@@ -1243,7 +1283,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         show: item.show,
         mostRecentEpisode,
         loggedCount: item.episodes.size,
-        totalCount: totalEpisodes.length,
+        totalCount: item.episodes.size,
         lastWatchedDate: item.lastDate,
       };
     });
