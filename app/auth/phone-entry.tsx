@@ -103,22 +103,31 @@ export default function PhoneEntryScreen() {
       } else {
         console.log('✅ OTP sent successfully!');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          'Code Sent!',
-          `A 6-digit verification code has been sent to ${formattedNumber}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                console.log('📍 Navigating to verify-otp screen');
-                router.push({
-                  pathname: '/auth/verify-otp',
-                  params: { phone: formattedNumber },
-                });
+        
+        if (Platform.OS === 'web') {
+          console.log('📍 WEB - Auto-navigating to verify-otp screen');
+          router.push({
+            pathname: '/auth/verify-otp',
+            params: { phone: formattedNumber },
+          });
+        } else {
+          Alert.alert(
+            'Code Sent!',
+            `A 6-digit verification code has been sent to ${formattedNumber}`,
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  console.log('📍 Navigating to verify-otp screen');
+                  router.push({
+                    pathname: '/auth/verify-otp',
+                    params: { phone: formattedNumber },
+                  });
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        }
       }
     } catch (error: any) {
       console.error('❌ Phone sign in exception:', error);
