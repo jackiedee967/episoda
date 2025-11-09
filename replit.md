@@ -64,6 +64,7 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - Added `/auth/reset` page with double-clear approach: clears storage before AND after signOut to prevent Supabase session rehydration
 - Reset flow uses window.location.href for hard page reload on web, ensuring complete session wipe
 - Added "Trouble signing in? Reset session" button on splash screen for easy session reset during development/testing
+- Added back button to username selection page that triggers reset flow, allowing users to escape cached session loops
 - Fixed reset bug where users were redirected back to username page due to cached Supabase session data
 
 ## Safe Deployment Checklist
