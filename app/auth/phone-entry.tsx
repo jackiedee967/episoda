@@ -42,16 +42,24 @@ export default function PhoneEntryScreen() {
     let checkValid = false;
     let formattedNumber = '';
 
+    console.log('📱 Phone entry - handleContinue called');
+    console.log('📱 phoneNumber:', phoneNumber);
+    console.log('📱 selectedCountry:', selectedCountry);
+
     if (Platform.OS === 'web') {
       const cleanedNumber = phoneNumber.replace(/\D/g, '');
       checkValid = cleanedNumber.length >= 10;
       formattedNumber = selectedCountry.dialCode + cleanedNumber;
+      console.log('📱 WEB - cleanedNumber:', cleanedNumber);
+      console.log('📱 WEB - formattedNumber:', formattedNumber);
+      console.log('📱 WEB - checkValid:', checkValid);
     } else if (phoneInput.current) {
       checkValid = phoneInput.current?.isValidNumber(phoneNumber);
       formattedNumber = phoneInput.current?.getNumberAfterPossiblyEliminatingZero()?.formattedNumber;
     }
 
     if (!checkValid || !formattedNumber) {
+      console.error('❌ Invalid phone number - checkValid:', checkValid, 'formattedNumber:', formattedNumber);
       Alert.alert(
         'Invalid Phone Number',
         'Please enter a valid phone number.\n\nExample: 555 123 4567'
@@ -59,31 +67,41 @@ export default function PhoneEntryScreen() {
       return;
     }
 
+    console.log('✅ Phone number valid, sending OTP to:', formattedNumber);
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
+      console.log('📤 Calling supabase.auth.signInWithOtp...');
       const { data, error } = await supabase.auth.signInWithOtp({
         phone: formattedNumber,
       });
 
+      console.log('📥 Supabase response - data:', data, 'error:', error);
+
       if (error) {
-        console.error('Phone sign in error:', error);
+        console.error('❌ Phone sign in error:', error);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
 
         if (error.message.includes('phone_provider_disabled') || error.message.includes('Unsupported phone provider')) {
+          console.error('❌ Phone authentication not configured in Supabase');
           Alert.alert(
             'Phone Authentication Not Enabled',
             'Phone authentication is not configured. Please contact support.'
           );
         } else if (error.message.includes('rate limit')) {
+          console.error('❌ Rate limit exceeded');
           Alert.alert(
             'Too Many Attempts',
             'You have requested too many codes. Please wait a few minutes and try again.'
           );
         } else {
+          console.error('❌ Unknown error:', error.message);
           Alert.alert('Error', error.message);
         }
       } else {
+        console.log('✅ OTP sent successfully!');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(
           'Code Sent!',
@@ -92,6 +110,7 @@ export default function PhoneEntryScreen() {
             {
               text: 'OK',
               onPress: () => {
+                console.log('📍 Navigating to verify-otp screen');
                 router.push({
                   pathname: '/auth/verify-otp',
                   params: { phone: formattedNumber },
@@ -102,12 +121,14 @@ export default function PhoneEntryScreen() {
         );
       }
     } catch (error: any) {
-      console.error('Phone sign in exception:', error);
+      console.error('❌ Phone sign in exception:', error);
+      console.error('❌ Exception details:', JSON.stringify(error, null, 2));
       Alert.alert(
         'Error',
         'Failed to send verification code. Please check your internet connection and try again.'
       );
     } finally {
+      console.log('🏁 handleContinue finished, setLoading(false)');
       setLoading(false);
     }
   };
