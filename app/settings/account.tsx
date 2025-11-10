@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   changeButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.black,
   },
   dangerZone: {
     backgroundColor: 'rgba(255, 59, 48, 0.1)',
