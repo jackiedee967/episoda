@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
+import { assignRandomAvatar } from '@/utils/profilePictureGenerator';
 
 type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'display_name_set' | 'birthday_set' | 'completed';
 
@@ -93,6 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('❌ OAuth profile insert error:', insertError);
         } else {
           console.log('✅ Created new OAuth profile with display_name:', displayName || '(empty)');
+          assignRandomAvatar(user.id).then(success => {
+            if (success) {
+              console.log('🎨 Auto-generated profile avatar assigned (OAuth)');
+            } else {
+              console.log('⚠️ Failed to assign auto-generated avatar (OAuth, non-critical)');
+            }
+          }).catch(err => {
+            console.log('⚠️ Avatar assignment error (OAuth, non-critical):', err);
+          });
         }
       }
     } catch (error) {
@@ -207,6 +217,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('Error details:', JSON.stringify(insertError, null, 2));
           } else {
             console.log('✅ Created new profile for user:', data.user.id);
+            assignRandomAvatar(data.user.id).then(success => {
+              if (success) {
+                console.log('🎨 Auto-generated profile avatar assigned');
+              } else {
+                console.log('⚠️ Failed to assign auto-generated avatar (non-critical)');
+              }
+            }).catch(err => {
+              console.log('⚠️ Avatar assignment error (non-critical):', err);
+            });
           }
         } else if (existingProfile) {
           console.log('✅ Profile already exists for user:', data.user.id);
