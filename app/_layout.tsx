@@ -48,7 +48,8 @@ function AuthNavigator() {
     const STATUS_ROUTE_MAP: Record<string, { allowed: string[]; required: string }> = {
       'not_started': { allowed: ['index', 'phone-entry'], required: '/auth' },
       'phone_verified': { allowed: ['phone-entry', 'verify-otp', 'username-select'], required: '/auth/username-select' },
-      'username_set': { allowed: ['birthday-entry'], required: '/auth/birthday-entry' },
+      'username_set': { allowed: ['display-name'], required: '/auth/display-name' },
+      'display_name_set': { allowed: ['birthday-entry'], required: '/auth/birthday-entry' },
       'birthday_set': { allowed: ['onboarding-carousel'], required: '/auth/onboarding-carousel' },
       'completed': { allowed: [], required: '/(tabs)/' },
     };
