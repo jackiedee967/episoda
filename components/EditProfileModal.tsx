@@ -78,11 +78,13 @@ export default function EditProfileModal({
         friction: 11,
       }).start();
       
-      const instagram = initialSocialLinks.find(link => link.platform === 'instagram');
-      const tiktok = initialSocialLinks.find(link => link.platform === 'tiktok');
-      const x = initialSocialLinks.find(link => link.platform === 'x');
-      const spotify = initialSocialLinks.find(link => link.platform === 'spotify');
-      const website = initialSocialLinks.find(link => link.platform === 'website');
+      const socialLinksArray = Array.isArray(initialSocialLinks) ? initialSocialLinks : [];
+      
+      const instagram = socialLinksArray.find(link => link.platform === 'instagram');
+      const tiktok = socialLinksArray.find(link => link.platform === 'tiktok');
+      const x = socialLinksArray.find(link => link.platform === 'x');
+      const spotify = socialLinksArray.find(link => link.platform === 'spotify');
+      const website = socialLinksArray.find(link => link.platform === 'website');
 
       setInstagramUsername(instagram ? instagram.url.replace(PLATFORM_URLS.instagram, '') : '');
       setTiktokUsername(tiktok ? tiktok.url.replace(PLATFORM_URLS.tiktok, '') : '');
