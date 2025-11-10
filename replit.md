@@ -118,12 +118,12 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
   - **CASCADE cleanup**: Database automatically removes all related data (posts, likes, comments, reposts, follows, social_links) when profile is deleted
   - **Client flow**: `AuthContext.deleteAccount()` → edge function → clear local state → redirect to splash
   - **Deployment Required**: Deploy edge function via `supabase functions deploy delete-account` (see `supabase/functions/README.md`)
-- **NEW: Phone Number Change Feature** (November 10, 2025)
-  - SMS users can change their phone number from Account Settings
-  - **Two-step OTP verification**: Enter new number → receive code → verify → update complete
-  - **Built-in Supabase flow**: Uses `updateUser({ phone })` and `verifyOtp({ type: 'phone_change' })`
-  - **Error handling**: Prevents duplicate phone numbers, validates OTP codes, shows clear error messages
-  - **Apple Sign-In users**: Feature is disabled (not applicable for OAuth users)
+- **Phone Number Change Feature** (November 10, 2025)
+  - **DISABLED**: Temporarily disabled due to cross-platform compatibility issues
+  - Alert.prompt (iOS-only API) caused crashes on web and Android platforms
+  - Button now shows "coming soon" message instead of attempting to change phone
+  - **Future Implementation**: Requires dedicated screen with cross-platform phone input UI
+  - **Apple Sign-In users**: Feature is not applicable for OAuth users
 
 ## Safe Deployment Checklist
 
