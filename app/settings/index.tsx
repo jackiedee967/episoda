@@ -15,30 +15,24 @@ export default function SettingsScreen() {
 
   const handleSignOut = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-              console.log('✅ User signed out successfully');
-              router.replace('/auth');
-            } catch (error) {
-              console.error('❌ Error signing out:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    
+    // Web-compatible confirmation
+    const confirmed = typeof window !== 'undefined' 
+      ? window.confirm('Are you sure you want to sign out?')
+      : true;
+    
+    if (!confirmed) return;
+    
+    try {
+      await signOut();
+      console.log('✅ User signed out successfully');
+      router.replace('/auth');
+    } catch (error) {
+      console.error('❌ Error signing out:', error);
+      if (typeof window !== 'undefined') {
+        window.alert('Failed to sign out. Please try again.');
+      }
+    }
   };
 
   const handleRowPress = (route: string) => {
