@@ -423,29 +423,29 @@ export default function EditProfileModal({
           </View>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            <View style={styles.avatarSection}>
+            <View style={styles.section}>
               <Text style={styles.label}>Profile Picture</Text>
-              <Pressable onPress={handlePickImage} style={styles.avatarContainer}>
-                {(avatarUri || initialAvatar) ? (
-                  <Image
-                    source={{ uri: avatarUri || initialAvatar }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <IconSymbol name="person.circle.fill" size={80} color={colors.grey1} />
-                  </View>
-                )}
-                <View style={styles.avatarOverlay}>
-                  <Text style={styles.avatarOverlayText}>Change Photo</Text>
-                </View>
-              </Pressable>
-              {isUploadingAvatar && (
-                <View style={styles.uploadingIndicator}>
-                  <ActivityIndicator size="small" color={colors.greenHighlight} />
-                  <Text style={styles.uploadingText}>Uploading...</Text>
-                </View>
-              )}
+              <View style={styles.avatarRow}>
+                <Pressable onPress={handlePickImage}>
+                  {(avatarUri || initialAvatar) ? (
+                    <Image
+                      source={{ uri: avatarUri || initialAvatar }}
+                      style={styles.avatar}
+                    />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <IconSymbol name="person.circle.fill" size={48} color={colors.grey1} />
+                    </View>
+                  )}
+                </Pressable>
+                <Pressable onPress={handlePickImage} style={styles.uploadIconButton}>
+                  {isUploadingAvatar ? (
+                    <ActivityIndicator size="small" color={colors.almostWhite} />
+                  ) : (
+                    <IconSymbol name="arrow.up.circle.fill" size={28} color={colors.almostWhite} />
+                  )}
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.section}>
@@ -658,52 +658,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 20,
   },
-  avatarSection: {
-    paddingHorizontal: 20,
-    marginTop: 20,
+  avatarRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  avatarContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginTop: 12,
-    position: 'relative',
+    gap: 16,
   },
   avatar: {
-    width: 120,
-    height: 120,
+    width: 80,
+    height: 80,
+    borderRadius: 12,
   },
   avatarPlaceholder: {
-    width: 120,
-    height: 120,
+    width: 80,
+    height: 80,
+    borderRadius: 12,
     backgroundColor: colors.pageBackground,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 8,
-    alignItems: 'center',
-  },
-  avatarOverlayText: {
-    ...typography.p3R,
-    color: colors.almostWhite,
-  },
-  uploadingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 8,
-  },
-  uploadingText: {
-    ...typography.p3R,
-    color: colors.grey1,
+  uploadIconButton: {
+    padding: 4,
   },
   sectionTitle: {
     ...typography.subtitle,
