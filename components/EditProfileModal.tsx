@@ -11,10 +11,12 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { colors, typography } from '@/styles/tokens';
 import { X, Instagram, Music, Globe } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { SocialLink } from '@/types';
 import { supabase } from '@/app/integrations/supabase/client';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -25,11 +27,13 @@ interface EditProfileModalProps {
   displayName: string;
   username: string;
   bio: string;
+  avatar: string;
   socialLinks: SocialLink[];
   onSave: (data: {
     displayName: string;
     username: string;
     bio: string;
+    avatar?: string;
     socialLinks: SocialLink[];
   }) => void;
 }
@@ -49,6 +53,7 @@ export default function EditProfileModal({
   displayName: initialDisplayName,
   username: initialUsername,
   bio: initialBio,
+  avatar: initialAvatar,
   socialLinks: initialSocialLinks,
   onSave,
 }: EditProfileModalProps) {
@@ -57,6 +62,8 @@ export default function EditProfileModal({
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [username, setUsername] = useState(initialUsername);
   const [bio, setBio] = useState(initialBio);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
   const [usernameError, setUsernameError] = useState<string>('');
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -155,6 +162,69 @@ export default function EditProfileModal({
     return () => clearTimeout(timer);
   }, [username, initialUsername]);
 
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        if (typeof window !== 'undefined') {
+          window.alert('Permission to access photos is required!');
+        }
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setAvatarUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      if (typeof window !== 'undefined') {
+        window.alert('Failed to pick image. Please try again.');
+      }
+    }
+  };
+
+  const uploadAvatar = async (uri: string): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const fileExt = uri.split('.').pop() || 'jpg';
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, blob, {
+          contentType: `image/${fileExt}`,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return null;
+      }
+
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      return null;
+    }
+  };
+
   const handleSave = async () => {
     if (isCheckingUsername) {
       return;
@@ -218,32 +288,51 @@ export default function EditProfileModal({
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      let avatarUrl: string | null = null;
       
       if (user) {
+        if (avatarUri) {
+          setIsUploadingAvatar(true);
+          avatarUrl = await uploadAvatar(avatarUri);
+          setIsUploadingAvatar(false);
+          
+          if (!avatarUrl) {
+            if (typeof window !== 'undefined') {
+              window.alert('Failed to upload profile picture. Please try again.');
+            }
+            setIsSaving(false);
+            return;
+          }
+        }
+        
         const { data: existingProfile } = await supabase
           .from('profiles' as any)
           .select('id')
           .eq('user_id', user.id)
           .single();
 
+        const updateData: any = {
+          display_name: displayName.trim(),
+          username: username.toLowerCase().trim(),
+          bio: bio.trim(),
+          updated_at: new Date().toISOString(),
+        };
+
+        if (avatarUrl) {
+          updateData.avatar_url = avatarUrl;
+        }
+
         if (existingProfile) {
           await supabase
             .from('profiles' as any)
-            .update({
-              display_name: displayName.trim(),
-              username: username.toLowerCase().trim(),
-              bio: bio.trim(),
-              updated_at: new Date().toISOString(),
-            })
+            .update(updateData)
             .eq('user_id', user.id);
         } else {
           await supabase
             .from('profiles' as any)
             .insert({
               user_id: user.id,
-              display_name: displayName.trim(),
-              username: username.toLowerCase().trim(),
-              bio: bio.trim(),
+              ...updateData,
             });
         }
 
@@ -267,12 +356,20 @@ export default function EditProfileModal({
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      onSave({
+      const saveData: any = {
         displayName,
         username,
         bio,
         socialLinks: updatedSocialLinks,
-      });
+      };
+      
+      if (avatarUrl) {
+        saveData.avatar = avatarUrl;
+      }
+      
+      onSave(saveData);
+
+      setAvatarUri(null);
 
       if (typeof window !== 'undefined') {
         window.alert('Your profile has been updated!');
@@ -326,6 +423,31 @@ export default function EditProfileModal({
           </View>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.avatarSection}>
+              <Text style={styles.label}>Profile Picture</Text>
+              <Pressable onPress={handlePickImage} style={styles.avatarContainer}>
+                {(avatarUri || initialAvatar) ? (
+                  <Image
+                    source={{ uri: avatarUri || initialAvatar }}
+                    style={styles.avatar}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <IconSymbol name="person.circle.fill" size={80} color={colors.grey1} />
+                  </View>
+                )}
+                <View style={styles.avatarOverlay}>
+                  <Text style={styles.avatarOverlayText}>Change Photo</Text>
+                </View>
+              </Pressable>
+              {isUploadingAvatar && (
+                <View style={styles.uploadingIndicator}>
+                  <ActivityIndicator size="small" color={colors.greenHighlight} />
+                  <Text style={styles.uploadingText}>Uploading...</Text>
+                </View>
+              )}
+            </View>
+
             <View style={styles.section}>
               <Text style={styles.label}>Display Name</Text>
               <TextInput
@@ -535,6 +657,53 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: 20,
     marginTop: 20,
+  },
+  avatarSection: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 12,
+    position: 'relative',
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+  },
+  avatarPlaceholder: {
+    width: 120,
+    height: 120,
+    backgroundColor: colors.pageBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 8,
+    alignItems: 'center',
+  },
+  avatarOverlayText: {
+    ...typography.p3R,
+    color: colors.almostWhite,
+  },
+  uploadingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  uploadingText: {
+    ...typography.p3R,
+    color: colors.grey1,
   },
   sectionTitle: {
     ...typography.subtitle,

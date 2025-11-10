@@ -237,6 +237,7 @@ export default function ProfileScreen() {
     displayName: string;
     username: string;
     bio: string;
+    avatar?: string;
     socialLinks: SocialLink[];
   }) => {
     try {
@@ -247,6 +248,7 @@ export default function ProfileScreen() {
         displayName: data.displayName,
         username: data.username,
         bio: data.bio,
+        avatar: data.avatar || prev.avatar,
         socialLinks: data.socialLinks,
       }));
       
@@ -688,6 +690,7 @@ export default function ProfileScreen() {
           displayName={profileUser.displayName}
           username={profileUser.username}
           bio={profileUser.bio || ''}
+          avatar={profileUser.avatar || ''}
           socialLinks={profileUser.socialLinks || []}
           onSave={handleSaveProfile}
         />
