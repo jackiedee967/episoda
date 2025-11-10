@@ -111,6 +111,19 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
   - **Non-Blocking**: Avatar assignment failures are logged but never block signup completion
   - **Future Upgrade Path**: Icons can be pre-rendered to PNG and uploaded to Supabase Storage bucket `profile-pictures` for faster loading
   - **Migration Required**: Run `supabase/migrations/001_initial_schema.sql` in Supabase dashboard to add avatar columns and storage bucket
+- **NEW: Account Deletion Feature** (November 10, 2025)
+  - Users can permanently delete their accounts from Account Settings page
+  - **Two-confirmation flow**: Double dialog confirmation prevents accidental deletion
+  - **Edge Function**: Uses Supabase Edge Function (`delete-account`) with service-role access to delete auth users
+  - **CASCADE cleanup**: Database automatically removes all related data (posts, likes, comments, reposts, follows, social_links) when profile is deleted
+  - **Client flow**: `AuthContext.deleteAccount()` → edge function → clear local state → redirect to splash
+  - **Deployment Required**: Deploy edge function via `supabase functions deploy delete-account` (see `supabase/functions/README.md`)
+- **NEW: Phone Number Change Feature** (November 10, 2025)
+  - SMS users can change their phone number from Account Settings
+  - **Two-step OTP verification**: Enter new number → receive code → verify → update complete
+  - **Built-in Supabase flow**: Uses `updateUser({ phone })` and `verifyOtp({ type: 'phone_change' })`
+  - **Error handling**: Prevents duplicate phone numbers, validates OTP codes, shows clear error messages
+  - **Apple Sign-In users**: Feature is disabled (not applicable for OAuth users)
 
 ## Safe Deployment Checklist
 

@@ -3,6 +3,7 @@ import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
 import { assignRandomAvatar } from '@/utils/profilePictureGenerator';
+import { deleteAccountViaEdgeFunction } from '@/utils/deleteAccountApi';
 
 type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'display_name_set' | 'birthday_set' | 'completed';
 
@@ -17,6 +18,7 @@ interface AuthContextType {
   verifyPhoneOTP: (userId: string) => Promise<void>;
   signInWithApple: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ error: any }>;
   setUsername: (username: string) => Promise<{ error: any }>;
   setDisplayName: (displayName: string) => Promise<{ error: any }>;
   setBirthday: (birthday: Date) => Promise<{ error: any }>;
@@ -266,17 +268,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const signOut = useCallback(async () => {
+  const deleteAccount = useCallback(async () => {
     try {
-      console.log('🔐 Signing out...');
+      console.log('🗑️ Deleting account...');
       
-      // Clear local state immediately (before Supabase call)
+      const result = await deleteAccountViaEdgeFunction();
+      
+      if (!result.success) {
+        console.log('❌ Account deletion failed:', result.error);
+        return { error: new Error(result.error || 'Failed to delete account') };
+      }
+      
+      console.log('✅ Account deleted successfully via edge function');
+      
       setSession(null);
       setUser(null);
       setOnboardingStatus('not_started');
       setIsLoading(false);
       
-      // Clear any cached auth data from AsyncStorage
       try {
         await AsyncStorage.multiRemove([
           'supabase.auth.token',
@@ -287,7 +296,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('⚠️ Error clearing AsyncStorage:', storageError);
       }
       
-      // Call Supabase sign out
+      console.log('✅ Local session cleared after account deletion');
+      return { error: null };
+    } catch (error) {
+      console.log('❌ Account deletion exception:', error);
+      return { error };
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      console.log('🔐 Signing out...');
+      
+      setSession(null);
+      setUser(null);
+      setOnboardingStatus('not_started');
+      setIsLoading(false);
+      
+      try {
+        await AsyncStorage.multiRemove([
+          'supabase.auth.token',
+          '@natively_session',
+          '@natively_user'
+        ]);
+      } catch (storageError) {
+        console.log('⚠️ Error clearing AsyncStorage:', storageError);
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.log('❌ Supabase sign out error:', error);
@@ -296,7 +331,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('✅ User signed out successfully');
     } catch (error) {
       console.log('❌ Sign out error:', error);
-      // Still clear local state even if Supabase call fails
       setSession(null);
       setUser(null);
       setOnboardingStatus('not_started');
@@ -454,6 +488,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     verifyPhoneOTP,
     signInWithApple,
     signOut,
+    deleteAccount,
     setUsername,
     setDisplayName,
     setBirthday,
