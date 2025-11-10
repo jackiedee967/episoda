@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -52,55 +52,100 @@ export default function AccountSettingsScreen() {
     }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    console.log('🗑️ Delete button clicked');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      'Delete Account',
-      'Are you absolutely sure? This action cannot be undone. All your data will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Final Confirmation',
-              'This is your last chance. Delete your account?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                  text: 'Delete Forever', 
-                  style: 'destructive', 
-                  onPress: async () => {
-                    try {
-                      setIsDeleting(true);
-                      console.log('Deleting account...');
-                      
-                      const { error } = await deleteAccount();
-                      
-                      if (error) {
+    
+    if (Platform.OS === 'web') {
+      const firstConfirm = window.confirm(
+        'Delete Account\n\nAre you absolutely sure? This action cannot be undone. All your data will be permanently deleted.'
+      );
+      
+      if (!firstConfirm) {
+        console.log('🗑️ First confirmation cancelled');
+        return;
+      }
+      
+      const finalConfirm = window.confirm(
+        'Final Confirmation\n\nThis is your last chance. Delete your account forever?'
+      );
+      
+      if (!finalConfirm) {
+        console.log('🗑️ Final confirmation cancelled');
+        return;
+      }
+      
+      try {
+        setIsDeleting(true);
+        console.log('🗑️ Starting account deletion...');
+        
+        const { error } = await deleteAccount();
+        
+        if (error) {
+          console.error('🗑️ Error deleting account:', error);
+          window.alert('Error: ' + (error.message || 'Failed to delete account. Please try again.'));
+          setIsDeleting(false);
+          return;
+        }
+        
+        console.log('🗑️ Account deleted successfully');
+        window.alert('Account Deleted\n\nYour account and all data have been permanently deleted.');
+        
+        router.replace('/');
+      } catch (error) {
+        console.error('🗑️ Exception deleting account:', error);
+        window.alert('Error: Failed to delete account. Please try again.');
+        setIsDeleting(false);
+      }
+    } else {
+      Alert.alert(
+        'Delete Account',
+        'Are you absolutely sure? This action cannot be undone. All your data will be permanently deleted.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              Alert.alert(
+                'Final Confirmation',
+                'This is your last chance. Delete your account?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Delete Forever', 
+                    style: 'destructive', 
+                    onPress: async () => {
+                      try {
+                        setIsDeleting(true);
+                        console.log('Deleting account...');
+                        
+                        const { error } = await deleteAccount();
+                        
+                        if (error) {
+                          console.error('Error deleting account:', error);
+                          Alert.alert('Error', error.message || 'Failed to delete account. Please try again.');
+                          setIsDeleting(false);
+                          return;
+                        }
+                        
+                        Alert.alert('Account Deleted', 'Your account and all data have been permanently deleted.');
+                        
+                        router.replace('/');
+                      } catch (error) {
                         console.error('Error deleting account:', error);
-                        Alert.alert('Error', error.message || 'Failed to delete account. Please try again.');
+                        Alert.alert('Error', 'Failed to delete account. Please try again.');
                         setIsDeleting(false);
-                        return;
                       }
-                      
-                      Alert.alert('Account Deleted', 'Your account and all data have been permanently deleted.');
-                      
-                      router.replace('/');
-                    } catch (error) {
-                      console.error('Error deleting account:', error);
-                      Alert.alert('Error', 'Failed to delete account. Please try again.');
-                      setIsDeleting(false);
                     }
-                  }
-                },
-              ]
-            );
+                  },
+                ]
+              );
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleChangePhoneNumber = () => {
