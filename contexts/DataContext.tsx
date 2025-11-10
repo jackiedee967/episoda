@@ -5,6 +5,7 @@ import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
 
 interface UserData {
   following: string[];
@@ -177,11 +178,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const profileData = profile as any;
         console.log('✅ Loaded user profile:', profileData.username);
         
+        // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
+        let avatarUrl = profileData.avatar_url || '';
+        if (!avatarUrl && profileData.avatar_color_scheme && profileData.avatar_icon) {
+          avatarUrl = generateAvatarDataURI(profileData.avatar_color_scheme, profileData.avatar_icon);
+          console.log('🎨 Generated avatar data URI for user:', profileData.username);
+        }
+        
         setCurrentUserData({
           id: userId,
           username: profileData.username || 'user',
           displayName: profileData.display_name || profileData.username || 'User',
-          avatar: profileData.avatar_url || '',
+          avatar: avatarUrl,
           bio: profileData.bio || '',
           socialLinks: profileData.social_links || {},
           following: [],
@@ -243,11 +251,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (data) {
         const newProfiles: Record<string, User> = {};
         data.forEach((profile: any) => {
+          // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
+          let avatarUrl = profile.avatar_url || '';
+          if (!avatarUrl && profile.avatar_color_scheme && profile.avatar_icon) {
+            avatarUrl = generateAvatarDataURI(profile.avatar_color_scheme, profile.avatar_icon);
+          }
+          
           newProfiles[profile.user_id] = {
             id: profile.user_id,
             username: profile.username || 'user',
             displayName: profile.display_name || profile.username || 'User',
-            avatar: profile.avatar_url || '',
+            avatar: avatarUrl,
             bio: profile.bio || '',
             socialLinks: profile.social_links || [],
             following: [],

@@ -18,6 +18,7 @@ import { Eye, EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
+import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -94,17 +95,25 @@ export default function ProfileScreen() {
 
           // Keep the contextCurrentUser.id to maintain compatibility with mock data
           // Only update profile-specific fields from Supabase
-          setProfileUser(prev => ({
-            ...prev,
-            username: profile.username || prev.username,
-            displayName: profile.display_name || prev.displayName,
-            avatar: profile.avatar_url || prev.avatar,
-            bio: profile.bio || '',
-            socialLinks: socialLinks?.map(link => ({
-              platform: link.platform as SocialLink['platform'],
-              url: link.url,
-            })) || [],
-          }));
+          setProfileUser(prev => {
+            // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
+            let avatarUrl = profile.avatar_url || prev.avatar;
+            if (!profile.avatar_url && profile.avatar_color_scheme && profile.avatar_icon) {
+              avatarUrl = generateAvatarDataURI(profile.avatar_color_scheme, profile.avatar_icon);
+            }
+            
+            return {
+              ...prev,
+              username: profile.username || prev.username,
+              displayName: profile.display_name || prev.displayName,
+              avatar: avatarUrl,
+              bio: profile.bio || '',
+              socialLinks: socialLinks?.map(link => ({
+                platform: link.platform as SocialLink['platform'],
+                url: link.url,
+              })) || [],
+            };
+          });
         }
       }
     } catch (error) {
