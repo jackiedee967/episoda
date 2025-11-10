@@ -119,11 +119,13 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
   - **Client flow**: `AuthContext.deleteAccount()` → edge function → clear local state → redirect to splash
   - **Deployment Required**: Deploy edge function via `supabase functions deploy delete-account` (see `supabase/functions/README.md`)
 - **Phone Number Change Feature** (November 10, 2025)
-  - **DISABLED**: Temporarily disabled due to cross-platform compatibility issues
-  - Alert.prompt (iOS-only API) caused crashes on web and Android platforms
-  - Button now shows "coming soon" message instead of attempting to change phone
-  - **Future Implementation**: Requires dedicated screen with cross-platform phone input UI
-  - **Apple Sign-In users**: Feature is not applicable for OAuth users
+  - **IMPLEMENTED**: Full cross-platform phone number change flow for SMS-authenticated users
+  - **Two-screen flow**: `/settings/change-phone` (enter new number) → `/settings/verify-phone-change` (OTP verification)
+  - **Cross-platform compatibility**: Web uses custom TextInput + country selector, mobile uses react-native-phone-number-input
+  - **Supabase integration**: Uses `auth.updateUser({ phone })` and `auth.verifyOtp({ type: 'phone_change' })`
+  - **Error handling**: Duplicate phone detection, invalid OTP, expired codes, rate limits
+  - **Security**: 60-second resend cooldown, auto-submit on 6 digits, comprehensive validation
+  - **Apple Sign-In users**: Feature is disabled (not applicable for OAuth users)
 
 ## Safe Deployment Checklist
 
