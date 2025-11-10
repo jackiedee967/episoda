@@ -88,7 +88,7 @@ const EMPTY_USER: User = {
 };
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, profileRefreshKey } = useAuth();
   
   const [posts, setPosts] = useState<Post[]>([]);
   const [userData, setUserData] = useState<UserData>({
@@ -289,23 +289,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setPlaylists([]);
       setUserProfileCache({});
     }
-  }, [user, loadCurrentUserProfile, loadFollowDataFromSupabase]);
-
-  // Listen for profile updates from AuthContext
-  useEffect(() => {
-    const handleProfileUpdate = (event: CustomEvent) => {
-      const { userId } = event.detail;
-      console.log('🔄 Profile updated event received, reloading:', userId);
-      if (userId) {
-        loadCurrentUserProfile(userId);
-      }
-    };
-
-    window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
-    return () => {
-      window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
-    };
-  }, [loadCurrentUserProfile]);
+  }, [user, profileRefreshKey, loadCurrentUserProfile, loadFollowDataFromSupabase]);
 
   useEffect(() => {
     const repostUserIds = reposts.map(r => r.userId);

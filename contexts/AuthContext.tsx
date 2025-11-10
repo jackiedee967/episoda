@@ -10,6 +10,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   onboardingStatus: OnboardingStatus;
+  profileRefreshKey: number;
   signInWithPhone: (phoneNumber: string) => Promise<{ error: any }>;
   verifyOTP: (phoneNumber: string, code: string) => Promise<{ error: any }>;
   verifyPhoneOTP: (userId: string) => Promise<void>;
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>('not_started');
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   useEffect(() => {
     console.log('🔐 AuthContext initializing...');
@@ -277,8 +279,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('✅ Username set:', username);
       
-      // Force immediate profile reload
-      window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userId: user.id } }));
+      // Trigger profile reload across platforms
+      setProfileRefreshKey(prev => prev + 1);
       
       setOnboardingStatus('username_set');
       return { error: null };
@@ -322,8 +324,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('✅ Birthday set:', birthdayString);
       
-      // Force immediate profile reload
-      window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userId: user.id } }));
+      // Trigger profile reload across platforms
+      setProfileRefreshKey(prev => prev + 1);
       
       setOnboardingStatus('birthday_set');
       return { error: null };
@@ -354,6 +356,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     onboardingStatus,
+    profileRefreshKey,
     signInWithPhone,
     verifyOTP,
     verifyPhoneOTP,
