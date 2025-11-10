@@ -193,13 +193,14 @@ async function seedMockUsers() {
   console.log('\n✅ Verifying seeded data...');
   const { data: verifyProfiles } = await supabase
     .from('profiles')
-    .select('username')
+    .select('username, user_id')
     .in('username', mockUsers.map(u => u.username));
   
+  const profileUserIds = verifyProfiles?.map(p => p.user_id) || [];
   const { data: verifyFollows } = await supabase
     .from('follows')
-    .select('follower_id')
-    .in('follower_id', verifyProfiles?.map(p => p.username) || []);
+    .select('follower_id, following_id')
+    .in('follower_id', profileUserIds);
 
   console.log(`   Profiles in database: ${verifyProfiles?.length || 0}/${mockUsers.length}`);
   console.log(`   Follow relationships: ${verifyFollows?.length || 0}/${followRelationshipsByUsername.length}`);
