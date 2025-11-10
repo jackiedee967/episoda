@@ -156,13 +156,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             user_id: data.user.id,
             username: '',
             display_name: '',
-            avatar: '',
-            bio: '',
             onboarding_completed: false,
           });
           
           if (insertError) {
             console.log('❌ Profile insert error:', insertError);
+            console.log('Error details:', JSON.stringify(insertError, null, 2));
           } else {
             console.log('✅ Created new profile for user:', data.user.id);
           }
