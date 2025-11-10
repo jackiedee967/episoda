@@ -104,7 +104,7 @@ export default function UsernameSelectScreen() {
         await setUsername(username);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/auth/birthday-entry');
+      router.replace('/auth/display-name');
     } catch (error) {
       console.error('Set username error:', error);
       setError('Failed to set username. Please try again.');
