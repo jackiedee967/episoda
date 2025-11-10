@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
     ...typography.p1,
     color: colors.grey1,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 34,
   },
   showsGrid: {
     flexDirection: 'row',
