@@ -53,6 +53,16 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
 - **User Profile Cache**: Supabase-backed cache automatically loads user profiles for posts and reposts
 
 ### Recent Changes (November 2025)
+- **NEW: Display Name Selection Flow** (November 10, 2025)
+  - Added new display name selection screen after username selection in phone signup flow
+  - Flow for phone signups: verify-otp → username-select → display-name → birthday-entry → onboarding-carousel → complete
+  - Apple Sign-In users automatically skip display-name screen if Apple provides full_name in user_metadata
+  - Updated OnboardingStatus type to include 'display_name_set' status
+  - Created `setDisplayName()` method in AuthContext for updating display names (1-50 characters)
+  - Updated STATUS_ROUTE_MAP in _layout.tsx to route users through new display-name screen
+  - `ensureProfileExists()` function extracts display_name from Apple OAuth user_metadata
+  - username-select.tsx intelligently routes to display-name for phone users or birthday-entry for Apple users
+  - Display name validation: 1-50 characters, required field
 - Fixed signup flow: Phone OTP verification now properly creates user profiles in Supabase
 - `verify-otp.tsx` updated to use `AuthContext.verifyOTP` function for profile creation
 - Username and birthday are saved to the `profiles` table during onboarding
