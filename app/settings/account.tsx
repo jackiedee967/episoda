@@ -115,75 +115,10 @@ export default function AccountSettingsScreen() {
       return;
     }
     
-    Alert.prompt(
+    Alert.alert(
       'Change Phone Number',
-      'Enter your new phone number (include country code, e.g., +1234567890):',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send Code',
-          onPress: async (newPhone?: string) => {
-            if (!newPhone || newPhone.trim().length === 0) {
-              Alert.alert('Error', 'Please enter a valid phone number');
-              return;
-            }
-            
-            try {
-              const { error } = await supabase.auth.updateUser({ phone: newPhone.trim() });
-              
-              if (error) {
-                if (error.message.includes('phone_exists')) {
-                  Alert.alert('Error', 'This phone number is already associated with another account.');
-                } else {
-                  Alert.alert('Error', error.message || 'Failed to send verification code.');
-                }
-                return;
-              }
-              
-              Alert.prompt(
-                'Verify Code',
-                `Enter the 6-digit code sent to ${newPhone}:`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Verify',
-                    onPress: async (code?: string) => {
-                      if (!code || code.trim().length !== 6) {
-                        Alert.alert('Error', 'Please enter a valid 6-digit code');
-                        return;
-                      }
-                      
-                      try {
-                        const { error: verifyError } = await supabase.auth.verifyOtp({
-                          phone: newPhone.trim(),
-                          token: code.trim(),
-                          type: 'phone_change',
-                        });
-                        
-                        if (verifyError) {
-                          Alert.alert('Error', verifyError.message || 'Invalid verification code.');
-                          return;
-                        }
-                        
-                        Alert.alert('Success', 'Your phone number has been updated successfully!');
-                        setPhoneNumber(newPhone.trim());
-                      } catch (error) {
-                        console.error('Error verifying code:', error);
-                        Alert.alert('Error', 'Failed to verify code. Please try again.');
-                      }
-                    }
-                  }
-                ],
-                'plain-text'
-              );
-            } catch (error) {
-              console.error('Error changing phone number:', error);
-              Alert.alert('Error', 'Failed to update phone number. Please try again.');
-            }
-          }
-        }
-      ],
-      'plain-text'
+      'This feature is coming soon. You will be able to update your phone number here.',
+      [{ text: 'OK' }]
     );
   };
 

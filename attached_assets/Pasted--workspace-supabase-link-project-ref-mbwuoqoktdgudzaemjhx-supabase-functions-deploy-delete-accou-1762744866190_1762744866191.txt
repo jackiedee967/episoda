@@ -1,0 +1,76 @@
+~/workspace$ supabase link --project-ref mbwuoqoktdgudzaemjhx
+supabase functions deploy delete-account
+Enter your database password (or leave blank to skip): 
+Finished supabase link.
+WARNING: Local config differs from linked project. Try updating supabase/config.toml
+diff supabase/config.toml mbwuoqoktdgudzaemjhx
+--- supabase/config.toml
++++ mbwuoqoktdgudzaemjhx
+@@ -53,8 +53,8 @@
+ 
+ [auth]
+ enabled = true
+-site_url = "http://127.0.0.1:3000"
+-additional_redirect_urls = ["https://127.0.0.1:3000"]
++site_url = "http://localhost:3000"
++additional_redirect_urls = ["https://natively.dev/email-confirmed"]
+ jwt_expiry = 3600
+ enable_refresh_token_rotation = true
+ refresh_token_reuse_interval = 10
+@@ -77,8 +77,8 @@
+ [auth.mfa]
+ max_enrolled_factors = 10
+ [auth.mfa.totp]
+-enroll_enabled = false
+-verify_enabled = false
++enroll_enabled = true
++verify_enabled = true
+ [auth.mfa.phone]
+ enroll_enabled = false
+ verify_enabled = false
+@@ -92,21 +92,21 @@
+ timebox = "0s"
+ inactivity_timeout = "0s"
+ [auth.email]
+-enable_signup = true
+-double_confirm_changes = true
+-enable_confirmations = false
++enable_signup = false
++double_confirm_changes = false
++enable_confirmations = true
+ secure_password_change = false
+-max_frequency = "1s"
++max_frequency = "1m0s"
+ otp_length = 6
+ otp_expiry = 3600
+ [auth.email.template]
+ [auth.sms]
+-enable_signup = false
+-enable_confirmations = false
+-template = "Your code is {{ .Code }}"
++enable_signup = true
++enable_confirmations = false
++template = "EPISODA code: {{ .Code }}"
+ max_frequency = "5s"
+ [auth.sms.twilio]
+-enabled = false
++enabled = true
+ account_sid = ""
+ message_service_sid = ""
+ auth_token = ""
+@@ -131,7 +131,7 @@
+ [auth.sms.test_otp]
+ [auth.external]
+ [auth.external.apple]
+-enabled = false
++enabled = true
+ client_id = ""
+ secret = ""
+ url = ""
+
+A new version of Supabase CLI is available: v2.54.11 (currently installed v2.22.12)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+Bundling Function: delete-account
+failed to inspect docker image: Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+Docker Desktop is a prerequisite for local development. Follow the official docs to install: https://docs.docker.com/desktop
+~/workspace$ 
