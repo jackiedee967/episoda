@@ -120,7 +120,7 @@ export default function EditProfileModal({
 
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles' as any)
         .select('username')
         .eq('username', newUsername.toLowerCase())
         .single();
@@ -215,14 +215,14 @@ export default function EditProfileModal({
       
       if (user) {
         const { data: existingProfile } = await supabase
-          .from('profiles')
+          .from('profiles' as any)
           .select('id')
           .eq('user_id', user.id)
           .single();
 
         if (existingProfile) {
           await supabase
-            .from('profiles')
+            .from('profiles' as any)
             .update({
               display_name: displayName.trim(),
               username: username.toLowerCase().trim(),
@@ -232,7 +232,7 @@ export default function EditProfileModal({
             .eq('user_id', user.id);
         } else {
           await supabase
-            .from('profiles')
+            .from('profiles' as any)
             .insert({
               user_id: user.id,
               display_name: displayName.trim(),
@@ -242,7 +242,7 @@ export default function EditProfileModal({
         }
 
         await supabase
-          .from('social_links')
+          .from('social_links' as any)
           .delete()
           .eq('user_id', user.id);
 
@@ -254,8 +254,8 @@ export default function EditProfileModal({
           }));
 
           await supabase
-            .from('social_links')
-            .insert(socialLinksToInsert);
+            .from('social_links' as any)
+            .insert(socialLinksToInsert as any);
         }
       }
 
