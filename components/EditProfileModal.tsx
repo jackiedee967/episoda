@@ -78,6 +78,10 @@ export default function EditProfileModal({
 
   useEffect(() => {
     if (visible) {
+      setDisplayName(initialDisplayName);
+      setUsername(initialUsername);
+      setBio(initialBio);
+      
       Animated.spring(slideAnim, {
         toValue: 0,
         useNativeDriver: true,
@@ -109,7 +113,7 @@ export default function EditProfileModal({
         useNativeDriver: true,
       }).start();
     }
-  }, [visible, slideAnim, initialSocialLinks]);
+  }, [visible, slideAnim, initialSocialLinks, initialDisplayName, initialUsername, initialBio]);
 
   const checkUsernameAvailability = async (newUsername: string) => {
     if (newUsername === initialUsername) {
