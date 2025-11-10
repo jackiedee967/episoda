@@ -148,6 +148,7 @@ const MAPPING = {
   "square.and.arrow.up": "share",
   "square.and.arrow.down": "download",
   "arrow.up.doc.fill": "upload-file",
+  "arrow.up.circle.fill": "cloud-upload",
   "link": "link",
 
   // Search & Discovery
