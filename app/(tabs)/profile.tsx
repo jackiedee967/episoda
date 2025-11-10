@@ -531,7 +531,7 @@ export default function ProfileScreen() {
           <Text style={styles.emptyStateText}>
             Start logging shows to see your posts here!
           </Text>
-          <Button variant="primary" onPress={() => setShowPostModal(true)}>
+          <Button variant="primary" fullWidth onPress={() => setShowPostModal(true)}>
             Log your first show
           </Button>
         </View>
@@ -560,7 +560,7 @@ export default function ProfileScreen() {
           <Text style={styles.emptyStateText}>
             Start logging shows to see them here!
           </Text>
-          <Button variant="primary" onPress={() => setShowPostModal(true)}>
+          <Button variant="primary" fullWidth onPress={() => setShowPostModal(true)}>
             Log your first show
           </Button>
         </View>
