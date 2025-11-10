@@ -8,24 +8,17 @@ export async function deleteAccountViaEdgeFunction(): Promise<{ success: boolean
       return { success: false, error: 'No active session' };
     }
 
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    
-    if (!supabaseUrl) {
-      return { success: false, error: 'Supabase URL not configured' };
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+    const { data, error } = await supabase.functions.invoke('delete-account', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
     });
 
-    const data = await response.json();
+    if (error) {
+      console.error('Edge function error:', error);
+      return { success: false, error: error.message || 'Failed to delete account' };
+    }
 
-    if (!response.ok) {
-      return { success: false, error: data.error || 'Failed to delete account' };
+    if (data?.error) {
+      return { success: false, error: data.error };
     }
 
     return { success: true };
