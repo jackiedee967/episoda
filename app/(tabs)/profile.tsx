@@ -317,8 +317,8 @@ export default function ProfileScreen() {
   };
 
   const tabs: TabSelectorTab[] = [
-    { key: 'posts', label: 'Posts' },
-    { key: 'shows', label: 'Shows' },
+    { key: 'posts', label: 'Logs' },
+    { key: 'shows', label: 'Watch History' },
     { key: 'playlists', label: 'Playlists' },
   ];
 
