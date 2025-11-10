@@ -159,13 +159,17 @@ export default function EditProfileModal({
     }
 
     if (username !== initialUsername && !usernameAvailable) {
-      Alert.alert('Error', 'Please choose an available username');
+      if (typeof window !== 'undefined') {
+        window.alert('Please choose an available username');
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (websiteUrl && !isValidUrl(websiteUrl)) {
-      Alert.alert('Error', 'Please enter a valid website URL (e.g., https://yourwebsite.com)');
+      if (typeof window !== 'undefined') {
+        window.alert('Please enter a valid website URL (e.g., https://yourwebsite.com)');
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -268,16 +272,16 @@ export default function EditProfileModal({
         socialLinks: updatedSocialLinks,
       });
 
-      Alert.alert('Success', 'Your profile has been updated!', [
-        {
-          text: 'OK',
-          onPress: onClose
-        }
-      ]);
+      if (typeof window !== 'undefined') {
+        window.alert('Your profile has been updated!');
+        onClose();
+      }
 
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      if (typeof window !== 'undefined') {
+        window.alert('Failed to save profile. Please try again.');
+      }
     } finally {
       setIsSaving(false);
     }
