@@ -101,6 +101,16 @@ The application features a pixel-perfect UI overhaul, matching Figma specificati
   - Fixed RLS permission issue where existingProfile check would fail and re-insert blank data
   - Username and display_name now persist correctly through entire onboarding flow
   - Users can no longer reuse the same username multiple times (uniqueness enforced)
+- **NEW: Auto-Generated Profile Pictures** (November 10, 2025)
+  - Every new user automatically receives a unique auto-generated profile picture upon signup
+  - **17 SVG Icons**: Stored in `assets/profile-icons/` (ellipses, flowers, moons, diamonds, crosses, blocks, stars, sparkles, wheels)
+  - **7 Color Schemes**: Each with icon color and background color (pink, magenta, blue, green, purple, orange, red)
+  - **Database Storage**: Avatar configuration stored in `profiles` table via `avatar_color_scheme` (1-7) and `avatar_icon` columns
+  - **Generation Logic**: `utils/profilePictureGenerator.ts` randomly selects color scheme + icon
+  - **Auth Integration**: `assignRandomAvatar()` called asynchronously (fire-and-forget) after profile creation in both `verifyOTP()` (phone) and `ensureProfileExists()` (Apple Sign-In)
+  - **Non-Blocking**: Avatar assignment failures are logged but never block signup completion
+  - **Future Upgrade Path**: Icons can be pre-rendered to PNG and uploaded to Supabase Storage bucket `profile-pictures` for faster loading
+  - **Migration Required**: Run `supabase/migrations/001_initial_schema.sql` in Supabase dashboard to add avatar columns and storage bucket
 
 ## Safe Deployment Checklist
 
