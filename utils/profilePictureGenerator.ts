@@ -85,11 +85,13 @@ export function generateAvatarDataURI(colorSchemeId: number, iconName: string): 
   // Normalize icon name (handle legacy numeric values)
   const normalizedIconName = normalizeIconName(iconName);
   
-  // Create SVG with colored background circle and icon
+  // Create 160x160 square with 116x116 centered icon
+  // Icon paths are in 200x200 coordinate system, scale to 116x116 (0.58x)
+  // Center by translating 22px (160-116)/2 on each axis
   const svg = `
-    <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="100" cy="100" r="100" fill="${colorScheme.base}"/>
-      <g transform="translate(0, 0)">
+    <svg width="160" height="160" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="160" height="160" fill="${colorScheme.base}"/>
+      <g transform="translate(22, 22) scale(0.58)">
         ${getIconPath(normalizedIconName, colorScheme.icon)}
       </g>
     </svg>
