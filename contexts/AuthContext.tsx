@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        setIsLoading(true);
         loadOnboardingStatus(session.user.id);
       } else {
         setIsLoading(false);
@@ -56,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        setIsLoading(true);
         // Check if this is a new OAuth user (Apple Sign-In)
         if (_event === 'SIGNED_IN') {
           await ensureProfileExists(session.user);
@@ -418,6 +420,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyPhoneOTP = useCallback(async (userId: string) => {
     setOnboardingStatus('phone_verified');
+    setIsLoading(true);
     await loadOnboardingStatus(userId);
   }, []);
 
