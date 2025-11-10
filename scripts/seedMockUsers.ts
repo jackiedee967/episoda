@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase credentials. Make sure SUPABASE_URL and SUPABASE_ANON_KEY are set.');
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error('❌ Missing Supabase credentials. Make sure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 const COLOR_SCHEMES = [
   { id: 1, icon: '#FFF2F3', base: '#FF135E' },
@@ -77,28 +77,64 @@ const mockUsers = [
   },
 ];
 
-const followRelationships = [
-  { follower: 'a0000000-0000-0000-0000-000000000002', following: 'a0000000-0000-0000-0000-000000000003' },
-  { follower: 'a0000000-0000-0000-0000-000000000003', following: 'a0000000-0000-0000-0000-000000000002' },
-  { follower: 'a0000000-0000-0000-0000-000000000003', following: 'a0000000-0000-0000-0000-000000000004' },
-  { follower: 'a0000000-0000-0000-0000-000000000002', following: 'a0000000-0000-0000-0000-000000000004' },
-  { follower: 'a0000000-0000-0000-0000-000000000004', following: 'a0000000-0000-0000-0000-000000000005' },
-  { follower: 'a0000000-0000-0000-0000-000000000005', following: 'a0000000-0000-0000-0000-000000000002' },
-  { follower: 'a0000000-0000-0000-0000-000000000005', following: 'a0000000-0000-0000-0000-000000000003' },
+const followRelationshipsByUsername = [
+  { follower: 'jackie', following: 'max' },
+  { follower: 'max', following: 'jackie' },
+  { follower: 'max', following: 'mia' },
+  { follower: 'jackie', following: 'mia' },
+  { follower: 'mia', following: 'liz' },
+  { follower: 'liz', following: 'jackie' },
+  { follower: 'liz', following: 'max' },
 ];
 
 async function seedMockUsers() {
   console.log('🌱 Starting mock user seeding...\n');
 
-  console.log('📝 Creating mock users in profiles table...');
+  console.log('📝 Creating auth users and profiles...');
   for (const user of mockUsers) {
     const avatarConfig = generateRandomAvatarConfig();
+    
+    let createdUserId;
+    const userEmail = `${user.username}@episoda-mock.local`;
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      user_metadata: {},
+      email: userEmail,
+      email_confirm: true,
+    } as any);
+
+    if (authError) {
+      if (authError.message.includes('already been registered') || authError.message.includes('User already registered')) {
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('username', user.username)
+          .single();
+        
+        createdUserId = existingProfile?.user_id;
+        
+        if (!createdUserId) {
+          console.error(`❌ Auth user exists but profile not found for ${user.username}`);
+          continue;
+        }
+        console.log(`ℹ️  Auth user already exists: ${user.username} (${createdUserId})`);
+      } else {
+        console.error(`❌ Error creating auth user ${user.username}:`, authError.message);
+        continue;
+      }
+    } else {
+      createdUserId = authData?.user?.id;
+      console.log(`✅ Created auth user: ${user.username} (${createdUserId})`);
+    }
+
+    if (!createdUserId) {
+      console.error(`❌ Missing user ID for ${user.username}, skipping profile creation`);
+      continue;
+    }
     
     const { data, error } = await supabase
       .from('profiles')
       .upsert({
-        id: user.id,
-        user_id: user.id,
+        user_id: createdUserId,
         username: user.username,
         display_name: user.display_name,
         bio: user.bio,
@@ -107,39 +143,71 @@ async function seedMockUsers() {
         onboarding_completed: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      }, { onConflict: 'username' });
 
     if (error) {
-      console.error(`❌ Error creating user ${user.username}:`, error.message);
+      console.error(`❌ Error creating profile ${user.username}:`, error.message);
     } else {
-      console.log(`✅ Created/updated user: ${user.username} (${user.display_name})`);
+      console.log(`✅ Created/updated profile: ${user.username} (${user.display_name})`);
       console.log(`   Avatar: scheme=${avatarConfig.colorSchemeId}, icon=${avatarConfig.iconName}`);
+      
+      user.id = createdUserId || user.id;
     }
   }
 
   console.log('\n🔗 Setting up follow relationships...');
-  for (const rel of followRelationships) {
+  const { data: allProfiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('user_id, username')
+    .in('username', mockUsers.map(u => u.username));
+
+  if (profilesError) {
+    console.error('❌ Error fetching profiles:', profilesError.message);
+    return;
+  }
+
+  for (const rel of followRelationshipsByUsername) {
+    const followerProfile = allProfiles?.find(p => p.username === rel.follower);
+    const followingProfile = allProfiles?.find(p => p.username === rel.following);
+
+    if (!followerProfile || !followingProfile) {
+      console.error(`❌ Could not find profiles for ${rel.follower} → ${rel.following}`);
+      continue;
+    }
+
     const { data, error } = await supabase
       .from('follows')
       .upsert({
-        follower_id: rel.follower,
-        following_id: rel.following,
+        follower_id: followerProfile.user_id,
+        following_id: followingProfile.user_id,
         created_at: new Date().toISOString(),
       }, { onConflict: 'follower_id,following_id' });
 
     if (error) {
       console.error(`❌ Error creating follow relationship:`, error.message);
     } else {
-      const followerUser = mockUsers.find(u => u.id === rel.follower);
-      const followingUser = mockUsers.find(u => u.id === rel.following);
-      console.log(`✅ ${followerUser?.username} → ${followingUser?.username}`);
+      console.log(`✅ ${rel.follower} → ${rel.following}`);
     }
   }
+
+  console.log('\n✅ Verifying seeded data...');
+  const { data: verifyProfiles } = await supabase
+    .from('profiles')
+    .select('username')
+    .in('username', mockUsers.map(u => u.username));
+  
+  const { data: verifyFollows } = await supabase
+    .from('follows')
+    .select('follower_id')
+    .in('follower_id', verifyProfiles?.map(p => p.username) || []);
+
+  console.log(`   Profiles in database: ${verifyProfiles?.length || 0}/${mockUsers.length}`);
+  console.log(`   Follow relationships: ${verifyFollows?.length || 0}/${followRelationshipsByUsername.length}`);
 
   console.log('\n✨ Mock user seeding complete!');
   console.log('\n📊 Summary:');
   console.log(`   • Created ${mockUsers.length} mock users`);
-  console.log(`   • Set up ${followRelationships.length} follow relationships`);
+  console.log(`   • Set up ${followRelationshipsByUsername.length} follow relationships`);
   console.log(`   • All users have auto-generated profile pictures`);
   console.log('\n💡 You can now follow these users in your app!');
 }
