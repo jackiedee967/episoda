@@ -89,7 +89,7 @@ export default function TabSelector({
         ]}
       >
         <View style={styles.tabContent}>
-          <Text style={getTabTextStyle(tab, isActive)}>{tab.label}</Text>
+          <Text style={getTabTextStyle(tab, isActive)} numberOfLines={1}>{tab.label}</Text>
           {showIndicator && <View style={styles.indicator} />}
         </View>
       </Pressable>
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
   tab: {
     paddingHorizontal: 20,
     borderRadius: 12,
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
