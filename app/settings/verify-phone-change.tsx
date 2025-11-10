@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { colors, typography } from '@/styles/tokens';
+import { colors, typography } from '@/styles/commonStyles';
 import { GradientBackground } from '@/components/auth/GradientBackground';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { supabase } from '@/app/integrations/supabase/client';
@@ -217,20 +217,17 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 32,
-    fontFamily: typography.semiBold,
+    ...typography.titleL,
     color: colors.text,
     marginBottom: 12,
-    lineHeight: 38,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: typography.regular,
+    ...typography.subtitle,
     color: colors.textSecondary,
     lineHeight: 24,
   },
   phoneText: {
-    fontFamily: typography.medium,
+    ...typography.p1Bold,
     color: colors.text,
   },
   inputSection: {
@@ -253,8 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   otpDigit: {
-    fontSize: 24,
-    fontFamily: typography.semiBold,
+    ...typography.titleL,
     color: colors.text,
   },
   hiddenInput: {
@@ -267,8 +263,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resendText: {
-    fontSize: 14,
-    fontFamily: typography.regular,
+    ...typography.p1,
     color: colors.textSecondary,
   },
   loadingOverlay: {

@@ -115,11 +115,7 @@ export default function AccountSettingsScreen() {
       return;
     }
     
-    Alert.alert(
-      'Change Phone Number',
-      'This feature is coming soon. You will be able to update your phone number here.',
-      [{ text: 'OK' }]
-    );
+    router.push('/settings/change-phone');
   };
 
   if (loading) {

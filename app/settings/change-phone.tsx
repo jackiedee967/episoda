@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import { colors, typography } from '@/styles/tokens';
+import { colors, typography } from '@/styles/commonStyles';
 import { GradientBackground } from '@/components/auth/GradientBackground';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { CountryCodeSelector, COUNTRIES, Country } from '@/components/auth/CountryCodeSelector';
@@ -210,15 +210,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 32,
-    fontFamily: typography.semiBold,
+    ...typography.titleL,
     color: colors.text,
     marginBottom: 12,
-    lineHeight: 38,
   },
   subtitle: {
-    fontSize: 16,
-    fontFamily: typography.regular,
+    ...typography.subtitle,
     color: colors.textSecondary,
     lineHeight: 24,
   },
@@ -236,8 +233,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    fontFamily: typography.regular,
+    ...typography.subtitle,
     color: colors.text,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
@@ -255,14 +251,12 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   phoneInputText: {
-    fontSize: 16,
-    fontFamily: typography.regular,
+    ...typography.subtitle,
     color: colors.text,
     height: 56,
   },
   phoneInputCode: {
-    fontSize: 16,
-    fontFamily: typography.regular,
+    ...typography.subtitle,
     color: colors.text,
   },
   phoneInputFlag: {
