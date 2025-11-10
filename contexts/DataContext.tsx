@@ -291,6 +291,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [user, loadCurrentUserProfile, loadFollowDataFromSupabase]);
 
+  // Listen for profile updates from AuthContext
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      const { userId } = event.detail;
+      console.log('🔄 Profile updated event received, reloading:', userId);
+      if (userId) {
+        loadCurrentUserProfile(userId);
+      }
+    };
+
+    window.addEventListener('profile-updated', handleProfileUpdate as EventListener);
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdate as EventListener);
+    };
+  }, [loadCurrentUserProfile]);
+
   useEffect(() => {
     const repostUserIds = reposts.map(r => r.userId);
     const postAuthorIds = posts.map(p => p.user.id);

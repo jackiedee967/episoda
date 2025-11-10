@@ -276,6 +276,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('✅ Username set:', username);
+      
+      // Force immediate profile reload
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userId: user.id } }));
+      
       setOnboardingStatus('username_set');
       return { error: null };
     } catch (error) {
@@ -317,6 +321,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       console.log('✅ Birthday set:', birthdayString);
+      
+      // Force immediate profile reload
+      window.dispatchEvent(new CustomEvent('profile-updated', { detail: { userId: user.id } }));
+      
       setOnboardingStatus('birthday_set');
       return { error: null };
     } catch (error) {
