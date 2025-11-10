@@ -3,7 +3,7 @@ import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
 
-type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'birthday_set' | 'completed';
+type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'display_name_set' | 'birthday_set' | 'completed';
 
 interface AuthContextType {
   session: Session | null;
@@ -17,6 +17,7 @@ interface AuthContextType {
   signInWithApple: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   setUsername: (username: string) => Promise<{ error: any }>;
+  setDisplayName: (displayName: string) => Promise<{ error: any }>;
   setBirthday: (birthday: Date) => Promise<{ error: any }>;
   completeOnboarding: () => Promise<void>;
   checkUsernameAvailability: (username: string) => Promise<boolean>;
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: profile, error } = await supabase
         .from('profiles' as any)
-        .select('username, birthday, onboarding_completed')
+        .select('username, display_name, birthday, onboarding_completed')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -78,13 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const hasUsername = profile && (profile as any).username && (profile as any).username.trim() !== '';
+      const hasDisplayName = profile && (profile as any).display_name && (profile as any).display_name.trim() !== '';
       const hasBirthday = profile && (profile as any).birthday && (profile as any).birthday !== '';
       const onboardingComplete = profile && (profile as any).onboarding_completed === true;
 
       if (!profile || !hasUsername) {
         setOnboardingStatus('phone_verified');
-      } else if (!hasBirthday) {
+      } else if (!hasDisplayName) {
         setOnboardingStatus('username_set');
+      } else if (!hasBirthday) {
+        setOnboardingStatus('display_name_set');
       } else if (!onboardingComplete) {
         setOnboardingStatus('birthday_set');
       } else {
@@ -269,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       const { error } = await supabase
         .from('profiles' as any)
-        .update({ username, display_name: username })
+        .update({ username })
         .eq('user_id', user.id);
       
       if (error) {
@@ -289,6 +293,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
   }, [user, checkUsernameAvailability]);
+
+  const setDisplayName = useCallback(async (displayName: string) => {
+    if (!user) return { error: new Error('No user logged in') };
+    
+    const trimmed = displayName.trim();
+    if (trimmed.length === 0 || trimmed.length > 50) {
+      return { error: new Error('Display name must be between 1 and 50 characters') };
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('profiles' as any)
+        .update({ display_name: trimmed })
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.log('❌ Display name update error:', error);
+        return { error };
+      }
+      
+      console.log('✅ Display name set:', trimmed);
+      
+      // Trigger profile reload across platforms
+      setProfileRefreshKey(prev => prev + 1);
+      
+      setOnboardingStatus('display_name_set');
+      return { error: null };
+    } catch (error) {
+      console.log('❌ Display name update exception:', error);
+      return { error };
+    }
+  }, [user]);
 
   const verifyPhoneOTP = useCallback(async (userId: string) => {
     setOnboardingStatus('phone_verified');
@@ -363,6 +399,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithApple,
     signOut,
     setUsername,
+    setDisplayName,
     setBirthday,
     completeOnboarding,
     checkUsernameAvailability,
