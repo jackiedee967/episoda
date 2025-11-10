@@ -47,12 +47,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log('Auth state changed:', _event, session?.user?.id || 'null');
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        // Check if this is a new OAuth user (Apple Sign-In)
+        if (_event === 'SIGNED_IN') {
+          await ensureProfileExists(session.user);
+        }
         loadOnboardingStatus(session.user.id);
       } else {
         setOnboardingStatus('not_started');
@@ -62,6 +66,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const ensureProfileExists = async (user: User) => {
+    try {
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles' as any)
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (fetchError && fetchError.code === 'PGRST116') {
+        console.log('📝 Creating new OAuth profile...');
+        
+        // Extract display name from Apple OAuth user_metadata if available
+        const fullName = user.user_metadata?.full_name || '';
+        const displayName = fullName.trim() || '';
+        
+        const { error: insertError } = await supabase.from('profiles' as any).insert({
+          user_id: user.id,
+          username: '',
+          display_name: displayName,
+          onboarding_completed: false,
+        });
+        
+        if (insertError) {
+          console.log('❌ OAuth profile insert error:', insertError);
+        } else {
+          console.log('✅ Created new OAuth profile with display_name:', displayName || '(empty)');
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Error in ensureProfileExists:', error);
+    }
+  };
 
   const loadOnboardingStatus = async (userId: string) => {
     try {

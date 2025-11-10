@@ -25,7 +25,7 @@ import { Check, X, ArrowLeft } from 'lucide-react-native';
  */
 export default function UsernameSelectScreen() {
   const router = useRouter();
-  const { checkUsernameAvailability, setUsername } = useAuth();
+  const { checkUsernameAvailability, setUsername, user } = useAuth();
   const [usernameInput, setUsernameInput] = useState('');
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -103,8 +103,30 @@ export default function UsernameSelectScreen() {
       if (setUsername) {
         await setUsername(username);
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/auth/display-name');
+      
+      // Check if display_name is already populated (e.g., from Apple Sign-In)
+      if (user) {
+        const { supabase } = await import('@/app/integrations/supabase/client');
+        const { data: profile } = await supabase
+          .from('profiles' as any)
+          .select('display_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        const hasDisplayName = profile && (profile as any).display_name && (profile as any).display_name.trim() !== '';
+        
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        if (hasDisplayName) {
+          // Skip display-name screen for Apple users who already have it
+          router.replace('/auth/birthday-entry');
+        } else {
+          // Phone users need to enter display name
+          router.replace('/auth/display-name');
+        }
+      } else {
+        router.replace('/auth/display-name');
+      }
     } catch (error) {
       console.error('Set username error:', error);
       setError('Failed to set username. Please try again.');
