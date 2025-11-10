@@ -55,6 +55,7 @@ const MAPPING = {
   "multiply": "clear",
   "trash.fill": "delete",
   "trash": "delete-outline",
+  "ellipsis": "more-vert",
 
   // Editing & Creation
   "pencil": "edit",

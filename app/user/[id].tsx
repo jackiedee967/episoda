@@ -749,7 +749,7 @@ export default function UserProfile() {
               setShowBlockReportModal(true);
             }}
           >
-            <IconSymbol name="ellipsis" size={20} color={colors.pageBackground} />
+            <IconSymbol name="ellipsis" size={20} color="#FFFFFF" />
           </Pressable>
         )}
 
@@ -1247,8 +1247,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.greenHighlight,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 });
