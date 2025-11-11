@@ -13,16 +13,6 @@ const bottomRight = Asset.fromModule(require('../../assets/images/auth/bottom-ri
 const appleLogo = Asset.fromModule(require('../../assets/images/auth/apple-logo.png')).uri;
 const phoneIcon = Asset.fromModule(require('../../assets/images/auth/phone-icon.png')).uri;
 
-console.log('🖼️ Asset URIs:', {
-  welcomeBackground,
-  layer1,
-  topStuff,
-  bottomLeft,
-  bottomRight,
-  appleLogo,
-  phoneIcon
-});
-
 /**
  * Splash/Welcome Screen - First screen in auth flow
  */
@@ -53,7 +43,7 @@ export default function SplashScreen() {
       <ImageBackground
         source={{ uri: welcomeBackground }}
         style={styles.backgroundImage}
-        resizeMode="cover"
+        resizeMode="stretch"
       >
         {/* Top decorative images */}
         <Image
