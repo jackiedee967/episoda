@@ -148,7 +148,7 @@ export default function PhoneNumberScreen() {
 
             {/* Pagination dots */}
             <View style={styles.paginationInline}>
-              <PaginationDots total={7} current={1} testID="pagination-dots" />
+              <PaginationDots total={5} current={1} testID="pagination-dots" />
             </View>
           </View>
         </View>
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     alignSelf: 'center',
-    width: 40,
-    height: 40,
+    width: 4.5,
+    height: 4.5,
   },
 });
