@@ -6,14 +6,21 @@ import {
   Platform,
   Alert,
   TextInput,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from '@/components/auth/GradientBackground';
-import { AuthButton } from '@/components/auth/AuthButton';
+import { Asset } from 'expo-asset';
+import { colors } from '@/styles/tokens';
+import ButtonL from '@/components/ButtonL';
+import { PaginationDots } from '@/components/PaginationDots';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
+const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
+const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
+const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
 /**
  * Birthday Entry Screen - Step 5 in auth flow
@@ -175,17 +182,33 @@ export default function BirthdayEntryScreen() {
   const canContinue = Platform.OS === 'web' ? (isInputValid && isValidAge) : isValidAge;
 
   return (
-    <GradientBackground>
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.header}>
+    <View style={styles.wrapper}>
+      <ImageBackground
+        source={{ uri: phoneBackground }}
+        style={styles.backgroundImage}
+        resizeMode="stretch"
+      >
+        {/* Top logo */}
+        <View style={styles.topContainer}>
+          <Image
+            source={{ uri: layer1 }}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Main content */}
+        <View style={styles.centerContent}>
+          {/* Header text */}
+          <View style={styles.headerContainer}>
             <Text style={styles.title}>When's your birthday?</Text>
             <Text style={styles.subtitle}>
               You must be at least 13 years old to use EPISODA
             </Text>
           </View>
 
-          <View style={styles.pickerSection}>
+          {/* Form */}
+          <View style={styles.formContainer}>
             {Platform.OS === 'web' ? (
               <View style={styles.webInputContainer}>
                 <TextInput
@@ -235,59 +258,87 @@ export default function BirthdayEntryScreen() {
               />
             )}
 
-            {!isValidAge && (
-              <Text style={styles.errorText}>
-                You must be at least 13 years old
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.buttonSection}>
-            <AuthButton
-              title="Continue"
+            <ButtonL
               onPress={handleContinue}
-              loading={loading}
-              disabled={!canContinue}
-            />
-            
-            <Text style={styles.helperText}>
-              Your birthday won't be shown publicly
-            </Text>
+              disabled={!canContinue || loading}
+            >
+              {loading ? 'Continuing...' : 'Continue'}
+            </ButtonL>
+
+            {/* Helper/Error text */}
+            <View style={styles.termsContainer}>
+              {!isValidAge ? (
+                <Text style={styles.errorText}>
+                  You must be at least 13 years old
+                </Text>
+              ) : (
+                <Text style={styles.termsText}>
+                  Your birthday won't be shown publicly
+                </Text>
+              )}
+            </View>
+
+            {/* Pagination dots */}
+            <View style={styles.paginationInline}>
+              <PaginationDots total={5} current={5} testID="pagination-dots" />
+            </View>
           </View>
         </View>
-      </View>
-    </GradientBackground>
+
+        {/* Bottom decorative image */}
+        <Image
+          source={{ uri: layer12 }}
+          style={styles.layer12}
+          resizeMode="contain"
+        />
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
   },
-  content: {
+  backgroundImage: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-    justifyContent: 'space-between',
+    width: '100%',
   },
-  header: {
+  topContainer: {
     alignItems: 'center',
-    gap: 12,
-    marginTop: 40,
+    paddingTop: 20,
+  },
+  logo: {
+    width: 99,
+    height: 19.8,
+  },
+  centerContent: {
+    flex: 1,
+    paddingHorizontal: 40,
+    justifyContent: 'center',
+    gap: 44,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
-    ...typography.titleL,
+    width: 353,
     color: colors.pureWhite,
     textAlign: 'center',
+    fontFamily: 'InstrumentSerif_400Regular',
+    fontSize: 35,
+    fontWeight: '400',
+    letterSpacing: -0.7,
   },
   subtitle: {
-    ...typography.p1,
-    color: colors.almostWhite,
+    color: colors.pureWhite,
     textAlign: 'center',
-    opacity: 0.9,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
   },
-  pickerSection: {
-    alignItems: 'center',
+  formContainer: {
     gap: 16,
   },
   datePicker: {
@@ -302,37 +353,55 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   webDateBox: {
-    height: 60,
+    height: 56,
     width: 70,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.almostWhite,
-    backgroundColor: colors.pureWhite,
-    ...typography.titleL,
+    backgroundColor: colors.almostWhite,
+    fontFamily: 'FunnelDisplay_400Regular',
     textAlign: 'center',
     color: colors.black,
-    fontSize: 24,
+    fontSize: 20,
+    paddingHorizontal: 8,
   },
   yearBox: {
     width: 100,
   },
   separator: {
-    ...typography.titleL,
     color: colors.pureWhite,
     fontSize: 24,
+    fontFamily: 'InstrumentSerif_400Regular',
+  },
+  termsContainer: {
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  termsText: {
+    width: 327,
+    color: colors.grey1,
+    textAlign: 'center',
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 8,
+    fontWeight: '300',
+    lineHeight: 15,
   },
   errorText: {
-    ...typography.p1,
+    width: 327,
     color: colors.error,
     textAlign: 'center',
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 8,
+    fontWeight: '300',
+    lineHeight: 15,
   },
-  buttonSection: {
-    gap: 16,
+  paginationInline: {
+    alignItems: 'center',
+    paddingTop: 24,
   },
-  helperText: {
-    ...typography.p1,
-    color: colors.almostWhite,
-    textAlign: 'center',
-    opacity: 0.8,
+  layer12: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    width: 16,
+    height: 16,
   },
 });

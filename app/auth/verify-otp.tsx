@@ -7,14 +7,21 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Asset } from 'expo-asset';
 import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from '@/components/auth/GradientBackground';
-import { AuthButton } from '@/components/auth/AuthButton';
+import { PaginationDots } from '@/components/PaginationDots';
+import ButtonL from '@/components/ButtonL';
 import { supabase } from '@/app/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
+
+const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
+const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
+const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
 /**
  * OTP Verification Screen - Step 3 in auth flow
@@ -124,10 +131,25 @@ export default function VerifyOTPScreen() {
   };
 
   return (
-    <GradientBackground>
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.header}>
+    <View style={styles.wrapper}>
+      <ImageBackground
+        source={{ uri: phoneBackground }}
+        style={styles.backgroundImage}
+        resizeMode="stretch"
+      >
+        {/* Top logo */}
+        <View style={styles.topContainer}>
+          <Image
+            source={{ uri: layer1 }}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Main content */}
+        <View style={styles.centerContent}>
+          {/* Header text */}
+          <View style={styles.headerContainer}>
             <Text style={styles.title}>Enter Verification Code</Text>
             <Text style={styles.subtitle}>
               We sent a 6-digit code to{'\n'}
@@ -135,91 +157,126 @@ export default function VerifyOTPScreen() {
             </Text>
           </View>
 
-          <View style={styles.otpContainer}>
-            <TextInput
-              ref={inputRef}
-              style={[
-                styles.otpInput,
-                otp.length > 0 && styles.otpInputFilled,
-                loading && styles.otpInputDisabled,
-              ]}
-              value={otp}
-              onChangeText={handleOtpChange}
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="Enter 6-digit code"
-              placeholderTextColor={colors.grey1}
-              selectTextOnFocus
-              editable={!loading}
-              autoFocus
-            />
-          </View>
-
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.pureWhite} />
-              <Text style={styles.loadingText}>Verifying code...</Text>
+          {/* Form */}
+          <View style={styles.formContainer}>
+            <View style={styles.otpContainer}>
+              <TextInput
+                ref={inputRef}
+                style={[
+                  styles.otpInput,
+                  otp.length > 0 && styles.otpInputFilled,
+                  loading && styles.otpInputDisabled,
+                ]}
+                value={otp}
+                onChangeText={handleOtpChange}
+                keyboardType="number-pad"
+                maxLength={6}
+                placeholder="000000"
+                placeholderTextColor={colors.grey1}
+                selectTextOnFocus
+                editable={!loading}
+                autoFocus
+              />
             </View>
-          )}
 
-          <View style={styles.resendContainer}>
-            <Text style={styles.resendText}>Didn't receive the code?</Text>
-            <Pressable
-              onPress={handleResendCode}
-              disabled={countdown > 0 || resending}
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.pureWhite} />
+                <Text style={styles.loadingText}>Verifying code...</Text>
+              </View>
+            )}
+
+            <View style={styles.resendContainer}>
+              <Text style={styles.resendText}>Didn't receive the code?</Text>
+              <Pressable
+                onPress={handleResendCode}
+                disabled={countdown > 0 || resending}
+              >
+                {resending ? (
+                  <ActivityIndicator size="small" color={colors.greenHighlight} />
+                ) : (
+                  <Text style={[styles.resendButtonText, countdown > 0 && styles.resendButtonTextDisabled]}>
+                    {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+
+            <ButtonL
+              onPress={() => handleVerifyOtp()}
+              disabled={otp.length !== 6 || loading}
             >
-              {resending ? (
-                <ActivityIndicator size="small" color={colors.pureWhite} />
-              ) : (
-                <Text style={[styles.resendButtonText, countdown > 0 && styles.resendButtonTextDisabled]}>
-                  {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Code'}
-                </Text>
-              )}
-            </Pressable>
+              {loading ? 'Verifying...' : 'Verify'}
+            </ButtonL>
+
+            {/* Terms text */}
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                Enter the 6-digit code sent to your phone. The code expires in 60 seconds.
+              </Text>
+            </View>
+
+            {/* Pagination dots */}
+            <View style={styles.paginationInline}>
+              <PaginationDots total={5} current={2} testID="pagination-dots" />
+            </View>
           </View>
-
-          <AuthButton
-            title="Verify"
-            onPress={() => handleVerifyOtp()}
-            loading={loading}
-            disabled={otp.length !== 6}
-          />
-
-          <Text style={styles.helperText}>
-            Enter the 6-digit code sent to your phone.{'\n'}
-            The code expires in 60 seconds.
-          </Text>
         </View>
-      </View>
-    </GradientBackground>
+
+        {/* Bottom decorative image */}
+        <Image
+          source={{ uri: layer12 }}
+          style={styles.layer12}
+          resizeMode="contain"
+        />
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
   },
-  content: {
+  backgroundImage: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-    justifyContent: 'center',
-    gap: 32,
+    width: '100%',
   },
-  header: {
+  topContainer: {
     alignItems: 'center',
-    gap: 12,
+    paddingTop: 20,
+  },
+  logo: {
+    width: 99,
+    height: 19.8,
+  },
+  centerContent: {
+    flex: 1,
+    paddingHorizontal: 40,
+    justifyContent: 'center',
+    gap: 44,
+  },
+  headerContainer: {
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
-    ...typography.titleL,
     color: colors.pureWhite,
     textAlign: 'center',
+    fontFamily: 'InstrumentSerif_400Regular',
+    fontSize: 35,
+    fontWeight: '400',
+    letterSpacing: -0.7,
   },
   subtitle: {
-    ...typography.p1,
-    color: colors.almostWhite,
+    color: colors.pureWhite,
     textAlign: 'center',
-    opacity: 0.9,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
+  },
+  formContainer: {
+    gap: 16,
   },
   otpContainer: {
     width: '100%',
@@ -228,50 +285,72 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 60,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.almostWhite,
-    backgroundColor: colors.pureWhite,
-    ...typography.titleL,
+    backgroundColor: colors.almostWhite,
     textAlign: 'center',
     color: colors.black,
+    fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 24,
+    fontWeight: '400',
     letterSpacing: 8,
     paddingHorizontal: 16,
   },
   otpInputFilled: {
-    borderColor: colors.greenHighlight,
+    backgroundColor: colors.almostWhite,
   },
   otpInputDisabled: {
     opacity: 0.6,
   },
   loadingContainer: {
     alignItems: 'center',
+    paddingVertical: 8,
   },
   loadingText: {
-    ...typography.p1,
-    color: colors.almostWhite,
-    marginTop: 12,
+    color: colors.pureWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    marginTop: 8,
   },
   resendContainer: {
     alignItems: 'center',
     gap: 8,
+    paddingVertical: 8,
   },
   resendText: {
-    ...typography.p1,
-    color: colors.almostWhite,
+    color: colors.pureWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
   },
   resendButtonText: {
-    ...typography.subtitle,
     color: colors.greenHighlight,
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 15,
+    fontWeight: '400',
   },
   resendButtonTextDisabled: {
-    color: colors.almostWhite,
-    opacity: 0.6,
+    color: colors.grey1,
   },
-  helperText: {
-    ...typography.p1,
-    color: colors.almostWhite,
+  termsContainer: {
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  termsText: {
+    width: 327,
+    color: colors.grey1,
     textAlign: 'center',
-    opacity: 0.8,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 8,
+    fontWeight: '300',
+    lineHeight: 15,
+  },
+  paginationInline: {
+    alignItems: 'center',
+    paddingTop: 24,
+  },
+  layer12: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    width: 16,
+    height: 16,
   },
 });
