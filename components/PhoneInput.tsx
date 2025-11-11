@@ -1,0 +1,88 @@
+import React from 'react';
+import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
+import { colors } from '@/styles/tokens';
+
+interface PhoneInputProps {
+  areaCode: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  editable?: boolean;
+  testID?: string;
+}
+
+export function PhoneInput({
+  areaCode,
+  value,
+  onChangeText,
+  placeholder = '305 1234 5678',
+  editable = true,
+  testID,
+}: PhoneInputProps) {
+  return (
+    <View style={styles.container} testID={testID}>
+      <Text style={styles.label}>Phone Number</Text>
+      <View style={styles.inputContainer}>
+        <View style={styles.areaCodeContainer}>
+          <Text style={styles.areaCode}>{areaCode}</Text>
+        </View>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={(text) => {
+            const cleaned = text.replace(/[^\d\s]/g, '');
+            onChangeText(cleaned);
+          }}
+          placeholder={placeholder}
+          placeholderTextColor={colors.grey1}
+          keyboardType="phone-pad"
+          editable={editable}
+          autoComplete="tel"
+        />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  label: {
+    color: colors.pureWhite,
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 13,
+    fontWeight: '400',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.grey2,
+    overflow: 'hidden',
+  },
+  areaCodeContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRightWidth: 1,
+    borderRightColor: colors.grey2,
+  },
+  areaCode: {
+    color: colors.pureWhite,
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  input: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: colors.pureWhite,
+    fontFamily: 'FunnelDisplay_400Regular',
+    fontSize: 15,
+    fontWeight: '400',
+  },
+});
