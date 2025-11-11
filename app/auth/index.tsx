@@ -1,31 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Platform, Pressable, ImageBackground, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from '@/components/auth/GradientBackground';
-import { AuthButton } from '@/components/auth/AuthButton';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Splash/Welcome Screen - First screen in auth flow
  * Features:
- * - Purple-to-orange gradient background
- * - App logo and title
- * - "Sign in with phone" button
- * - "Sign in with Apple" button (iOS only)
+ * - Cloud/sky background image
+ * - EPISODA logo
+ * - "Make every episode social" tagline
+ * - "Sign in with Apple" button (custom styled)
+ * - "Sign in with phone" button (custom styled)
+ * - Decorative images (TV show cards, user avatars)
  */
 export default function SplashScreen() {
   const router = useRouter();
   const { signInWithApple } = useAuth();
-  const [appleAvailable, setAppleAvailable] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
-    }
-  }, []);
 
   const handlePhoneSignIn = () => {
     router.push('/auth/phone-entry');
@@ -44,114 +36,194 @@ export default function SplashScreen() {
     }
   };
 
-  const handleReset = () => {
-    router.replace('/auth/reset' as any);
-  };
-
   return (
-    <GradientBackground>
+    <ImageBackground
+      source={require('@/assets/images/auth/welcome-background.jpg')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
       <View style={styles.container}>
-        <View style={styles.content}>
-          {/* Logo/Branding Section */}
-          <View style={styles.logoSection}>
-            <Text style={styles.title}>EPISODA</Text>
-            <Text style={styles.subtitle}>Your TV Show Social Network</Text>
-          </View>
+        {/* Top decorative images */}
+        <Image
+          source={require('@/assets/images/auth/top-stuff.png')}
+          style={styles.topStuff}
+          resizeMode="contain"
+        />
 
-          {/* CTA Buttons */}
-          <View style={styles.buttonSection}>
-            <AuthButton
-              title="Sign in with phone"
-              onPress={handlePhoneSignIn}
-              variant="primary"
-            />
-
-            {appleAvailable && Platform.OS === 'ios' && (
-              <View style={styles.appleButtonContainer}>
-                <AppleAuthentication.AppleAuthenticationButton
-                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                  cornerRadius={12}
-                  style={styles.appleButton}
-                  onPress={handleAppleSignIn}
-                />
-              </View>
-            )}
-
-            <Text style={styles.termsText}>
-              By continuing, you agree to our Terms of Service and Privacy Policy
-            </Text>
-
-            <Pressable onPress={handleReset} style={styles.resetButton}>
-              <Text style={styles.resetText}>
-                Trouble signing in? Reset session
-              </Text>
-            </Pressable>
-          </View>
+        {/* Logo and tagline section */}
+        <View style={styles.logoSection}>
+          <Image
+            source={require('@/assets/images/auth/layer-1.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.tagline}>Make every episode social</Text>
         </View>
+
+        {/* Buttons section */}
+        <View style={styles.buttonSection}>
+          {/* Apple Sign In Button */}
+          <Pressable
+            style={styles.appleButton}
+            onPress={handleAppleSignIn}
+            disabled={appleLoading}
+          >
+            <View style={styles.buttonContent}>
+              <Image
+                source={require('@/assets/images/auth/apple-logo.png')}
+                style={styles.appleLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.appleButtonText}>Sign in with Apple</Text>
+            </View>
+          </Pressable>
+
+          {/* Phone Sign In Button */}
+          <Pressable
+            style={styles.phoneButton}
+            onPress={handlePhoneSignIn}
+          >
+            <View style={styles.buttonContent}>
+              <Image
+                source={require('@/assets/images/auth/phone-icon.png')}
+                style={styles.phoneIcon}
+                resizeMode="contain"
+              />
+              <Text style={styles.phoneButtonText}>Sign in with phone</Text>
+            </View>
+          </Pressable>
+        </View>
+
+        {/* "Sign in to get started" text */}
+        <Text style={styles.signInText}>Sign in to get started</Text>
+
+        {/* Bottom decorative images */}
+        <Image
+          source={require('@/assets/images/auth/bottom-left.png')}
+          style={styles.bottomLeft}
+          resizeMode="contain"
+        />
+        <Image
+          source={require('@/assets/images/auth/bottom-right.png')}
+          style={styles.bottomRight}
+          resizeMode="contain"
+        />
       </View>
-    </GradientBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
   },
-  content: {
-    width: '100%',
-    maxWidth: 400,
-    paddingHorizontal: 24,
-    justifyContent: 'space-between',
-    flex: 1,
+  topStuff: {
+    position: 'absolute',
+    top: 0,
+    width: 577,
+    height: 366,
+    alignSelf: 'center',
   },
   logoSection: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 120,
+    marginBottom: 'auto',
   },
-  title: {
-    ...typography.titleXl,
+  logo: {
+    width: 300,
+    height: 60,
+    marginBottom: 24,
+  },
+  tagline: {
+    width: 369,
     color: colors.pureWhite,
     textAlign: 'center',
-    marginBottom: 16,
-  },
-  subtitle: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
-    textAlign: 'center',
-    opacity: 0.9,
+    fontFamily: 'InstrumentSerif_400Regular_Italic',
+    fontSize: 74,
+    fontStyle: 'italic',
+    fontWeight: '400',
+    letterSpacing: -1.48,
+    lineHeight: 74,
   },
   buttonSection: {
     width: '100%',
-    paddingBottom: 48,
-    gap: 16,
-  },
-  appleButtonContainer: {
-    width: '100%',
+    maxWidth: 362,
+    gap: 10,
+    marginBottom: 20,
   },
   appleButton: {
     width: '100%',
-    height: 56,
-  },
-  termsText: {
-    ...typography.p1,
-    color: colors.almostWhite,
-    textAlign: 'center',
-    opacity: 0.8,
-    marginTop: 8,
-  },
-  resetButton: {
-    paddingVertical: 12,
+    paddingVertical: 19,
+    paddingHorizontal: 64,
+    backgroundColor: colors.black,
+    borderRadius: 73,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
   },
-  resetText: {
-    ...typography.p1,
+  phoneButton: {
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    backgroundColor: colors.pureWhite,
+    borderRadius: 74,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  appleLogo: {
+    width: 20,
+    height: 23,
+  },
+  appleButtonText: {
     color: colors.pureWhite,
-    textDecorationLine: 'underline',
-    opacity: 0.9,
+    fontFamily: 'FunnelDisplay_500Medium',
+    fontSize: 17,
+    fontWeight: '500',
+  },
+  phoneIcon: {
+    width: 24,
+    height: 24,
+  },
+  phoneButtonText: {
+    color: colors.black,
+    fontFamily: 'FunnelDisplay_500Medium',
+    fontSize: 17,
+    fontWeight: '500',
+  },
+  signInText: {
+    color: colors.pureWhite,
+    textAlign: 'center',
+    fontFamily: 'FunnelDisplay_500Medium',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: -0.26,
+    marginBottom: 40,
+  },
+  bottomLeft: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    width: 113,
+    height: 108,
+  },
+  bottomRight: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 94,
+    height: 96,
   },
 });
