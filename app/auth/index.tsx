@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-    marginTop: -25,
+    marginTop: -95,
   },
   logo: {
     width: 110,
