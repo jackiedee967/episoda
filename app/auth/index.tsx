@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Image } from 'expo-image';
+import { View, Text, StyleSheet, Pressable, ImageBackground, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,19 +37,16 @@ export default function SplashScreen() {
   };
 
   return (
-    <View style={styles.wrapper}>
-      {/* Background Image */}
-      <Image
-        source={require('@/assets/images/auth/welcome-background.jpg')}
-        style={styles.backgroundImage}
-        contentFit="cover"
-      />
-
+    <ImageBackground
+      source={require('@/assets/images/auth/welcome-background.jpg')}
+      style={styles.wrapper}
+      resizeMode="cover"
+    >
       {/* Top decorative images - positioned absolutely */}
       <Image
         source={require('@/assets/images/auth/top-stuff.png')}
         style={styles.topStuff}
-        contentFit="contain"
+        resizeMode="contain"
       />
 
       <View style={styles.container}>
@@ -59,7 +55,7 @@ export default function SplashScreen() {
           <Image
             source={require('@/assets/images/auth/layer-1.png')}
             style={styles.logo}
-            contentFit="contain"
+            resizeMode="contain"
           />
           <Text style={styles.tagline}>Make every episode social</Text>
         </View>
@@ -79,7 +75,7 @@ export default function SplashScreen() {
               <Image
                 source={require('@/assets/images/auth/apple-logo.png')}
                 style={styles.appleLogo}
-                contentFit="contain"
+                resizeMode="contain"
               />
               <Text style={styles.appleButtonText}>Sign in with Apple</Text>
             </View>
@@ -94,7 +90,7 @@ export default function SplashScreen() {
               <Image
                 source={require('@/assets/images/auth/phone-icon.png')}
                 style={styles.phoneIcon}
-                contentFit="contain"
+                resizeMode="contain"
               />
               <Text style={styles.phoneButtonText}>Sign in with phone</Text>
             </View>
@@ -109,30 +105,20 @@ export default function SplashScreen() {
       <Image
         source={require('@/assets/images/auth/bottom-left.png')}
         style={styles.bottomLeft}
-        contentFit="contain"
+        resizeMode="contain"
       />
       <Image
         source={require('@/assets/images/auth/bottom-right.png')}
         style={styles.bottomRight}
-        contentFit="contain"
+        resizeMode="contain"
       />
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#7BA8FF',
-  },
-  backgroundImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
   },
   container: {
     flex: 1,
