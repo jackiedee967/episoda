@@ -98,7 +98,7 @@ export default function PhoneNumberScreen() {
       <ImageBackground
         source={{ uri: phoneBackground }}
         style={styles.backgroundImage}
-        resizeMode="cover"
+        resizeMode="stretch"
       >
         {/* Top logo */}
         <View style={styles.topContainer}>

@@ -189,6 +189,12 @@ export default function RootLayout() {
                 }} 
               />
               <Stack.Screen 
+                name="auth/phone-number" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
                 name="auth/verify-otp" 
                 options={{ 
                   headerShown: false,
