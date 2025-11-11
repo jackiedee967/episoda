@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
 import { colors } from '@/styles/tokens';
+import { CountryCodeSelector, Country } from '@/components/auth/CountryCodeSelector';
 
 interface PhoneInputProps {
-  areaCode: string;
+  selectedCountry: Country;
+  onCountryChange: (country: Country) => void;
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
@@ -12,7 +14,8 @@ interface PhoneInputProps {
 }
 
 export function PhoneInput({
-  areaCode,
+  selectedCountry,
+  onCountryChange,
   value,
   onChangeText,
   placeholder = '305 1234 5678',
@@ -23,9 +26,11 @@ export function PhoneInput({
     <View style={styles.container} testID={testID}>
       <Text style={styles.label}>Phone Number</Text>
       <View style={styles.inputContainer}>
-        <View style={styles.areaCodeContainer}>
-          <Text style={styles.areaCode}>{areaCode}</Text>
-        </View>
+        <CountryCodeSelector
+          selectedCountry={selectedCountry}
+          onSelect={onCountryChange}
+          disabled={!editable}
+        />
         <TextInput
           style={styles.input}
           value={value}
@@ -63,18 +68,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.grey2,
     overflow: 'hidden',
-  },
-  areaCodeContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRightWidth: 1,
-    borderRightColor: colors.grey2,
-  },
-  areaCode: {
-    color: colors.pureWhite,
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 15,
-    fontWeight: '500',
   },
   input: {
     flex: 1,
