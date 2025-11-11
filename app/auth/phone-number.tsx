@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     alignSelf: 'center',
-    width: 4.5,
-    height: 4.5,
+    width: 16,
+    height: 16,
   },
 });
