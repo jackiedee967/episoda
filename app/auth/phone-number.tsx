@@ -19,7 +19,7 @@ import { Country } from '@/components/auth/CountryCodeSelector';
 import { supabase } from '@/app/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 
-const welcomeBackground = Asset.fromModule(require('../../assets/images/auth/welcome-background.jpg')).uri;
+const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
 const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
@@ -96,9 +96,9 @@ export default function PhoneNumberScreen() {
   return (
     <View style={styles.wrapper}>
       <ImageBackground
-        source={{ uri: welcomeBackground }}
+        source={{ uri: phoneBackground }}
         style={styles.backgroundImage}
-        resizeMode="stretch"
+        resizeMode="cover"
       >
         {/* Top logo */}
         <View style={styles.topContainer}>
@@ -145,12 +145,12 @@ export default function PhoneNumberScreen() {
                 By continuing you agree to the Terms of Service, "EULA", and Privacy Policy.
               </Text>
             </View>
-          </View>
-        </View>
 
-        {/* Pagination dots */}
-        <View style={styles.paginationContainer}>
-          <PaginationDots total={7} current={1} testID="pagination-dots" />
+            {/* Pagination dots */}
+            <View style={styles.paginationInline}>
+              <PaginationDots total={7} current={1} testID="pagination-dots" />
+            </View>
+          </View>
         </View>
 
         {/* Bottom decorative image */}
@@ -167,7 +167,6 @@ export default function PhoneNumberScreen() {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#7BA8FF',
   },
   backgroundImage: {
     flex: 1,
@@ -175,11 +174,11 @@ const styles = StyleSheet.create({
   },
   topContainer: {
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 20,
   },
   logo: {
-    width: 110,
-    height: 22,
+    width: 99,
+    height: 19.8,
   },
   centerContent: {
     flex: 1,
@@ -223,10 +222,9 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     lineHeight: 15,
   },
-  paginationContainer: {
-    position: 'absolute',
-    bottom: 60,
-    alignSelf: 'center',
+  paginationInline: {
+    alignItems: 'center',
+    paddingTop: 24,
   },
   layer12: {
     position: 'absolute',

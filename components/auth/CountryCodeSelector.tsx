@@ -121,13 +121,9 @@ const styles = StyleSheet.create({
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.pureWhite,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 16,
-    height: 56,
-    gap: 8,
-    minWidth: 120,
+    gap: 4,
   },
   selectorDisabled: {
     opacity: 0.5,

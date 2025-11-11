@@ -24,7 +24,6 @@ export function PhoneInput({
 }: PhoneInputProps) {
   return (
     <View style={styles.container} testID={testID}>
-      <Text style={styles.label}>Phone Number</Text>
       <View style={styles.inputContainer}>
         <CountryCodeSelector
           selectedCountry={selectedCountry}
@@ -53,27 +52,18 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
   },
-  label: {
-    color: colors.pureWhite,
-    fontFamily: 'FunnelDisplay_400Regular',
-    fontSize: 13,
-    fontWeight: '400',
-    marginBottom: 8,
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: colors.almostWhite,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.grey2,
     overflow: 'hidden',
   },
   input: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: colors.pureWhite,
+    paddingVertical: 16,
+    color: colors.black,
     fontFamily: 'FunnelDisplay_400Regular',
     fontSize: 15,
     fontWeight: '400',
