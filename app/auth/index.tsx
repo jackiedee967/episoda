@@ -59,14 +59,14 @@ export default function SplashScreen() {
             resizeMode="contain"
           />
           <Text style={styles.tagline}>Make every episode social</Text>
-          
-          {/* Decorative image below tagline */}
-          <Image
-            source={{ uri: bottomCombined }}
-            style={styles.bottomCombined}
-            resizeMode="contain"
-          />
         </View>
+
+        {/* Decorative image below tagline - positioned to extend beyond padding */}
+        <Image
+          source={{ uri: bottomCombined }}
+          style={styles.bottomCombined}
+          resizeMode="contain"
+        />
 
         {/* Bottom section - buttons */}
         <View style={styles.bottomSection}>
@@ -148,9 +148,12 @@ const styles = StyleSheet.create({
     lineHeight: 52,
   },
   bottomCombined: {
+    position: 'absolute',
     width: 532,
     height: 168,
-    marginTop: 30,
+    top: '50%',
+    marginTop: 60,
+    alignSelf: 'center',
   },
   bottomSection: {
     position: 'absolute',
