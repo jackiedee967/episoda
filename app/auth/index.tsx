@@ -58,7 +58,10 @@ export default function SplashScreen() {
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.tagline}>Make every episode social</Text>
+          <Text style={styles.tagline}>
+            <Text style={styles.taglineRegular}>Make every episode{'\n'}</Text>
+            <Text style={styles.taglineItalic}>social</Text>
+          </Text>
         </View>
 
         {/* Decorative image below tagline - positioned to extend beyond padding */}
@@ -131,6 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
+    marginTop: -10,
   },
   logo: {
     width: 110,
@@ -141,12 +145,18 @@ const styles = StyleSheet.create({
     maxWidth: 350,
     color: colors.pureWhite,
     textAlign: 'center',
-    fontFamily: 'InstrumentSerif_400Regular_Italic',
-    fontSize: 48,
-    fontStyle: 'italic',
+    fontSize: 70,
     fontWeight: '400',
     letterSpacing: -1.48,
-    lineHeight: 52,
+    lineHeight: 76,
+  },
+  taglineRegular: {
+    fontFamily: 'InstrumentSerif_400Regular',
+    fontStyle: 'normal',
+  },
+  taglineItalic: {
+    fontFamily: 'InstrumentSerif_400Regular_Italic',
+    fontStyle: 'italic',
   },
   bottomCombined: {
     position: 'absolute',
