@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   ImageBackground,
   Image,
+  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
@@ -15,7 +16,7 @@ import ButtonL from '@/components/ButtonL';
 import { PaginationDots } from '@/components/PaginationDots';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-import { Check, X } from 'lucide-react-native';
+import { Check, X, ArrowLeft } from 'lucide-react-native';
 
 const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
@@ -90,6 +91,14 @@ export default function UsernameSelectScreen() {
     return () => clearTimeout(debounceTimer);
   }, [usernameInput, checkUsernameAvailability]);
 
+  const handleBack = async () => {
+    const { signOut } = useAuth();
+    if (signOut) {
+      await signOut();
+    }
+    router.replace('/');
+  };
+
   const handleContinue = async () => {
     const username = usernameInput.trim();
 
@@ -147,6 +156,15 @@ export default function UsernameSelectScreen() {
         style={styles.backgroundImage}
         resizeMode="stretch"
       >
+        {/* Back button */}
+        <Pressable 
+          style={styles.backButton} 
+          onPress={handleBack}
+          hitSlop={8}
+        >
+          <ArrowLeft size={20} color={colors.pureWhite} strokeWidth={2} />
+        </Pressable>
+
         {/* Top logo */}
         <View style={styles.topContainer}>
           <Image
@@ -230,6 +248,13 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: '100%',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    padding: 8,
   },
   topContainer: {
     alignItems: 'center',
