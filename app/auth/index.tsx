@@ -122,9 +122,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    width: '110%',
-    marginLeft: '-5%',
-    height: 250,
+    width: '154%',
+    marginLeft: '-27%',
+    height: 350,
   },
   centerContent: {
     flex: 1,
