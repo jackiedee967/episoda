@@ -8,8 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const welcomeBackground = Asset.fromModule(require('../../assets/images/auth/welcome-background.jpg')).uri;
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
 const topStuff = Asset.fromModule(require('../../assets/images/auth/top-stuff.png')).uri;
-const bottomLeft = Asset.fromModule(require('../../assets/images/auth/bottom-left.png')).uri;
-const bottomRight = Asset.fromModule(require('../../assets/images/auth/bottom-right.png')).uri;
+const bottomCombined = Asset.fromModule(require('../../assets/images/auth/bottom-combined.png')).uri;
 const appleLogo = Asset.fromModule(require('../../assets/images/auth/apple-logo.png')).uri;
 const phoneIcon = Asset.fromModule(require('../../assets/images/auth/phone-icon.png')).uri;
 
@@ -61,19 +60,12 @@ export default function SplashScreen() {
           />
           <Text style={styles.tagline}>Make every episode social</Text>
           
-          {/* Decorative images below tagline */}
-          <View style={styles.decorativeImages}>
-            <Image
-              source={{ uri: bottomLeft }}
-              style={styles.bottomLeft}
-              resizeMode="contain"
-            />
-            <Image
-              source={{ uri: bottomRight }}
-              style={styles.bottomRight}
-              resizeMode="contain"
-            />
-          </View>
+          {/* Decorative image below tagline */}
+          <Image
+            source={{ uri: bottomCombined }}
+            style={styles.bottomCombined}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Bottom section - buttons */}
@@ -155,20 +147,10 @@ const styles = StyleSheet.create({
     letterSpacing: -1.48,
     lineHeight: 52,
   },
-  decorativeImages: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 40,
+  bottomCombined: {
+    width: 380,
+    height: 120,
     marginTop: 30,
-  },
-  bottomLeft: {
-    width: 100,
-    height: 96,
-  },
-  bottomRight: {
-    width: 85,
-    height: 87,
   },
   bottomSection: {
     position: 'absolute',
