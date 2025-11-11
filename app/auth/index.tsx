@@ -148,8 +148,8 @@ const styles = StyleSheet.create({
     lineHeight: 52,
   },
   bottomCombined: {
-    width: 380,
-    height: 120,
+    width: 532,
+    height: 168,
     marginTop: 30,
   },
   bottomSection: {
