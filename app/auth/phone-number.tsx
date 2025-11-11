@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   termsText: {
     width: 327,
-    color: 'rgba(139, 252, 118, 1)',
+    color: colors.grey1,
     textAlign: 'center',
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 8,
