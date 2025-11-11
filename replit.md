@@ -23,10 +23,16 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 ### Feature Specifications
 - **Social Features**: Posting, liking, commenting, reposting, following, friend activity feed, user profiles.
 - **TV Show Management**: Show/episode pages, playlists, watch history, recommended titles, dynamic episode progress bar.
-- **Authentication Flow**: Robust 7-screen onboarding with progressive data collection and authentication guards. Includes display name selection, auto-generated profile pictures, and account deletion.
+- **Authentication Flow**: Robust 7-screen onboarding with progressive data collection and authentication guards. Includes:
+  - Pixel-perfect welcome screen with redesigned title and decorative elements
+  - Phone number entry screen (Step 2/7) with international country code picker supporting 30+ countries
+  - OTP verification screen
+  - Display name selection
+  - Auto-generated profile pictures
+  - Account deletion capability
 - **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, custom profile tab display.
-- **Redesigned Pages**: Episode Hub, Post Page, and Profile Page are fully redesigned to match Figma specifications.
-- **Modular & Component-Based**: Organized into logical directories with reusable UI components and centralized styling.
+- **Redesigned Pages**: Welcome screen, Phone Number Entry screen, Episode Hub, Post Page, and Profile Page are fully redesigned to match Figma specifications.
+- **Modular & Component-Based**: Organized into logical directories with reusable UI components (PhoneInput, PaginationDots, ButtonL) and centralized styling.
 
 ### System Design Choices
 - **Development vs Production**: Separate Supabase instances for development and production, ensuring isolation.
