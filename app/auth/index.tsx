@@ -59,7 +59,7 @@ export default function SplashScreen() {
             resizeMode="contain"
           />
           <Text style={styles.tagline}>
-            <Text style={styles.taglineRegular}>Make every episode{'\n'}</Text>
+            <Text style={styles.taglineRegular}>Make every episode </Text>
             <Text style={styles.taglineItalic}>social</Text>
           </Text>
         </View>
@@ -145,10 +145,10 @@ const styles = StyleSheet.create({
     maxWidth: 350,
     color: colors.pureWhite,
     textAlign: 'center',
-    fontSize: 70,
+    fontSize: 65,
     fontWeight: '400',
     letterSpacing: -1.48,
-    lineHeight: 76,
+    lineHeight: 70,
   },
   taglineRegular: {
     fontFamily: 'InstrumentSerif_400Regular',
