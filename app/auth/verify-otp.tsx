@@ -94,7 +94,12 @@ export default function VerifyOTPScreen() {
         inputRef.current?.focus();
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/auth/username-select');
+        // Wait briefly for AuthContext to load onboarding status before navigating
+        // This prevents race conditions where AuthNavigator routes before status is ready
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Let AuthNavigator handle routing based on onboarding status
+        // This ensures existing users go to /(tabs)/ and new users continue through signup
+        router.replace('/auth');
       }
     } catch (error: any) {
       console.error('OTP verification exception:', error);
