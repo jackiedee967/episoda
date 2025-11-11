@@ -207,8 +207,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   appleLogo: {
-    width: 18,
-    height: 21,
+    width: 16,
+    height: 19,
   },
   appleButtonText: {
     color: colors.pureWhite,
