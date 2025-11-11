@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Platform, Pressable, ImageBackground, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { colors, typography } from '@/styles/tokens';
+import { colors } from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
@@ -37,28 +38,34 @@ export default function SplashScreen() {
   };
 
   return (
-    <ImageBackground
-      source={require('@/assets/images/auth/welcome-background.jpg')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        {/* Top decorative images */}
-        <Image
-          source={require('@/assets/images/auth/top-stuff.png')}
-          style={styles.topStuff}
-          resizeMode="contain"
-        />
+    <View style={styles.wrapper}>
+      {/* Background Image */}
+      <Image
+        source={require('@/assets/images/auth/welcome-background.jpg')}
+        style={styles.backgroundImage}
+        contentFit="cover"
+      />
 
+      {/* Top decorative images - positioned absolutely */}
+      <Image
+        source={require('@/assets/images/auth/top-stuff.png')}
+        style={styles.topStuff}
+        contentFit="contain"
+      />
+
+      <View style={styles.container}>
         {/* Logo and tagline section */}
         <View style={styles.logoSection}>
           <Image
             source={require('@/assets/images/auth/layer-1.png')}
             style={styles.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={styles.tagline}>Make every episode social</Text>
         </View>
+
+        {/* Spacer */}
+        <View style={styles.spacer} />
 
         {/* Buttons section */}
         <View style={styles.buttonSection}>
@@ -72,7 +79,7 @@ export default function SplashScreen() {
               <Image
                 source={require('@/assets/images/auth/apple-logo.png')}
                 style={styles.appleLogo}
-                resizeMode="contain"
+                contentFit="contain"
               />
               <Text style={styles.appleButtonText}>Sign in with Apple</Text>
             </View>
@@ -87,93 +94,108 @@ export default function SplashScreen() {
               <Image
                 source={require('@/assets/images/auth/phone-icon.png')}
                 style={styles.phoneIcon}
-                resizeMode="contain"
+                contentFit="contain"
               />
               <Text style={styles.phoneButtonText}>Sign in with phone</Text>
             </View>
           </Pressable>
+
+          {/* "Sign in to get started" text */}
+          <Text style={styles.signInText}>Sign in to get started</Text>
         </View>
-
-        {/* "Sign in to get started" text */}
-        <Text style={styles.signInText}>Sign in to get started</Text>
-
-        {/* Bottom decorative images */}
-        <Image
-          source={require('@/assets/images/auth/bottom-left.png')}
-          style={styles.bottomLeft}
-          resizeMode="contain"
-        />
-        <Image
-          source={require('@/assets/images/auth/bottom-right.png')}
-          style={styles.bottomRight}
-          resizeMode="contain"
-        />
       </View>
-    </ImageBackground>
+
+      {/* Bottom decorative images - positioned absolutely */}
+      <Image
+        source={require('@/assets/images/auth/bottom-left.png')}
+        style={styles.bottomLeft}
+        contentFit="contain"
+      />
+      <Image
+        source={require('@/assets/images/auth/bottom-right.png')}
+        style={styles.bottomRight}
+        contentFit="contain"
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: {
+  wrapper: {
     flex: 1,
+    backgroundColor: '#7BA8FF',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: '100%',
     height: '100%',
   },
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 40,
+    paddingTop: 100,
+    paddingBottom: 60,
   },
   topStuff: {
     position: 'absolute',
-    top: 0,
-    width: 577,
-    height: 366,
+    top: -20,
+    left: 0,
+    right: 0,
+    width: '100%',
+    maxWidth: 600,
+    height: 300,
     alignSelf: 'center',
+    opacity: 0.9,
   },
   logoSection: {
     alignItems: 'center',
-    marginTop: 120,
-    marginBottom: 'auto',
+    gap: 20,
   },
   logo: {
-    width: 300,
-    height: 60,
-    marginBottom: 24,
+    width: 250,
+    height: 50,
   },
   tagline: {
-    width: 369,
+    maxWidth: 350,
     color: colors.pureWhite,
     textAlign: 'center',
     fontFamily: 'InstrumentSerif_400Regular_Italic',
-    fontSize: 74,
+    fontSize: 48,
     fontStyle: 'italic',
     fontWeight: '400',
     letterSpacing: -1.48,
-    lineHeight: 74,
+    lineHeight: 52,
+  },
+  spacer: {
+    flex: 1,
   },
   buttonSection: {
     width: '100%',
     maxWidth: 362,
-    gap: 10,
-    marginBottom: 20,
+    gap: 12,
+    alignItems: 'center',
   },
   appleButton: {
     width: '100%',
-    paddingVertical: 19,
-    paddingHorizontal: 64,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
     backgroundColor: colors.black,
-    borderRadius: 73,
+    borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   phoneButton: {
     width: '100%',
     paddingVertical: 16,
-    paddingHorizontal: 8,
+    paddingHorizontal: 32,
     backgroundColor: colors.pureWhite,
-    borderRadius: 74,
+    borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -181,11 +203,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
   },
   appleLogo: {
-    width: 20,
-    height: 23,
+    width: 18,
+    height: 21,
   },
   appleButtonText: {
     color: colors.pureWhite,
@@ -194,8 +216,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   phoneIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   phoneButtonText: {
     color: colors.black,
@@ -210,20 +232,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: -0.26,
-    marginBottom: 40,
+    marginTop: 16,
   },
   bottomLeft: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 40,
     left: 20,
-    width: 113,
-    height: 108,
+    width: 100,
+    height: 96,
+    opacity: 0.95,
   },
   bottomRight: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 40,
     right: 20,
-    width: 94,
-    height: 96,
+    width: 85,
+    height: 87,
+    opacity: 0.95,
   },
 });
