@@ -194,6 +194,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
+  mockupImage: {
+    width: SCREEN_WIDTH * 0.7,
+    height: 450,
+  },
   textContainer: {
     width: '100%',
     paddingHorizontal: 32,
