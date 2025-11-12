@@ -1,0 +1,195 @@
+Data Persistence & Live Data Implementation
+
+Critical Issue: The app currently has persistence bugs and placeholder data throughout. All data must be real, live, and persistent across sessions.
+
+1. Comments System
+
+
+
+
+
+All comments must save to database immediately upon posting
+
+
+
+Comments must persist after logout/login
+
+
+
+Comment count on posts must reflect actual number of comments in database
+
+
+
+Delete functionality must work and update counts in real-time
+
+2. Following/Followers
+
+
+
+
+
+Follow/unfollow actions must save to database immediately
+
+
+
+Follower and following counts must update in real-time across the app
+
+
+
+When viewing someone's follower/following list, if you follow them or they follow you, YOUR profile should appear at the top of the list
+
+
+
+Counts must be accurate everywhere they appear (profile page, user cards, etc.)
+
+3. Mutual Friends Component
+
+Anywhere the "Mutual Friends" component appears (showing profile pictures and count):
+
+
+
+
+
+Profile pictures must pull from actual user profiles in database
+
+
+
+The number displayed must be the accurate count of mutual friends
+
+
+
+No placeholder images or fake numbers
+
+4. Playlists/Lists
+
+
+
+
+
+All lists must persist after creation
+
+
+
+Adding/removing items from lists must save immediately
+
+
+
+List edits (title, description) must save
+
+
+
+Deleting lists must work properly
+
+
+
+Lists must remain after logout/login
+
+5. Star Ratings
+
+
+
+
+
+User ratings must save to database immediately
+
+
+
+Ratings must persist after logout/login
+
+
+
+User's rating must display correctly when they revisit a show/episode
+
+
+
+Rating counts and averages must be calculated from real data
+
+6. Posts & Episode/Show Data
+
+
+
+
+
+Post counts on episodes and shows must reflect actual number of posts in database
+
+
+
+All metrics (likes, comments, ratings) must be real data, not hardcoded numbers
+
+7. Tag Styling Consistency
+
+Tags (show titles, genres, etc.) must have consistent styling across the entire app:
+
+
+
+
+
+If a show title tag is pink on the feed, it must be pink on the post detail page
+
+
+
+If a genre tag is blue and has rounded corners in one place, it must be blue and have rounded corners everywhere
+
+
+
+Apply consistent color scheme and styling to all tag types throughout the app
+
+8. General Requirements
+
+
+
+
+
+All database operations must include proper error handling
+
+
+
+Failed saves should show user-friendly error messages
+
+
+
+Data should update in real-time without requiring manual refresh where possible
+
+
+
+Test all functionality with logout/login to ensure persistence
+
+Testing Checklist
+
+Before marking this complete, test the following flow:
+
+
+
+
+
+Create account and log in
+
+
+
+Follow users, create lists, rate shows, make posts, add comments
+
+
+
+Log out completely
+
+
+
+Log back in
+
+
+
+Verify ALL data from step 2 is still present and accurate
+
+
+
+Unfollow someone and verify count updates everywhere
+
+
+
+Delete a list and verify it's gone
+
+
+
+Check that all numbers (follower counts, post counts, etc.) match actual database records
+
+Priority Level: CRITICAL - This must be completed before any new features are added. The app is non-functional if data doesn't persist.
