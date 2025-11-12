@@ -6,7 +6,6 @@ import {
   FlatList,
   Dimensions,
   Pressable,
-  ImageBackground,
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -14,12 +13,12 @@ import { colors, typography } from '@/styles/tokens';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const step1Image = require('../../assets/onboarding/step1.png');
 const step2Image = require('../../assets/onboarding/step2.png');
 const step3Image = require('../../assets/onboarding/step3.png');
 const step4Image = require('../../assets/onboarding/step4.png');
-const backgroundImage = require('../../assets/onboarding/background.jpg');
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -125,10 +124,10 @@ export default function OnboardingCarouselScreen() {
   const isLastSlide = currentIndex === ONBOARDING_SLIDES.length - 1;
 
   return (
-    <ImageBackground
-      source={backgroundImage}
+    <LinearGradient
+      colors={['#FFFFFF', '#FFFFFF', '#FFC0F5', '#FFD4A3', '#A3FFD4']}
+      locations={[0, 0.7, 0.85, 0.92, 1]}
       style={styles.backgroundImage}
-      resizeMode="cover"
     >
       <View style={styles.container}>
         <FlatList
@@ -169,7 +168,7 @@ export default function OnboardingCarouselScreen() {
           )}
         </View>
       </View>
-    </ImageBackground>
+    </LinearGradient>
   );
 }
 
