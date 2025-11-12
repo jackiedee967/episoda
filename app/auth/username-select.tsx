@@ -32,7 +32,7 @@ const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')
  */
 export default function UsernameSelectScreen() {
   const router = useRouter();
-  const { checkUsernameAvailability, setUsername, user } = useAuth();
+  const { checkUsernameAvailability, setUsername, user, signOut } = useAuth();
   const [usernameInput, setUsernameInput] = useState('');
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -92,7 +92,6 @@ export default function UsernameSelectScreen() {
   }, [usernameInput, checkUsernameAvailability]);
 
   const handleBack = async () => {
-    const { signOut } = useAuth();
     if (signOut) {
       await signOut();
     }
