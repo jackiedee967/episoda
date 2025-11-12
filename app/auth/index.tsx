@@ -21,7 +21,7 @@ export default function SplashScreen() {
   const [appleLoading, setAppleLoading] = useState(false);
 
   const handlePhoneSignIn = () => {
-    router.push('/auth/onboarding');
+    router.push('/auth/phone-number');
   };
 
   const handleAppleSignIn = async () => {
