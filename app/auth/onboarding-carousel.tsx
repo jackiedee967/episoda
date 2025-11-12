@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 100,
   },
   imageContainer: {
     width: '100%',
@@ -193,9 +193,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+    marginBottom: -8,
   },
   mockupImage: {
-    width: SCREEN_WIDTH * 0.7,
+    width: 335,
     height: 450,
   },
   textContainer: {
