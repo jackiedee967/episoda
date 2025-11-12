@@ -7,13 +7,13 @@ import {
   Dimensions,
   Pressable,
   ImageBackground,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 
 const step1Image = require('../../assets/onboarding/step1.png');
 const step2Image = require('../../assets/onboarding/step2.png');
@@ -111,7 +111,7 @@ export default function OnboardingCarouselScreen() {
           <Image
             source={item.image}
             style={styles.mockupImage}
-            contentFit="contain"
+            resizeMode="contain"
           />
         </View>
         <View style={styles.textContainer}>
@@ -193,10 +193,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  mockupImage: {
-    width: '100%',
-    height: '100%',
   },
   textContainer: {
     width: '100%',
