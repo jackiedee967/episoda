@@ -116,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadOnboardingStatus = async (userId: string) => {
     try {
+      console.log('🔍 Loading onboarding status for user:', userId);
       const { data: profile, error } = await supabase
         .from('profiles' as any)
         .select('username, display_name, birthday, onboarding_completed')
@@ -129,20 +130,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      console.log('📋 Profile data:', profile);
+
       const hasUsername = profile && (profile as any).username && (profile as any).username.trim() !== '';
       const hasDisplayName = profile && (profile as any).display_name && (profile as any).display_name.trim() !== '';
       const hasBirthday = profile && (profile as any).birthday && (profile as any).birthday !== '';
       const onboardingComplete = profile && (profile as any).onboarding_completed === true;
 
+      console.log('✅ Profile checks:', { hasUsername, hasDisplayName, hasBirthday, onboardingComplete });
+
       if (!profile || !hasUsername) {
+        console.log('➡️ Setting status: phone_verified');
         setOnboardingStatus('phone_verified');
       } else if (!hasDisplayName) {
+        console.log('➡️ Setting status: username_set');
         setOnboardingStatus('username_set');
       } else if (!hasBirthday) {
+        console.log('➡️ Setting status: display_name_set');
         setOnboardingStatus('display_name_set');
       } else if (!onboardingComplete) {
+        console.log('➡️ Setting status: birthday_set');
         setOnboardingStatus('birthday_set');
       } else {
+        console.log('➡️ Setting status: completed');
         setOnboardingStatus('completed');
       }
     } catch (error) {
