@@ -352,15 +352,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkUsernameAvailability = useCallback(async (username: string): Promise<boolean> => {
     try {
+      console.log('🔍 Checking username availability for:', username);
       const { data, error } = await supabase
         .from('profiles' as any)
         .select('username')
         .eq('username', username)
         .maybeSingle();
       
+      console.log('🔍 Username check response:', { data, error, available: !data });
+      
+      if (error) {
+        console.log('⚠️ Username check error:', error);
+        // If there's an error, we can't be sure - return false (unavailable) to be safe
+        return false;
+      }
+      
       return !data;
     } catch (error) {
-      return true;
+      console.log('❌ Username check exception:', error);
+      return false;
     }
   }, []);
 
