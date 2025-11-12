@@ -15,31 +15,37 @@ import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 
+const step1Image = require('../../assets/onboarding/step1.png');
+const step2Image = require('../../assets/onboarding/step2.png');
+const step3Image = require('../../assets/onboarding/step3.png');
+const step4Image = require('../../assets/onboarding/step4.png');
+const backgroundImage = require('../../assets/onboarding/background.jpg');
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const ONBOARDING_SLIDES = [
   {
     id: '1',
-    image: require('@/assets/onboarding/step1.png'),
+    image: step1Image,
     title: 'Log and track\nyour shows',
     description: 'Keep track of what you\'ve watched and\nlet your friends see what you\'re into.',
   },
   {
     id: '2',
-    image: require('@/assets/onboarding/step2.png'),
+    image: step2Image,
     title: 'See what friends are\ncurrently watching',
     description: 'See what your friends are watching so\nyou can keep up (& weigh in).',
   },
   {
     id: '3',
-    image: require('@/assets/onboarding/step3.png'),
+    image: step3Image,
     title: 'Talk theories, hot takes,\nand delusions',
     titleItalicWord: 'delusions',
     description: 'Write statuses, comments, and discuss\nyour emotional support characters.',
   },
   {
     id: '4',
-    image: require('@/assets/onboarding/step4.png'),
+    image: step4Image,
     title: 'Find your next\nobsession',
     titleItalicWord: 'obsession',
     description: 'Discover what to watch next - straight\nfrom your circle of people who get you.',
@@ -120,7 +126,7 @@ export default function OnboardingCarouselScreen() {
 
   return (
     <ImageBackground
-      source={require('@/assets/onboarding/background.jpg')}
+      source={backgroundImage}
       style={styles.backgroundImage}
       resizeMode="cover"
     >
