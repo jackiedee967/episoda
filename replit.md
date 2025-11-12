@@ -1,7 +1,7 @@
-# Natively (EPISODA) - TV Show Social Media App
+# EPISODA - TV Show Social Media App
 
 ## Overview
-Natively (EPISODA) is a social media application for TV show enthusiasts, built with Expo and React Native. It allows users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations.
+EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It allows users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations.
 
 ## User Preferences
 I prefer iterative development, focusing on one feature or fix at a time. Please ask for confirmation before making large-scale changes or refactoring. I value clear, concise explanations and prefer to focus on high-level architectural decisions and critical features rather than minor implementation details. Do not make changes to files related to authentication without explicit instruction.

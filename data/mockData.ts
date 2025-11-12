@@ -8,7 +8,7 @@ export const currentUser: User = {
   username: 'jvckie',
   displayName: 'Jacqueline',
   avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop',
-  bio: 'TV enthusiast 📺 | Building Natively',
+  bio: 'TV enthusiast 📺 | Building EPISODA',
   following: ['a0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000005'],
   followers: ['a0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000004'],
 };
