@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["supabase-cli"]
+packages = ["supabase-cli", "imagemagick"]
 
 [workflows]
 runButton = "Project"
