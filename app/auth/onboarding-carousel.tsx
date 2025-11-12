@@ -67,18 +67,6 @@ export default function OnboardingCarouselScreen() {
     setCurrentIndex(index);
   };
 
-  const handleNext = () => {
-    if (currentIndex < ONBOARDING_SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({
-        index: currentIndex + 1,
-        animated: true,
-      });
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } else {
-      handleGetStarted();
-    }
-  };
-
   const handleGetStarted = async () => {
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -120,8 +108,10 @@ export default function OnboardingCarouselScreen() {
             contentFit="contain"
           />
         </View>
-        {renderTitle()}
-        <Text style={styles.slideDescription}>{item.description}</Text>
+        <View style={styles.textContainer}>
+          {renderTitle()}
+          <Text style={styles.slideDescription}>{item.description}</Text>
+        </View>
       </View>
     );
   };
@@ -161,20 +151,16 @@ export default function OnboardingCarouselScreen() {
             ))}
           </View>
 
-          <View style={styles.buttonContainer}>
-            {isLastSlide ? (
+          {isLastSlide && (
+            <View style={styles.buttonContainer}>
               <AuthButton
                 title="Get Started"
                 onPress={handleGetStarted}
                 loading={loading}
                 variant="primary"
               />
-            ) : (
-              <Pressable onPress={handleNext} style={styles.skipButton}>
-                <Text style={styles.skipText}>Next</Text>
-              </Pressable>
-            )}
-          </View>
+            </View>
+          )}
         </View>
       </View>
     </ImageBackground>
@@ -191,20 +177,26 @@ const styles = StyleSheet.create({
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingHorizontal: 32,
+    paddingTop: 60,
   },
   imageContainer: {
     width: '100%',
-    height: '50%',
-    marginBottom: 48,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   mockupImage: {
     width: '100%',
     height: '100%',
+  },
+  textContainer: {
+    width: '100%',
+    paddingHorizontal: 32,
+    paddingBottom: 120,
+    alignItems: 'center',
   },
   slideTitle: {
     ...typography.titleXl,
@@ -222,6 +214,10 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 24,
     paddingBottom: 48,
     gap: 24,
@@ -244,13 +240,5 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-  },
-  skipButton: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  skipText: {
-    ...typography.subtitle,
-    color: colors.black,
   },
 });
