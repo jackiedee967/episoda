@@ -6,41 +6,43 @@ import {
   FlatList,
   Dimensions,
   Pressable,
+  ImageBackground,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
-import { GradientBackground } from '@/components/auth/GradientBackground';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-import { Tv, Users, Heart, TrendingUp } from 'lucide-react-native';
+import { Image } from 'expo-image';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const ONBOARDING_SLIDES = [
   {
     id: '1',
-    icon: Tv,
-    title: 'Track Your Shows',
-    description: 'Log every episode you watch and keep track of your TV show journey',
+    image: require('@/assets/onboarding/step1.png'),
+    title: 'Log and track\nyour shows',
+    description: 'Keep track of what you\'ve watched and\nlet your friends see what you\'re into.',
   },
   {
     id: '2',
-    icon: Users,
-    title: 'Connect with Friends',
-    description: 'Follow friends, see what they are watching, and share your favorite moments',
+    image: require('@/assets/onboarding/step2.png'),
+    title: 'See what friends are\ncurrently watching',
+    description: 'See what your friends are watching so\nyou can keep up (& weigh in).',
   },
   {
     id: '3',
-    icon: Heart,
-    title: 'Share Your Thoughts',
-    description: 'Post reviews, rate episodes, and engage with the community',
+    image: require('@/assets/onboarding/step3.png'),
+    title: 'Talk theories, hot takes,\nand delusions',
+    titleItalicWord: 'delusions',
+    description: 'Write statuses, comments, and discuss\nyour emotional support characters.',
   },
   {
     id: '4',
-    icon: TrendingUp,
-    title: 'Discover New Shows',
-    description: 'Get personalized recommendations based on your watching habits',
+    image: require('@/assets/onboarding/step4.png'),
+    title: 'Find your next\nobsession',
+    titleItalicWord: 'obsession',
+    description: 'Discover what to watch next - straight\nfrom your circle of people who get you.',
   },
 ];
 
@@ -95,14 +97,30 @@ export default function OnboardingCarouselScreen() {
   };
 
   const renderSlide = ({ item }: { item: typeof ONBOARDING_SLIDES[0] }) => {
-    const Icon = item.icon;
+    const renderTitle = () => {
+      if (item.titleItalicWord) {
+        const parts = item.title.split(item.titleItalicWord);
+        return (
+          <Text style={styles.slideTitle}>
+            {parts[0]}
+            <Text style={styles.italicText}>{item.titleItalicWord}</Text>
+            {parts[1]}
+          </Text>
+        );
+      }
+      return <Text style={styles.slideTitle}>{item.title}</Text>;
+    };
 
     return (
       <View style={styles.slide}>
-        <View style={styles.iconContainer}>
-          <Icon size={80} color={colors.pureWhite} strokeWidth={1.5} />
+        <View style={styles.imageContainer}>
+          <Image
+            source={item.image}
+            style={styles.mockupImage}
+            contentFit="contain"
+          />
         </View>
-        <Text style={styles.slideTitle}>{item.title}</Text>
+        {renderTitle()}
         <Text style={styles.slideDescription}>{item.description}</Text>
       </View>
     );
@@ -111,7 +129,11 @@ export default function OnboardingCarouselScreen() {
   const isLastSlide = currentIndex === ONBOARDING_SLIDES.length - 1;
 
   return (
-    <GradientBackground>
+    <ImageBackground
+      source={require('@/assets/onboarding/background.jpg')}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
       <View style={styles.container}>
         <FlatList
           ref={flatListRef}
@@ -155,11 +177,14 @@ export default function OnboardingCarouselScreen() {
           </View>
         </View>
       </View>
-    </GradientBackground>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -168,23 +193,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
   },
-  iconContainer: {
-    marginBottom: 40,
+  imageContainer: {
+    width: '100%',
+    height: '50%',
+    marginBottom: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mockupImage: {
+    width: '100%',
+    height: '100%',
   },
   slideTitle: {
-    ...typography.titleL,
-    color: colors.pureWhite,
+    ...typography.titleXl,
+    color: colors.black,
     textAlign: 'center',
     marginBottom: 16,
   },
+  italicText: {
+    fontStyle: 'italic',
+  },
   slideDescription: {
-    ...typography.subtitle,
-    color: colors.almostWhite,
+    ...typography.subtitleR,
+    color: colors.black,
     textAlign: 'center',
-    opacity: 0.9,
-    lineHeight: 24,
+    opacity: 0.8,
   },
   footer: {
     paddingHorizontal: 24,
@@ -200,12 +235,12 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.almostWhite,
-    opacity: 0.4,
+    backgroundColor: colors.black,
+    opacity: 0.3,
   },
   dotActive: {
     opacity: 1,
-    backgroundColor: colors.greenHighlight,
+    backgroundColor: colors.black,
   },
   buttonContainer: {
     width: '100%',
@@ -216,6 +251,6 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...typography.subtitle,
-    color: colors.pureWhite,
+    color: colors.black,
   },
 });
