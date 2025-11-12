@@ -23,6 +23,10 @@ const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Backg
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
 const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
+export const options = {
+  headerShown: false,
+};
+
 /**
  * Phone Number Entry Screen - Step 2 in 7-screen auth flow
  * Pixel-perfect implementation matching Figma design

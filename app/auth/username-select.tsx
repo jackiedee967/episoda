@@ -22,6 +22,10 @@ const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Backg
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
 const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
+export const options = {
+  headerShown: false,
+};
+
 /**
  * Username Selection Screen - Step 3 in auth flow
  * Features:
