@@ -93,6 +93,30 @@ export async function getShowByTvdbId(tvdbId: number): Promise<TVMazeShow | null
   }
 }
 
+export async function searchShowByName(showName: string): Promise<TVMazeShow | null> {
+  try {
+    console.log(`🔍 TVMaze search by name: "${showName}"`);
+    const response = await fetch(
+      `${TVMAZE_BASE_URL}/singlesearch/shows?q=${encodeURIComponent(showName)}`
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`⚠️ TVMaze: No results for "${showName}"`);
+        return null;
+      }
+      throw new Error(`TVMaze API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data: TVMazeShow = await response.json();
+    console.log(`✅ TVMaze search found: ${data.name}, poster: ${!!data.image}`);
+    return data;
+  } catch (error) {
+    console.error('❌ TVMaze search error:', error);
+    return null;
+  }
+}
+
 export async function getShowImages(tvmazeId: number): Promise<TVMazeImage[]> {
   try {
     const response = await fetch(

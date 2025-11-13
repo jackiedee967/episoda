@@ -1,5 +1,5 @@
 import { TraktShow, getShowSeasons } from './trakt';
-import { getShowByImdbId, getShowByTvdbId, TVMazeShow } from './tvmaze';
+import { getShowByImdbId, getShowByTvdbId, searchShowByName, TVMazeShow } from './tvmaze';
 import { getOMDBByTitle } from './omdb';
 
 export interface EnrichedShowData {
@@ -66,7 +66,7 @@ class ShowEnrichmentManager {
       let tvmazeData = null;
       if (!posterUrl) {
         console.log(`  Trying TVMaze fallback...`);
-        tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb);
+        tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, traktShow.title);
         posterUrl = tvmazeData?.posterUrl || null;
         console.log(`  TVMaze poster: ${posterUrl ? 'Yes' : 'No'}`);
       }
@@ -124,11 +124,7 @@ class ShowEnrichmentManager {
     };
   }
 
-  private async fetchTVMazeData(imdbId: string | null, tvdbId: number | null): Promise<{ posterUrl: string; tvmazeId: number } | null> {
-    if (!imdbId && !tvdbId) {
-      return null;
-    }
-
+  private async fetchTVMazeData(imdbId: string | null, tvdbId: number | null, showTitle?: string): Promise<{ posterUrl: string; tvmazeId: number } | null> {
     let tvmazeShow: TVMazeShow | null = null;
 
     if (imdbId) {
@@ -137,6 +133,12 @@ class ShowEnrichmentManager {
 
     if (!tvmazeShow && tvdbId) {
       tvmazeShow = await getShowByTvdbId(tvdbId);
+    }
+
+    // Fallback: search by title if no IDs worked
+    if (!tvmazeShow && showTitle) {
+      console.log(`  No IDs available, trying title search...`);
+      tvmazeShow = await searchShowByName(showTitle);
     }
 
     if (!tvmazeShow || !tvmazeShow.image) {
