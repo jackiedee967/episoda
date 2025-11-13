@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
         backgroundSize: '100% 100%',
         backgroundRepeat: 'no-repeat',
         backgroundPositionX: 'center',
-        backgroundPositionY: '160px',
+        backgroundPositionY: '135px',
       } as any,
     }),
   },
