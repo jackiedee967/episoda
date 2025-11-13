@@ -22,10 +22,11 @@ import { IconSymbol } from '@/components/IconSymbol';
 import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason, TraktEpisode } from '@/services/trakt';
-import { saveShow, saveEpisode, getShowByTraktId } from '@/services/showDatabase';
+import { saveShow, saveEpisode, getShowByTraktId, getShowById } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
+import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
 
 interface PostModalProps {
   visible: boolean;
@@ -203,7 +204,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           
           for (const episode of episodesData) {
             const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-            console.log(`  Episode ${episode.number}: ${episode.title}`);
             
             if (!seasonMap.has(episode.season)) {
               seasonMap.set(episode.season, []);
@@ -212,29 +212,60 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           }
         }
         
-        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+        let seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
           seasonNumber,
           episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
           expanded: index === 0, // Auto-expand first season
         }));
         
-        console.log(`✅ Created ${seasonsArray.length} seasons with episodes:`, seasonsArray.map(s => `S${s.seasonNumber}: ${s.episodes.length} eps`));
-        // Debug first season's first episode
-        if (seasonsArray[0]?.episodes[0]) {
-          const sampleEp = seasonsArray[0].episodes[0];
-          console.log('📋 Sample episode:', {
-            id: sampleEp.id,
-            showId: sampleEp.showId,
-            seasonNumber: sampleEp.seasonNumber,
-            episodeNumber: sampleEp.episodeNumber,
-            title: sampleEp.title,
-            key: getEpisodeKey(sampleEp)
-          });
-        }
-        console.log('🔑 TraktEpisodesMap keys (first 5):', Array.from(traktEpsMap.keys()).slice(0, 5));
+        console.log(`✅ Created ${seasonsArray.length} seasons`);
+        
+        // Display episodes immediately for fast UI
         setSeasons(seasonsArray);
         setIsFetchingEpisodes(false);
         setStep('selectEpisodes');
+        
+        // Fetch thumbnails in background if TVMaze ID available
+        const dbShow = await getShowById(show.id);
+        if (dbShow?.tvmaze_id) {
+          console.log('📸 Fetching episode thumbnails from TVMaze...');
+          const allEpisodes = seasonsArray.flatMap(s => s.episodes);
+          const episodesWithThumbnails = await Promise.all(
+            allEpisodes.map(async (ep) => {
+              try {
+                const tvmazeEpisode = await getTVMazeEpisode(
+                  dbShow.tvmaze_id!,
+                  ep.seasonNumber,
+                  ep.episodeNumber
+                );
+                return {
+                  ...ep,
+                  thumbnail: tvmazeEpisode?.image?.original || undefined,
+                };
+              } catch (error) {
+                return ep; // Keep episode without thumbnail on error
+              }
+            })
+          );
+          
+          // Rebuild seasons with thumbnails
+          const thumbnailSeasonMap = new Map<number, Episode[]>();
+          episodesWithThumbnails.forEach(ep => {
+            if (!thumbnailSeasonMap.has(ep.seasonNumber)) {
+              thumbnailSeasonMap.set(ep.seasonNumber, []);
+            }
+            thumbnailSeasonMap.get(ep.seasonNumber)!.push(ep);
+          });
+          
+          seasonsArray = Array.from(thumbnailSeasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+            seasonNumber,
+            episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+            expanded: index === 0,
+          }));
+          
+          setSeasons(seasonsArray);
+          console.log('✅ Updated episodes with thumbnails');
+        }
       }
     } catch (error) {
       console.error('Error loading data for preselected show:', error);

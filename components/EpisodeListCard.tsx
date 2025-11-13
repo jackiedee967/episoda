@@ -50,7 +50,7 @@ export default function EpisodeListCard({
   };
 
   const showCheckmark = isSelected || isLogged;
-  const cardBorderColor = showCheckmark ? tokens.colors.greenHighlight : (theme === 'light' ? tokens.colors.grey2 : tokens.colors.cardStroke);
+  const cardBorderColor = showCheckmark ? tokens.colors.purpleHighlight : (theme === 'light' ? tokens.colors.grey2 : tokens.colors.cardStroke);
   const cardBackgroundColor = theme === 'light' ? tokens.colors.almostWhite : tokens.colors.cardBackground;
   const titleColor = theme === 'light' ? tokens.colors.black : tokens.colors.pureWhite;
   const descriptionColor = theme === 'light' ? tokens.colors.grey3 : tokens.colors.grey2;
@@ -113,7 +113,7 @@ export default function EpisodeListCard({
           {showCheckmark && (
             <Check 
               size={10} 
-              color={tokens.colors.black}
+              color={tokens.colors.pureWhite}
               strokeWidth={3}
             />
           )}
@@ -208,10 +208,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: tokens.colors.greenHighlight,
+    borderColor: tokens.colors.purpleHighlight,
     backgroundColor: 'transparent',
   },
   checkmarkButtonSelected: {
-    backgroundColor: tokens.colors.greenHighlight,
+    backgroundColor: tokens.colors.purpleHighlight,
   },
 });
