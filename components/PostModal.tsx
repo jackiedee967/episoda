@@ -8,12 +8,12 @@ import {
   Pressable,
   TextInput,
   ScrollView,
-  Image,
   Dimensions,
   Animated,
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, components } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
@@ -23,6 +23,7 @@ import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason, TraktEpisode } from '@/services/trakt';
 import { saveShow, saveEpisode, getShowByTraktId } from '@/services/showDatabase';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 interface PostModalProps {
   visible: boolean;
@@ -435,13 +436,11 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                   style={styles.showGridItem}
                   onPress={() => handleShowSelect(result.show, result.traktShow)}
                 >
-                  {result.show.poster ? (
-                    <Image source={{ uri: result.show.poster }} style={styles.showGridPoster} />
-                  ) : (
-                    <View style={[styles.showGridPoster, styles.showGridPosterPlaceholder]}>
-                      <Text style={styles.showGridPosterText}>{result.show.title.slice(0, 2).toUpperCase()}</Text>
-                    </View>
-                  )}
+                  <Image 
+                    source={{ uri: getPosterUrl(result.show.poster, result.show.title) }} 
+                    style={styles.showGridPoster}
+                    contentFit="cover"
+                  />
                   <Pressable 
                     style={({ pressed }) => [
                       styles.saveIconGrid,

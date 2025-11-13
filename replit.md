@@ -44,6 +44,11 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Production Mode**: Secure backend proxy routes at `app/api/trakt/` (ready for rate limiting, caching, authentication)
     - **Security**: Trakt Client ID (public) exposed via `app.config.js` for dev; Client Secret (private) stays server-side
     - **Scalability**: Backend routes ready for autoscale deployment with monitoring and request throttling
+  - **OMDB API**: High-quality posters and IMDb ID enrichment (OMDB_API_KEY required, stored in Replit Secrets)
+    - **Three-Tier Poster Fallback**: OMDB → TVMaze → Deterministic SVG Placeholder
+    - **Poster Placeholder System**: Hash-based generator creates consistent 2:3 aspect ratio SVG placeholders with gradient backgrounds from design tokens and show initials
+    - **expo-image Integration**: All poster-displaying components use expo-image for SVG data URI support (ShowCard, WatchHistoryCard, search, ShowHub, PostModal)
+    - **Smart Enrichment**: Show enrichment preserves IMDb IDs even when posters unavailable, ensuring database always stores highest-quality metadata
   - **TVMaze API**: Secondary source for posters and episode thumbnails (20 requests/10s rate limit)
   - **Search Enrichment System**: Background worker that enhances search results with complete metadata
     - **Throttled Parallel Fetching**: Max 4 concurrent API requests to respect rate limits
@@ -67,6 +72,7 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 ## External Dependencies
 - **Supabase**: Database, authentication, and real-time functionalities.
 - **Trakt API**: TV show metadata (TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET required)
+- **OMDB API**: High-quality show posters and IMDb ID enrichment (OMDB_API_KEY required)
 - **TVMaze API**: Show posters and episode thumbnails (no auth required, rate limited to 20 requests/10s)
 - **Expo**: Core framework for React Native development.
 - **AsyncStorage**: Local storage for session persistence.
