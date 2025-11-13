@@ -108,6 +108,25 @@ export async function getShowImages(tvmazeId: number): Promise<TVMazeImage[]> {
   }
 }
 
+export async function getBackdropUrl(tvmazeId: number): Promise<string | null> {
+  try {
+    const images = await getShowImages(tvmazeId);
+    const backgrounds = images.filter(img => img.type === 'background');
+    
+    if (backgrounds.length === 0) {
+      return null;
+    }
+
+    const mainBackground = backgrounds.find(bg => bg.main);
+    const backdrop = mainBackground || backgrounds[0];
+    
+    return backdrop.resolutions.original.url;
+  } catch (error) {
+    console.error('Error fetching backdrop from TVMaze:', error);
+    return null;
+  }
+}
+
 export async function getEpisode(
   tvmazeShowId: number,
   season: number,

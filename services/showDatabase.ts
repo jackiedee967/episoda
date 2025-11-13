@@ -12,6 +12,7 @@ export interface DatabaseShow {
   title: string;
   description: string | null;
   poster_url: string | null;
+  backdrop_url: string | null;
   rating: number | null;
   total_seasons: number | null;
   total_episodes: number | null;
@@ -37,6 +38,7 @@ export interface DatabaseEpisode {
 
 export interface SaveShowOptions {
   enrichedPosterUrl?: string | null;
+  enrichedBackdropUrl?: string | null;
   enrichedSeasonCount?: number | null;
   enrichedTVMazeId?: number | null;
   enrichedImdbId?: string | null;
@@ -67,6 +69,12 @@ export async function saveShow(
     }
   }
 
+  let backdropUrl = options.enrichedBackdropUrl || null;
+  if (!backdropUrl && tvmazeId) {
+    const { getBackdropUrl } = await import('./tvmaze');
+    backdropUrl = await getBackdropUrl(tvmazeId);
+  }
+
   const showData = {
     trakt_id: traktShow.ids.trakt,
     imdb_id: options.enrichedImdbId || traktShow.ids.imdb,
@@ -76,6 +84,7 @@ export async function saveShow(
     title: traktShow.title,
     description: traktShow.overview || null,
     poster_url: posterUrl,
+    backdrop_url: backdropUrl,
     rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : null,
     total_seasons: options.enrichedSeasonCount ?? null,
     total_episodes: traktShow.aired_episodes || null,

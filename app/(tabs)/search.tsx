@@ -457,6 +457,7 @@ export default function SearchScreen() {
                 const enrichedInfo = traktShowResults.results.find(r => r.show.id === show.id)?.enrichedData;
                 const dbShow = await saveShow(traktShow, {
                   enrichedPosterUrl: enrichedInfo?.posterUrl,
+                  enrichedBackdropUrl: enrichedInfo?.backdropUrl,
                   enrichedSeasonCount: enrichedInfo?.totalSeasons,
                   enrichedTVMazeId: enrichedInfo?.tvmazeId,
                   enrichedImdbId: enrichedInfo?.imdbId

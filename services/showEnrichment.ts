@@ -5,6 +5,7 @@ import { getOMDBByTitle } from './omdb';
 export interface EnrichedShowData {
   totalSeasons: number;
   posterUrl: string | null;
+  backdropUrl: string | null;
   tvmazeId: number | null;
   imdbId: string | null;
   isEnriched: boolean;
@@ -65,9 +66,15 @@ class ShowEnrichmentManager {
         posterUrl = tvmazeData?.posterUrl || null;
       }
 
+      let backdropUrl = null;
+      if (tvmazeData?.tvmazeId) {
+        backdropUrl = await this.fetchBackdropUrl(tvmazeData.tvmazeId);
+      }
+
       const enriched = {
         totalSeasons: seasons,
         posterUrl,
+        backdropUrl,
         tvmazeId: tvmazeData?.tvmazeId || null,
         imdbId,
         isEnriched: true,
@@ -125,6 +132,11 @@ class ShowEnrichmentManager {
       posterUrl: tvmazeShow.image.original,
       tvmazeId: tvmazeShow.id,
     };
+  }
+
+  private async fetchBackdropUrl(tvmazeId: number): Promise<string | null> {
+    const { getBackdropUrl } = await import('./tvmaze');
+    return await getBackdropUrl(tvmazeId);
   }
 
   private processQueue() {
