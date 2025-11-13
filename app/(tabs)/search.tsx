@@ -659,7 +659,8 @@ export default function SearchScreen() {
                     show: mapTraktShowToShow(r.traktShow, {
                       posterUrl: enrichedData.posterUrl,
                       totalSeasons: enrichedData.totalSeasons,
-                    })
+                    }),
+                    enrichedData
                   };
                 }
                 return r;

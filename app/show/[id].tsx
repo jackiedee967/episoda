@@ -668,8 +668,6 @@ const styles = StyleSheet.create({
   bannerContainer: {
     height: 160,
     width: '100%',
-    maxWidth: 432,
-    alignSelf: 'center',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
     overflow: 'hidden',
