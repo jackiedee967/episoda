@@ -1,0 +1,134 @@
+Fix Episode Logging Flow - Show Hub Page
+
+Issue: The logging flow is broken and showing redundant popups. These flows were working previously but have been rolled back somehow.
+
+CRITICAL: in the future do not change or roll back features that are already working. Once functionality is built and tested, it should remain intact when adding new features. i dont know why this keeps happening. i need to feel confident when we are live with 1M users that you wont break stuff.
+
+
+
+There are 2 Logging Flows from Show Hub:
+
+Flow 1: "Log an Episode" Button
+
+Current (broken) behavior:
+
+
+
+
+
+User clicks "Log an Episode" button on show hub
+
+
+
+"Select a Show" popup appears ❌ (WRONG - we already know the show)
+
+
+
+Then season/episode dropdown appears
+
+
+
+Then review page
+
+Correct behavior:
+
+
+
+
+
+User clicks "Log an Episode" button on show hub
+
+
+
+Season/episode dropdown popup appears immediately (skip "Select a Show" since we're already on that show's page)
+
+
+
+User selects season and episode
+
+
+
+Review page opens with that show and episode pre-filled
+
+Flow 2: Toggle Episodes from Episodes Tab
+
+Current (broken) behavior:
+
+
+
+
+
+User opens Episodes tab
+
+
+
+User toggles on specific episodes they want to log
+
+
+
+Bottom nav changes to "Log X Episodes" button ✓ (this works)
+
+
+
+User clicks "Log X Episodes"
+
+
+
+"Select a Show" popup appears ❌ (WRONG)
+
+
+
+Season/episode dropdowns appear again ❌ (WRONG - already selected)
+
+Correct behavior:
+
+
+
+
+
+User opens Episodes tab
+
+
+
+User toggles on specific episodes they want to log
+
+
+
+Bottom nav changes to "Log X Episodes" button ✓
+
+
+
+User clicks "Log X Episodes"
+
+
+
+Skip directly to review page with the show and selected episodes already pre-filled
+
+
+
+No popups - user goes straight to rating/reviewing
+
+Key Requirements:
+
+
+
+
+
+Both flows should skip the "Select a Show" popup entirely when initiated from a show hub page
+
+
+
+Flow 2 should also skip the season/episode selection since episodes are already selected via toggle
+
+
+
+The show and episode(s) should be automatically passed to the review page based on context
+
+
+
+Do not break or roll back these flows again after fixing them
+
+
+
+When a post posts successfully, the user should automativally be redirected to their posts page
+

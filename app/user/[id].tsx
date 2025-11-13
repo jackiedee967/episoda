@@ -27,7 +27,7 @@ import FloatingTabBar from '@/components/FloatingTabBar';
 import Button from '@/components/Button';
 import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import WatchHistoryCard from '@/components/WatchHistoryCard';
-import { mockUsers, currentUser, mockShows } from '@/data/mockData';
+import { mockUsers, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { User, Playlist, ReportReason, Show, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
@@ -80,8 +80,11 @@ export default function UserProfile() {
   const [currentUserFollowing, setCurrentUserFollowing] = useState<any[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
 
-  const user = id === currentUser.id ? currentUser : mockUsers.find((u) => u.id === id);
-  const isCurrentUser = id === currentUser.id;
+  // Guard against undefined contextCurrentUser during loading
+  const user = contextCurrentUser && id === contextCurrentUser.id 
+    ? contextCurrentUser 
+    : mockUsers.find((u) => u.id === id);
+  const isCurrentUser = contextCurrentUser && id === contextCurrentUser.id;
   const isUserFollowing = isFollowing(id as string);
 
   useEffect(() => {
@@ -113,7 +116,9 @@ export default function UserProfile() {
       const topFollowingData = await getTopFollowing(id as string, 3);
       
       // Also fetch current user's following list for friends in common calculation
-      const currentUserFollowingData = !isCurrentUser ? await getFollowing(currentUser.id) : [];
+      const currentUserFollowingData = !isCurrentUser && contextCurrentUser 
+        ? await getFollowing(contextCurrentUser.id) 
+        : [];
       
       setFollowers(followersData || []);
       setFollowing(followingData || []);
@@ -810,7 +815,7 @@ export default function UserProfile() {
           }}
           users={followersType === 'followers' ? followers : following}
           title={followersType === 'followers' ? 'Followers' : 'Following'}
-          currentUserId={currentUser.id}
+          currentUserId={contextCurrentUser?.id || ''}
           followingIds={following.map(u => u.id)}
           onFollowToggle={handleFollowToggle}
         />

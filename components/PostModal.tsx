@@ -188,9 +188,35 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         setIsFetchingEpisodes(false);
         setStep('selectEpisodes');
       } else {
-        console.error('No episodes found in database for show:', show.id);
+        // No database episodes yet - fetch from Trakt and map them
+        console.log('No database episodes found, fetching from Trakt');
+        
+        const seasonMap = new Map<number, Episode[]>();
+        
+        for (const season of seasonsData) {
+          if (season.number === 0) continue;
+          
+          const episodesData = await getSeasonEpisodes(traktShow.ids.trakt, season.number);
+          
+          for (const episode of episodesData) {
+            const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
+            
+            if (!seasonMap.has(episode.season)) {
+              seasonMap.set(episode.season, []);
+            }
+            seasonMap.get(episode.season)!.push(mappedEpisode);
+          }
+        }
+        
+        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+          seasonNumber,
+          episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+          expanded: false,
+        }));
+        
+        setSeasons(seasonsArray);
         setIsFetchingEpisodes(false);
-        setStep('selectShow'); // Fall back to show selection
+        setStep('selectEpisodes');
       }
     } catch (error) {
       console.error('Error loading data for preselected show:', error);
