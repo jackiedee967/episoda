@@ -96,10 +96,13 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     if (preselectedShow && (preselectedEpisodes || preselectedEpisode)) {
       // Flow 2: Show and episodes already selected → load Trakt data and skip to review
       console.log('🎬 Loading Trakt data for preselected show and episodes');
+      setIsFetchingEpisodes(true);
       loadTraktDataForPreselectedShow(preselectedShow, true);
     } else if (preselectedShow) {
       // Flow 1: Show selected but no episodes → fetch episodes and Trakt data, then skip to picker
       console.log('🎬 Loading episodes for preselected show');
+      setIsFetchingEpisodes(true);
+      setStep('selectEpisodes'); // Set immediately to prevent show selection UI flash
       loadTraktDataForPreselectedShow(preselectedShow, false);
     } else {
       // No preselection → start from show selection
@@ -227,7 +230,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         
         // Fetch thumbnails in background if TVMaze ID available
         const dbShow = await getShowById(show.id);
-        if (dbShow?.tvmaze_id) {
+        if (dbShow && dbShow.tvmaze_id) {
           console.log('📸 Fetching episode thumbnails from TVMaze...');
           const allEpisodes = seasonsArray.flatMap(s => s.episodes);
           const episodesWithThumbnails = await Promise.all(

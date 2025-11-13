@@ -50,13 +50,22 @@ export default function EpisodeListCard({
   };
 
   const showCheckmark = isSelected || isLogged;
-  const cardBorderColor = showCheckmark ? tokens.colors.purpleHighlight : (theme === 'light' ? tokens.colors.grey2 : tokens.colors.cardStroke);
+  
+  // Light theme: purple highlighting. Dark theme: original green/stroke colors
+  const cardBorderColor = theme === 'light'
+    ? (showCheckmark ? tokens.colors.tabStroke2 : tokens.colors.grey2)
+    : (showCheckmark ? tokens.colors.greenHighlight : tokens.colors.cardStroke);
+    
   const cardBackgroundColor = theme === 'light' ? tokens.colors.almostWhite : tokens.colors.cardBackground;
   const titleColor = theme === 'light' ? tokens.colors.black : tokens.colors.pureWhite;
   const descriptionColor = theme === 'light' ? tokens.colors.grey3 : tokens.colors.grey2;
-  const tagBackgroundColor = theme === 'light' ? tokens.colors.purpleHighlight : tokens.colors.tabBack2;
-  const tagBorderColor = theme === 'light' ? tokens.colors.purpleHighlight : tokens.colors.tabStroke2;
+  
+  const tagBackgroundColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.tabBack2;
+  const tagBorderColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.tabStroke2;
   const tagTextColor = theme === 'light' ? tokens.colors.pureWhite : tokens.colors.tabStroke2;
+  
+  const checkmarkBorderColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.greenHighlight;
+  const checkmarkBackgroundColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.greenHighlight;
 
   return (
     <Pressable 
@@ -107,7 +116,8 @@ export default function EpisodeListCard({
           onPress={handleTogglePress}
           style={[
             styles.checkmarkButton,
-            showCheckmark && styles.checkmarkButtonSelected
+            { borderColor: checkmarkBorderColor },
+            showCheckmark && { backgroundColor: checkmarkBackgroundColor }
           ]}
         >
           {showCheckmark && (
@@ -208,10 +218,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: tokens.colors.purpleHighlight,
     backgroundColor: 'transparent',
-  },
-  checkmarkButtonSelected: {
-    backgroundColor: tokens.colors.purpleHighlight,
   },
 });
