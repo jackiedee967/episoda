@@ -554,11 +554,15 @@ export default function ShowHub() {
         ) : (
           <>
             {filteredPosts.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
-                  {activeTab === 'friends' 
-                    ? 'No posts from friends yet'
-                    : 'No posts yet'}
+              <View style={styles.emptyPostsState}>
+                <Image 
+                  source={require('@/attached_assets/posts_placeholder.png')} 
+                  style={styles.emptyPostsImage}
+                  contentFit="contain"
+                />
+                <Text style={styles.emptyPostsTitle}>No posts yet</Text>
+                <Text style={styles.emptyPostsSubtitle}>
+                  No posts yet - invite friends or stay tuned while we grow our community!
                 </Text>
               </View>
             ) : (
@@ -872,6 +876,28 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: tokens.colors.grey1,
     textAlign: 'center',
+  },
+  emptyPostsState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 16,
+  },
+  emptyPostsImage: {
+    width: 320,
+    height: 240,
+    marginBottom: 8,
+  },
+  emptyPostsTitle: {
+    ...tokens.typography.titleL,
+    color: tokens.colors.pureWhite,
+    textAlign: 'center',
+  },
+  emptyPostsSubtitle: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    textAlign: 'center',
+    maxWidth: 300,
   },
   episodesContainer: {
     gap: spacing.gapMedium,
