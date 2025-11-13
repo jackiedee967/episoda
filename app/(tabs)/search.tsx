@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform, ImageBackground, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Image, Platform, ImageBackground, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
@@ -169,6 +169,325 @@ export default function SearchScreen() {
     };
   }, [searchQuery, activeCategory]);
 
+  // Helper functions - must be defined before renderItem to avoid temporal dead zone
+  const isShowSaved = (showId: string) => {
+    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
+  };
+
+  const handleSavePress = (show: Show, e: any) => {
+    e.stopPropagation();
+    setSelectedShow(show);
+    setPlaylistModalVisible(true);
+  };
+
+  const handleAddToPlaylist = (playlistId: string, showId: string) => {
+    console.log(`Show ${showId} added to playlist ${playlistId}`);
+  };
+
+  const handleFollowToggle = async (userId: string) => {
+    try {
+      if (isFollowing(userId)) {
+        await unfollowUser(userId);
+      } else {
+        await followUser(userId);
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
+
+  const formatTimeAgo = (timestamp: Date): string => {
+    const now = new Date();
+    const diffInMs = now.getTime() - timestamp.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else {
+      return `${diffInDays}d ago`;
+    }
+  };
+
+  const getKeyExtractor = useCallback((item: any, index: number) => {
+    switch (activeCategory) {
+      case 'shows':
+        return item.id || `show-${index}`;
+      case 'posts':
+        return item.id || `post-${index}`;
+      case 'comments':
+        return item.id || `comment-${index}`;
+      case 'users':
+        return item.id || `user-${index}`;
+      default:
+        return `item-${index}`;
+    }
+  }, [activeCategory]);
+
+  const handleEndReached = useCallback(() => {
+    if (activeCategory === 'shows' && hasMore && !isLoadingMore && !isSearchingShows) {
+      loadMoreShows();
+    }
+  }, [activeCategory, hasMore, isLoadingMore, isSearchingShows]);
+
+  const renderEmptyState = useCallback(() => {
+    // Show placeholder when no search query
+    if (!searchQuery) {
+      return (
+        <View style={styles.searchPlaceholder}>
+          <Image 
+            source={require('@/assets/search-placeholder.png')} 
+            style={styles.placeholderImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.placeholderTitle}>Type to search</Text>
+          <Text style={styles.placeholderSubtitle}>
+            Search shows, posts, comments or users...
+          </Text>
+        </View>
+      );
+    }
+
+    // Show loading state during initial search for shows
+    if (activeCategory === 'shows' && isSearchingShows) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+          <Text style={styles.loadingText}>Searching shows...</Text>
+        </View>
+      );
+    }
+
+    // Show error state for shows if there's an error
+    if (activeCategory === 'shows' && showSearchError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{showSearchError}</Text>
+          <Pressable 
+            style={styles.retryButton}
+            onPress={() => {
+              setShowSearchError(null);
+              setSearchQuery(searchQuery + ' ');
+              setTimeout(() => setSearchQuery(searchQuery.trim()), 100);
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    // Show empty results message
+    return (
+      <View style={styles.emptyState}>
+        <Image 
+          source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+          style={styles.emptyStateIcon}
+        />
+        <Text style={styles.emptyStateText}>No results found</Text>
+        <Text style={styles.emptyStateSubtext}>
+          Try searching for something else
+        </Text>
+      </View>
+    );
+  }, [searchQuery, isSearchingShows, activeCategory, showSearchError]);
+
+  const renderFooter = useCallback(() => {
+    if (activeCategory !== 'shows') {
+      return null;
+    }
+
+    if (isLoadingMore) {
+      return (
+        <View style={styles.loadingFooter}>
+          <ActivityIndicator size="small" color={tokens.colors.green} />
+          <Text style={styles.loadingText}>Loading more shows...</Text>
+        </View>
+      );
+    }
+
+    if (hasMore && filteredResults.length > 0 && !isSearchingShows) {
+      return (
+        <View style={styles.loadingFooter}>
+          <Text style={styles.loadMoreHint}>Scroll to load more</Text>
+        </View>
+      );
+    }
+
+    if (!hasMore && filteredResults.length > 0) {
+      return (
+        <View style={styles.loadingFooter}>
+          <Text style={styles.allCaughtUpText}>All caught up! 🎬</Text>
+        </View>
+      );
+    }
+
+    return null;
+  }, [activeCategory, isLoadingMore, hasMore, filteredResults.length, isSearchingShows]);
+
+  const renderItem = useCallback(({ item, index }: { item: any; index: number }) => {
+    switch (activeCategory) {
+      case 'posts':
+        return <PostCard key={item.id} post={item} />;
+
+      case 'shows':
+        const show = item;
+        const traktId = traktShowResults.results.find(r => r.show.id === show.id)?.traktShow.ids.trakt;
+        const isEnriching = traktId ? enrichingShows.has(traktId) : false;
+
+        return (
+          <Pressable
+            key={show.id}
+            style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
+            onPress={async () => {
+              console.log('🎬 Show card pressed:', show.title);
+              console.log('📊 Show data:', JSON.stringify(show, null, 2));
+              
+              try {
+                setIsSavingShow(true);
+                const traktShow = traktShowResults.results.find(r => r.show.id === show.id)?.traktShow;
+                
+                if (!traktShow) {
+                  console.error('❌ Trakt show data not found for:', show.title);
+                  return;
+                }
+
+                console.log('💾 Saving show to database...');
+                const dbShow = await saveShow(show, traktShow);
+                console.log('✅ Show saved with DB ID:', dbShow.id);
+                
+                console.log('🔄 Navigating to ShowHub with ID:', dbShow.id);
+                router.push(`/show/${dbShow.id}`);
+              } catch (error) {
+                console.error('❌ Error navigating to show:', error);
+              } finally {
+                setIsSavingShow(false);
+              }
+            }}
+          >
+            <View style={styles.showPosterContainer}>
+              {show.poster ? (
+                <Image source={{ uri: show.poster }} style={styles.showPoster} />
+              ) : (
+                <View style={styles.placeholderPoster}>
+                  <IconSymbol name="tv" size={40} color={tokens.colors.grey1} />
+                </View>
+              )}
+              {isEnriching && (
+                <View style={styles.enrichingOverlay}>
+                  <ActivityIndicator size="small" color={tokens.colors.green} />
+                </View>
+              )}
+              <Pressable
+                style={styles.saveButton}
+                onPress={(e) => handleSavePress(show, e)}
+              >
+                <IconSymbol
+                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"}
+                  size={20}
+                  color={isShowSaved(show.id) ? tokens.colors.green : tokens.colors.grey1}
+                />
+              </Pressable>
+            </View>
+            <View style={styles.showInfo}>
+              <Text style={styles.showTitle} numberOfLines={1}>
+                {show.title}
+              </Text>
+              <Text style={styles.showDescription} numberOfLines={2}>
+                {show.description}
+              </Text>
+              <View style={styles.showStats}>
+                <View style={styles.stat}>
+                  <IconSymbol name="star.fill" size={14} color="#FCD34D" />
+                  <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
+                </View>
+                <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
+                <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
+              </View>
+              {show.friendsWatching > 0 && (
+                <View style={styles.friendsRow}>
+                  <IconSymbol name="person.2.fill" size={12} color={tokens.colors.grey1} />
+                  <Text style={styles.friendsText}>{show.friendsWatching} friends watching</Text>
+                </View>
+              )}
+            </View>
+          </Pressable>
+        );
+
+      case 'users':
+        const user = item;
+        const isCurrentUserProfile = user.id === currentUser.id;
+        
+        return (
+          <View key={user.id} style={styles.userCardWrapper}>
+            <UserCard
+              username={user.username}
+              displayName={user.displayName}
+              bio={user.bio}
+              avatar={user.avatar}
+              isFollowing={isFollowing(user.id)}
+              onPress={() => router.push(`/user/${user.id}`)}
+              onFollowPress={() => handleFollowToggle(user.id)}
+              showFollowButton={!isCurrentUserProfile}
+            />
+          </View>
+        );
+
+      case 'comments':
+        const comment = item;
+        const post = posts.find(p => p.id === comment.postId);
+        if (!post) return null;
+
+        const timeAgo = formatTimeAgo(comment.timestamp);
+        const episodeText = post.episodes && post.episodes.length > 0 
+          ? `S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`
+          : '';
+
+        const postTitle = post.title || 'Untitled';
+        const truncatedPostTitle = postTitle.length > 40 ? postTitle.slice(0, 40) + '...' : postTitle;
+        const truncatedComment = comment.text.length > 60 ? comment.text.slice(0, 60) + '...' : comment.text;
+
+        return (
+          <Pressable
+            key={comment.id}
+            style={({ pressed }) => [styles.commentCard, pressed && styles.pressed]}
+            onPress={() => router.push(`/post/${comment.postId}`)}
+          >
+            <View style={styles.commentCardContent}>
+              <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
+              <View style={styles.commentInfo}>
+                <Text style={styles.commentTextMixed}>
+                  <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
+                  <Text style={styles.commentTextWhite}> commented on post "</Text>
+                  <Text style={styles.commentTextWhite}>{truncatedPostTitle}</Text>
+                  <Text style={styles.commentTextWhite}>" about </Text>
+                  {episodeText && (
+                    <>
+                      <Text style={styles.commentTextGreen}>{episodeText}</Text>
+                      <Text style={styles.commentTextWhite}> of </Text>
+                    </>
+                  )}
+                  <Text style={styles.commentTextGreen}>{post.show.title}</Text>
+                  <Text style={styles.commentTextWhite}>:</Text>
+                </Text>
+                <Text style={styles.commentTextMixed}>
+                  <Text style={styles.commentTextWhite}>"{truncatedComment}"</Text>
+                </Text>
+                <Text style={styles.commentTime}>{timeAgo}</Text>
+              </View>
+            </View>
+            <Image source={{ uri: post.show.poster }} style={styles.commentShowPoster} />
+          </Pressable>
+        );
+
+      default:
+        return null;
+    }
+  }, [activeCategory, enrichingShows, traktShowResults, isShowSaved, handleSavePress, currentUser.id, isFollowing, handleFollowToggle, posts, formatTimeAgo, router]);
+
   const loadMoreShows = async () => {
     if (isLoadingMore || isSearchingShows || !hasMore || activeCategory !== 'shows') {
       return;
@@ -179,11 +498,20 @@ export default function SearchScreen() {
       return;
     }
 
+    // Capture current request token to detect stale requests
+    const requestToken = searchRequestTokenRef.current;
+    
     console.log(`📄 Loading more shows: page ${currentPage + 1} of ${totalPages}`);
     setIsLoadingMore(true);
 
     try {
       const response = await searchShows(query, { page: currentPage + 1, limit: 20 });
+      
+      // Guard: Abort if search query changed while we were fetching
+      if (searchRequestTokenRef.current !== requestToken) {
+        console.log('⚠️ Aborting loadMore: search query changed during fetch');
+        return;
+      }
       
       const existingIds = new Set(traktShowResults.results.map(r => r.traktShow.ids.trakt));
       
@@ -210,6 +538,12 @@ export default function SearchScreen() {
           
           try {
             const enrichedData = await showEnrichmentManager.enrichShow(result.show);
+            
+            // Guard: Abort enrichment update if search query changed
+            if (searchRequestTokenRef.current !== requestToken) {
+              console.log('⚠️ Aborting enrichment update: search query changed');
+              return;
+            }
             
             setTraktShowResults(prevResults => {
               const updatedResults = prevResults.results.map(r => {
@@ -365,53 +699,10 @@ export default function SearchScreen() {
     }
   }, [searchQuery, activeCategory, posts, preselectedShow, traktShowResults]);
 
-  // Check if show is in any playlist
-  const isShowSaved = (showId: string) => {
-    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
-  };
-
-  const handleSavePress = (show: Show, e: any) => {
-    e.stopPropagation();
-    setSelectedShow(show);
-    setPlaylistModalVisible(true);
-  };
-
-  const handleAddToPlaylist = (playlistId: string, showId: string) => {
-    console.log(`Show ${showId} added to playlist ${playlistId}`);
-  };
-
   const handleRemoveShowFilter = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowFilter(undefined);
     router.setParams({ showId: undefined });
-  };
-
-  const handleFollowToggle = async (userId: string) => {
-    try {
-      if (isFollowing(userId)) {
-        await unfollowUser(userId);
-      } else {
-        await followUser(userId);
-      }
-    } catch (error) {
-      console.error('Error toggling follow:', error);
-    }
-  };
-
-  const formatTimeAgo = (timestamp: Date): string => {
-    const now = new Date();
-    const diffInMs = now.getTime() - timestamp.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else {
-      return `${diffInDays}d ago`;
-    }
   };
 
   const renderShowFilter = () => {
@@ -433,289 +724,7 @@ export default function SearchScreen() {
     );
   };
 
-  const renderResults = () => {
-    // Show placeholder when no search query
-    if (searchQuery.length === 0) {
-      return (
-        <View style={styles.searchPlaceholder}>
-          <Image 
-            source={require('@/assets/search-placeholder.png')} 
-            style={styles.placeholderImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.placeholderTitle}>Type to search</Text>
-          <Text style={styles.placeholderSubtitle}>
-            Search shows, posts, comments or users...
-          </Text>
-        </View>
-      );
-    }
-
-    switch (activeCategory) {
-      case 'posts':
-        if (filteredResults.length === 0) {
-          return (
-            <View style={styles.emptyState}>
-              <Image 
-                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
-                style={styles.emptyStateIcon}
-              />
-              <Text style={styles.emptyStateText}>No results found</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Try searching for something else
-              </Text>
-            </View>
-          );
-        }
-        return filteredResults.map((post: any) => (
-          <PostCard key={post.id} post={post} />
-        ));
-
-      case 'shows':
-        const cachedQueryMatches = traktShowResults.query === searchQuery.trim().toLowerCase();
-        
-        if (isSearchingShows || !cachedQueryMatches) {
-          return (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
-              <Text style={styles.loadingText}>Searching shows...</Text>
-            </View>
-          );
-        }
-
-        if (showSearchError) {
-          return (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{showSearchError}</Text>
-              <Pressable 
-                style={styles.retryButton}
-                onPress={() => {
-                  setShowSearchError(null);
-                  setSearchQuery(searchQuery + ' ');
-                  setTimeout(() => setSearchQuery(searchQuery.trim()), 100);
-                }}
-              >
-                <Text style={styles.retryButtonText}>Retry</Text>
-              </Pressable>
-            </View>
-          );
-        }
-
-        if (filteredResults.length === 0) {
-          return (
-            <View style={styles.emptyState}>
-              <Image 
-                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
-                style={styles.emptyStateIcon}
-              />
-              <Text style={styles.emptyStateText}>No results found</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Try searching for something else
-              </Text>
-            </View>
-          );
-        }
-
-        return filteredResults.map((show: any) => {
-          const resultData = traktShowResults.results.find(r => r.show.id === show.id);
-          
-          return (
-          <Pressable
-            key={show.id}
-            style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
-            onPress={async () => {
-              if (!resultData) {
-                console.warn('⚠️ No result data found for show:', show.id);
-                return;
-              }
-              
-              if (isSavingShow) {
-                console.log('⏳ Already saving a show, skipping click');
-                return;
-              }
-              
-              console.log('🎬 Clicked show:', resultData.traktShow.title);
-              
-              try {
-                setIsSavingShow(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                
-                const enrichedData = showEnrichmentManager.getCachedData(resultData.traktShow.ids.trakt);
-                console.log('📦 Enriched data:', enrichedData ? 'Available' : 'Not cached yet');
-                
-                console.log('💾 Saving show to database...');
-                const dbShow = await saveShow(resultData.traktShow, {
-                  enrichedPosterUrl: enrichedData?.posterUrl,
-                  enrichedSeasonCount: enrichedData?.totalSeasons,
-                  enrichedTVMazeId: enrichedData?.tvmazeId,
-                });
-                
-                console.log('✅ Show saved with ID:', dbShow.id);
-                console.log('🚀 Navigating to ShowHub...');
-                
-                router.push(`/show/${dbShow.id}`);
-              } catch (error) {
-                console.error('❌ Error in show click handler:', error);
-                console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-                alert('Failed to load show. Please make sure the database tables are set up correctly.');
-              } finally {
-                setIsSavingShow(false);
-                console.log('🔓 isSavingShow reset to false');
-              }
-            }}
-          >
-            <View style={styles.showPosterWrapper}>
-              {show.poster ? (
-                <Image source={{ uri: show.poster }} style={styles.showPoster} />
-              ) : (
-                <View style={[styles.showPoster, styles.showPosterPlaceholder]}>
-                  <Text style={styles.showPosterPlaceholderText}>{show.title.slice(0, 2).toUpperCase()}</Text>
-                </View>
-              )}
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.saveIconSearch,
-                  pressed && styles.saveIconPressed,
-                ]} 
-                onPress={(e) => {
-                  e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  handleSavePress(show, e);
-                }}
-              >
-                <IconSymbol 
-                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
-                  size={16} 
-                  color={tokens.colors.pureWhite} 
-                />
-              </Pressable>
-            </View>
-            <View style={styles.showInfo}>
-              <Text style={styles.showTitle}>{show.title}</Text>
-              <Text style={styles.showDescription} numberOfLines={2}>
-                {show.description}
-              </Text>
-              <View style={styles.showStats}>
-                <View style={styles.stat}>
-                  <IconSymbol name="star.fill" size={14} color="#FCD34D" />
-                  <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
-                </View>
-                <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
-                <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
-              </View>
-              {show.friendsWatching > 0 && (
-                <View style={styles.friendsRow}>
-                  <IconSymbol name="person.2.fill" size={12} color={tokens.colors.grey1} />
-                  <Text style={styles.friendsText}>{show.friendsWatching} friends watching</Text>
-                </View>
-              )}
-            </View>
-          </Pressable>
-        );
-        });
-
-      case 'users':
-        if (filteredResults.length === 0) {
-          return (
-            <View style={styles.emptyState}>
-              <Image 
-                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
-                style={styles.emptyStateIcon}
-              />
-              <Text style={styles.emptyStateText}>No results found</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Try searching for something else
-              </Text>
-            </View>
-          );
-        }
-        return filteredResults.map((user: any) => {
-          const isCurrentUserProfile = user.id === currentUser.id;
-          
-          return (
-            <View key={user.id} style={styles.userCardWrapper}>
-              <UserCard
-                username={user.username}
-                displayName={user.displayName}
-                bio={user.bio}
-                avatar={user.avatar}
-                isFollowing={isFollowing(user.id)}
-                onPress={() => router.push(`/user/${user.id}`)}
-                onFollowPress={() => handleFollowToggle(user.id)}
-                showFollowButton={!isCurrentUserProfile}
-              />
-            </View>
-          );
-        });
-
-      case 'comments':
-        if (filteredResults.length === 0) {
-          return (
-            <View style={styles.emptyState}>
-              <Image 
-                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
-                style={styles.emptyStateIcon}
-              />
-              <Text style={styles.emptyStateText}>No results found</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Try searching for something else
-              </Text>
-            </View>
-          );
-        }
-        return filteredResults.map((comment: any) => {
-          // Find the post this comment belongs to
-          const post = posts.find(p => p.id === comment.postId);
-          if (!post) return null;
-
-          const timeAgo = formatTimeAgo(comment.timestamp);
-          const episodeText = post.episodes && post.episodes.length > 0 
-            ? `S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`
-            : '';
-
-          // Truncate post title and comment
-          const postTitle = post.title || 'Untitled';
-          const truncatedPostTitle = postTitle.length > 40 ? postTitle.slice(0, 40) + '...' : postTitle;
-          const truncatedComment = comment.text.length > 60 ? comment.text.slice(0, 60) + '...' : comment.text;
-
-          return (
-            <Pressable
-              key={comment.id}
-              style={({ pressed }) => [styles.commentCard, pressed && styles.pressed]}
-              onPress={() => router.push(`/post/${comment.postId}`)}
-            >
-              <View style={styles.commentCardContent}>
-                <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
-                <View style={styles.commentInfo}>
-                  <Text style={styles.commentTextMixed}>
-                    <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
-                    <Text style={styles.commentTextWhite}> commented on post "</Text>
-                    <Text style={styles.commentTextWhite}>{truncatedPostTitle}</Text>
-                    <Text style={styles.commentTextWhite}>" about </Text>
-                    {episodeText && (
-                      <>
-                        <Text style={styles.commentTextGreen}>{episodeText}</Text>
-                        <Text style={styles.commentTextWhite}> of </Text>
-                      </>
-                    )}
-                    <Text style={styles.commentTextGreen}>{post.show.title}</Text>
-                    <Text style={styles.commentTextWhite}>:</Text>
-                  </Text>
-                  <Text style={styles.commentTextMixed}>
-                    <Text style={styles.commentTextWhite}>"{truncatedComment}"</Text>
-                  </Text>
-                  <Text style={styles.commentTime}>{timeAgo}</Text>
-                </View>
-              </View>
-              <Image source={{ uri: post.show.poster }} style={styles.commentShowPoster} />
-            </Pressable>
-          );
-        }).filter(Boolean);
-
-      default:
-        return null;
-    }
-  };
+  // Note: renderResults() has been removed - we now use FlatList with renderItem instead
 
   return (
     <>
@@ -752,9 +761,21 @@ export default function SearchScreen() {
 
         {renderShowFilter()}
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.resultsContainer}>{renderResults()}</View>
-        </ScrollView>
+        <FlatList
+          data={filteredResults}
+          renderItem={renderItem}
+          keyExtractor={getKeyExtractor}
+          style={styles.scrollView}
+          contentContainerStyle={styles.resultsContainer}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState}
+          ListFooterComponent={renderFooter}
+          onEndReached={activeCategory === 'shows' ? handleEndReached : undefined}
+          onEndReachedThreshold={0.5}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
 
       {selectedShow && (
         <PlaylistModal
@@ -1068,6 +1089,19 @@ const styles = StyleSheet.create({
   },
   showPosterPlaceholderText: {
     ...tokens.typography.titleL,
+    color: tokens.colors.grey1,
+  },
+  loadingFooter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  loadMoreHint: {
+    ...tokens.typography.p2,
+    color: tokens.colors.grey1,
+  },
+  allCaughtUpText: {
+    ...tokens.typography.p1,
     color: tokens.colors.grey1,
   },
 });
