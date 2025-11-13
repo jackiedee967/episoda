@@ -79,14 +79,10 @@ export function generatePosterPlaceholder(title: string, width: number = 160, he
 
 export function getPosterUrl(posterUrl: string | null | undefined, showTitle: string): string {
   // Return placeholder if poster is missing, null, undefined, or empty string
-  console.log(`getPosterUrl called: title="${showTitle}", posterUrl="${posterUrl}", type=${typeof posterUrl}`);
   if (!posterUrl || posterUrl.trim() === '') {
-    const placeholder = generatePosterPlaceholder(showTitle);
-    console.log(`→ Generated placeholder for "${showTitle}"`);
-    return placeholder;
+    return generatePosterPlaceholder(showTitle);
   }
   
-  console.log(`→ Using real poster for "${showTitle}"`);
   return posterUrl;
 }
 

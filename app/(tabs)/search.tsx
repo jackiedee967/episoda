@@ -325,18 +325,18 @@ export default function SearchScreen() {
 
     switch (activeCategory) {
       case 'posts':
+        if (!query) return [];
+        
         let filteredPosts = posts;
         if (preselectedShow) {
           filteredPosts = posts.filter(post => post.show.id === preselectedShow.id);
         }
-        if (query) {
-          filteredPosts = filteredPosts.filter(
-            post =>
-              post.title?.toLowerCase().includes(query) ||
-              post.body.toLowerCase().includes(query) ||
-              post.show.title.toLowerCase().includes(query)
-          );
-        }
+        filteredPosts = filteredPosts.filter(
+          post =>
+            post.title?.toLowerCase().includes(query) ||
+            post.body.toLowerCase().includes(query) ||
+            post.show.title.toLowerCase().includes(query)
+        );
         
         return filteredPosts.sort((a, b) => {
           const aPopularity = (a.likes || 0) + (a.reposts || 0) + (a.comments || 0);
@@ -345,12 +345,11 @@ export default function SearchScreen() {
         });
 
       case 'comments':
-        let filteredComments = mockComments;
-        if (query) {
-          filteredComments = mockComments.filter(comment =>
-            comment.text.toLowerCase().includes(query)
-          );
-        }
+        if (!query) return [];
+        
+        const filteredComments = mockComments.filter(comment =>
+          comment.text.toLowerCase().includes(query)
+        );
         
         return filteredComments.sort((a, b) => {
           return (b.likes || 0) - (a.likes || 0);
@@ -372,15 +371,14 @@ export default function SearchScreen() {
         });
 
       case 'users':
-        let filteredUsers = mockUsers;
-        if (query) {
-          filteredUsers = mockUsers.filter(
-            user =>
-              user.displayName.toLowerCase().includes(query) ||
-              user.username.toLowerCase().includes(query) ||
-              user.bio?.toLowerCase().includes(query)
-          );
-        }
+        if (!query) return [];
+        
+        const filteredUsers = mockUsers.filter(
+          user =>
+            user.displayName.toLowerCase().includes(query) ||
+            user.username.toLowerCase().includes(query) ||
+            user.bio?.toLowerCase().includes(query)
+        );
         
         return filteredUsers.sort((a, b) => {
           const aFollowers = a.followers?.length || 0;
