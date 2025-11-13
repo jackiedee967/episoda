@@ -48,11 +48,13 @@ export async function saveShow(
   traktShow: TraktShow, 
   options: SaveShowOptions = {}
 ): Promise<DatabaseShow> {
+  console.log('🔍 saveShow START:', traktShow.title);
   let tvmazeShow = null;
   let posterUrl = options.enrichedPosterUrl || null;
   let tvmazeId = options.enrichedTVMazeId || null;
 
   if (!tvmazeId || !posterUrl) {
+    console.log('📡 Fetching TVMaze data...');
     if (traktShow.ids.imdb) {
       const { getShowByImdbId } = await import('./tvmaze');
       tvmazeShow = await getShowByImdbId(traktShow.ids.imdb);
@@ -67,14 +69,18 @@ export async function saveShow(
       tvmazeId = tvmazeId || tvmazeShow.id;
       posterUrl = posterUrl || tvmazeShow.image?.original || null;
     }
+    console.log('✅ TVMaze fetch complete');
   }
 
   let backdropUrl = options.enrichedBackdropUrl || null;
   if (!backdropUrl && tvmazeId) {
+    console.log('🖼️ Fetching backdrop...');
     const { getBackdropUrl } = await import('./tvmaze');
     backdropUrl = await getBackdropUrl(tvmazeId);
+    console.log('✅ Backdrop fetch complete:', backdropUrl ? 'found' : 'none');
   }
 
+  console.log('📦 Preparing show data...');
   const showData = {
     trakt_id: traktShow.ids.trakt,
     imdb_id: options.enrichedImdbId || traktShow.ids.imdb,
@@ -91,6 +97,7 @@ export async function saveShow(
     updated_at: new Date().toISOString(),
   };
 
+  console.log('💾 Upserting to database...');
   const { data, error } = await supabase
     .from('shows')
     .upsert(showData, {
@@ -101,10 +108,11 @@ export async function saveShow(
     .single();
 
   if (error) {
-    console.error('Error saving show:', error);
+    console.error('❌ Upsert error:', error);
     throw error;
   }
 
+  console.log('✅ saveShow COMPLETE, ID:', data.id);
   return data as DatabaseShow;
 }
 
