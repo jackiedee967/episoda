@@ -31,7 +31,7 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
   - Auto-generated profile pictures
   - Account deletion capability
 - **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, custom profile tab display.
-- **Redesigned Pages**: Welcome screen, Phone Number Entry screen, Episode Hub, Post Page, and Profile Page are fully redesigned to match Figma specifications.
+- **Redesigned Pages**: Welcome screen, Phone Number Entry screen, Episode Hub, Post Page, Profile Page, and Show Hub are fully redesigned to match Figma specifications.
 - **Modular & Component-Based**: Organized into logical directories with reusable UI components (PhoneInput, PaginationDots, ButtonL) and centralized styling.
 
 ### System Design Choices
@@ -64,11 +64,17 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **TVMaze Integration**: Returns both poster URL and TVMaze ID for downstream episode fetching
   - **Database Persistence**: Shows and episodes saved to Supabase before post creation for consistency
   - **Search-to-Hub Flow**: Simplified single-source-of-truth architecture
-    - **Search Screen**: Fetches from Trakt → Enriches with poster/seasons → Saves to Supabase → Navigates with DB ID
+    - **Search Screen**: Fetches from Trakt → Enriches with poster/seasons/backdrop → Saves to Supabase → Navigates with DB ID
     - **ShowHub Screen**: Reads from Supabase only (no client-side Trakt fallback)
     - **Design Decision**: Eliminates redirect loops, state mismatches, and stuck spinners by removing complex hydration logic
     - **Error Handling**: ShowHub displays clean "Show not found" error if database lookup fails
-    - **Tech Debt**: Episodes and friends watching still use mock data (to be implemented separately)
+  - **Show Hub Redesign (Nov 2025)**: Production-ready banner system and live data integration
+    - **Banner System**: Edge-to-edge backdrop images (160px height, rounded bottom corners) fetched from free TVMaze API, stored in `backdrop_url` column
+    - **Layout Updates**: Title repositioned inside bio container, poster increased to 120×180 (2:3 ratio), full-width tabs, refined spacing
+    - **Live Data - Show Metadata**: Season/episode counts from database (show.totalSeasons/totalEpisodes with fallbacks)
+    - **Live Data - Friends Watching**: Real-time calculation from posts by followed users (replaced mock data)
+    - **Live Data - Episodes Tab**: Fetches episodes from database via getEpisodesByShowId, maps to Episode type with postCount, groups into seasons, handles show transitions correctly
+    - **Log Episodes Integration**: FloatingTabBar transforms to "Log X episode(s)" button when episodes selected, opens PostModal with pre-selected episodes
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
   - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
 - **Mock User Seeding**: Database seeding script (`scripts/seedMockUsers.ts`) creates 4 real mock users (jackie, max, mia, liz) in development database with auto-generated avatars and follow relationships. Run via `npm run seed:mock-users`. Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable.
