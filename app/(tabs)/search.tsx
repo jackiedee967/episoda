@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform, ImageBackground } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, ScrollView, Pressable, Image, Platform, ImageBackground, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
@@ -12,6 +12,8 @@ import PostCard from '@/components/PostCard';
 import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
+import { searchShows, TraktShow } from '@/services/trakt';
+import { mapTraktShowToShow } from '@/services/showMappers';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -25,13 +27,95 @@ export default function SearchScreen() {
   const [activeCategory, setActiveCategory] = useState<SearchCategory>(initialTab);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<Show | null>(null);
+  
+  const [traktShowResults, setTraktShowResults] = useState<{ query: string; results: Array<{ show: Show; traktShow: TraktShow }> }>({ query: '', results: [] });
+  const [isSearchingShows, setIsSearchingShows] = useState(false);
+  const [showSearchError, setShowSearchError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentSearchQueryRef = useRef<string>('');
+  const currentActiveCategoryRef = useRef<SearchCategory>(activeCategory);
+  const searchRequestTokenRef = useRef<number>(0);
 
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
-  const preselectedShow = useMemo(() => 
-    showFilter ? mockShows.find(s => s.id === showFilter) : null,
-    [showFilter]
-  );
+  const preselectedShow = useMemo(() => {
+    if (!showFilter) return null;
+    const traktShow = traktShowResults.results.find(r => r.show.id === showFilter);
+    return traktShow ? traktShow.show : mockShows.find(s => s.id === showFilter);
+  }, [showFilter, traktShowResults]);
+
+  const handleTabChange = (tabKey: string) => {
+    const newCategory = tabKey as SearchCategory;
+    currentActiveCategoryRef.current = newCategory;
+    setActiveCategory(newCategory);
+    
+    if (newCategory !== 'shows') {
+      searchRequestTokenRef.current++;
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = null;
+      }
+      setIsSearchingShows(false);
+    }
+  };
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (activeCategory !== 'shows') {
+      return;
+    }
+
+    const trimmedQuery = searchQuery.trim();
+    
+    if (trimmedQuery.length === 0) {
+      currentSearchQueryRef.current = '';
+      searchRequestTokenRef.current++;
+      setTraktShowResults({ query: '', results: [] });
+      setIsSearchingShows(false);
+      setShowSearchError(null);
+      return;
+    }
+
+    currentSearchQueryRef.current = trimmedQuery;
+    searchRequestTokenRef.current++;
+    const requestToken = searchRequestTokenRef.current;
+    setIsSearchingShows(true);
+    setShowSearchError(null);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await searchShows(trimmedQuery);
+        
+        if (searchRequestTokenRef.current !== requestToken) {
+          return;
+        }
+        
+        const mappedShows = results.map(result => ({
+          show: mapTraktShowToShow(result.show, null),
+          traktShow: result.show
+        }));
+        setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
+        setIsSearchingShows(false);
+      } catch (error) {
+        if (searchRequestTokenRef.current !== requestToken) {
+          return;
+        }
+        
+        console.error('Error searching shows:', error);
+        setShowSearchError('Failed to search shows. Please try again.');
+        setIsSearchingShows(false);
+      }
+    }, 400);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, activeCategory]);
 
   const getResultsCount = useMemo(() => (category: SearchCategory): number => {
     const query = searchQuery.toLowerCase();
@@ -39,9 +123,7 @@ export default function SearchScreen() {
 
     switch (category) {
       case 'shows':
-        return mockShows.filter(show =>
-          show.title.toLowerCase().includes(query)
-        ).length;
+        return traktShowResults.query === query ? traktShowResults.results.length : 0;
       
       case 'posts':
         let filteredPosts = preselectedShow 
@@ -70,7 +152,7 @@ export default function SearchScreen() {
       default:
         return 0;
     }
-  }, [searchQuery, posts, preselectedShow]);
+  }, [searchQuery, posts, preselectedShow, traktShowResults]);
 
   const tabs: Tab[] = [
     { key: 'shows', label: 'Shows', hasIndicator: searchQuery.length > 0 && activeCategory !== 'shows' && getResultsCount('shows') > 0 },
@@ -116,14 +198,11 @@ export default function SearchScreen() {
         });
 
       case 'shows':
-        let filteredShows = mockShows;
-        if (query) {
-          filteredShows = mockShows.filter(show =>
-            show.title.toLowerCase().includes(query)
-          );
-        }
+        const showsToDisplay = traktShowResults.query === searchQuery.trim().toLowerCase() 
+          ? traktShowResults.results.map(r => r.show)
+          : [];
         
-        return filteredShows.sort((a, b) => {
+        return showsToDisplay.sort((a, b) => {
           if (b.friendsWatching !== a.friendsWatching) {
             return b.friendsWatching - a.friendsWatching;
           }
@@ -153,7 +232,7 @@ export default function SearchScreen() {
       default:
         return [];
     }
-  }, [searchQuery, activeCategory, posts, preselectedShow]);
+  }, [searchQuery, activeCategory, posts, preselectedShow, traktShowResults]);
 
   // Check if show is in any playlist
   const isShowSaved = (showId: string) => {
@@ -241,29 +320,71 @@ export default function SearchScreen() {
       );
     }
 
-    // Show no results when searched but nothing found
-    if (filteredResults.length === 0) {
-      return (
-        <View style={styles.emptyState}>
-          <Image 
-            source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
-            style={styles.emptyStateIcon}
-          />
-          <Text style={styles.emptyStateText}>No results found</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Try searching for something else or change category
-          </Text>
-        </View>
-      );
-    }
-
     switch (activeCategory) {
       case 'posts':
+        if (filteredResults.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <Image 
+                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+                style={styles.emptyStateIcon}
+              />
+              <Text style={styles.emptyStateText}>No results found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try searching for something else
+              </Text>
+            </View>
+          );
+        }
         return filteredResults.map((post: any) => (
           <PostCard key={post.id} post={post} />
         ));
 
       case 'shows':
+        const cachedQueryMatches = traktShowResults.query === searchQuery.trim().toLowerCase();
+        
+        if (isSearchingShows || !cachedQueryMatches) {
+          return (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+              <Text style={styles.loadingText}>Searching shows...</Text>
+            </View>
+          );
+        }
+
+        if (showSearchError) {
+          return (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{showSearchError}</Text>
+              <Pressable 
+                style={styles.retryButton}
+                onPress={() => {
+                  setShowSearchError(null);
+                  setSearchQuery(searchQuery + ' ');
+                  setTimeout(() => setSearchQuery(searchQuery.trim()), 100);
+                }}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </Pressable>
+            </View>
+          );
+        }
+
+        if (filteredResults.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <Image 
+                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+                style={styles.emptyStateIcon}
+              />
+              <Text style={styles.emptyStateText}>No results found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try searching for something else
+              </Text>
+            </View>
+          );
+        }
+
         return filteredResults.map((show: any) => (
           <Pressable
             key={show.id}
@@ -271,7 +392,13 @@ export default function SearchScreen() {
             onPress={() => router.push(`/show/${show.id}`)}
           >
             <View style={styles.showPosterWrapper}>
-              <Image source={{ uri: show.poster }} style={styles.showPoster} />
+              {show.poster ? (
+                <Image source={{ uri: show.poster }} style={styles.showPoster} />
+              ) : (
+                <View style={[styles.showPoster, styles.showPosterPlaceholder]}>
+                  <Text style={styles.showPosterPlaceholderText}>{show.title.slice(0, 2).toUpperCase()}</Text>
+                </View>
+              )}
               <Pressable 
                 style={({ pressed }) => [
                   styles.saveIconSearch,
@@ -314,6 +441,20 @@ export default function SearchScreen() {
         ));
 
       case 'users':
+        if (filteredResults.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <Image 
+                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+                style={styles.emptyStateIcon}
+              />
+              <Text style={styles.emptyStateText}>No results found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try searching for something else
+              </Text>
+            </View>
+          );
+        }
         return filteredResults.map((user: any) => {
           const isCurrentUserProfile = user.id === currentUser.id;
           
@@ -334,6 +475,20 @@ export default function SearchScreen() {
         });
 
       case 'comments':
+        if (filteredResults.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <Image 
+                source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
+                style={styles.emptyStateIcon}
+              />
+              <Text style={styles.emptyStateText}>No results found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try searching for something else
+              </Text>
+            </View>
+          );
+        }
         return filteredResults.map((comment: any) => {
           // Find the post this comment belongs to
           const post = posts.find(p => p.id === comment.postId);
@@ -416,7 +571,7 @@ export default function SearchScreen() {
           <TabSelector
             tabs={tabs}
             activeTab={activeCategory}
-            onTabChange={(tabKey) => setActiveCategory(tabKey as SearchCategory)}
+            onTabChange={handleTabChange}
             variant="default"
           />
         </View>
@@ -700,5 +855,45 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 4,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    marginTop: 12,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  errorText: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: tokens.colors.greenHighlight,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    ...tokens.typography.p1B,
+    color: tokens.colors.black,
+  },
+  showPosterPlaceholder: {
+    backgroundColor: tokens.colors.grey2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  showPosterPlaceholderText: {
+    ...tokens.typography.titleL,
+    color: tokens.colors.grey1,
   },
 });
