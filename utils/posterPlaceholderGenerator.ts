@@ -78,11 +78,12 @@ export function generatePosterPlaceholder(title: string, width: number = 160, he
 }
 
 export function getPosterUrl(posterUrl: string | null | undefined, showTitle: string): string {
-  if (posterUrl && posterUrl.trim() !== '') {
-    return posterUrl;
+  // Return placeholder if poster is missing, null, undefined, or empty string
+  if (!posterUrl || posterUrl.trim() === '') {
+    return generatePosterPlaceholder(showTitle);
   }
   
-  return generatePosterPlaceholder(showTitle);
+  return posterUrl;
 }
 
 export function generateBackdropPlaceholder(title: string, width: number = 400, height: number = 160): string {
@@ -108,9 +109,10 @@ export function generateBackdropPlaceholder(title: string, width: number = 400, 
 }
 
 export function getBackdropUrl(backdropUrl: string | null | undefined, showTitle: string): string {
-  if (backdropUrl && backdropUrl.trim() !== '') {
-    return backdropUrl;
+  // Return placeholder if backdrop is missing, null, undefined, or empty string
+  if (!backdropUrl || backdropUrl.trim() === '') {
+    return generateBackdropPlaceholder(showTitle);
   }
   
-  return generateBackdropPlaceholder(showTitle);
+  return backdropUrl;
 }
