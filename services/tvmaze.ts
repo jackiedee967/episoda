@@ -47,42 +47,48 @@ export interface TVMazeImage {
 
 export async function getShowByImdbId(imdbId: string): Promise<TVMazeShow | null> {
   try {
+    console.log(`🔍 TVMaze lookup by IMDb: ${imdbId}`);
     const response = await fetch(
       `${TVMAZE_BASE_URL}/lookup/shows?imdb=${imdbId}`
     );
 
     if (!response.ok) {
       if (response.status === 404) {
+        console.log(`⚠️ TVMaze: No show for IMDb ${imdbId}`);
         return null;
       }
       throw new Error(`TVMaze API error: ${response.status} ${response.statusText}`);
     }
 
     const data: TVMazeShow = await response.json();
+    console.log(`✅ TVMaze found: ${data.name}, poster: ${!!data.image}`);
     return data;
   } catch (error) {
-    console.error('Error fetching show from TVMaze by IMDb ID:', error);
+    console.error('❌ TVMaze IMDb error:', error);
     return null;
   }
 }
 
 export async function getShowByTvdbId(tvdbId: number): Promise<TVMazeShow | null> {
   try {
+    console.log(`🔍 TVMaze lookup by TVDB: ${tvdbId}`);
     const response = await fetch(
       `${TVMAZE_BASE_URL}/lookup/shows?thetvdb=${tvdbId}`
     );
 
     if (!response.ok) {
       if (response.status === 404) {
+        console.log(`⚠️ TVMaze: No show for TVDB ${tvdbId}`);
         return null;
       }
       throw new Error(`TVMaze API error: ${response.status} ${response.statusText}`);
     }
 
     const data: TVMazeShow = await response.json();
+    console.log(`✅ TVMaze found: ${data.name}, poster: ${!!data.image}`);
     return data;
   } catch (error) {
-    console.error('Error fetching show from TVMaze by TVDB ID:', error);
+    console.error('❌ TVMaze TVDB error:', error);
     return null;
   }
 }

@@ -51,6 +51,8 @@ class ShowEnrichmentManager {
     this.activeRequests++;
 
     try {
+      console.log(`🎬 Enriching: ${traktShow.title}, IMDb: ${traktShow.ids.imdb || 'N/A'}, TVDB: ${traktShow.ids.tvdb || 'N/A'}`);
+      
       const [seasons, omdbData] = await Promise.all([
         this.fetchSeasons(traktShow.ids.trakt),
         this.fetchOMDBData(traktShow.title, traktShow.year),
@@ -59,11 +61,14 @@ class ShowEnrichmentManager {
       const omdbImdbId = omdbData?.imdbId || null;
       const imdbId = omdbImdbId || traktShow.ids.imdb || null;
       let posterUrl = omdbData?.posterUrl || null;
+      console.log(`  OMDB poster: ${posterUrl ? 'Yes' : 'No'}`);
 
       let tvmazeData = null;
       if (!posterUrl) {
+        console.log(`  Trying TVMaze fallback...`);
         tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb);
         posterUrl = tvmazeData?.posterUrl || null;
+        console.log(`  TVMaze poster: ${posterUrl ? 'Yes' : 'No'}`);
       }
 
       let backdropUrl = null;
@@ -78,6 +83,8 @@ class ShowEnrichmentManager {
           }
         }
       }
+
+      console.log(`✅ Enriched ${traktShow.title}: Poster=${!!posterUrl}, Backdrop=${!!backdropUrl}`);
 
       const enriched = {
         totalSeasons: seasons,
