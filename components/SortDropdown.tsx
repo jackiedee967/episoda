@@ -94,12 +94,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   text: {
+    ...tokens.typography.p4,
     color: tokens.colors.pureWhite,
-    fontFamily: 'Funnel Display',
-    fontSize: 13,
-    fontWeight: '400',
-    lineHeight: 16,
-    letterSpacing: -0.26,
   },
   dropdown: {
     position: 'absolute',
