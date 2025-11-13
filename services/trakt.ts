@@ -1,4 +1,13 @@
-const API_BASE_URL = '/api/trakt';
+import Constants from 'expo-constants';
+
+const TRAKT_CLIENT_ID = Constants.expoConfig?.extra?.traktClientId;
+const TRAKT_BASE_URL = 'https://api.trakt.tv';
+
+const TRAKT_HEADERS = {
+  'Content-Type': 'application/json',
+  'trakt-api-version': '2',
+  'trakt-api-key': TRAKT_CLIENT_ID || '',
+};
 
 export interface TraktShow {
   title: string;
@@ -64,58 +73,73 @@ export interface TraktEpisode {
 }
 
 export async function searchShows(query: string): Promise<TraktSearchResult[]> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured. Please check your environment setup.');
+  }
+
   try {
+    console.log('🔍 Searching Trakt for:', query);
     const response = await fetch(
-      `${API_BASE_URL}/search?query=${encodeURIComponent(query)}`
+      `${TRAKT_BASE_URL}/search/show?query=${encodeURIComponent(query)}&extended=full`,
+      { headers: TRAKT_HEADERS }
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
     }
 
     const data: TraktSearchResult[] = await response.json();
+    console.log(`✅ Found ${data.length} shows`);
     return data;
   } catch (error) {
-    console.error('Error searching shows:', error);
+    console.error('❌ Error searching shows on Trakt:', error);
     throw error;
   }
 }
 
 export async function getShowDetails(traktId: number | string): Promise<TraktShow> {
+  if (!TRAKT_CLIENT_ID) {
+    throw new Error('Trakt API credentials not configured');
+  }
+
   try {
     const response = await fetch(
-      `${API_BASE_URL}/show/${traktId}`
+      `${TRAKT_BASE_URL}/shows/${traktId}?extended=full`,
+      { headers: TRAKT_HEADERS }
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
     }
 
     const data: TraktShow = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching show details:', error);
+    console.error('Error fetching show details from Trakt:', error);
     throw error;
   }
 }
 
 export async function getShowSeasons(traktId: number | string): Promise<TraktSeason[]> {
+  if (!TRAKT_CLIENT_ID) {
+    throw new Error('Trakt API credentials not configured');
+  }
+
   try {
     const response = await fetch(
-      `${API_BASE_URL}/show/${traktId}/seasons`
+      `${TRAKT_BASE_URL}/shows/${traktId}/seasons?extended=full`,
+      { headers: TRAKT_HEADERS }
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
     }
 
     const data: TraktSeason[] = await response.json();
     return data.filter(season => season.number > 0);
   } catch (error) {
-    console.error('Error fetching show seasons:', error);
+    console.error('Error fetching show seasons from Trakt:', error);
     throw error;
   }
 }
@@ -124,20 +148,24 @@ export async function getSeasonEpisodes(
   traktId: number | string,
   seasonNumber: number
 ): Promise<TraktEpisode[]> {
+  if (!TRAKT_CLIENT_ID) {
+    throw new Error('Trakt API credentials not configured');
+  }
+
   try {
     const response = await fetch(
-      `${API_BASE_URL}/show/${traktId}/episodes?season=${seasonNumber}`
+      `${TRAKT_BASE_URL}/shows/${traktId}/seasons/${seasonNumber}?extended=full`,
+      { headers: TRAKT_HEADERS }
     );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
     }
 
     const data: TraktEpisode[] = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching season episodes:', error);
+    console.error('Error fetching season episodes from Trakt:', error);
     throw error;
   }
 }
