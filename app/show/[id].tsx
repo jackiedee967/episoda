@@ -92,6 +92,7 @@ export default function ShowHub() {
   const [loadingShow, setLoadingShow] = useState(true);
   const [showError, setShowError] = useState<string | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [hasSetInitialTab, setHasSetInitialTab] = useState(false);
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   
@@ -226,6 +227,27 @@ export default function ShowHub() {
       setSortBy('hot');
     }
   }, [activeTab]);
+
+  // Smart auto-tab selection based on content availability
+  useEffect(() => {
+    if (!show || hasSetInitialTab || !currentUser) return;
+
+    const friendIds = currentUser.following || [];
+    const friendPosts = showPosts.filter(post => friendIds.includes(post.user.id));
+    const hasFriendPosts = friendPosts.length > 0;
+    const hasAnyPosts = showPosts.length > 0;
+
+    // Prioritize: Friends → Everyone → Episodes
+    if (hasFriendPosts) {
+      setActiveTab('friends');
+    } else if (hasAnyPosts) {
+      setActiveTab('all');
+    } else {
+      setActiveTab('episodes');
+    }
+
+    setHasSetInitialTab(true);
+  }, [show, showPosts, currentUser, hasSetInitialTab]);
 
   useEffect(() => {
     if (activeTab !== 'episodes') {
