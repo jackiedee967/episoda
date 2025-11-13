@@ -17,17 +17,20 @@ import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
+import { saveShow } from '@/services/showDatabase';
+import { TraktShow } from '@/services/trakt';
 
 interface PlaylistModalProps {
   visible: boolean;
   onClose: () => void;
   show: Show;
+  traktShow?: TraktShow;
   onAddToPlaylist?: (playlistId: string, showId: string) => void;
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist }: PlaylistModalProps) {
+export default function PlaylistModal({ visible, onClose, show, traktShow, onAddToPlaylist }: PlaylistModalProps) {
   const { playlists, createPlaylist, addShowToPlaylist, removeShowFromPlaylist, isShowInPlaylist } = useData();
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -100,13 +103,22 @@ export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       try {
+        let showIdToUse = show.id;
+        
+        if (traktShow) {
+          console.log('💾 Saving show to database before adding to playlist...');
+          const savedShow = await saveShow(traktShow);
+          showIdToUse = savedShow.id;
+          console.log('✅ Show saved to database with ID:', showIdToUse);
+        }
+        
         // Create playlist with the show automatically added
-        const newPlaylist = await createPlaylist(newPlaylistName, show.id);
+        const newPlaylist = await createPlaylist(newPlaylistName, showIdToUse);
         console.log(`Created new playlist "${newPlaylist.name}" and added ${show.title}`);
         
         // Call the callback if provided
         if (onAddToPlaylist) {
-          onAddToPlaylist(newPlaylist.id, show.id);
+          onAddToPlaylist(newPlaylist.id, showIdToUse);
         }
         
         // Show success animation
@@ -119,6 +131,7 @@ export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist 
         }, 1000);
       } catch (error) {
         console.error('Error creating playlist:', error);
+        showSuccessAnimation('Failed to create playlist');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
@@ -145,6 +158,7 @@ export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist 
         }, 1000);
       } catch (error) {
         console.error('Error removing from playlist:', error);
+        showSuccessAnimation('Failed to remove from playlist');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } else {
@@ -152,12 +166,21 @@ export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       try {
-        await addShowToPlaylist(playlistId, show.id);
+        let showIdToUse = show.id;
+        
+        if (traktShow) {
+          console.log('💾 Saving show to database before adding to playlist...');
+          const savedShow = await saveShow(traktShow);
+          showIdToUse = savedShow.id;
+          console.log('✅ Show saved to database with ID:', showIdToUse);
+        }
+        
+        await addShowToPlaylist(playlistId, showIdToUse);
         console.log(`Added ${show.title} to ${playlist?.name}`);
         
         // Call the callback if provided
         if (onAddToPlaylist) {
-          onAddToPlaylist(playlistId, show.id);
+          onAddToPlaylist(playlistId, showIdToUse);
         }
         
         // Show success animation
@@ -169,6 +192,7 @@ export default function PlaylistModal({ visible, onClose, show, onAddToPlaylist 
         }, 1000);
       } catch (error) {
         console.error('Error adding to playlist:', error);
+        showSuccessAnimation('Failed to add to playlist');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
