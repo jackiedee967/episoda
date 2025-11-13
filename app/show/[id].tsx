@@ -345,7 +345,6 @@ export default function ShowHub() {
   };
 
   const renderShowInfo = () => {
-    const averageRating = calculateShowRating();
     const totalSeasons = show.totalSeasons || calculateSeasonCount();
     const totalEpisodes = show.totalEpisodes || calculateEpisodeCount();
 
@@ -377,32 +376,36 @@ export default function ShowHub() {
               {show.description}
             </Text>
             <View style={styles.statsRow}>
-              <View style={styles.ratingContainer}>
-                <Text style={styles.ratingText}>
-                  {averageRating > 0 ? convertToFiveStarRating(averageRating).toFixed(1) : '—'}
-                </Text>
-                <Text style={styles.starIcon}>★</Text>
-              </View>
+              {show.rating > 0 && (
+                <View style={styles.ratingContainer}>
+                  <Text style={styles.ratingText}>
+                    {convertToFiveStarRating(show.rating).toFixed(1)}
+                  </Text>
+                  <Text style={styles.starIcon}>★</Text>
+                </View>
+              )}
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
-            <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
-              <View style={styles.friendAvatarsRow}>
-                {friendsWatching.slice(0, 4).map((friend, index) => (
-                  <Image
-                    key={friend.id}
-                    source={{ uri: friend.avatar }}
-                    style={[
-                      styles.friendAvatar,
-                      { marginLeft: index > 0 ? -8 : 0, zIndex: friendsWatching.length - index }
-                    ]}
-                  />
-                ))}
-              </View>
-              <Text style={styles.friendsWatchingText}>
-                <Text style={styles.friendsWatchingNumber}>{friendsWatching.length}</Text> friends watching
-              </Text>
-            </Pressable>
+            {friendsWatching.length > 0 && (
+              <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
+                <View style={styles.friendAvatarsRow}>
+                  {friendsWatching.slice(0, 4).map((friend, index) => (
+                    <Image
+                      key={friend.id}
+                      source={{ uri: friend.avatar }}
+                      style={[
+                        styles.friendAvatar,
+                        { marginLeft: index > 0 ? -8 : 0, zIndex: friendsWatching.length - index }
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={styles.friendsWatchingText}>
+                  <Text style={styles.friendsWatchingNumber}>{friendsWatching.length}</Text> friends watching
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </View>
@@ -722,7 +725,7 @@ const styles = StyleSheet.create({
   },
   showTitleInside: {
     ...tokens.typography.titleL,
-    marginBottom: 8,
+    color: tokens.colors.pureWhite,
   },
   showDetailsRow: {
     flexDirection: 'row',
@@ -761,10 +764,9 @@ const styles = StyleSheet.create({
   description: {
     ...tokens.typography.p1,
     color: tokens.colors.pureWhite,
-    marginTop: 4,
   },
   divider: {
-    marginVertical: 20,
+    marginBottom: 21,
     alignSelf: 'stretch',
   },
   statsRow: {
