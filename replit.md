@@ -49,6 +49,12 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Poster Placeholder System**: Hash-based generator creates consistent 2:3 aspect ratio SVG placeholders with gradient backgrounds from design tokens and show initials
     - **expo-image Integration**: All poster-displaying components use expo-image for SVG data URI support (ShowCard, WatchHistoryCard, search, ShowHub, PostModal)
     - **Smart Enrichment**: Show enrichment preserves IMDb IDs even when posters unavailable, ensuring database always stores highest-quality metadata
+  - **Rating Conversion System**: Production-grade 10-point to 5-star rating conversion with half-star support
+    - **Conversion Function**: `convertToFiveStarRating()` utility converts API ratings using precise bucket mapping (0-0.9→0.5★, 1-1.9→1★, up to 9-10→5★)
+    - **Half-Star Rendering**: StarRatings component uses SVG gradients for React Native/web compatibility (no font icon dependencies)
+    - **Data Integrity**: Original 10-point ratings stored in database, conversion applied only at presentation layer
+    - **Comprehensive Application**: Conversion applied consistently across all surfaces (search, show pages, episode pages, post pages, cards)
+    - **Scalability**: Simple calculation-based approach suitable for 1M+ users with no performance overhead
   - **TVMaze API**: Secondary source for posters and episode thumbnails (20 requests/10s rate limit)
   - **Search Enrichment System**: Background worker that enhances search results with complete metadata
     - **Throttled Parallel Fetching**: Max 4 concurrent API requests to respect rate limits
