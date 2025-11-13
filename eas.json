@@ -5,9 +5,6 @@
       "distribution": "internal",
       "ios": {
         "buildConfiguration": "Debug"
-      },
-      "cache": {
-        "clear": true
       }
     },
     "preview": {
