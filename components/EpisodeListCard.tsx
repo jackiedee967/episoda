@@ -17,6 +17,7 @@ interface EpisodeListCardProps {
   isLogged?: boolean;
   onPress?: () => void;
   onToggleSelect?: () => void;
+  theme?: 'light' | 'dark';
 }
 
 export default function EpisodeListCard({ 
@@ -29,7 +30,8 @@ export default function EpisodeListCard({
   isSelected = false,
   isLogged = false,
   onPress,
-  onToggleSelect
+  onToggleSelect,
+  theme = 'dark'
 }: EpisodeListCardProps) {
   
   const handleCardPress = () => {
@@ -48,12 +50,18 @@ export default function EpisodeListCard({
   };
 
   const showCheckmark = isSelected || isLogged;
-  const cardBorderColor = showCheckmark ? tokens.colors.greenHighlight : tokens.colors.cardStroke;
+  const cardBorderColor = showCheckmark ? tokens.colors.greenHighlight : (theme === 'light' ? tokens.colors.grey2 : tokens.colors.cardStroke);
+  const cardBackgroundColor = theme === 'light' ? tokens.colors.almostWhite : tokens.colors.cardBackground;
+  const titleColor = theme === 'light' ? tokens.colors.black : tokens.colors.pureWhite;
+  const descriptionColor = theme === 'light' ? tokens.colors.grey3 : tokens.colors.grey2;
+  const tagBackgroundColor = theme === 'light' ? tokens.colors.purpleHighlight : tokens.colors.tabBack2;
+  const tagBorderColor = theme === 'light' ? tokens.colors.purpleHighlight : tokens.colors.tabStroke2;
+  const tagTextColor = theme === 'light' ? tokens.colors.pureWhite : tokens.colors.tabStroke2;
 
   return (
     <Pressable 
       onPress={handleCardPress}
-      style={[styles.episodeCard, { borderColor: cardBorderColor }]}
+      style={[styles.episodeCard, { borderColor: cardBorderColor, backgroundColor: cardBackgroundColor }]}
     >
       {thumbnail && (
         <Image 
@@ -65,14 +73,14 @@ export default function EpisodeListCard({
       
       <View style={styles.episodeInfo}>
         <View style={styles.titleRow}>
-          <View style={styles.episodeTag}>
-            <Text style={styles.episodeTagText}>{episodeNumber}</Text>
+          <View style={[styles.episodeTag, { backgroundColor: tagBackgroundColor, borderColor: tagBorderColor }]}>
+            <Text style={[styles.episodeTagText, { color: tagTextColor }]}>{episodeNumber}</Text>
           </View>
-          <Text style={styles.episodeTitle} numberOfLines={1}>{title}</Text>
+          <Text style={[styles.episodeTitle, { color: titleColor }]} numberOfLines={1}>{title}</Text>
         </View>
         
         {description && (
-          <Text style={styles.episodeDescription} numberOfLines={2}>
+          <Text style={[styles.episodeDescription, { color: descriptionColor }]} numberOfLines={2}>
             {description}
           </Text>
         )}
@@ -127,7 +135,6 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: 10,
     borderWidth: 0.5,
-    backgroundColor: tokens.colors.cardBackground,
   },
   thumbnail: {
     width: 96,
@@ -159,21 +166,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 0.25,
-    borderColor: tokens.colors.tabStroke2,
-    backgroundColor: tokens.colors.tabBack2,
   },
   episodeTagText: {
     ...tokens.typography.p3M,
-    color: tokens.colors.tabStroke2,
   },
   episodeTitle: {
     ...tokens.typography.p1B,
-    color: tokens.colors.pureWhite,
     flex: 1,
   },
   episodeDescription: {
     ...tokens.typography.p3R,
-    color: tokens.colors.grey2,
     width: '100%',
   },
   ratingAndPostCount: {

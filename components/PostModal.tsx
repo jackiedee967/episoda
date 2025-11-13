@@ -24,6 +24,8 @@ import { useData } from '@/contexts/DataContext';
 import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason, TraktEpisode } from '@/services/trakt';
 import { saveShow, saveEpisode, getShowByTraktId } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import EpisodeListCard from '@/components/EpisodeListCard';
+import { ChevronUp, ChevronDown } from 'lucide-react-native';
 
 interface PostModalProps {
   visible: boolean;
@@ -645,39 +647,33 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               onPress={() => toggleSeason(season.seasonNumber)}
             >
               <Text style={styles.seasonTitle}>Season {season.seasonNumber}</Text>
-              <IconSymbol
-                name={season.expanded ? 'chevron.up' : 'chevron.down'}
-                size={20}
-                color={colors.text}
-              />
+              <View style={styles.seasonHeaderRight}>
+                <Text style={styles.seasonEpisodeCount}>
+                  {season.episodes.length} Episodes
+                </Text>
+                {season.expanded ? (
+                  <ChevronUp size={20} color={tokens.colors.black} />
+                ) : (
+                  <ChevronDown size={20} color={tokens.colors.black} />
+                )}
+              </View>
             </Pressable>
             {season.expanded && (
               <View style={styles.episodesContainer}>
                 {season.episodes.map(episode => {
                   const isSelected = selectedEpisodes.some(ep => ep.id === episode.id);
                   return (
-                    <Pressable
+                    <EpisodeListCard
                       key={episode.id}
-                      style={[styles.episodeItem, isSelected && styles.episodeItemSelected]}
+                      episodeNumber={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+                      title={episode.title}
+                      description={episode.description}
+                      thumbnail={episode.thumbnail}
+                      isSelected={isSelected}
                       onPress={() => handleEpisodeToggle(episode)}
-                    >
-                      <View style={styles.episodeInfo}>
-                        <Text style={styles.episodeNumber}>
-                          E{episode.episodeNumber}
-                        </Text>
-                        <View style={styles.episodeDetails}>
-                          <Text style={styles.episodeTitle}>{episode.title}</Text>
-                          <Text style={styles.episodeDescription} numberOfLines={2}>
-                            {episode.description}
-                          </Text>
-                        </View>
-                      </View>
-                      <IconSymbol
-                        name={isSelected ? 'checkmark.circle.fill' : 'circle'}
-                        size={24}
-                        color={isSelected ? colors.accent : colors.textSecondary}
-                      />
-                    </Pressable>
+                      onToggleSelect={() => handleEpisodeToggle(episode)}
+                      theme="light"
+                    />
                   );
                 })}
               </View>
@@ -980,65 +976,35 @@ const styles = StyleSheet.create({
   },
   seasonHeader: {
     flexDirection: 'row',
-    height: 40,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     backgroundColor: tokens.colors.pureWhite,
     borderWidth: 1,
     borderColor: tokens.colors.grey2,
     borderRadius: 12,
-    alignSelf: 'stretch',
+    marginBottom: spacing.gapSmall,
   },
   seasonTitle: {
-    fontFamily: tokens.typography.fontFamilyFunnel,
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'Funnel Display',
+    fontSize: 17,
+    fontWeight: '500',
     color: tokens.colors.black,
   },
-  episodesContainer: {
-    marginTop: spacing.gapSmall,
-    gap: spacing.gapSmall,
-  },
-  episodeItem: {
+  seasonHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: tokens.colors.almostWhite,
-    borderWidth: 1,
-    borderColor: tokens.colors.grey2,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    gap: spacing.gapSmall,
   },
-  episodeItemSelected: {
-    backgroundColor: tokens.colors.almostWhite,
-    borderWidth: 2,
-    borderColor: tokens.colors.greenHighlight,
+  seasonEpisodeCount: {
+    fontFamily: 'Funnel Display',
+    fontSize: 13,
+    fontWeight: '400',
+    color: tokens.colors.grey3,
   },
-  episodeInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: spacing.gapMedium,
-  },
-  episodeNumber: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  episodeDetails: {
-    flex: 1,
-  },
-  episodeTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  episodeDescription: {
-    fontSize: 12,
-    color: colors.textSecondary,
+  episodesContainer: {
+    gap: spacing.gapSmall,
   },
   continueButton: {
     backgroundColor: tokens.colors.greenHighlight,
