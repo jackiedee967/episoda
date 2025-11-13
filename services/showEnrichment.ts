@@ -1,10 +1,12 @@
 import { TraktShow, getShowSeasons } from './trakt';
 import { getShowByImdbId, getShowByTvdbId, TVMazeShow } from './tvmaze';
+import { getOMDBByTitle } from './omdb';
 
 export interface EnrichedShowData {
   totalSeasons: number;
   posterUrl: string | null;
   tvmazeId: number | null;
+  imdbId: string | null;
   isEnriched: boolean;
 }
 
@@ -48,15 +50,24 @@ class ShowEnrichmentManager {
     this.activeRequests++;
 
     try {
-      const [seasons, tvmazeData] = await Promise.all([
+      const [seasons, omdbData, tvmazeData] = await Promise.all([
         this.fetchSeasons(traktShow.ids.trakt),
+        this.fetchOMDBData(traktShow.title, traktShow.year),
         this.fetchTVMazeData(traktShow.ids.imdb, traktShow.ids.tvdb),
       ]);
 
+      let posterUrl = omdbData?.posterUrl || null;
+      let imdbId = omdbData?.imdbId || traktShow.ids.imdb || null;
+
+      if (!posterUrl && tvmazeData?.posterUrl) {
+        posterUrl = tvmazeData.posterUrl;
+      }
+
       const enriched = {
         totalSeasons: seasons,
-        posterUrl: tvmazeData?.posterUrl || null,
+        posterUrl,
         tvmazeId: tvmazeData?.tvmazeId || null,
+        imdbId,
         isEnriched: true,
       };
       
@@ -73,6 +84,20 @@ class ShowEnrichmentManager {
   private async fetchSeasons(traktId: number): Promise<number> {
     const seasons = await getShowSeasons(traktId);
     return seasons.filter(s => s.number > 0).length;
+  }
+
+  private async fetchOMDBData(title: string, year: number | null): Promise<{ posterUrl: string; imdbId: string } | null> {
+    const yearStr = year?.toString();
+    const omdbResult = await getOMDBByTitle(title, yearStr);
+
+    if (!omdbResult || !omdbResult.Poster || omdbResult.Poster === 'N/A') {
+      return null;
+    }
+
+    return {
+      posterUrl: omdbResult.Poster,
+      imdbId: omdbResult.imdbID,
+    };
   }
 
   private async fetchTVMazeData(imdbId: string | null, tvdbId: number | null): Promise<{ posterUrl: string; tvmazeId: number } | null> {

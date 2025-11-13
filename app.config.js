@@ -1,4 +1,5 @@
 const traktClientId = process.env.TRAKT_CLIENT_ID || '235d184cb03ded3292ed89fe4347e3452a3087027d76f5edd13bdb65ccf2d456';
+const omdbApiKey = process.env.OMDB_API_KEY || '';
 
 module.exports = {
   expo: {
@@ -57,6 +58,7 @@ module.exports = {
     extra: {
       router: {},
       traktClientId: traktClientId,
+      omdbApiKey: omdbApiKey,
       eas: {
         projectId: "97b05198-6f1d-4374-b216-f0b119eb3c0c"
       }

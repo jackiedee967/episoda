@@ -128,12 +128,16 @@ export default function SearchScreen() {
                 
                 const updatedResults = prevResults.results.map(r => {
                   if (r.traktShow.ids.trakt === traktId) {
+                    const enrichedShow = {
+                      ...r.show,
+                      poster: enrichedData.posterUrl || r.show.poster,
+                      totalSeasons: enrichedData.totalSeasons || r.show.totalSeasons,
+                    };
+                    
                     return {
                       ...r,
-                      show: mapTraktShowToShow(r.traktShow, {
-                        posterUrl: enrichedData.posterUrl,
-                        totalSeasons: enrichedData.totalSeasons,
-                      })
+                      show: enrichedShow,
+                      enrichedData
                     };
                   }
                   return r;
@@ -448,7 +452,13 @@ export default function SearchScreen() {
                 }
 
                 console.log('💾 Saving show to database...');
-                const dbShow = await saveShow(show, traktShow);
+                const enrichedInfo = traktShowResults.results.find(r => r.show.id === show.id)?.enrichedData;
+                const dbShow = await saveShow(traktShow, {
+                  enrichedPosterUrl: enrichedInfo?.posterUrl,
+                  enrichedSeasonCount: enrichedInfo?.totalSeasons,
+                  enrichedTVMazeId: enrichedInfo?.tvmazeId,
+                  enrichedImdbId: enrichedInfo?.imdbId
+                });
                 console.log('✅ Show saved with DB ID:', dbShow.id);
                 
                 console.log('🔄 Navigating to ShowHub with ID:', dbShow.id);

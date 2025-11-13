@@ -39,6 +39,7 @@ export interface SaveShowOptions {
   enrichedPosterUrl?: string | null;
   enrichedSeasonCount?: number | null;
   enrichedTVMazeId?: number | null;
+  enrichedImdbId?: string | null;
 }
 
 export async function saveShow(
@@ -68,7 +69,7 @@ export async function saveShow(
 
   const showData = {
     trakt_id: traktShow.ids.trakt,
-    imdb_id: traktShow.ids.imdb,
+    imdb_id: options.enrichedImdbId || traktShow.ids.imdb,
     tvdb_id: traktShow.ids.tvdb,
     tmdb_id: traktShow.ids.tmdb,
     tvmaze_id: tvmazeId,
