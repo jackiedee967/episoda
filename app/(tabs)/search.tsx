@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Image, Platform, ImageBackground, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, ImageBackground, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
@@ -228,10 +229,28 @@ export default function SearchScreen() {
   }, [activeCategory]);
 
   const handleEndReached = useCallback(() => {
+    console.log('🔄 handleEndReached triggered!', {
+      activeCategory,
+      hasMore,
+      isLoadingMore,
+      isSearchingShows,
+      currentPage,
+      totalPages,
+      resultsCount: traktShowResults.results.length
+    });
+    
     if (activeCategory === 'shows' && hasMore && !isLoadingMore && !isSearchingShows) {
+      console.log('✅ Conditions met - calling loadMoreShows()');
       loadMoreShows();
+    } else {
+      console.log('❌ Conditions not met:', {
+        isShowsTab: activeCategory === 'shows',
+        hasMore,
+        notLoadingMore: !isLoadingMore,
+        notSearching: !isSearchingShows
+      });
     }
-  }, [activeCategory, hasMore, isLoadingMore, isSearchingShows]);
+  }, [activeCategory, hasMore, isLoadingMore, isSearchingShows, currentPage, totalPages, traktShowResults.results.length]);
 
   const renderEmptyState = useCallback(() => {
     // Show placeholder when no search query
@@ -443,7 +462,14 @@ export default function SearchScreen() {
           >
             <View style={styles.showPosterContainer}>
               {show.poster ? (
-                <Image source={{ uri: show.poster }} style={styles.showPoster} />
+                <Image 
+                  source={{ uri: show.poster }} 
+                  style={styles.showPoster}
+                  priority="high"
+                  cachePolicy="memory-disk"
+                  contentFit="cover"
+                  transition={200}
+                />
               ) : (
                 <View style={styles.placeholderPoster}>
                   <IconSymbol name="tv" size={40} color={tokens.colors.grey1} />
@@ -936,7 +962,7 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
-  showPosterWrapper: {
+  showPosterContainer: {
     position: 'relative',
     width: 80.34,
     height: 98.79,
@@ -946,7 +972,28 @@ const styles = StyleSheet.create({
     height: 98.79,
     borderRadius: 8,
   },
-  saveIconSearch: {
+  placeholderPoster: {
+    width: 80.34,
+    height: 98.79,
+    borderRadius: 8,
+    backgroundColor: tokens.colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  enrichingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveButton: {
     position: 'absolute',
     top: 6,
     right: 6,
@@ -954,7 +1001,7 @@ const styles = StyleSheet.create({
     height: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     borderRadius: 13,
   },
   saveIconPressed: {
