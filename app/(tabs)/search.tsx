@@ -14,6 +14,8 @@ import { X } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
 import { searchShows, TraktShow } from '@/services/trakt';
 import { mapTraktShowToShow } from '@/services/showMappers';
+import { showEnrichmentManager } from '@/services/showEnrichment';
+import { saveShow } from '@/services/showDatabase';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -31,6 +33,8 @@ export default function SearchScreen() {
   const [traktShowResults, setTraktShowResults] = useState<{ query: string; results: Array<{ show: Show; traktShow: TraktShow }> }>({ query: '', results: [] });
   const [isSearchingShows, setIsSearchingShows] = useState(false);
   const [showSearchError, setShowSearchError] = useState<string | null>(null);
+  const [enrichingShows, setEnrichingShows] = useState<Set<number>>(new Set());
+  const [isSavingShow, setIsSavingShow] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentSearchQueryRef = useRef<string>('');
   const currentActiveCategoryRef = useRef<SearchCategory>(activeCategory);
@@ -94,11 +98,49 @@ export default function SearchScreen() {
         }
         
         const mappedShows = results.map(result => ({
-          show: mapTraktShowToShow(result.show, null),
+          show: mapTraktShowToShow(result.show),
           traktShow: result.show
         }));
         setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
         setIsSearchingShows(false);
+        
+        results.forEach(async (result) => {
+          const traktId = result.show.ids.trakt;
+          setEnrichingShows(prev => new Set(prev).add(traktId));
+          
+          try {
+            const enrichedData = await showEnrichmentManager.enrichShow(result.show);
+            
+            if (searchRequestTokenRef.current === requestToken && enrichedData.isEnriched) {
+              setTraktShowResults(prevResults => {
+                if (prevResults.query !== trimmedQuery.toLowerCase()) return prevResults;
+                
+                const updatedResults = prevResults.results.map(r => {
+                  if (r.traktShow.ids.trakt === traktId) {
+                    return {
+                      ...r,
+                      show: mapTraktShowToShow(r.traktShow, {
+                        posterUrl: enrichedData.posterUrl,
+                        totalSeasons: enrichedData.totalSeasons,
+                      })
+                    };
+                  }
+                  return r;
+                });
+                
+                return { ...prevResults, results: updatedResults };
+              });
+            }
+          } catch (error) {
+            console.error('Error enriching show:', error);
+          } finally {
+            setEnrichingShows(prev => {
+              const next = new Set(prev);
+              next.delete(traktId);
+              return next;
+            });
+          }
+        });
       } catch (error) {
         if (searchRequestTokenRef.current !== requestToken) {
           return;
@@ -385,11 +427,35 @@ export default function SearchScreen() {
           );
         }
 
-        return filteredResults.map((show: any) => (
+        return filteredResults.map((show: any) => {
+          const resultData = traktShowResults.results.find(r => r.show.id === show.id);
+          
+          return (
           <Pressable
             key={show.id}
             style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
-            onPress={() => router.push(`/show/${show.id}`)}
+            onPress={async () => {
+              if (!resultData || isSavingShow) return;
+              
+              try {
+                setIsSavingShow(true);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                
+                const enrichedData = showEnrichmentManager.getCachedData(resultData.traktShow.ids.trakt);
+                
+                const dbShow = await saveShow(resultData.traktShow, {
+                  enrichedPosterUrl: enrichedData?.posterUrl,
+                  enrichedSeasonCount: enrichedData?.totalSeasons,
+                  enrichedTVMazeId: enrichedData?.tvmazeId,
+                });
+                
+                router.push(`/show/${dbShow.id}`);
+              } catch (error) {
+                console.error('Error saving show:', error);
+              } finally {
+                setIsSavingShow(false);
+              }
+            }}
           >
             <View style={styles.showPosterWrapper}>
               {show.poster ? (
@@ -438,7 +504,8 @@ export default function SearchScreen() {
               )}
             </View>
           </Pressable>
-        ));
+        );
+        });
 
       case 'users':
         if (filteredResults.length === 0) {

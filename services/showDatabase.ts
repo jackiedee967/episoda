@@ -35,24 +35,35 @@ export interface DatabaseEpisode {
   created_at: string;
 }
 
-export async function saveShow(traktShow: TraktShow): Promise<DatabaseShow> {
+export interface SaveShowOptions {
+  enrichedPosterUrl?: string | null;
+  enrichedSeasonCount?: number | null;
+  enrichedTVMazeId?: number | null;
+}
+
+export async function saveShow(
+  traktShow: TraktShow, 
+  options: SaveShowOptions = {}
+): Promise<DatabaseShow> {
   let tvmazeShow = null;
-  let posterUrl = null;
-  let tvmazeId = null;
+  let posterUrl = options.enrichedPosterUrl || null;
+  let tvmazeId = options.enrichedTVMazeId || null;
 
-  if (traktShow.ids.imdb) {
-    const { getShowByImdbId } = await import('./tvmaze');
-    tvmazeShow = await getShowByImdbId(traktShow.ids.imdb);
-  }
+  if (!tvmazeId || !posterUrl) {
+    if (traktShow.ids.imdb) {
+      const { getShowByImdbId } = await import('./tvmaze');
+      tvmazeShow = await getShowByImdbId(traktShow.ids.imdb);
+    }
 
-  if (!tvmazeShow && traktShow.ids.tvdb) {
-    const { getShowByTvdbId } = await import('./tvmaze');
-    tvmazeShow = await getShowByTvdbId(traktShow.ids.tvdb);
-  }
+    if (!tvmazeShow && traktShow.ids.tvdb) {
+      const { getShowByTvdbId } = await import('./tvmaze');
+      tvmazeShow = await getShowByTvdbId(traktShow.ids.tvdb);
+    }
 
-  if (tvmazeShow) {
-    tvmazeId = tvmazeShow.id;
-    posterUrl = tvmazeShow.image?.original || null;
+    if (tvmazeShow) {
+      tvmazeId = tvmazeId || tvmazeShow.id;
+      posterUrl = posterUrl || tvmazeShow.image?.original || null;
+    }
   }
 
   const showData = {
@@ -65,7 +76,7 @@ export async function saveShow(traktShow: TraktShow): Promise<DatabaseShow> {
     description: traktShow.overview || null,
     poster_url: posterUrl,
     rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : null,
-    total_seasons: null,
+    total_seasons: options.enrichedSeasonCount ?? null,
     total_episodes: traktShow.aired_episodes || null,
     updated_at: new Date().toISOString(),
   };

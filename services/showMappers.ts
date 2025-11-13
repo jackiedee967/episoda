@@ -2,15 +2,24 @@ import { Show, Episode } from '@/types';
 import { TraktShow, TraktEpisode } from './trakt';
 import { DatabaseShow, DatabaseEpisode } from './showDatabase';
 
-export function mapTraktShowToShow(traktShow: TraktShow, posterUrl: string | null = null): Show {
+export interface ShowOverrides {
+  posterUrl?: string | null;
+  totalSeasons?: number;
+  totalEpisodes?: number;
+}
+
+export function mapTraktShowToShow(
+  traktShow: TraktShow, 
+  overrides: ShowOverrides = {}
+): Show {
   return {
     id: `trakt-${traktShow.ids.trakt}`,
     title: traktShow.title,
-    poster: posterUrl || '',
+    poster: overrides.posterUrl || '',
     description: traktShow.overview || '',
     rating: traktShow.rating || 0,
-    totalSeasons: 0,
-    totalEpisodes: traktShow.aired_episodes || 0,
+    totalSeasons: overrides.totalSeasons ?? 0,
+    totalEpisodes: overrides.totalEpisodes ?? traktShow.aired_episodes ?? 0,
     friendsWatching: 0,
   };
 }
