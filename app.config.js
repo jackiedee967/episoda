@@ -1,3 +1,7 @@
+const traktClientId = process.env.TRAKT_CLIENT_ID || '235d184cb03ded3292ed89fe4347e3452a3087027d76f5edd13bdb65ccf2d456';
+
+console.log('📋 app.config.js: TRAKT_CLIENT_ID =', traktClientId ? `LOADED (${traktClientId.substring(0, 10)}...)` : 'NOT LOADED');
+
 module.exports = {
   expo: {
     name: "EPISODA",
@@ -38,7 +42,7 @@ module.exports = {
     },
     extra: {
       router: {},
-      traktClientId: process.env.TRAKT_CLIENT_ID,
+      traktClientId: traktClientId,
     },
   },
   scheme: "EPISODA",

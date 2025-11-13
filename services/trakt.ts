@@ -1,7 +1,16 @@
 import Constants from 'expo-constants';
 
+console.log('🔍 Full Constants.expoConfig.extra:', Constants.expoConfig?.extra);
+
 const TRAKT_CLIENT_ID = Constants.expoConfig?.extra?.traktClientId;
 const TRAKT_BASE_URL = 'https://api.trakt.tv';
+
+console.log('🔧 Trakt Service Config:', {
+  hasClientId: !!TRAKT_CLIENT_ID,
+  clientIdLength: TRAKT_CLIENT_ID?.length,
+  constantsAvailable: !!Constants.expoConfig,
+  traktClientIdValue: TRAKT_CLIENT_ID?.substring(0, 15) + '...',
+});
 
 const TRAKT_HEADERS = {
   'Content-Type': 'application/json',

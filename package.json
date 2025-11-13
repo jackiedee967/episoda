@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "dev": "EXPO_NO_TELEMETRY=1 WDS_SOCKET_PORT=0 expo start --web --port 5000",
+    "dev": "EXPO_NO_TELEMETRY=1 WDS_SOCKET_PORT=0 expo start --web --port 5000 --clear",
     "android": "EXPO_NO_TELEMETRY=1 expo start --android",
     "ios": "EXPO_NO_TELEMETRY=1 expo start --ios",
     "web": "EXPO_NO_TELEMETRY=1 WDS_SOCKET_PORT=0 expo start --web --port 5000",
@@ -30,6 +30,7 @@
     "@types/difflib": "^0.2.7",
     "adm-zip": "^0.5.16",
     "difflib": "^0.2.4",
+    "dotenv": "^17.2.3",
     "eas": "^0.1.0",
     "expo": "~54.0.1",
     "expo-apple-authentication": "^8.0.7",
