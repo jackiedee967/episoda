@@ -23,6 +23,7 @@ export interface Show {
   id: string;
   title: string;
   poster: string;
+  backdrop?: string | null;
   description: string;
   rating: number;
   totalSeasons: number;

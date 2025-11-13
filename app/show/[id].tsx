@@ -48,6 +48,7 @@ function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
     id: dbShow.id,
     title: dbShow.title,
     poster: dbShow.poster_url || '/placeholder-poster.jpg',
+    backdrop: dbShow.backdrop_url || null,
     description: dbShow.description || 'No description available.',
     rating: dbShow.rating || 0,
     totalSeasons: dbShow.total_seasons || 0,
@@ -77,7 +78,23 @@ export default function ShowHub() {
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   const showEpisodes = useMemo(() => mockEpisodes.filter((e) => e.showId === id), [id]);
-  const friendsWatching = [mockUsers[0], mockUsers[1], mockUsers[2]];
+  
+  const friendsWatching = useMemo(() => {
+    if (!currentUser || !show) return [];
+    const friendIds = currentUser.following || [];
+    const friendsWhoPosted = posts.filter(post => 
+      friendIds.includes(post.user.id) && 
+      post.show?.id === show.id
+    );
+    const uniqueFriendIds = new Set(friendsWhoPosted.map(post => post.user.id));
+    const uniqueFriends = friendsWhoPosted
+      .filter((post, index, self) => 
+        self.findIndex(p => p.user.id === post.user.id) === index
+      )
+      .map(post => post.user)
+      .slice(0, 4);
+    return uniqueFriends;
+  }, [posts, currentUser, show]);
 
   useEffect(() => {
     async function loadShow() {
@@ -245,17 +262,32 @@ export default function ShowHub() {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
   };
 
-  const renderHeader = () => (
-    <View style={styles.headerRow}>
-      <Pressable onPress={() => router.back()} style={styles.backButton}>
-        <ChevronLeft size={18} color={tokens.colors.pureWhite} />
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
-      <Pressable onPress={handleSearchInShow} style={styles.searchButton}>
-        <SearchDuotoneLine />
-      </Pressable>
-    </View>
-  );
+  const renderBanner = () => {
+    if (!show) return null;
+    const backdropUrl = show.backdrop;
+    return (
+      <View style={styles.bannerContainer}>
+        {backdropUrl ? (
+          <Image 
+            source={{ uri: backdropUrl }} 
+            style={styles.bannerImage}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={styles.bannerPlaceholder} />
+        )}
+        <View style={styles.bannerOverlay}>
+          <Pressable onPress={() => router.back()} style={styles.backButtonOverlay}>
+            <ChevronLeft size={18} color={tokens.colors.pureWhite} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+          <Pressable onPress={handleSearchInShow} style={styles.searchButtonOverlay}>
+            <SearchDuotoneLine />
+          </Pressable>
+        </View>
+      </View>
+    );
+  };
 
   const calculateShowRating = () => {
     const postsWithRatings = showPosts.filter(p => p.rating && p.rating > 0);
@@ -275,12 +307,11 @@ export default function ShowHub() {
 
   const renderShowInfo = () => {
     const averageRating = calculateShowRating();
-    const totalSeasons = calculateSeasonCount();
-    const totalEpisodes = calculateEpisodeCount();
+    const totalSeasons = show.totalSeasons || calculateSeasonCount();
+    const totalEpisodes = show.totalEpisodes || calculateEpisodeCount();
 
     return (
       <View style={styles.showInfoContainer}>
-        <Text style={styles.showTitle}>{show.title}</Text>
         <View style={styles.showDetailsRow}>
           <View style={styles.posterWrapper}>
             <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} />
@@ -302,6 +333,7 @@ export default function ShowHub() {
             </Pressable>
           </View>
           <View style={styles.detailsColumn}>
+            <Text style={styles.showTitleInside}>{show.title}</Text>
             <Text style={styles.description} numberOfLines={3}>
               {show.description}
             </Text>
@@ -526,12 +558,12 @@ export default function ShowHub() {
     <>
       <Stack.Screen options={{ title: show.title, headerShown: false }} />
       <View style={[commonStyles.container, styles.container]}>
+        {renderBanner()}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
-          {renderHeader()}
           {renderShowInfo()}
           {renderProgressBar()}
           {renderLogButton()}
-          <Vector3Divider />
+          <Vector3Divider style={styles.divider} />
           {renderTabs()}
           {renderFeed()}
         </ScrollView>
@@ -590,19 +622,53 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
-  headerRow: {
-    flexDirection: 'row',
-    height: 31,
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  bannerContainer: {
+    height: 160,
     width: '100%',
-    maxWidth: 392,
-    marginBottom: 21,
+    maxWidth: 432,
+    alignSelf: 'center',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  backButton: {
+  bannerImage: {
+    flex: 1,
+    width: '100%',
+    height: 160,
+  },
+  bannerPlaceholder: {
+    flex: 1,
+    backgroundColor: tokens.colors.cardBackground,
+  },
+  bannerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingTop: 16,
+    paddingHorizontal: 20,
+  },
+  backButtonOverlay: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    height: 40,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderRadius: 20,
+  },
+  searchButtonOverlay: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderRadius: 20,
   },
   backText: {
     color: tokens.colors.pureWhite,
@@ -610,24 +676,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '300',
   },
-  searchButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   showInfoContainer: {
     width: '100%',
     maxWidth: 392,
     marginBottom: 21,
   },
-  showTitle: {
-    color: tokens.colors.pureWhite,
-    fontFamily: 'Funnel Display',
-    fontSize: 25,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-    marginBottom: 10,
+  showTitleInside: {
+    ...tokens.typography.titleL,
+    marginBottom: 8,
   },
   showDetailsRow: {
     flexDirection: 'row',
@@ -636,12 +692,12 @@ const styles = StyleSheet.create({
   },
   posterWrapper: {
     position: 'relative',
-    width: 93,
-    height: 119,
+    width: 120,
+    height: 180,
   },
   poster: {
-    width: 93,
-    height: 119,
+    width: 120,
+    height: 180,
     borderRadius: components.borderRadiusButton,
   },
   saveIcon: {
@@ -666,6 +722,11 @@ const styles = StyleSheet.create({
   description: {
     ...tokens.typography.p1,
     color: tokens.colors.pureWhite,
+    marginTop: 4,
+  },
+  divider: {
+    marginVertical: 20,
+    alignSelf: 'stretch',
   },
   statsRow: {
     flexDirection: 'row',
@@ -752,7 +813,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 392,
     marginBottom: 21,
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   feedContainer: {
     width: '100%',
