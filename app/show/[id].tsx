@@ -32,6 +32,7 @@ import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode } from '@/services/showDatabase';
+import { getAllEpisodes } from '@/services/trakt';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
@@ -159,40 +160,23 @@ export default function ShowHub() {
       setSeasons([]);
       setLoadingEpisodes(true);
       try {
-        const allEpisodes: Episode[] = [];
-        const totalSeasons = dbShow.total_seasons || 1;
+        // Fetch all episodes from Trakt API using the service
+        const traktEpisodes = await getAllEpisodes(dbShow.trakt_id);
         
-        // Fetch episodes for each season from Trakt API
-        for (let seasonNum = 1; seasonNum <= totalSeasons; seasonNum++) {
-          try {
-            const response = await fetch(`/api/trakt/show/${dbShow.trakt_id}/episodes?season=${seasonNum}`);
-            if (!response.ok) {
-              console.error(`Failed to fetch season ${seasonNum}:`, response.statusText);
-              continue;
-            }
-            
-            const seasonEpisodes = await response.json();
-            
-            // Map Trakt episodes to Episode type
-            const mappedEpisodes = seasonEpisodes.map((ep: any) => ({
-              id: `${dbShow.trakt_id}-S${seasonNum}E${ep.number}`,
-              showId: show.id,
-              seasonNumber: seasonNum,
-              episodeNumber: ep.number,
-              title: ep.title || `Episode ${ep.number}`,
-              description: ep.overview || 'No description available.',
-              rating: ep.rating || 0,
-              postCount: 0,
-              thumbnail: ep.image?.original || undefined,
-            }));
-            
-            allEpisodes.push(...mappedEpisodes);
-          } catch (error) {
-            console.error(`Error fetching season ${seasonNum}:`, error);
-          }
-        }
+        // Map Trakt episodes to Episode type
+        const mappedEpisodes = traktEpisodes.map((ep) => ({
+          id: `${dbShow.trakt_id}-S${ep.season}E${ep.number}`,
+          showId: show.id,
+          seasonNumber: ep.season,
+          episodeNumber: ep.number,
+          title: ep.title || `Episode ${ep.number}`,
+          description: ep.overview || 'No description available.',
+          rating: ep.rating || 0,
+          postCount: 0,
+          thumbnail: undefined, // TVMaze thumbnails would need separate fetch
+        }));
         
-        setEpisodes(allEpisodes);
+        setEpisodes(mappedEpisodes);
       } catch (error) {
         console.error('Error loading episodes:', error);
         setEpisodes([]);
