@@ -41,6 +41,9 @@ module.exports = {
     extra: {
       router: {},
       traktClientId: traktClientId,
+      eas: {
+        projectId: "97b05198-6f1d-4374-b216-f0b119eb3c0c"
+      }
     },
   },
   scheme: "EPISODA",
