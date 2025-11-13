@@ -33,6 +33,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode } from '@/services/showDatabase';
 import { getAllEpisodes } from '@/services/trakt';
+import { getEpisode } from '@/services/tvmaze';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
@@ -163,7 +164,7 @@ export default function ShowHub() {
         // Fetch all episodes from Trakt API using the service
         const traktEpisodes = await getAllEpisodes(dbShow.trakt_id);
         
-        // Map Trakt episodes to Episode type
+        // Map Trakt episodes to Episode type (without thumbnails first for fast display)
         const mappedEpisodes = traktEpisodes.map((ep) => ({
           id: `${dbShow.trakt_id}-S${ep.season}E${ep.number}`,
           showId: show.id,
@@ -173,14 +174,38 @@ export default function ShowHub() {
           description: ep.overview || 'No description available.',
           rating: ep.rating || 0,
           postCount: 0,
-          thumbnail: undefined, // TVMaze thumbnails would need separate fetch
+          thumbnail: undefined,
         }));
         
         setEpisodes(mappedEpisodes);
+        setLoadingEpisodes(false);
+        
+        // Fetch thumbnails in the background if TVMaze ID is available
+        if (dbShow.tvmaze_id) {
+          const episodesWithThumbnails = await Promise.all(
+            mappedEpisodes.map(async (ep) => {
+              try {
+                const tvmazeEpisode = await getEpisode(
+                  dbShow.tvmaze_id!,
+                  ep.seasonNumber,
+                  ep.episodeNumber
+                );
+                return {
+                  ...ep,
+                  thumbnail: tvmazeEpisode?.image?.original || undefined,
+                };
+              } catch (error) {
+                console.error(`Error fetching thumbnail for S${ep.seasonNumber}E${ep.episodeNumber}:`, error);
+                return ep;
+              }
+            })
+          );
+          
+          setEpisodes(episodesWithThumbnails);
+        }
       } catch (error) {
         console.error('Error loading episodes:', error);
         setEpisodes([]);
-      } finally {
         setLoadingEpisodes(false);
       }
     }
@@ -514,6 +539,7 @@ export default function ShowHub() {
         description={episode.description}
         rating={averageRating > 0 ? averageRating : undefined}
         postCount={postCount > 0 ? postCount : undefined}
+        thumbnail={episode.thumbnail}
         isSelected={isSelected}
         isLogged={isLogged}
         onPress={() => toggleEpisodeSelection(episode.id)}

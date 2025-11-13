@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import tokens from '@/styles/tokens';
 import { Star, Check } from 'lucide-react-native';
@@ -11,6 +12,7 @@ interface EpisodeListCardProps {
   description?: string;
   rating?: number;
   postCount?: number;
+  thumbnail?: string;
   isSelected?: boolean;
   isLogged?: boolean;
   onPress?: () => void;
@@ -23,6 +25,7 @@ export default function EpisodeListCard({
   description,
   rating,
   postCount,
+  thumbnail,
   isSelected = false,
   isLogged = false,
   onPress,
@@ -52,7 +55,15 @@ export default function EpisodeListCard({
       onPress={handleCardPress}
       style={[styles.episodeCard, { borderColor: cardBorderColor }]}
     >
-      <View style={styles.thumbnailPlaceholder} />
+      {thumbnail ? (
+        <Image 
+          source={{ uri: thumbnail }} 
+          style={styles.thumbnail}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={styles.thumbnailPlaceholder} />
+      )}
       
       <View style={styles.episodeInfo}>
         <View style={styles.titleRow}>
@@ -119,6 +130,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 0.5,
     backgroundColor: tokens.colors.cardBackground,
+  },
+  thumbnail: {
+    width: 96,
+    height: 59,
+    borderRadius: 6,
   },
   thumbnailPlaceholder: {
     width: 96,
