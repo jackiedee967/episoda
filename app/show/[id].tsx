@@ -319,7 +319,14 @@ export default function ShowHub() {
       setLoggedEpisodeIds(prev => new Set(prev).add(episode.id));
     });
     setSelectedEpisodeIds(new Set());
-    router.push(`/post/${postId}`);
+    
+    // Redirect to user's profile posts page
+    if (currentUser?.id) {
+      router.push(`/user/${currentUser.id}`);
+    } else {
+      // Fallback to profile tab if currentUser not available
+      router.push('/(tabs)/profile');
+    }
   };
 
   const filteredAndSortedPosts = useMemo(() => {

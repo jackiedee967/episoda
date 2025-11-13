@@ -76,15 +76,128 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
   };
+  
+  // Helper to create deterministic episode key for traktEpisodesMap lookups
+  const getEpisodeKey = (episode: Episode): string => {
+    return `${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`;
+  };
 
   useEffect(() => {
-    if (visible && preselectedShow) {
-      console.log('Preselected show flow - TODO: implement database/Trakt fetch');
-      setStep('selectShow');
-    } else if (visible && !preselectedShow) {
+    if (!visible) return;
+    
+    // Initialize state from props when modal opens
+    setSelectedShow(preselectedShow || null);
+    setSelectedEpisodes(preselectedEpisodes || (preselectedEpisode ? [preselectedEpisode] : []));
+    
+    // Smart step selection based on what's preselected
+    if (preselectedShow && (preselectedEpisodes || preselectedEpisode)) {
+      // Flow 2: Show and episodes already selected → load Trakt data and skip to review
+      console.log('🎬 Loading Trakt data for preselected show and episodes');
+      loadTraktDataForPreselectedShow(preselectedShow, true);
+    } else if (preselectedShow) {
+      // Flow 1: Show selected but no episodes → fetch episodes and Trakt data, then skip to picker
+      console.log('🎬 Loading episodes for preselected show');
+      loadTraktDataForPreselectedShow(preselectedShow, false);
+    } else {
+      // No preselection → start from show selection
       setStep('selectShow');
     }
   }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes]);
+  
+  const loadTraktDataForPreselectedShow = async (show: Show, skipToReview: boolean) => {
+    setIsFetchingEpisodes(true);
+    try {
+      const { getEpisodesByShowId, getShowById } = await import('@/services/showDatabase');
+      const { getShowDetails, getShowSeasons, getSeasonEpisodes } = await import('@/services/trakt');
+      const { mapTraktEpisodeToEpisode } = await import('@/services/showMappers');
+      
+      // First, get the database show record to retrieve trakt_id
+      const dbShow = await getShowById(show.id);
+      if (!dbShow || !dbShow.trakt_id) {
+        console.error('No Trakt ID found for show:', show.id);
+        setIsFetchingEpisodes(false);
+        setStep('selectShow');
+        return;
+      }
+      
+      // Fetch Trakt show data using trakt_id
+      const traktShow = await getShowDetails(dbShow.trakt_id);
+      setSelectedTraktShow(traktShow);
+      console.log('✅ Loaded Trakt show data for preselected show');
+      
+      // Fetch ALL Trakt episodes to build traktEpisodesMap (required by handlePost)
+      // Key by deterministic format: showId-SeasonNumber-EpisodeNumber to match database episode IDs
+      const seasonsData = await getShowSeasons(traktShow.ids.trakt);
+      const traktEpsMap = new Map<string, TraktEpisode>();
+      
+      for (const season of seasonsData) {
+        if (season.number === 0) continue;
+        
+        const episodesData = await getSeasonEpisodes(traktShow.ids.trakt, season.number);
+        
+        for (const episode of episodesData) {
+          // Create deterministic key that matches database episode IDs
+          const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+          traktEpsMap.set(episodeKey, episode);
+        }
+      }
+      
+      setTraktEpisodesMap(traktEpsMap);
+      console.log(`✅ Loaded ${traktEpsMap.size} Trakt episodes into map`);
+      
+      if (skipToReview) {
+        // Flow 2: Episodes already provided, skip directly to review
+        setIsFetchingEpisodes(false);
+        setStep('postDetails');
+        return;
+      }
+      
+      // Flow 1: Fetch episodes from database for episode picker
+      const dbEpisodes = await getEpisodesByShowId(show.id);
+      
+      if (dbEpisodes && dbEpisodes.length > 0) {
+        // Group database episodes into seasons
+        const seasonMap = new Map<number, Episode[]>();
+        
+        dbEpisodes.forEach(dbEp => {
+          const episode: Episode = {
+            id: dbEp.id,
+            showId: dbEp.show_id,
+            seasonNumber: dbEp.season_number,
+            episodeNumber: dbEp.episode_number,
+            title: dbEp.title,
+            description: dbEp.description || '',
+            rating: dbEp.rating || 0,
+            postCount: 0,
+            thumbnail: dbEp.thumbnail_url || undefined,
+          };
+          
+          if (!seasonMap.has(episode.seasonNumber)) {
+            seasonMap.set(episode.seasonNumber, []);
+          }
+          seasonMap.get(episode.seasonNumber)!.push(episode);
+        });
+        
+        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+          seasonNumber,
+          episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+          expanded: false,
+        }));
+        
+        setSeasons(seasonsArray);
+        setIsFetchingEpisodes(false);
+        setStep('selectEpisodes');
+      } else {
+        console.error('No episodes found in database for show:', show.id);
+        setIsFetchingEpisodes(false);
+        setStep('selectShow'); // Fall back to show selection
+      }
+    } catch (error) {
+      console.error('Error loading data for preselected show:', error);
+      setIsFetchingEpisodes(false);
+      setStep('selectShow'); // Fall back to show selection
+    }
+  };
 
   useEffect(() => {
     if (step === 'selectShow' && visible) {
@@ -188,7 +301,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             seasonMap.set(episode.season, []);
           }
           const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-          traktEpsMap.set(mappedEpisode.id, episode);
+          // Use deterministic key format for consistent lookups
+          const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+          traktEpsMap.set(episodeKey, episode);
           seasonMap.get(episode.season)!.push(mappedEpisode);
         }
       }
@@ -275,7 +390,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           const validationErrors: string[] = [];
           
           for (const episode of selectedEpisodes) {
-            const traktEpisode = traktEpisodesMap.get(episode.id);
+            const episodeKey = getEpisodeKey(episode);
+            const traktEpisode = traktEpisodesMap.get(episodeKey);
             
             if (!traktEpisode) {
               validationErrors.push(`Missing data for ${episode.title}`);
@@ -300,7 +416,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
           const savedEpisodes = await Promise.allSettled(
             selectedEpisodes.map(async (episode) => {
-              const traktEpisode = traktEpisodesMap.get(episode.id)!;
+              const episodeKey = getEpisodeKey(episode);
+              const traktEpisode = traktEpisodesMap.get(episodeKey)!;
 
               const dbEpisode = await saveEpisode(
                 dbShow.id,
