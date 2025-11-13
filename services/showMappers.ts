@@ -15,7 +15,7 @@ export function mapTraktShowToShow(
   return {
     id: `trakt-${traktShow.ids.trakt}`,
     title: traktShow.title,
-    poster: overrides.posterUrl || '',
+    poster: overrides.posterUrl ?? null,
     description: traktShow.overview || '',
     rating: traktShow.rating || 0,
     totalSeasons: overrides.totalSeasons ?? 0,
@@ -46,7 +46,7 @@ export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
   return {
     id: dbShow.id,
     title: dbShow.title,
-    poster: dbShow.poster_url || '',
+    poster: dbShow.poster_url ?? null,
     description: dbShow.description || '',
     rating: dbShow.rating || 0,
     totalSeasons: dbShow.total_seasons || 0,

@@ -22,7 +22,7 @@ export interface SocialLink {
 export interface Show {
   id: string;
   title: string;
-  poster: string;
+  poster: string | null;
   backdrop?: string | null;
   description: string;
   rating: number;
