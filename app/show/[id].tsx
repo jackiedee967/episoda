@@ -49,7 +49,7 @@ function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
   return {
     id: dbShow.id,
     title: dbShow.title,
-    poster: dbShow.poster_url || '/placeholder-poster.jpg',
+    poster: dbShow.poster_url ?? null,
     backdrop: dbShow.backdrop_url || null,
     description: dbShow.description || 'No description available.',
     rating: dbShow.rating || 0,
