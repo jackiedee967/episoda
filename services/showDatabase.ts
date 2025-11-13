@@ -91,40 +91,21 @@ export async function saveShow(
     updated_at: new Date().toISOString(),
   };
 
-  const { data: existingShow } = await supabase
+  const { data, error } = await supabase
     .from('shows')
-    .select('*')
-    .eq('trakt_id', traktShow.ids.trakt)
+    .upsert(showData, {
+      onConflict: 'trakt_id',
+      ignoreDuplicates: false
+    })
+    .select()
     .single();
 
-  if (existingShow) {
-    const { data, error } = await supabase
-      .from('shows')
-      .update(showData)
-      .eq('trakt_id', traktShow.ids.trakt)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating show:', error);
-      throw error;
-    }
-
-    return data as DatabaseShow;
-  } else {
-    const { data, error } = await supabase
-      .from('shows')
-      .insert(showData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error saving show:', error);
-      throw error;
-    }
-
-    return data as DatabaseShow;
+  if (error) {
+    console.error('Error saving show:', error);
+    throw error;
   }
+
+  return data as DatabaseShow;
 }
 
 export async function saveEpisode(
@@ -154,44 +135,21 @@ export async function saveEpisode(
     rating: traktEpisode.rating ? Number(traktEpisode.rating.toFixed(1)) : null,
   };
 
-  const { data: existingEpisode } = await supabase
+  const { data, error } = await supabase
     .from('episodes')
-    .select('*')
-    .eq('show_id', showId)
-    .eq('season_number', traktEpisode.season)
-    .eq('episode_number', traktEpisode.number)
+    .upsert(episodeData, {
+      onConflict: 'show_id,season_number,episode_number',
+      ignoreDuplicates: false
+    })
+    .select()
     .single();
 
-  if (existingEpisode) {
-    const { data, error } = await supabase
-      .from('episodes')
-      .update(episodeData)
-      .eq('show_id', showId)
-      .eq('season_number', traktEpisode.season)
-      .eq('episode_number', traktEpisode.number)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating episode:', error);
-      throw error;
-    }
-
-    return data as DatabaseEpisode;
-  } else {
-    const { data, error } = await supabase
-      .from('episodes')
-      .insert(episodeData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error saving episode:', error);
-      throw error;
-    }
-
-    return data as DatabaseEpisode;
+  if (error) {
+    console.error('Error saving episode:', error);
+    throw error;
   }
+
+  return data as DatabaseEpisode;
 }
 
 export async function getShowById(showId: string): Promise<DatabaseShow | null> {
