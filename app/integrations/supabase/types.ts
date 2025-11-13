@@ -88,6 +88,108 @@ export type Database = {
           }
         ]
       }
+      shows: {
+        Row: {
+          id: string
+          trakt_id: number
+          imdb_id: string | null
+          tvdb_id: number | null
+          tmdb_id: number | null
+          tvmaze_id: number | null
+          title: string
+          description: string | null
+          poster_url: string | null
+          backdrop_url: string | null
+          rating: number | null
+          total_seasons: number | null
+          total_episodes: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          trakt_id: number
+          imdb_id?: string | null
+          tvdb_id?: number | null
+          tmdb_id?: number | null
+          tvmaze_id?: number | null
+          title: string
+          description?: string | null
+          poster_url?: string | null
+          backdrop_url?: string | null
+          rating?: number | null
+          total_seasons?: number | null
+          total_episodes?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          trakt_id?: number
+          imdb_id?: string | null
+          tvdb_id?: number | null
+          tmdb_id?: number | null
+          tvmaze_id?: number | null
+          title?: string
+          description?: string | null
+          poster_url?: string | null
+          backdrop_url?: string | null
+          rating?: number | null
+          total_seasons?: number | null
+          total_episodes?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      episodes: {
+        Row: {
+          id: string
+          show_id: string
+          trakt_id: number | null
+          imdb_id: string | null
+          tvdb_id: number | null
+          tmdb_id: number | null
+          season_number: number
+          episode_number: number
+          title: string
+          description: string | null
+          thumbnail_url: string | null
+          rating: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          show_id: string
+          trakt_id?: number | null
+          imdb_id?: string | null
+          tvdb_id?: number | null
+          tmdb_id?: number | null
+          season_number: number
+          episode_number: number
+          title: string
+          description?: string | null
+          thumbnail_url?: string | null
+          rating?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          show_id?: string
+          trakt_id?: number | null
+          imdb_id?: string | null
+          tvdb_id?: number | null
+          tmdb_id?: number | null
+          season_number?: number
+          episode_number?: number
+          title?: string
+          description?: string | null
+          thumbnail_url?: string | null
+          rating?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           id: string
