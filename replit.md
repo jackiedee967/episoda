@@ -37,12 +37,20 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 ### System Design Choices
 - **Development vs Production**: Separate Supabase instances for development and production, ensuring isolation.
 - **Data Management**: All mock data has been removed; users interact only with real Supabase data. A Supabase-backed user profile cache is implemented.
+- **TV Show Data Integration**: 
+  - **Trakt API**: Primary data source for TV show metadata (search, show details, seasons, episodes)
+  - **TVMaze API**: Secondary source for posters and episode thumbnails (20 requests/10s rate limit)
+  - **Database Persistence**: Shows and episodes saved to Supabase before post creation for consistency
+  - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
+  - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
 - **Mock User Seeding**: Database seeding script (`scripts/seedMockUsers.ts`) creates 4 real mock users (jackie, max, mia, liz) in development database with auto-generated avatars and follow relationships. Run via `npm run seed:mock-users`. Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable.
 - **Account Management**: Implemented account deletion via Supabase Edge Functions and a phone number change feature for SMS-authenticated users.
 - **Robust Authentication**: Addressed OTP verification race conditions and username persistence bugs for a smoother onboarding experience.
 
 ## External Dependencies
 - **Supabase**: Database, authentication, and real-time functionalities.
+- **Trakt API**: TV show metadata (TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET required)
+- **TVMaze API**: Show posters and episode thumbnails (no auth required, rate limited to 20 requests/10s)
 - **Expo**: Core framework for React Native development.
 - **AsyncStorage**: Local storage for session persistence.
 - **expo-symbols**: UI icons.
