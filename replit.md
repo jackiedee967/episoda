@@ -39,6 +39,11 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 - **Data Management**: All mock data has been removed; users interact only with real Supabase data. A Supabase-backed user profile cache is implemented.
 - **TV Show Data Integration**: 
   - **Trakt API**: Primary data source for TV show metadata (search, show details, seasons, episodes)
+  - **Production-Grade Architecture**: Hybrid API approach designed for 1M+ users
+    - **Development Mode**: Direct Trakt API calls via Expo Constants (works in Expo Go + web preview)
+    - **Production Mode**: Secure backend proxy routes at `app/api/trakt/` (ready for rate limiting, caching, authentication)
+    - **Security**: Trakt Client ID (public) exposed via `app.config.js` for dev; Client Secret (private) stays server-side
+    - **Scalability**: Backend routes ready for autoscale deployment with monitoring and request throttling
   - **TVMaze API**: Secondary source for posters and episode thumbnails (20 requests/10s rate limit)
   - **Database Persistence**: Shows and episodes saved to Supabase before post creation for consistency
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
