@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Funnel Display',
     fontWeight: '400',
-    color: tokens.colors.grey1,
+    color: tokens.colors.black,
   },
   tabSelectorWrapper: {
     paddingHorizontal: 20,
