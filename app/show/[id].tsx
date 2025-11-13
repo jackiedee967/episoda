@@ -26,12 +26,12 @@ import EpisodeCard from '@/components/EpisodeCard';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
-import { mockShows, mockEpisodes, mockUsers } from '@/data/mockData';
+import { mockShows, mockUsers } from '@/data/mockData';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { getShowById, DatabaseShow } from '@/services/showDatabase';
+import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
@@ -57,6 +57,20 @@ function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
   };
 }
 
+function mapDatabaseEpisodeToEpisode(dbEpisode: DatabaseEpisode): Episode {
+  return {
+    id: dbEpisode.id,
+    showId: dbEpisode.show_id,
+    seasonNumber: dbEpisode.season_number,
+    episodeNumber: dbEpisode.episode_number,
+    title: dbEpisode.title,
+    description: dbEpisode.description || 'No description available.',
+    rating: dbEpisode.rating || 0,
+    postCount: 0,
+    thumbnail: dbEpisode.thumbnail_url || undefined,
+  };
+}
+
 export default function ShowHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
@@ -75,9 +89,18 @@ export default function ShowHub() {
   const [show, setShow] = useState<Show | null>(null);
   const [loadingShow, setLoadingShow] = useState(true);
   const [showError, setShowError] = useState<string | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
-  const showEpisodes = useMemo(() => mockEpisodes.filter((e) => e.showId === id), [id]);
+  
+  const showEpisodes = useMemo(() => {
+    return episodes.map(episode => ({
+      ...episode,
+      postCount: posts.filter(post => 
+        post.episode?.id === episode.id
+      ).length
+    }));
+  }, [episodes, posts]);
   
   const friendsWatching = useMemo(() => {
     if (!currentUser || !show) return [];
@@ -124,10 +147,31 @@ export default function ShowHub() {
   }, [id]);
 
   useEffect(() => {
-    if (activeTab === 'episodes' && seasons.length === 0) {
+    async function loadEpisodes() {
+      if (!show?.id) return;
+      
+      setSeasons([]);
+      setLoadingEpisodes(true);
+      try {
+        const dbEpisodes = await getEpisodesByShowId(show.id);
+        const mappedEpisodes = dbEpisodes.map(mapDatabaseEpisodeToEpisode);
+        setEpisodes(mappedEpisodes);
+      } catch (error) {
+        console.error('Error loading episodes:', error);
+        setEpisodes([]);
+      } finally {
+        setLoadingEpisodes(false);
+      }
+    }
+
+    loadEpisodes();
+  }, [show?.id]);
+
+  useEffect(() => {
+    if (activeTab === 'episodes' && episodes.length > 0) {
       initializeSeasons();
     }
-  }, [activeTab]);
+  }, [activeTab, episodes]);
 
   useEffect(() => {
     if (activeTab === 'friends') {
@@ -144,14 +188,9 @@ export default function ShowHub() {
   }, [activeTab]);
 
   const initializeSeasons = async () => {
-    if (loadingEpisodes) return; // Prevent duplicate fetches
-    
-    setLoadingEpisodes(true);
+    if (showEpisodes.length === 0) return;
     
     try {
-      // Simulate async fetch with setTimeout to allow React to render loading state
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
       const seasonMap = new Map<number, Episode[]>();
       
       showEpisodes.forEach(episode => {
@@ -171,8 +210,8 @@ export default function ShowHub() {
         .sort((a, b) => a.seasonNumber - b.seasonNumber);
 
       setSeasons(seasonsData);
-    } finally {
-      setLoadingEpisodes(false);
+    } catch (error) {
+      console.error('Error initializing seasons:', error);
     }
   };
 
