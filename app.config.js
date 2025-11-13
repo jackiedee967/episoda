@@ -8,7 +8,6 @@ module.exports = {
     orientation: "portrait",
     icon: "./assets/images/natively-dark.png",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
     splash: {
       image: "./assets/images/natively-dark.png",
       resizeMode: "contain",
@@ -33,7 +32,7 @@ module.exports = {
       favicon: "./assets/images/final_quest_240x240.png",
       bundler: "metro",
     },
-    plugins: ["expo-font", "expo-router", "expo-web-browser"],
+    plugins: ["expo-font", "expo-router", "expo-web-browser", "expo-dev-client"],
     scheme: "episoda",
     experiments: {
       typedRoutes: true,
