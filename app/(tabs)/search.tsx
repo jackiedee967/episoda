@@ -295,6 +295,79 @@ export default function SearchScreen() {
     );
   }, [searchQuery, isSearchingShows, activeCategory, showSearchError]);
 
+  const filteredResults = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+
+    switch (activeCategory) {
+      case 'posts':
+        let filteredPosts = posts;
+        if (preselectedShow) {
+          filteredPosts = posts.filter(post => post.show.id === preselectedShow.id);
+        }
+        if (query) {
+          filteredPosts = filteredPosts.filter(
+            post =>
+              post.title?.toLowerCase().includes(query) ||
+              post.body.toLowerCase().includes(query) ||
+              post.show.title.toLowerCase().includes(query)
+          );
+        }
+        
+        return filteredPosts.sort((a, b) => {
+          const aPopularity = (a.likes || 0) + (a.reposts || 0) + (a.comments || 0);
+          const bPopularity = (b.likes || 0) + (b.reposts || 0) + (b.comments || 0);
+          return bPopularity - aPopularity;
+        });
+
+      case 'comments':
+        let filteredComments = mockComments;
+        if (query) {
+          filteredComments = mockComments.filter(comment =>
+            comment.text.toLowerCase().includes(query)
+          );
+        }
+        
+        return filteredComments.sort((a, b) => {
+          return (b.likes || 0) - (a.likes || 0);
+        });
+
+      case 'shows':
+        const showsToDisplay = traktShowResults.query === searchQuery.trim().toLowerCase() 
+          ? traktShowResults.results.map(r => r.show)
+          : [];
+        
+        return showsToDisplay.sort((a, b) => {
+          if (b.friendsWatching !== a.friendsWatching) {
+            return b.friendsWatching - a.friendsWatching;
+          }
+          
+          const aPostCount = posts.filter(p => p.show.id === a.id).length;
+          const bPostCount = posts.filter(p => p.show.id === b.id).length;
+          return bPostCount - aPostCount;
+        });
+
+      case 'users':
+        let filteredUsers = mockUsers;
+        if (query) {
+          filteredUsers = mockUsers.filter(
+            user =>
+              user.displayName.toLowerCase().includes(query) ||
+              user.username.toLowerCase().includes(query) ||
+              user.bio?.toLowerCase().includes(query)
+          );
+        }
+        
+        return filteredUsers.sort((a, b) => {
+          const aFollowers = a.followers?.length || 0;
+          const bFollowers = b.followers?.length || 0;
+          return bFollowers - aFollowers;
+        });
+
+      default:
+        return [];
+    }
+  }, [searchQuery, activeCategory, posts, preselectedShow, traktShowResults]);
+
   const renderFooter = useCallback(() => {
     if (activeCategory !== 'shows') {
       return null;
@@ -625,79 +698,6 @@ export default function SearchScreen() {
     { key: 'comments', label: 'Comments', hasIndicator: searchQuery.length > 0 && activeCategory !== 'comments' && getResultsCount('comments') > 0 },
     { key: 'users', label: 'Users', hasIndicator: searchQuery.length > 0 && activeCategory !== 'users' && getResultsCount('users') > 0 },
   ];
-
-  const filteredResults = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-
-    switch (activeCategory) {
-      case 'posts':
-        let filteredPosts = posts;
-        if (preselectedShow) {
-          filteredPosts = posts.filter(post => post.show.id === preselectedShow.id);
-        }
-        if (query) {
-          filteredPosts = filteredPosts.filter(
-            post =>
-              post.title?.toLowerCase().includes(query) ||
-              post.body.toLowerCase().includes(query) ||
-              post.show.title.toLowerCase().includes(query)
-          );
-        }
-        
-        return filteredPosts.sort((a, b) => {
-          const aPopularity = (a.likes || 0) + (a.reposts || 0) + (a.comments || 0);
-          const bPopularity = (b.likes || 0) + (b.reposts || 0) + (b.comments || 0);
-          return bPopularity - aPopularity;
-        });
-
-      case 'comments':
-        let filteredComments = mockComments;
-        if (query) {
-          filteredComments = mockComments.filter(comment =>
-            comment.text.toLowerCase().includes(query)
-          );
-        }
-        
-        return filteredComments.sort((a, b) => {
-          return (b.likes || 0) - (a.likes || 0);
-        });
-
-      case 'shows':
-        const showsToDisplay = traktShowResults.query === searchQuery.trim().toLowerCase() 
-          ? traktShowResults.results.map(r => r.show)
-          : [];
-        
-        return showsToDisplay.sort((a, b) => {
-          if (b.friendsWatching !== a.friendsWatching) {
-            return b.friendsWatching - a.friendsWatching;
-          }
-          
-          const aPostCount = posts.filter(p => p.show.id === a.id).length;
-          const bPostCount = posts.filter(p => p.show.id === b.id).length;
-          return bPostCount - aPostCount;
-        });
-
-      case 'users':
-        let filteredUsers = mockUsers;
-        if (query) {
-          filteredUsers = mockUsers.filter(
-            user =>
-              user.displayName.toLowerCase().includes(query) ||
-              user.username.toLowerCase().includes(query) ||
-              user.bio?.toLowerCase().includes(query)
-          );
-        }
-        
-        return filteredUsers.sort((a, b) => {
-          const aFollowers = a.followers?.length || 0;
-          const bFollowers = b.followers?.length || 0;
-          return bFollowers - aFollowers;
-        });
-
-      default:
-        return [];
-    }
-  }, [searchQuery, activeCategory, posts, preselectedShow, traktShowResults]);
 
   const handleRemoveShowFilter = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
