@@ -8,6 +8,7 @@ import { mockShows, mockUsers } from '@/data/mockData';
 import { Show } from '@/types';
 import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 type Genre = 'All' | 'Reality' | 'Drama' | 'Comedy' | 'Thriller' | 'Sci-Fi';
 
@@ -114,7 +115,7 @@ export default function RecommendedTitlesScreen() {
                 <View style={styles.showStats}>
                   <View style={styles.stat}>
                     <IconSymbol name="star.fill" size={14} color="#FCD34D" />
-                    <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
+                    <Text style={styles.statText}>{convertToFiveStarRating(show.rating).toFixed(1)}</Text>
                   </View>
                   <View style={styles.stat}>
                     <IconSymbol name="person.2.fill" size={14} color={colors.text} />

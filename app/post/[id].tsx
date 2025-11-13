@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -236,7 +237,7 @@ export default function PostDetail() {
 
               {/* Star Rating */}
               {post.rating && (
-                <StarRatings rating={post.rating} size={14} />
+                <StarRatings rating={convertToFiveStarRating(post.rating)} size={14} />
               )}
 
               {/* Episode and Show Tags */}

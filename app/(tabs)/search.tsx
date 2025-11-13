@@ -18,6 +18,7 @@ import { mapTraktShowToShow } from '@/services/showMappers';
 import { showEnrichmentManager } from '@/services/showEnrichment';
 import { saveShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -506,7 +507,7 @@ export default function SearchScreen() {
               <View style={styles.showStats}>
                 <View style={styles.stat}>
                   <IconSymbol name="star.fill" size={14} color="#FCD34D" />
-                  <Text style={styles.statText}>{show.rating.toFixed(1)}</Text>
+                  <Text style={styles.statText}>{convertToFiveStarRating(show.rating).toFixed(1)}</Text>
                 </View>
                 <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
                 <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>

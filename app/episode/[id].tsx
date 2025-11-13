@@ -25,6 +25,7 @@ import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 import { Star } from 'lucide-react-native';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 type TabKey = 'friends' | 'all';
 
@@ -184,7 +185,7 @@ export default function EpisodeHub() {
                       fill={tokens.colors.greenHighlight} 
                       color={tokens.colors.greenHighlight}
                     />
-                    <Text style={styles.ratingText}>{episode.rating.toFixed(1)}</Text>
+                    <Text style={styles.ratingText}>{convertToFiveStarRating(episode.rating).toFixed(1)}</Text>
                   </View>
                   <Text style={styles.postCountText}>{episode.postCount} posts</Text>
                 </View>
