@@ -11,15 +11,17 @@ import {
   Image,
   Dimensions,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { mockShows, mockEpisodes } from '@/data/mockData';
 import { colors, spacing, components } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Show, Episode, PostTag } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
+import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason, TraktEpisode } from '@/services/trakt';
+import { saveShow, saveEpisode, getShowByTraktId } from '@/services/showDatabase';
 
 interface PostModalProps {
   visible: boolean;
@@ -54,11 +56,19 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShowForPlaylist, setSelectedShowForPlaylist] = useState<Show | null>(null);
+  
+  const [showSearchResults, setShowSearchResults] = useState<Array<{ show: Show; traktShow: TraktShow }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isFetchingEpisodes, setIsFetchingEpisodes] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
+  const [selectedTraktShow, setSelectedTraktShow] = useState<TraktShow | null>(null);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
   const customTagInputRef = useRef<TextInput>(null);
+  const searchTimeoutRef = useRef<any>(null);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
@@ -66,35 +76,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   useEffect(() => {
     if (visible && preselectedShow) {
-      setSelectedShow(preselectedShow);
-      
-      const showEpisodes = mockEpisodes.filter(ep => ep.showId === preselectedShow.id);
-      const seasonMap = new Map<number, Episode[]>();
-      
-      showEpisodes.forEach(episode => {
-        if (!seasonMap.has(episode.seasonNumber)) {
-          seasonMap.set(episode.seasonNumber, []);
-        }
-        seasonMap.get(episode.seasonNumber)!.push(episode);
-      });
-
-      const episodesToPreselect = preselectedEpisodes || (preselectedEpisode ? [preselectedEpisode] : []);
-      const seasonNumbersToExpand = new Set(episodesToPreselect.map(ep => ep.seasonNumber));
-
-      const seasonsData: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
-        seasonNumber,
-        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-        expanded: seasonNumbersToExpand.has(seasonNumber),
-      }));
-
-      setSeasons(seasonsData);
-
-      if (episodesToPreselect.length > 0) {
-        setSelectedEpisodes(episodesToPreselect);
-        setStep('postDetails');
-      } else {
-        setStep('selectEpisodes');
-      }
+      console.log('Preselected show flow - TODO: implement database/Trakt fetch');
+      setStep('selectShow');
     } else if (visible && !preselectedShow) {
       setStep('selectShow');
     }
@@ -138,28 +121,87 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     }
   }, [visible, fadeAnim, slideAnim]);
 
-  const handleShowSelect = (show: Show) => {
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!searchQuery.trim()) {
+      setShowSearchResults([]);
+      setIsSearching(false);
+      setSearchError(null);
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await searchShows(searchQuery);
+        const { mapTraktShowToShow } = await import('@/services/showMappers');
+        const mappedShows = results.map(result => ({
+          show: mapTraktShowToShow(result.show, null),
+          traktShow: result.show
+        }));
+        setShowSearchResults(mappedShows);
+        setIsSearching(false);
+      } catch (error) {
+        console.error('Error searching shows:', error);
+        setSearchError('Failed to search shows. Please try again.');
+        setIsSearching(false);
+      }
+    }, 400);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  const handleShowSelect = async (show: Show, traktShow: TraktShow) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedShow(show);
+    setSelectedTraktShow(traktShow);
+    setIsFetchingEpisodes(true);
     
-    const showEpisodes = mockEpisodes.filter(ep => ep.showId === show.id);
-    const seasonMap = new Map<number, Episode[]>();
-    
-    showEpisodes.forEach(episode => {
-      if (!seasonMap.has(episode.seasonNumber)) {
-        seasonMap.set(episode.seasonNumber, []);
+    try {
+      const traktId = traktShow.ids.trakt;
+
+      const seasonsData = await getShowSeasons(traktId);
+      const { mapTraktEpisodeToEpisode } = await import('@/services/showMappers');
+      
+      const seasonMap = new Map<number, Episode[]>();
+      
+      for (const season of seasonsData) {
+        if (season.number === 0) continue;
+        
+        const episodesData = await getSeasonEpisodes(traktId, season.number);
+        
+        for (const episode of episodesData) {
+          if (!seasonMap.has(episode.season)) {
+            seasonMap.set(episode.season, []);
+          }
+          const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
+          seasonMap.get(episode.season)!.push(mappedEpisode);
+        }
       }
-      seasonMap.get(episode.seasonNumber)!.push(episode);
-    });
 
-    const seasonsData: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
-      seasonNumber,
-      episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-      expanded: false,
-    }));
+      const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+        seasonNumber,
+        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+        expanded: false,
+      }));
 
-    setSeasons(seasonsData);
-    setStep('selectEpisodes');
+      setSeasons(seasonsArray);
+      setIsFetchingEpisodes(false);
+      setStep('selectEpisodes');
+    } catch (error) {
+      console.error('Error fetching episodes:', error);
+      setIsFetchingEpisodes(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   };
 
   const toggleSeason = (seasonNumber: number) => {
@@ -212,31 +254,85 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       return;
     }
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsPosting(true);
     
     try {
-      const newPost = await createPost({
-        user: currentUser,
-        show: selectedShow,
-        episodes: selectedEpisodes.length > 0 ? selectedEpisodes : undefined,
-        title: postTitle.trim() || undefined,
-        body: postBody.trim(),
-        rating: rating > 0 ? rating : undefined,
-        tags: selectedTags,
-        isSpoiler: selectedTags.some(tag => tag.toLowerCase().includes('spoiler')),
-      });
+      let dbShow: Awaited<ReturnType<typeof saveShow>> | undefined;
+      let dbEpisodes: Episode[] = [];
 
-      console.log('Post created successfully');
-      
-      if (onPostSuccess) {
-        onPostSuccess(newPost.id, selectedEpisodes);
+      if (selectedTraktShow) {
+        dbShow = await saveShow(selectedTraktShow);
+        const { mapDatabaseShowToShow, mapDatabaseEpisodeToEpisode } = await import('@/services/showMappers');
+        const showForPost = mapDatabaseShowToShow(dbShow);
+
+        if (selectedEpisodes.length > 0 && dbShow) {
+          const savedEpisodes = await Promise.allSettled(
+            selectedEpisodes.map(async (episode) => {
+              const traktEpisodeId = episode.id.startsWith('trakt-') ? parseInt(episode.id.replace('trakt-', '')) : null;
+              if (!traktEpisodeId || !dbShow) return null;
+
+              const traktEpisode = seasons
+                .flatMap(s => s.episodes)
+                .find(ep => ep.id === episode.id);
+              
+              if (!traktEpisode) return null;
+
+              const dbEpisode = await saveEpisode(
+                dbShow.id,
+                dbShow.tvmaze_id,
+                {
+                  ids: {
+                    trakt: traktEpisodeId,
+                    imdb: null,
+                    tvdb: null,
+                    tmdb: null,
+                  },
+                  season: traktEpisode.seasonNumber,
+                  number: traktEpisode.episodeNumber,
+                  title: traktEpisode.title,
+                  overview: traktEpisode.description,
+                  rating: traktEpisode.rating,
+                }
+              );
+              return dbEpisode;
+            })
+          );
+
+          dbEpisodes = savedEpisodes
+            .filter(result => result.status === 'fulfilled' && result.value !== null)
+            .map(result => mapDatabaseEpisodeToEpisode((result as PromiseFulfilledResult<any>).value));
+        }
+
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        const newPost = await createPost({
+          user: currentUser,
+          show: showForPost,
+          episodes: dbEpisodes.length > 0 ? dbEpisodes : undefined,
+          title: postTitle.trim() || undefined,
+          body: postBody.trim(),
+          rating: rating > 0 ? rating : undefined,
+          tags: selectedTags,
+          isSpoiler: selectedTags.some(tag => tag.toLowerCase().includes('spoiler')),
+        });
+
+        console.log('Post created successfully');
+        
+        if (onPostSuccess) {
+          onPostSuccess(newPost.id, dbEpisodes);
+        }
+        
+        resetModal();
+        onClose();
+      } else {
+        console.error('No Trakt show data available');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
-      
-      resetModal();
-      onClose();
     } catch (error) {
       console.error('Error creating post:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -251,13 +347,15 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     setCustomTag('');
     setSearchQuery('');
     setSeasons([]);
+    setShowSearchResults([]);
+    setIsSearching(false);
+    setSearchError(null);
+    setIsFetchingEpisodes(false);
+    setIsPosting(false);
+    setSelectedTraktShow(null);
   };
 
   const renderSelectShow = () => {
-    const filteredShows = mockShows.filter(show =>
-      show.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     return (
       <View style={styles.stepContainer}>
         <Text style={styles.stepTitle}>Select a Show</Text>
@@ -273,35 +371,67 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           />
         </View>
         <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
-          <View style={styles.showsGrid}>
-            {filteredShows.map(show => (
-              <Pressable
-                key={show.id}
-                style={styles.showGridItem}
-                onPress={() => handleShowSelect(show)}
-              >
-                <Image source={{ uri: show.poster }} style={styles.showGridPoster} />
-                <Pressable 
-                  style={({ pressed }) => [
-                    styles.saveIconGrid,
-                    pressed && styles.saveIconPressed,
-                  ]} 
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSelectedShowForPlaylist(show);
-                    setPlaylistModalVisible(true);
-                  }}
-                >
-                  <IconSymbol 
-                    name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
-                    size={14} 
-                    color={colors.pureWhite} 
-                  />
-                </Pressable>
+          {isSearching && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+              <Text style={styles.loadingText}>Searching...</Text>
+            </View>
+          )}
+          {searchError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{searchError}</Text>
+              <Pressable style={styles.retryButton} onPress={() => setSearchQuery(searchQuery + ' ')}>
+                <Text style={styles.retryButtonText}>Retry</Text>
               </Pressable>
-            ))}
-          </View>
+            </View>
+          )}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>Start typing to search for shows</Text>
+            </View>
+          )}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() !== '' && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No shows found</Text>
+            </View>
+          )}
+          {!isSearching && !searchError && showSearchResults.length > 0 && (
+            <View style={styles.showsGrid}>
+              {showSearchResults.map(result => (
+                <Pressable
+                  key={result.show.id}
+                  style={styles.showGridItem}
+                  onPress={() => handleShowSelect(result.show, result.traktShow)}
+                >
+                  {result.show.poster ? (
+                    <Image source={{ uri: result.show.poster }} style={styles.showGridPoster} />
+                  ) : (
+                    <View style={[styles.showGridPoster, styles.showGridPosterPlaceholder]}>
+                      <Text style={styles.showGridPosterText}>{result.show.title.slice(0, 2).toUpperCase()}</Text>
+                    </View>
+                  )}
+                  <Pressable 
+                    style={({ pressed }) => [
+                      styles.saveIconGrid,
+                      pressed && styles.saveIconPressed,
+                    ]} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedShowForPlaylist(result.show);
+                      setPlaylistModalVisible(true);
+                    }}
+                  >
+                    <IconSymbol 
+                      name={isShowSaved(result.show.id) ? "bookmark.fill" : "bookmark"} 
+                      size={14} 
+                      color={colors.pureWhite} 
+                    />
+                  </Pressable>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
     );
@@ -481,11 +611,15 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         </View>
       </ScrollView>
       <Pressable
-        style={[styles.postButton, !postBody.trim() && styles.postButtonDisabled]}
+        style={[styles.postButton, (!postBody.trim() || isPosting) && styles.postButtonDisabled]}
         onPress={handlePost}
-        disabled={!postBody.trim()}
+        disabled={!postBody.trim() || isPosting}
       >
-        <Text style={styles.postButtonText}>Post</Text>
+        {isPosting ? (
+          <ActivityIndicator color={tokens.colors.black} />
+        ) : (
+          <Text style={styles.postButtonText}>Post</Text>
+        )}
       </Pressable>
     </View>
   );
@@ -851,5 +985,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: tokens.colors.black,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  errorContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  retryButton: {
+    backgroundColor: tokens.colors.greenHighlight,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.black,
+  },
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  showGridPosterPlaceholder: {
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showGridPosterText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
   },
 });
