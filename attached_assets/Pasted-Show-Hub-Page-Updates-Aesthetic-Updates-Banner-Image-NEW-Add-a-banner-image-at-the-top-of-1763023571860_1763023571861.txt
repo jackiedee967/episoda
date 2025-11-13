@@ -1,0 +1,145 @@
+Show Hub Page Updates
+
+Aesthetic Updates:
+
+Banner Image (NEW):
+
+
+
+
+
+Add a banner image at the top of each show hub page
+
+
+
+Height: 160px
+
+
+
+Width: Full page width (extends beyond padding/margins, edge-to-edge)
+
+
+
+Corner radius:
+
+
+
+
+
+Top corners: 0px (no roundness)
+
+
+
+Bottom corners: 20px radius
+
+
+
+Back button and search button should overlay on top of the banner image
+
+
+
+Banner image should pull from the API (backdrop image)
+
+Title & Poster Layout:
+
+
+
+
+
+Change title text to "Title L" style
+
+
+
+Move title from above poster to inside the bio container, positioned directly above the bio text
+
+
+
+Increase poster size - make it taller/bigger
+
+Spacing & Layout:
+
+
+
+
+
+Add the same padding that exists above the divider line to below it as well (match top and bottom padding)
+
+
+
+Make the Friends/Everyone/Episodes toggle full width
+
+Data Persistence & API Connection:
+
+Show Metadata: All data must be live and pulled from the API - no hardcoded values.
+
+Currently working:
+
+
+
+
+
+Title ✓
+
+
+
+Bio ✓
+
+Need to connect:
+
+
+
+
+
+Banner image - pull backdrop image from API
+
+
+
+Star rating - pull from API and convert using the 10-point to 5-star scale
+
+
+
+Season count - display actual number of seasons from API
+
+
+
+Episode count - display actual total number of episodes from API
+
+
+
+Friends watching component - the section showing which friends are watching (with profile pics and count) must pull real data from the database, not be hardcoded. Display actual friends who have this show in their watchlist/currently watching, with their real profile pictures and accurate count.
+
+Episodes Tab:
+
+
+
+
+
+Pull all seasons and episodes from API
+
+
+
+Display them using the existing component: Frame 289708 (style: dark)
+
+
+
+This component already exists and was working on the mock show hub page
+
+
+
+Functionality needed (we have this already on old mock page and it works):
+
+
+
+
+
+Users can toggle episodes to select them
+
+
+
+When episodes are selected, bottom nav transforms into a "Log Episodes" button
+
+
+
+Use the exact component and functionality we already built - just connect it to live API data
+
+Priority: Get the episodes tab fully functional with real data and the existing toggle/log functionality.
