@@ -60,9 +60,9 @@ export function generatePosterPlaceholder(title: string, width: number = 160, he
       <text
         x="${width / 2}"
         y="${textY}"
-        font-family="system-ui, -apple-system, sans-serif"
+        font-family="InstrumentSerif_400Regular, serif"
         font-size="${fontSize}"
-        font-weight="700"
+        font-weight="400"
         fill="${colorScheme.text}"
         text-anchor="middle"
         dominant-baseline="middle"
