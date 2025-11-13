@@ -17,6 +17,7 @@ import { searchShows, TraktShow } from '@/services/trakt';
 import { mapTraktShowToShow } from '@/services/showMappers';
 import { showEnrichmentManager } from '@/services/showEnrichment';
 import { saveShow } from '@/services/showDatabase';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -471,20 +472,14 @@ export default function SearchScreen() {
             }}
           >
             <View style={styles.showPosterContainer}>
-              {show.poster ? (
-                <Image 
-                  source={{ uri: show.poster }} 
-                  style={styles.showPoster}
-                  priority="high"
-                  cachePolicy="memory-disk"
-                  contentFit="cover"
-                  transition={200}
-                />
-              ) : (
-                <View style={styles.placeholderPoster}>
-                  <IconSymbol name="tv" size={40} color={tokens.colors.grey1} />
-                </View>
-              )}
+              <Image 
+                source={{ uri: getPosterUrl(show.poster, show.title) }} 
+                style={styles.showPoster}
+                priority="high"
+                cachePolicy="memory-disk"
+                contentFit="cover"
+                transition={200}
+              />
               {isEnriching && (
                 <View style={styles.enrichingOverlay}>
                   <ActivityIndicator size="small" color={tokens.colors.green} />

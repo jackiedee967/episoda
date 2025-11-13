@@ -1,6 +1,30 @@
 import Constants from 'expo-constants';
 
-const OMDB_API_KEY = process.env.OMDB_API_KEY || Constants.expoConfig?.extra?.omdbApiKey || '';
+const getOMDBApiKey = () => {
+  const key = 
+    Constants.expoConfig?.extra?.omdbApiKey ||
+    Constants.manifest?.extra?.omdbApiKey ||
+    Constants.manifest2?.extra?.expoClient?.extra?.omdbApiKey ||
+    process.env.OMDB_API_KEY ||
+    '';
+  
+  if (!key) {
+    console.warn('⚠️ OMDB API key not configured. Poster enrichment will be limited to TVMaze.');
+    console.log('Constants available:', {
+      hasExpoConfig: !!Constants.expoConfig,
+      hasManifest: !!Constants.manifest,
+      hasManifest2: !!Constants.manifest2,
+      expoConfigExtra: Constants.expoConfig?.extra,
+      manifestExtra: Constants.manifest?.extra,
+    });
+  } else {
+    console.log('✅ OMDB API key loaded successfully (length:', key.length, ')');
+  }
+  
+  return key;
+};
+
+const OMDB_API_KEY = getOMDBApiKey();
 const OMDB_BASE_URL = 'http://www.omdbapi.com/';
 
 export interface OMDBSearchResult {

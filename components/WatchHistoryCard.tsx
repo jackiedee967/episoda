@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import tokens from '@/styles/tokens';
 import { Show } from '@/types';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 export interface WatchHistoryCardProps {
   show: Show;
@@ -43,7 +45,7 @@ export default function WatchHistoryCard(props: WatchHistoryCardProps) {
 
   return (
     <Pressable onPress={handlePress} style={styles.root}>
-      <Image source={{ uri: show.poster }} style={styles.poster} />
+      <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} />
       <View style={styles.showInfo}>
         <Text style={styles.showTitle} numberOfLines={1}>
           {show.title}

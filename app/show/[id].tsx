@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   Pressable,
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
@@ -32,6 +32,7 @@ import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow } from '@/services/showDatabase';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -281,7 +282,7 @@ export default function ShowHub() {
         <Text style={styles.showTitle}>{show.title}</Text>
         <View style={styles.showDetailsRow}>
           <View style={styles.posterWrapper}>
-            <Image source={{ uri: show.poster }} style={styles.poster} />
+            <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} />
             <Pressable 
               style={({ pressed }) => [
                 styles.saveIcon,

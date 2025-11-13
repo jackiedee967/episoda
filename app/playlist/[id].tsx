@@ -5,11 +5,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   Pressable,
   Alert,
   Share,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -18,6 +18,7 @@ import { mockShows, currentUser } from '@/data/mockData';
 import { Show, Playlist } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Eye, EyeOff, Trash2 } from 'lucide-react-native';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -227,7 +228,7 @@ export default function PlaylistDetailScreen() {
                     ]}
                     onPress={() => handleShowPress(show.id)}
                   >
-                    <Image source={{ uri: show.poster }} style={styles.showPoster} />
+                    <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
                     
                     {/* Remove button (only for own playlists) */}
                     {isOwnPlaylist && (

@@ -1,6 +1,8 @@
 const traktClientId = process.env.TRAKT_CLIENT_ID || '235d184cb03ded3292ed89fe4347e3452a3087027d76f5edd13bdb65ccf2d456';
 const omdbApiKey = process.env.OMDB_API_KEY || '';
 
+console.log('[app.config.js] OMDB API Key loaded:', omdbApiKey ? `Yes (length: ${omdbApiKey.length})` : 'No');
+
 module.exports = {
   expo: {
     name: "EPISODA",

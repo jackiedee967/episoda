@@ -1,12 +1,14 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Show, User } from '@/types';
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import PlaylistModal from '@/components/PlaylistModal';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 interface ShowCardProps {
   show: Show;
@@ -110,13 +112,7 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
         onPress={handlePress}
       >
         <View style={styles.posterWrapper}>
-          {show.poster ? (
-            <Image source={{ uri: show.poster }} style={styles.poster} />
-          ) : (
-            <View style={[styles.poster, styles.posterPlaceholder]}>
-              <Text style={styles.posterPlaceholderText}>{show.title?.charAt(0) || '?'}</Text>
-            </View>
-          )}
+          <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} />
           
           {/* Save Icon */}
           <Pressable 
