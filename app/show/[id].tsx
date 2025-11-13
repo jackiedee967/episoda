@@ -977,7 +977,6 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
   },
   episodesList: {
-    backgroundColor: tokens.colors.pageBackground,
     gap: spacing.gapSmall,
     padding: spacing.gapSmall,
   },
