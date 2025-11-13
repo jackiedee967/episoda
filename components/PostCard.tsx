@@ -7,6 +7,8 @@ import tokens from '@/styles/tokens';
 import { Post } from '@/types';
 import { Heart, MessageCircle, RefreshCw, Lightbulb, AlertTriangle, List, HelpCircle } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
+import StarRatings from '@/components/StarRatings';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -210,13 +212,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                 </Pressable>
               </View>
               {latestPost.rating && (
-                <View style={styles.starRatings}>
-                  {[...Array(5)].map((_, i) => (
-                    <Text key={i} style={styles.star}>
-                      {i < latestPost.rating! ? '★' : '☆'}
-                    </Text>
-                  ))}
-                </View>
+                <StarRatings rating={convertToFiveStarRating(latestPost.rating)} size={14} />
               )}
             </View>
             <Pressable onPress={handleUserPress}>

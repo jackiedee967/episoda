@@ -33,6 +33,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -307,7 +308,7 @@ export default function ShowHub() {
             <View style={styles.statsRow}>
               <View style={styles.ratingContainer}>
                 <Text style={styles.ratingText}>
-                  {averageRating > 0 ? averageRating.toFixed(1) : '—'}
+                  {averageRating > 0 ? convertToFiveStarRating(averageRating).toFixed(1) : '—'}
                 </Text>
                 <Text style={styles.starIcon}>★</Text>
               </View>

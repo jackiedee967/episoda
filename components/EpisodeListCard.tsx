@@ -3,6 +3,7 @@ import React from 'react';
 import * as Haptics from 'expo-haptics';
 import tokens from '@/styles/tokens';
 import { Star, Check } from 'lucide-react-native';
+import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 interface EpisodeListCardProps {
   episodeNumber: string;
@@ -75,7 +76,7 @@ export default function EpisodeListCard({
                 fill={tokens.colors.greenHighlight} 
                 color={tokens.colors.greenHighlight}
               />
-              <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+              <Text style={styles.ratingText}>{convertToFiveStarRating(rating).toFixed(1)}</Text>
             </View>
           )}
           {postCount !== undefined && (
