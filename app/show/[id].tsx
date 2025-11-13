@@ -27,10 +27,11 @@ import EpisodeListCard from '@/components/EpisodeListCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
 import { mockShows, mockEpisodes, mockUsers } from '@/data/mockData';
-import { Episode } from '@/types';
+import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { getShowById, DatabaseShow } from '@/services/showDatabase';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -38,6 +39,19 @@ interface SeasonData {
   seasonNumber: number;
   episodes: Episode[];
   expanded: boolean;
+}
+
+function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
+  return {
+    id: dbShow.id,
+    title: dbShow.title,
+    poster: dbShow.poster_url || '/placeholder-poster.jpg',
+    description: dbShow.description || 'No description available.',
+    rating: dbShow.rating || 0,
+    totalSeasons: dbShow.total_seasons || 0,
+    totalEpisodes: dbShow.total_episodes || 0,
+    friendsWatching: 0,
+  };
 }
 
 export default function ShowHub() {
@@ -55,11 +69,40 @@ export default function ShowHub() {
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<Set<string>>(new Set());
   const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
+  const [show, setShow] = useState<Show | null>(null);
+  const [loadingShow, setLoadingShow] = useState(true);
+  const [showError, setShowError] = useState<string | null>(null);
 
-  const show = mockShows.find((s) => s.id === id);
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   const showEpisodes = useMemo(() => mockEpisodes.filter((e) => e.showId === id), [id]);
   const friendsWatching = [mockUsers[0], mockUsers[1], mockUsers[2]];
+
+  useEffect(() => {
+    async function loadShow() {
+      if (!id || typeof id !== 'string') return;
+
+      setShow(null);
+      setLoadingShow(true);
+      setShowError(null);
+
+      try {
+        const dbShow = await getShowById(id);
+
+        if (dbShow) {
+          setShow(mapDatabaseShowToShow(dbShow));
+        } else {
+          setShowError('Show not found');
+        }
+      } catch (error) {
+        console.error('Error loading show:', error);
+        setShowError('Failed to load show');
+      } finally {
+        setLoadingShow(false);
+      }
+    }
+
+    loadShow();
+  }, [id]);
 
   useEffect(() => {
     if (activeTab === 'episodes' && seasons.length === 0) {
@@ -173,16 +216,8 @@ export default function ShowHub() {
     return filteredPosts;
   }, [showPosts, activeTab, sortBy, currentUser.id, isFollowing]);
 
-  if (!show) {
-    return (
-      <View style={commonStyles.container}>
-        <Stack.Screen options={{ title: 'Show Not Found', headerShown: false }} />
-        <Text style={commonStyles.text}>Show not found</Text>
-      </View>
-    );
-  }
-
   const handleSearchInShow = () => {
+    if (!show) return;
     router.push({
       pathname: '/(tabs)/search',
       params: { showId: show.id },
@@ -458,6 +493,32 @@ export default function ShowHub() {
       </View>
     );
   };
+
+  if (loadingShow) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Loading...', headerShown: false }} />
+        <View style={[commonStyles.container, styles.container, styles.centerContent]}>
+          <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+          <Text style={styles.loadingText}>Loading show...</Text>
+        </View>
+      </>
+    );
+  }
+
+  if (showError || !show) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Error', headerShown: false }} />
+        <View style={[commonStyles.container, styles.container, styles.centerContent]}>
+          <Text style={styles.errorText}>{showError || 'Show not found'}</Text>
+          <Pressable style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backText}>Go Back</Text>
+          </Pressable>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
@@ -743,5 +804,25 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.pageBackground,
     gap: spacing.gapSmall,
     padding: spacing.gapSmall,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontFamily: 'Funnel Display',
+    fontSize: 17,
+    fontWeight: '500',
+    color: tokens.colors.almostWhite,
+  },
+  errorText: {
+    fontFamily: 'Funnel Display',
+    fontSize: 17,
+    fontWeight: '500',
+    color: tokens.colors.grey1,
+    textAlign: 'center',
+    marginBottom: 16,
   },
 });
