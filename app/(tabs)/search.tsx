@@ -35,6 +35,10 @@ export default function SearchScreen() {
   const [showSearchError, setShowSearchError] = useState<string | null>(null);
   const [enrichingShows, setEnrichingShows] = useState<Set<number>>(new Set());
   const [isSavingShow, setIsSavingShow] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentSearchQueryRef = useRef<string>('');
   const currentActiveCategoryRef = useRef<SearchCategory>(activeCategory);
@@ -91,20 +95,26 @@ export default function SearchScreen() {
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const results = await searchShows(trimmedQuery);
+        const response = await searchShows(trimmedQuery, { page: 1, limit: 20 });
         
         if (searchRequestTokenRef.current !== requestToken) {
           return;
         }
         
-        const mappedShows = results.map(result => ({
+        const mappedShows = response.results.map(result => ({
           show: mapTraktShowToShow(result.show),
           traktShow: result.show
         }));
+        
         setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
+        setCurrentPage(response.pagination.page);
+        setTotalPages(response.pagination.pageCount);
+        setHasMore(response.pagination.page < response.pagination.pageCount);
         setIsSearchingShows(false);
         
-        results.forEach(async (result) => {
+        console.log(`📄 Loaded page ${response.pagination.page} of ${response.pagination.pageCount} (${response.pagination.itemCount} total items)`);
+        
+        response.results.forEach(async (result) => {
           const traktId = result.show.ids.trakt;
           setEnrichingShows(prev => new Set(prev).add(traktId));
           
@@ -158,6 +168,85 @@ export default function SearchScreen() {
       }
     };
   }, [searchQuery, activeCategory]);
+
+  const loadMoreShows = async () => {
+    if (isLoadingMore || isSearchingShows || !hasMore || activeCategory !== 'shows') {
+      return;
+    }
+
+    const query = traktShowResults.query;
+    if (!query) {
+      return;
+    }
+
+    console.log(`📄 Loading more shows: page ${currentPage + 1} of ${totalPages}`);
+    setIsLoadingMore(true);
+
+    try {
+      const response = await searchShows(query, { page: currentPage + 1, limit: 20 });
+      
+      const existingIds = new Set(traktShowResults.results.map(r => r.traktShow.ids.trakt));
+      
+      const newResults = response.results.filter(
+        result => !existingIds.has(result.show.ids.trakt)
+      );
+      
+      console.log(`✅ Loaded ${newResults.length} new shows (filtered ${response.results.length - newResults.length} duplicates)`);
+      
+      if (newResults.length > 0) {
+        const mappedNewShows = newResults.map(result => ({
+          show: mapTraktShowToShow(result.show),
+          traktShow: result.show
+        }));
+        
+        setTraktShowResults(prev => ({
+          ...prev,
+          results: [...prev.results, ...mappedNewShows]
+        }));
+        
+        newResults.forEach(async (result) => {
+          const traktId = result.show.ids.trakt;
+          setEnrichingShows(prev => new Set(prev).add(traktId));
+          
+          try {
+            const enrichedData = await showEnrichmentManager.enrichShow(result.show);
+            
+            setTraktShowResults(prevResults => {
+              const updatedResults = prevResults.results.map(r => {
+                if (r.traktShow.ids.trakt === traktId && enrichedData.isEnriched) {
+                  return {
+                    ...r,
+                    show: mapTraktShowToShow(r.traktShow, {
+                      posterUrl: enrichedData.posterUrl,
+                      totalSeasons: enrichedData.totalSeasons,
+                    })
+                  };
+                }
+                return r;
+              });
+              
+              return { ...prevResults, results: updatedResults };
+            });
+          } catch (error) {
+            console.error('Error enriching show:', error);
+          } finally {
+            setEnrichingShows(prev => {
+              const next = new Set(prev);
+              next.delete(traktId);
+              return next;
+            });
+          }
+        });
+      }
+      
+      setCurrentPage(response.pagination.page);
+      setHasMore(response.pagination.page < response.pagination.pageCount);
+    } catch (error) {
+      console.error('Error loading more shows:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const getResultsCount = useMemo(() => (category: SearchCategory): number => {
     const query = searchQuery.toLowerCase();
@@ -435,25 +524,43 @@ export default function SearchScreen() {
             key={show.id}
             style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
             onPress={async () => {
-              if (!resultData || isSavingShow) return;
+              if (!resultData) {
+                console.warn('⚠️ No result data found for show:', show.id);
+                return;
+              }
+              
+              if (isSavingShow) {
+                console.log('⏳ Already saving a show, skipping click');
+                return;
+              }
+              
+              console.log('🎬 Clicked show:', resultData.traktShow.title);
               
               try {
                 setIsSavingShow(true);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 
                 const enrichedData = showEnrichmentManager.getCachedData(resultData.traktShow.ids.trakt);
+                console.log('📦 Enriched data:', enrichedData ? 'Available' : 'Not cached yet');
                 
+                console.log('💾 Saving show to database...');
                 const dbShow = await saveShow(resultData.traktShow, {
                   enrichedPosterUrl: enrichedData?.posterUrl,
                   enrichedSeasonCount: enrichedData?.totalSeasons,
                   enrichedTVMazeId: enrichedData?.tvmazeId,
                 });
                 
+                console.log('✅ Show saved with ID:', dbShow.id);
+                console.log('🚀 Navigating to ShowHub...');
+                
                 router.push(`/show/${dbShow.id}`);
               } catch (error) {
-                console.error('Error saving show:', error);
+                console.error('❌ Error in show click handler:', error);
+                console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+                alert('Failed to load show. Please make sure the database tables are set up correctly.');
               } finally {
                 setIsSavingShow(false);
+                console.log('🔓 isSavingShow reset to false');
               }
             }}
           >

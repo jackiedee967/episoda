@@ -76,16 +76,36 @@ export interface TraktEpisode {
   runtime?: number;
 }
 
-export async function searchShows(query: string): Promise<TraktSearchResult[]> {
+export interface SearchShowsOptions {
+  page?: number;
+  limit?: number;
+}
+
+export interface SearchShowsResponse {
+  results: TraktSearchResult[];
+  pagination: {
+    page: number;
+    limit: number;
+    pageCount: number;
+    itemCount: number;
+  };
+}
+
+export async function searchShows(
+  query: string, 
+  options: SearchShowsOptions = {}
+): Promise<SearchShowsResponse> {
   if (!TRAKT_CLIENT_ID) {
     console.error('❌ Trakt API credentials not configured');
     throw new Error('Trakt API credentials not configured. Please check your environment setup.');
   }
 
+  const { page = 1, limit = 50 } = options;
+
   try {
-    console.log('🔍 Searching Trakt for:', query);
+    console.log(`🔍 Searching Trakt for: "${query}" (page ${page}, limit ${limit})`);
     const response = await fetch(
-      `${TRAKT_BASE_URL}/search/show?query=${encodeURIComponent(query)}&extended=full`,
+      `${TRAKT_BASE_URL}/search/show?query=${encodeURIComponent(query)}&extended=full&page=${page}&limit=${limit}`,
       { headers: TRAKT_HEADERS }
     );
 
@@ -94,8 +114,17 @@ export async function searchShows(query: string): Promise<TraktSearchResult[]> {
     }
 
     const data: TraktSearchResult[] = await response.json();
-    console.log(`✅ Found ${data.length} shows`);
-    return data;
+    
+    const pagination = {
+      page: parseInt(response.headers.get('X-Pagination-Page') || '1'),
+      limit: parseInt(response.headers.get('X-Pagination-Limit') || String(limit)),
+      pageCount: parseInt(response.headers.get('X-Pagination-Page-Count') || '1'),
+      itemCount: parseInt(response.headers.get('X-Pagination-Item-Count') || String(data.length)),
+    };
+    
+    console.log(`✅ Found ${data.length} shows on page ${pagination.page} of ${pagination.pageCount} (${pagination.itemCount} total)`);
+    
+    return { results: data, pagination };
   } catch (error) {
     console.error('❌ Error searching shows on Trakt:', error);
     throw error;
