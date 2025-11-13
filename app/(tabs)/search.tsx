@@ -797,7 +797,7 @@ export default function SearchScreen() {
           ListEmptyComponent={renderEmptyState}
           ListFooterComponent={renderFooter}
           onEndReached={activeCategory === 'shows' ? handleEndReached : undefined}
-          onEndReachedThreshold={0.5}
+          onEndReachedThreshold={Platform.OS === 'web' ? 2.0 : 0.5}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}

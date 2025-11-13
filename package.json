@@ -6,6 +6,7 @@
     "dev": "EXPO_NO_TELEMETRY=1 WDS_SOCKET_PORT=0 expo start --web --port 5000",
     "android": "EXPO_NO_TELEMETRY=1 expo start --android",
     "ios": "EXPO_NO_TELEMETRY=1 expo start --ios",
+    "mobile:tunnel": "EXPO_NO_TELEMETRY=1 expo start --tunnel",
     "web": "EXPO_NO_TELEMETRY=1 WDS_SOCKET_PORT=0 expo start --web --port 5000",
     "build:web": "expo export -p web && npx workbox generateSW workbox-config.js",
     "build:android": "expo prebuild -p android",
