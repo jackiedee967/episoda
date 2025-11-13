@@ -507,7 +507,7 @@ export default function SearchScreen() {
               </Text>
               <View style={styles.showStats}>
                 <View style={styles.stat}>
-                  <IconSymbol name="star.fill" size={14} color="#FCD34D" />
+                  <IconSymbol name="star.fill" size={14} color="#8bfc76" />
                   <Text style={styles.statText}>{convertToFiveStarRating(show.rating).toFixed(1)}</Text>
                 </View>
                 <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>

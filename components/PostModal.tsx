@@ -575,7 +575,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 <IconSymbol
                   name={star <= rating ? 'star.fill' : 'star'}
                   size={32}
-                  color={star <= rating ? '#FFD700' : colors.textSecondary}
+                  color={star <= rating ? '#8bfc76' : colors.textSecondary}
                 />
               </Pressable>
             ))}
