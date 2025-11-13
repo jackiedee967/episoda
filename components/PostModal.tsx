@@ -12,6 +12,7 @@ import {
   Dimensions,
   Animated,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors, spacing, components } from '@/styles/commonStyles';
@@ -63,6 +64,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [isFetchingEpisodes, setIsFetchingEpisodes] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [selectedTraktShow, setSelectedTraktShow] = useState<TraktShow | null>(null);
+  const [traktEpisodesMap, setTraktEpisodesMap] = useState<Map<string, TraktEpisode>>(new Map());
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -173,6 +175,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       const { mapTraktEpisodeToEpisode } = await import('@/services/showMappers');
       
       const seasonMap = new Map<number, Episode[]>();
+      const traktEpsMap = new Map<string, TraktEpisode>();
       
       for (const season of seasonsData) {
         if (season.number === 0) continue;
@@ -184,6 +187,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             seasonMap.set(episode.season, []);
           }
           const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
+          traktEpsMap.set(mappedEpisode.id, episode);
           seasonMap.get(episode.season)!.push(mappedEpisode);
         }
       }
@@ -195,6 +199,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       }));
 
       setSeasons(seasonsArray);
+      setTraktEpisodesMap(traktEpsMap);
       setIsFetchingEpisodes(false);
       setStep('selectEpisodes');
     } catch (error) {
@@ -266,37 +271,63 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         const showForPost = mapDatabaseShowToShow(dbShow);
 
         if (selectedEpisodes.length > 0 && dbShow) {
+          const validationErrors: string[] = [];
+          
+          for (const episode of selectedEpisodes) {
+            const traktEpisode = traktEpisodesMap.get(episode.id);
+            
+            if (!traktEpisode) {
+              validationErrors.push(`Missing data for ${episode.title}`);
+              continue;
+            }
+
+            if (!traktEpisode.season || !traktEpisode.number || !traktEpisode.title || !traktEpisode.ids?.trakt) {
+              validationErrors.push(`Incomplete metadata for ${episode.title} (S${episode.seasonNumber}E${episode.episodeNumber})`);
+            }
+          }
+
+          if (validationErrors.length > 0) {
+            console.error('Episode validation failed:', validationErrors);
+            Alert.alert(
+              'Episode Data Incomplete',
+              `Cannot post due to missing episode information:\n${validationErrors.join('\n')}\n\nThis may happen with specials or unaired episodes. Please try selecting different episodes.`,
+              [{ text: 'OK' }]
+            );
+            setIsPosting(false);
+            return;
+          }
+
           const savedEpisodes = await Promise.allSettled(
             selectedEpisodes.map(async (episode) => {
-              const traktEpisodeId = episode.id.startsWith('trakt-') ? parseInt(episode.id.replace('trakt-', '')) : null;
-              if (!traktEpisodeId || !dbShow) return null;
-
-              const traktEpisode = seasons
-                .flatMap(s => s.episodes)
-                .find(ep => ep.id === episode.id);
-              
-              if (!traktEpisode) return null;
+              const traktEpisode = traktEpisodesMap.get(episode.id)!;
 
               const dbEpisode = await saveEpisode(
                 dbShow.id,
                 dbShow.tvmaze_id,
                 {
-                  ids: {
-                    trakt: traktEpisodeId,
-                    imdb: null,
-                    tvdb: null,
-                    tmdb: null,
-                  },
-                  season: traktEpisode.seasonNumber,
-                  number: traktEpisode.episodeNumber,
+                  ids: traktEpisode.ids,
+                  season: traktEpisode.season,
+                  number: traktEpisode.number,
                   title: traktEpisode.title,
-                  overview: traktEpisode.description,
-                  rating: traktEpisode.rating,
+                  overview: traktEpisode.overview || '',
+                  rating: traktEpisode.rating || 0,
                 }
               );
               return dbEpisode;
             })
           );
+
+          const failedSaves = savedEpisodes.filter(result => result.status === 'rejected' || result.value === null);
+          if (failedSaves.length > 0) {
+            console.error('Failed to save episodes:', failedSaves);
+            Alert.alert(
+              'Save Failed',
+              `Failed to save ${failedSaves.length} of ${selectedEpisodes.length} episodes. Please try again.`,
+              [{ text: 'OK' }]
+            );
+            setIsPosting(false);
+            return;
+          }
 
           dbEpisodes = savedEpisodes
             .filter(result => result.status === 'fulfilled' && result.value !== null)
@@ -353,6 +384,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     setIsFetchingEpisodes(false);
     setIsPosting(false);
     setSelectedTraktShow(null);
+    setTraktEpisodesMap(new Map());
   };
 
   const renderSelectShow = () => {
