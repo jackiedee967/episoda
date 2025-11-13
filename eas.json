@@ -4,7 +4,9 @@
       "developmentClient": true,
       "distribution": "internal",
       "ios": {
-        "buildConfiguration": "Debug"
+        "buildConfiguration": "Debug",
+        "image": "latest",
+        "cocoapods": "1.15.2"
       }
     },
     "preview": {

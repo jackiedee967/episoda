@@ -16,6 +16,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.anonymous.EPISODA",
+      deploymentTarget: "13.4",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
@@ -32,7 +33,21 @@ module.exports = {
       favicon: "./assets/images/final_quest_240x240.png",
       bundler: "metro",
     },
-    plugins: ["expo-font", "expo-router", "expo-web-browser", "expo-dev-client"],
+    plugins: [
+      "expo-font",
+      "expo-router",
+      "expo-web-browser",
+      "expo-dev-client",
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            deploymentTarget: "13.4",
+            buildReactNativeFromSource: true
+          }
+        }
+      ]
+    ],
     scheme: "episoda",
     experiments: {
       typedRoutes: true,
