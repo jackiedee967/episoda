@@ -45,7 +45,14 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Security**: Trakt Client ID (public) exposed via `app.config.js` for dev; Client Secret (private) stays server-side
     - **Scalability**: Backend routes ready for autoscale deployment with monitoring and request throttling
   - **TVMaze API**: Secondary source for posters and episode thumbnails (20 requests/10s rate limit)
+  - **Search Enrichment System**: Background worker that enhances search results with complete metadata
+    - **Throttled Parallel Fetching**: Max 4 concurrent API requests to respect rate limits
+    - **Progressive Enhancement**: Displays basic results immediately, enriches with seasons/posters in background
+    - **Smart Caching**: Only caches successful enrichments; failed attempts can retry
+    - **Error Propagation**: API failures don't get cached, enabling automatic retry on next search
+    - **TVMaze Integration**: Returns both poster URL and TVMaze ID for downstream episode fetching
   - **Database Persistence**: Shows and episodes saved to Supabase before post creation for consistency
+  - **Search-to-Hub Flow**: Search → Enrich → Save to DB → Navigate (fixes "Show not found" errors)
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
   - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
 - **Mock User Seeding**: Database seeding script (`scripts/seedMockUsers.ts`) creates 4 real mock users (jackie, max, mia, liz) in development database with auto-generated avatars and follow relationships. Run via `npm run seed:mock-users`. Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable.
