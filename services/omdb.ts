@@ -154,17 +154,28 @@ export async function getOMDBByTitle(title: string, year?: string): Promise<OMDB
     console.log('🔍 OMDB Title search:', title, year || '');
     
     const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error(`❌ OMDB HTTP error: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
     const data = await response.json();
 
     if (data.Response === 'True') {
-      console.log(`✅ OMDB found: ${data.Title} (${data.imdbID})`);
+      console.log(`✅ OMDB found: ${data.Title} (${data.imdbID}), Poster: ${data.Poster !== 'N/A' ? 'Yes' : 'No'}`);
       return data;
     } else {
       console.log(`⚠️ OMDB title not found: ${title}`, data.Error || '');
       return null;
     }
   } catch (error) {
-    console.error('❌ OMDB title search error:', error);
+    console.error('❌ OMDB title search error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : typeof error,
+      title,
+      year,
+    });
     return null;
   }
 }

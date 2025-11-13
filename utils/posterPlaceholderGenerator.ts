@@ -93,7 +93,7 @@ export function generateBackdropPlaceholder(title: string, width: number = 400, 
       <defs>
         <linearGradient id="backdrop-${simpleHash(title)}" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style="stop-color:${colorScheme.background};stop-opacity:1" />
-          <stop offset="100%" style="stop-color:${colorScheme.background};stop-opacity:0.7" />
+          <stop offset="100%" style="stop-color:${colorScheme.background};stop-opacity:1" />
         </linearGradient>
       </defs>
       <rect x="0" y="0" width="${width}" height="${height}" fill="url(#backdrop-${simpleHash(title)})"/>

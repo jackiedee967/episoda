@@ -61,7 +61,7 @@ class ShowEnrichmentManager {
       let posterUrl = omdbData?.posterUrl || null;
 
       let tvmazeData = null;
-      if (!posterUrl && imdbId) {
+      if (!posterUrl) {
         tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb);
         posterUrl = tvmazeData?.posterUrl || null;
       }
@@ -69,6 +69,14 @@ class ShowEnrichmentManager {
       let backdropUrl = null;
       if (tvmazeData?.tvmazeId) {
         backdropUrl = await this.fetchBackdropUrl(tvmazeData.tvmazeId);
+      } else if (!posterUrl && traktShow.ids.tvdb) {
+        const tvmazeShow = await this.fetchTVMazeByTvdb(traktShow.ids.tvdb);
+        if (tvmazeShow) {
+          backdropUrl = await this.fetchBackdropUrl(tvmazeShow.tvmazeId);
+          if (!posterUrl) {
+            posterUrl = tvmazeShow.posterUrl;
+          }
+        }
       }
 
       const enriched = {
@@ -124,6 +132,19 @@ class ShowEnrichmentManager {
       tvmazeShow = await getShowByTvdbId(tvdbId);
     }
 
+    if (!tvmazeShow || !tvmazeShow.image) {
+      return null;
+    }
+
+    return {
+      posterUrl: tvmazeShow.image.original,
+      tvmazeId: tvmazeShow.id,
+    };
+  }
+
+  private async fetchTVMazeByTvdb(tvdbId: number): Promise<{ posterUrl: string; tvmazeId: number } | null> {
+    const tvmazeShow = await getShowByTvdbId(tvdbId);
+    
     if (!tvmazeShow || !tvmazeShow.image) {
       return null;
     }
