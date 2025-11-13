@@ -52,7 +52,12 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Error Propagation**: API failures don't get cached, enabling automatic retry on next search
     - **TVMaze Integration**: Returns both poster URL and TVMaze ID for downstream episode fetching
   - **Database Persistence**: Shows and episodes saved to Supabase before post creation for consistency
-  - **Search-to-Hub Flow**: Search → Enrich → Save to DB → Navigate (fixes "Show not found" errors)
+  - **Search-to-Hub Flow**: Simplified single-source-of-truth architecture
+    - **Search Screen**: Fetches from Trakt → Enriches with poster/seasons → Saves to Supabase → Navigates with DB ID
+    - **ShowHub Screen**: Reads from Supabase only (no client-side Trakt fallback)
+    - **Design Decision**: Eliminates redirect loops, state mismatches, and stuck spinners by removing complex hydration logic
+    - **Error Handling**: ShowHub displays clean "Show not found" error if database lookup fails
+    - **Tech Debt**: Episodes and friends watching still use mock data (to be implemented separately)
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
   - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
 - **Mock User Seeding**: Database seeding script (`scripts/seedMockUsers.ts`) creates 4 real mock users (jackie, max, mia, liz) in development database with auto-generated avatars and follow relationships. Run via `npm run seed:mock-users`. Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable.
