@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import tokens from '@/styles/tokens';
 
 interface Vector3DividerProps {
   testID?: string;
+  style?: ViewStyle;
 }
 
-export function Vector3Divider({ testID }: Vector3DividerProps) {
-  return <View testID={testID} style={styles.divider} />;
+export function Vector3Divider({ testID, style }: Vector3DividerProps) {
+  return <View testID={testID} style={[styles.divider, style]} />;
 }
 
 const styles = StyleSheet.create({
