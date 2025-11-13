@@ -372,7 +372,7 @@ export default function ShowHub() {
           </View>
           <View style={styles.detailsColumn}>
             <Text style={styles.showTitleInside}>{show.title}</Text>
-            <Text style={styles.description} numberOfLines={3}>
+            <Text style={styles.description} numberOfLines={6}>
               {show.description}
             </Text>
             <View style={styles.statsRow}>
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
     gap: 11,
   },
   description: {
-    ...tokens.typography.p1,
+    ...tokens.typography.p3R,
     color: tokens.colors.pureWhite,
   },
   divider: {
