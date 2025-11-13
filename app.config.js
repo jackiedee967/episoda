@@ -34,10 +34,12 @@ module.exports = {
       bundler: "metro",
     },
     plugins: [
+      "expo-asset",
       "expo-font",
       "expo-router",
       "expo-web-browser",
       "expo-dev-client",
+      "react-native-edge-to-edge",
       [
         "expo-build-properties",
         {
