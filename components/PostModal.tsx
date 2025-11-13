@@ -178,10 +178,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           seasonMap.get(episode.seasonNumber)!.push(episode);
         });
         
-        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
           seasonNumber,
           episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-          expanded: false,
+          expanded: index === 0, // Auto-expand first season
         }));
         
         setSeasons(seasonsArray);
@@ -197,9 +197,11 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           if (season.number === 0) continue;
           
           const episodesData = await getSeasonEpisodes(traktShow.ids.trakt, season.number);
+          console.log(`📺 Fetched ${episodesData.length} episodes for season ${season.number}`);
           
           for (const episode of episodesData) {
             const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
+            console.log(`  Episode ${episode.number}: ${episode.title}`);
             
             if (!seasonMap.has(episode.season)) {
               seasonMap.set(episode.season, []);
@@ -208,12 +210,26 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           }
         }
         
-        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
           seasonNumber,
           episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-          expanded: false,
+          expanded: index === 0, // Auto-expand first season
         }));
         
+        console.log(`✅ Created ${seasonsArray.length} seasons with episodes:`, seasonsArray.map(s => `S${s.seasonNumber}: ${s.episodes.length} eps`));
+        // Debug first season's first episode
+        if (seasonsArray[0]?.episodes[0]) {
+          const sampleEp = seasonsArray[0].episodes[0];
+          console.log('📋 Sample episode:', {
+            id: sampleEp.id,
+            showId: sampleEp.showId,
+            seasonNumber: sampleEp.seasonNumber,
+            episodeNumber: sampleEp.episodeNumber,
+            title: sampleEp.title,
+            key: getEpisodeKey(sampleEp)
+          });
+        }
+        console.log('🔑 TraktEpisodesMap keys (first 5):', Array.from(traktEpsMap.keys()).slice(0, 5));
         setSeasons(seasonsArray);
         setIsFetchingEpisodes(false);
         setStep('selectEpisodes');
@@ -334,10 +350,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         }
       }
 
-      const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+      const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
         seasonNumber,
         episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-        expanded: false,
+        expanded: index === 0, // Auto-expand first season
       }));
 
       setSeasons(seasonsArray);
@@ -853,7 +869,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContainer: {
-    width: 440,
+    width: '100%',
+    maxWidth: 600,
     height: 780,
     backgroundColor: tokens.colors.pureWhite,
     borderTopLeftRadius: 20,
@@ -963,18 +980,22 @@ const styles = StyleSheet.create({
   },
   seasonHeader: {
     flexDirection: 'row',
+    height: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapLarge,
-    borderRadius: components.borderRadiusButton,
+    backgroundColor: tokens.colors.pureWhite,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    borderRadius: 12,
+    alignSelf: 'stretch',
   },
   seasonTitle: {
-    fontSize: 18,
+    fontFamily: tokens.typography.fontFamilyFunnel,
+    fontSize: 13,
     fontWeight: '600',
-    color: colors.text,
+    color: tokens.colors.black,
   },
   episodesContainer: {
     marginTop: spacing.gapSmall,
@@ -984,16 +1005,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapMedium,
-    borderRadius: components.borderRadiusButton,
+    backgroundColor: tokens.colors.almostWhite,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
   },
   episodeItemSelected: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    backgroundColor: tokens.colors.almostWhite,
+    borderWidth: 2,
+    borderColor: tokens.colors.greenHighlight,
   },
   episodeInfo: {
     flex: 1,
