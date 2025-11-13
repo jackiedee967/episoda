@@ -9,6 +9,7 @@ import { Heart, MessageCircle, RefreshCw, Lightbulb, AlertTriangle, List, HelpCi
 import { useData } from '@/contexts/DataContext';
 import StarRatings from '@/components/StarRatings';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -173,7 +174,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     <Pressable style={styles.card} onPress={handlePostPress}>
       <View style={styles.userPostInfo}>
         <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
-          <Image source={{ uri: latestPost.show.poster }} style={styles.showPoster} />
+          <Image source={{ uri: getPosterUrl(latestPost.show.poster, latestPost.show.title) }} style={styles.showPoster} />
         </Pressable>
 
         <View style={styles.contentContainer}>

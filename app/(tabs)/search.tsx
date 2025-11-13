@@ -585,7 +585,7 @@ export default function SearchScreen() {
                 <Text style={styles.commentTime}>{timeAgo}</Text>
               </View>
             </View>
-            <Image source={{ uri: post.show.poster }} style={styles.commentShowPoster} />
+            <Image source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} style={styles.commentShowPoster} />
           </Pressable>
         );
 

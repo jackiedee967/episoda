@@ -34,7 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode } from '@/services/showDatabase';
 import { getAllEpisodes } from '@/services/trakt';
 import { getEpisode } from '@/services/tvmaze';
-import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 
 type TabKey = 'friends' | 'all' | 'episodes';
@@ -371,18 +371,14 @@ export default function ShowHub() {
 
   const renderBanner = () => {
     if (!show) return null;
-    const backdropUrl = show.backdrop;
+    const backdropUrl = getBackdropUrl(show.backdrop, show.title);
     return (
       <View style={styles.bannerContainer}>
-        {backdropUrl ? (
-          <Image 
-            source={{ uri: backdropUrl }} 
-            style={styles.bannerImage}
-            contentFit="cover"
-          />
-        ) : (
-          <View style={styles.bannerPlaceholder} />
-        )}
+        <Image 
+          source={{ uri: backdropUrl }} 
+          style={styles.bannerImage}
+          contentFit="cover"
+        />
         <View style={styles.bannerOverlay}>
           <Pressable onPress={() => router.back()} style={styles.backButtonOverlay}>
             <ChevronLeft size={18} color={tokens.colors.pureWhite} />

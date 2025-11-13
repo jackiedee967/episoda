@@ -84,3 +84,33 @@ export function getPosterUrl(posterUrl: string | null | undefined, showTitle: st
   
   return generatePosterPlaceholder(showTitle);
 }
+
+export function generateBackdropPlaceholder(title: string, width: number = 400, height: number = 160): string {
+  const colorScheme = getColorSchemeForTitle(title);
+  
+  const svg = `
+    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="backdrop-${simpleHash(title)}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:${colorScheme.background};stop-opacity:1" />
+          <stop offset="100%" style="stop-color:${colorScheme.background};stop-opacity:0.7" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="${width}" height="${height}" fill="url(#backdrop-${simpleHash(title)})"/>
+    </svg>
+  `.trim();
+  
+  const encoded = encodeURIComponent(svg)
+    .replace(/'/g, '%27')
+    .replace(/"/g, '%22');
+  
+  return `data:image/svg+xml,${encoded}`;
+}
+
+export function getBackdropUrl(backdropUrl: string | null | undefined, showTitle: string): string {
+  if (backdropUrl && backdropUrl.trim() !== '') {
+    return backdropUrl;
+  }
+  
+  return generateBackdropPlaceholder(showTitle);
+}

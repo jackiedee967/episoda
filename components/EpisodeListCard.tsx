@@ -55,14 +55,12 @@ export default function EpisodeListCard({
       onPress={handleCardPress}
       style={[styles.episodeCard, { borderColor: cardBorderColor }]}
     >
-      {thumbnail ? (
+      {thumbnail && (
         <Image 
           source={{ uri: thumbnail }} 
           style={styles.thumbnail}
           contentFit="cover"
         />
-      ) : (
-        <View style={styles.thumbnailPlaceholder} />
       )}
       
       <View style={styles.episodeInfo}>
