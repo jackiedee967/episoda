@@ -709,6 +709,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
             followers: [],
           });
         });
+        
+        // Fetch missing profiles individually (fallback for cache misses)
+        const missingUserIds = uniqueUserIds.filter(uid => !usersMap.has(uid));
+        if (missingUserIds.length > 0) {
+          console.log('🔄 Fetching', missingUserIds.length, 'missing profiles...');
+          for (const userId of missingUserIds) {
+            const { data: profileData } = await supabase
+              .from('user_profiles' as any)
+              .select('*')
+              .eq('user_id', userId)
+              .single();
+            
+            if (profileData) {
+              let avatarUrl = profileData.avatar_url || '';
+              if (!avatarUrl && profileData.avatar_color_scheme && profileData.avatar_icon) {
+                avatarUrl = generateAvatarDataURI(profileData.avatar_color_scheme, profileData.avatar_icon);
+              }
+              usersMap.set(profileData.user_id, {
+                id: profileData.user_id,
+                username: profileData.username || 'user',
+                displayName: profileData.display_name || profileData.username || 'User',
+                avatar: avatarUrl,
+                bio: profileData.bio || '',
+                socialLinks: profileData.social_links || {},
+                following: [],
+                followers: [],
+              });
+            }
+          }
+        }
 
         const showsMap = new Map();
         (showsResult.data || []).forEach((show: any) => {

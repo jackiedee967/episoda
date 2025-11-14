@@ -389,8 +389,8 @@ export default function ShowHub() {
     });
     setSelectedEpisodeIds(new Set());
     
-    // Stay on ShowHub after posting so logged episodes remain visible
-    // (navigating away would trigger useEffect recalculation from stale posts array)
+    // Navigate to the post page
+    router.push(`/post/${postId}`);
   };
 
   const filteredAndSortedPosts = useMemo(() => {
