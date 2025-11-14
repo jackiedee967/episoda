@@ -188,117 +188,80 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         return;
       }
       
-      // Flow 1: Fetch episodes from database for episode picker
-      const dbEpisodes = await getEpisodesByShowId(show.id);
+      // Flow 1: Always fetch ALL episodes from Trakt for episode picker (not just database episodes)
+      console.log('Fetching all episodes from Trakt for selection');
       
-      if (dbEpisodes && dbEpisodes.length > 0) {
-        // Group database episodes into seasons
-        const seasonMap = new Map<number, Episode[]>();
+      const seasonMap = new Map<number, Episode[]>();
+      
+      for (const season of seasonsData) {
+        if (season.number === 0) continue;
         
-        dbEpisodes.forEach(dbEp => {
-          const episode: Episode = {
-            id: dbEp.id,
-            showId: dbEp.show_id,
-            seasonNumber: dbEp.season_number,
-            episodeNumber: dbEp.episode_number,
-            title: dbEp.title,
-            description: dbEp.description || '',
-            rating: dbEp.rating || 0,
-            postCount: 0,
-            thumbnail: dbEp.thumbnail_url || undefined,
-          };
+        const episodesData = await getSeasonEpisodes(traktShow.ids.trakt, season.number);
+        console.log(`📺 Fetched ${episodesData.length} episodes for season ${season.number}`);
+        
+        for (const episode of episodesData) {
+          const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
           
-          if (!seasonMap.has(episode.seasonNumber)) {
-            seasonMap.set(episode.seasonNumber, []);
+          if (!seasonMap.has(episode.season)) {
+            seasonMap.set(episode.season, []);
           }
-          seasonMap.get(episode.seasonNumber)!.push(episode);
+          seasonMap.get(episode.season)!.push(mappedEpisode);
+        }
+      }
+      
+      let seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+        seasonNumber,
+        episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+        expanded: index === 0, // Auto-expand first season
+      }));
+      
+      console.log(`✅ Created ${seasonsArray.length} seasons`);
+      
+      // Display episodes immediately for fast UI
+      setSeasons(seasonsArray);
+      setIsFetchingEpisodes(false);
+      setStep('selectEpisodes');
+      
+      // Fetch thumbnails in background if TVMaze ID available
+      const dbShow = await getShowById(show.id);
+      if (dbShow && dbShow.tvmaze_id) {
+        console.log('📸 Fetching episode thumbnails from TVMaze...');
+        const allEpisodes = seasonsArray.flatMap(s => s.episodes);
+        const episodesWithThumbnails = await Promise.all(
+          allEpisodes.map(async (ep) => {
+            try {
+              const tvmazeEpisode = await getTVMazeEpisode(
+                dbShow.tvmaze_id!,
+                ep.seasonNumber,
+                ep.episodeNumber
+              );
+              return {
+                ...ep,
+                thumbnail: tvmazeEpisode?.image?.original || undefined,
+              };
+            } catch (error) {
+              return ep; // Keep episode without thumbnail on error
+            }
+          })
+        );
+        
+        // Rebuild seasons with thumbnails
+        const thumbnailSeasonMap = new Map<number, Episode[]>();
+        episodesWithThumbnails.forEach(ep => {
+          if (!thumbnailSeasonMap.has(ep.seasonNumber)) {
+            thumbnailSeasonMap.set(ep.seasonNumber, []);
+          }
+          thumbnailSeasonMap.get(ep.seasonNumber)!.push(ep);
         });
         
-        const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+        seasonsArray = Array.from(thumbnailSeasonMap.entries()).map(([seasonNumber, episodes], index) => ({
           seasonNumber,
           episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-          expanded: index === 0, // Auto-expand first season
+          expanded: index === 0,
         }));
         
         setSeasons(seasonsArray);
-        setIsFetchingEpisodes(false);
-        setStep('selectEpisodes');
-      } else {
-        // No database episodes yet - fetch from Trakt and map them
-        console.log('No database episodes found, fetching from Trakt');
-        
-        const seasonMap = new Map<number, Episode[]>();
-        
-        for (const season of seasonsData) {
-          if (season.number === 0) continue;
-          
-          const episodesData = await getSeasonEpisodes(traktShow.ids.trakt, season.number);
-          console.log(`📺 Fetched ${episodesData.length} episodes for season ${season.number}`);
-          
-          for (const episode of episodesData) {
-            const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-            
-            if (!seasonMap.has(episode.season)) {
-              seasonMap.set(episode.season, []);
-            }
-            seasonMap.get(episode.season)!.push(mappedEpisode);
-          }
-        }
-        
-        let seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
-          seasonNumber,
-          episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-          expanded: index === 0, // Auto-expand first season
-        }));
-        
-        console.log(`✅ Created ${seasonsArray.length} seasons`);
-        
-        // Display episodes immediately for fast UI
-        setSeasons(seasonsArray);
-        setIsFetchingEpisodes(false);
-        setStep('selectEpisodes');
-        
-        // Fetch thumbnails in background if TVMaze ID available
-        const dbShow = await getShowById(show.id);
-        if (dbShow && dbShow.tvmaze_id) {
-          console.log('📸 Fetching episode thumbnails from TVMaze...');
-          const allEpisodes = seasonsArray.flatMap(s => s.episodes);
-          const episodesWithThumbnails = await Promise.all(
-            allEpisodes.map(async (ep) => {
-              try {
-                const tvmazeEpisode = await getTVMazeEpisode(
-                  dbShow.tvmaze_id!,
-                  ep.seasonNumber,
-                  ep.episodeNumber
-                );
-                return {
-                  ...ep,
-                  thumbnail: tvmazeEpisode?.image?.original || undefined,
-                };
-              } catch (error) {
-                return ep; // Keep episode without thumbnail on error
-              }
-            })
-          );
-          
-          // Rebuild seasons with thumbnails
-          const thumbnailSeasonMap = new Map<number, Episode[]>();
-          episodesWithThumbnails.forEach(ep => {
-            if (!thumbnailSeasonMap.has(ep.seasonNumber)) {
-              thumbnailSeasonMap.set(ep.seasonNumber, []);
-            }
-            thumbnailSeasonMap.get(ep.seasonNumber)!.push(ep);
-          });
-          
-          seasonsArray = Array.from(thumbnailSeasonMap.entries()).map(([seasonNumber, episodes], index) => ({
-            seasonNumber,
-            episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-            expanded: index === 0,
-          }));
-          
-          setSeasons(seasonsArray);
-          console.log('✅ Updated episodes with thumbnails');
-        }
+        console.log('✅ Updated episodes with thumbnails');
       }
     } catch (error) {
       console.error('Error loading data for preselected show:', error);
