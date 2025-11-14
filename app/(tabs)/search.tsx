@@ -1242,7 +1242,6 @@ const styles = StyleSheet.create({
   },
   searchHistoryContainer: {
     width: '100%',
-    paddingTop: 18,
   },
   searchHistoryTitle: {
     ...tokens.typography.h3,
