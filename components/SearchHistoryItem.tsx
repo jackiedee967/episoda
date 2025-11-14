@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   queryText: {
-    ...tokens.typography.p1M,
+    ...tokens.typography.p1,
     color: tokens.colors.pureWhite,
     flex: 1,
   },
