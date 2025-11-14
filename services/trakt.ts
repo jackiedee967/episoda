@@ -219,3 +219,31 @@ export async function getAllEpisodes(traktId: number | string): Promise<TraktEpi
     throw error;
   }
 }
+
+export async function getTrendingShows(limit: number = 12): Promise<TraktShow[]> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured');
+  }
+
+  try {
+    console.log(`🔥 Fetching ${limit} trending shows from Trakt`);
+    const response = await fetch(
+      `${TRAKT_BASE_URL}/shows/trending?extended=full&limit=${limit}`,
+      { headers: TRAKT_HEADERS }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data: { watchers: number; show: TraktShow }[] = await response.json();
+    const shows = data.map(item => item.show);
+    
+    console.log(`✅ Fetched ${shows.length} trending shows`);
+    return shows;
+  } catch (error) {
+    console.error('Error fetching trending shows from Trakt:', error);
+    throw error;
+  }
+}

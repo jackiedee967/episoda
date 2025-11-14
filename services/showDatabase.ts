@@ -16,6 +16,7 @@ export interface DatabaseShow {
   rating: number | null;
   total_seasons: number | null;
   total_episodes: number | null;
+  genres: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +95,7 @@ export async function saveShow(
     rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : null,
     total_seasons: options.enrichedSeasonCount ?? null,
     total_episodes: traktShow.aired_episodes || null,
+    genres: traktShow.genres || [],
     updated_at: new Date().toISOString(),
   };
 
