@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: 'cover',
+        backgroundSize: '100% auto',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center 160px',
       } as any,
