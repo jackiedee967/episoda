@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     ...Platform.select({
       web: {
-        backgroundImage: "url('/assets/images/show-hub-background.jpg')",
+        backgroundImage: "url('/images/show-hub-background.jpg')",
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
