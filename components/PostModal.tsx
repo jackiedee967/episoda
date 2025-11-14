@@ -27,6 +27,7 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
+import { getCombinedRecommendations, RecommendedShow } from '@/services/recommendations';
 
 interface PostModalProps {
   visible: boolean;
@@ -70,6 +71,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [isPosting, setIsPosting] = useState(false);
   const [selectedTraktShow, setSelectedTraktShow] = useState<TraktShow | null>(null);
   const [traktEpisodesMap, setTraktEpisodesMap] = useState<Map<string, TraktEpisode>>(new Map());
+  const [recommendedShows, setRecommendedShows] = useState<Array<{ show: Show; traktShow?: TraktShow; isDatabaseBacked: boolean }>>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -85,6 +88,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const getEpisodeKey = (episode: Episode): string => {
     return `${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`;
   };
+
 
   // Load previously logged episodes from posts when show changes
   useEffect(() => {
@@ -139,6 +143,92 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       setStep('selectShow');
     }
   }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes]);
+
+  // Load show recommendations when modal opens on selectShow step
+  useEffect(() => {
+    // Clear recommendations when step changes or modal closes
+    if (!visible || step !== 'selectShow') {
+      setRecommendedShows([]);
+      return;
+    }
+
+    // Only load recommendations when:
+    // 1. Modal is visible
+    // 2. Step is selectShow (not preselected show flow)
+    // 3. User is logged in
+    // 4. Not currently searching
+    if (!currentUser?.id || searchQuery.trim() !== '') {
+      return;
+    }
+
+    const loadRecommendations = async () => {
+      console.log('📊 Loading show recommendations for user:', currentUser.id);
+      setIsLoadingRecommendations(true);
+      
+      try {
+        const { mapDatabaseShowToShow, mapTraktShowToShow } = await import('@/services/showMappers');
+        const { getShowDetails } = await import('@/services/trakt');
+        
+        const recommendations = await getCombinedRecommendations(currentUser.id, 12);
+        console.log(`✅ Fetched ${recommendations.length} raw recommendations`);
+        
+        // Convert RecommendedShow to Show using appropriate mappers
+        const convertedShows = await Promise.all(
+          recommendations.map(async (rec) => {
+            if (rec.isFromDatabase && rec.id) {
+              // Database-backed show: Fetch full DatabaseShow and convert
+              const dbShow = await getShowById(rec.id);
+              if (!dbShow) {
+                console.warn(`Database show ${rec.id} not found, skipping`);
+                return null;
+              }
+              
+              // Fetch TraktShow for this database show (needed for episode fetching)
+              let traktShow: TraktShow | undefined;
+              try {
+                traktShow = await getShowDetails(dbShow.trakt_id);
+              } catch (error) {
+                console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}`);
+              }
+              
+              return {
+                show: mapDatabaseShowToShow(dbShow),
+                traktShow,
+                isDatabaseBacked: true
+              };
+            } else {
+              // Trakt-only show: Fetch full TraktShow
+              // We'll save to DB when user clicks on it
+              try {
+                const traktShow = await getShowDetails(rec.trakt_id);
+                return {
+                  show: mapTraktShowToShow(traktShow, undefined),
+                  traktShow,
+                  isDatabaseBacked: false
+                };
+              } catch (error) {
+                console.warn(`Failed to fetch Trakt show ${rec.trakt_id}, skipping`);
+                return null;
+              }
+            }
+          })
+        );
+        
+        // Filter out failed conversions
+        const validShows = convertedShows.filter(s => s !== null) as Array<{ show: Show; traktShow?: TraktShow; isDatabaseBacked: boolean }>;
+        setRecommendedShows(validShows);
+        console.log(`✅ Loaded ${validShows.length} valid recommendations`);
+      } catch (error) {
+        console.error('❌ Failed to load recommendations:', error);
+        // Silently fail - user can still search for shows
+        setRecommendedShows([]);
+      } finally {
+        setIsLoadingRecommendations(false);
+      }
+    };
+
+    loadRecommendations();
+  }, [visible, step, currentUser?.id, searchQuery]);
   
   const loadTraktDataForPreselectedShow = async (show: Show, skipToReview: boolean) => {
     setIsFetchingEpisodes(true);
@@ -324,10 +414,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const results = await searchShows(searchQuery);
+        const searchResponse = await searchShows(searchQuery);
         const { mapTraktShowToShow } = await import('@/services/showMappers');
-        const mappedShows = results.map(result => ({
-          show: mapTraktShowToShow(result.show, null),
+        const mappedShows = searchResponse.results.map(result => ({
+          show: mapTraktShowToShow(result.show, undefined),
           traktShow: result.show
         }));
         setShowSearchResults(mappedShows);
@@ -490,8 +580,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               const traktEpisode = traktEpisodesMap.get(episodeKey)!;
 
               const dbEpisode = await saveEpisode(
-                dbShow.id,
-                dbShow.tvmaze_id,
+                dbShow!.id,
+                dbShow!.tvmaze_id,
                 {
                   ids: traktEpisode.ids,
                   season: traktEpisode.season,
