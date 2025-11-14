@@ -77,6 +77,13 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Log Episodes Integration**: FloatingTabBar transforms to "Log X episode(s)" button when episodes selected, opens PostModal with pre-selected episodes
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
   - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
+  - **Smart Show Recommendations (Nov 2025)**: Production-grade personalized recommendation system for PostModal
+    - **Data Source**: Uses `posts` table as source of truth for user's watched shows (not a separate watch_history table)
+    - **Recommendation Algorithm**: Combines recently logged shows (from user posts) + genre-based recommendations (from Trakt) + trending shows (fallback)
+    - **Hybrid Architecture**: Database-backed shows fetched from Supabase with Trakt metadata; Trakt-only shows lazy-persisted on click
+    - **UI Integration**: 4×3 grid of recommended shows displayed when search query is empty, with loading states and bookmark icons
+    - **Production-Safe**: Post-sorted limiting (handles 100+ logged shows), refetch fallback uses stored `traktId` (handles both UUID and Trakt IDs)
+    - **Services**: `services/recommendations.ts` (getRecentlyLoggedShows, getUserGenreInterests, getGenreBasedRecommendations, getCombinedRecommendations)
 - **Mock User Seeding**: Database seeding script (`scripts/seedMockUsers.ts`) creates 4 real mock users (jackie, max, mia, liz) in development database with auto-generated avatars and follow relationships. Run via `npm run seed:mock-users`. Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable.
 - **Account Management**: Implemented account deletion via Supabase Edge Functions and a phone number change feature for SMS-authenticated users.
 - **Robust Authentication**: Addressed OTP verification race conditions and username persistence bugs for a smoother onboarding experience.
@@ -96,9 +103,10 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 - `comments` — Post comments
 - `follows` — User follow relationships
 - `post_episodes` — Many-to-many relationship between posts and episodes
-- `watch_history` — User episode watch history
 - `social_links` — User social media links
 - `help_desk_posts` — Support/help desk posts
+
+**Note**: Watch history is tracked through the `posts` table (user's logged episodes), not a separate `watch_history` table. Recommendation systems query `posts.show_id` and `posts.created_at` to determine viewing patterns.
 
 ### Query Best Practices:
 1. **Before writing any new query**: Check existing queries in `contexts/DataContext.tsx` to see table names
