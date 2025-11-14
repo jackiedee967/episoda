@@ -122,6 +122,34 @@ export default function ShowHub() {
     return uniqueFriends;
   }, [posts, currentUser, show]);
 
+  // Load previously logged episodes from posts
+  useEffect(() => {
+    if (!show || !currentUser) {
+      setLoggedEpisodeIds(new Set());
+      return;
+    }
+
+    // Filter posts by current user and this show
+    const userShowPosts = posts.filter(
+      post => post.user.id === currentUser.id && post.show.id === show.id
+    );
+
+    // Extract episode IDs from all posts
+    const loggedIds = new Set<string>();
+    userShowPosts.forEach(post => {
+      // Handle single episode (legacy posts)
+      if (post.episode) {
+        loggedIds.add(post.episode.id);
+      }
+      // Handle multiple episodes (new posts)
+      if (post.episodes && post.episodes.length > 0) {
+        post.episodes.forEach(ep => loggedIds.add(ep.id));
+      }
+    });
+
+    setLoggedEpisodeIds(loggedIds);
+  }, [posts, currentUser, show]);
+
   useEffect(() => {
     async function loadShow() {
       if (!id || typeof id !== 'string') return;

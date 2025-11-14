@@ -70,7 +70,8 @@ export interface Post {
   id: string;
   user: User;
   show: Show;
-  episodes?: Episode[];
+  episode?: Episode; // Legacy single episode (backwards compatibility)
+  episodes?: Episode[]; // New multi-episode posts
   title?: string;
   body: string;
   rating?: number;

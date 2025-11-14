@@ -48,7 +48,7 @@ interface Season {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
-  const { createPost, currentUser, isShowInPlaylist, playlists } = useData();
+  const { createPost, currentUser, isShowInPlaylist, playlists, posts } = useData();
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
@@ -61,6 +61,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShowForPlaylist, setSelectedShowForPlaylist] = useState<Show | null>(null);
+  const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
   
   const [showSearchResults, setShowSearchResults] = useState<Array<{ show: Show; traktShow: TraktShow }>>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -84,6 +85,34 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const getEpisodeKey = (episode: Episode): string => {
     return `${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`;
   };
+
+  // Load previously logged episodes from posts when show changes
+  useEffect(() => {
+    if (!selectedShow || !currentUser) {
+      setLoggedEpisodeIds(new Set());
+      return;
+    }
+
+    // Filter posts by current user and selected show
+    const userShowPosts = posts.filter(
+      post => post.user.id === currentUser.id && post.show.id === selectedShow.id
+    );
+
+    // Extract episode IDs from all posts
+    const loggedIds = new Set<string>();
+    userShowPosts.forEach(post => {
+      // Handle single episode (legacy posts)
+      if (post.episode) {
+        loggedIds.add(post.episode.id);
+      }
+      // Handle multiple episodes (new posts)
+      if (post.episodes && post.episodes.length > 0) {
+        post.episodes.forEach(ep => loggedIds.add(ep.id));
+      }
+    });
+
+    setLoggedEpisodeIds(loggedIds);
+  }, [posts, currentUser, selectedShow]);
 
   useEffect(() => {
     if (!visible) return;
@@ -545,6 +574,11 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         console.log('Post created successfully');
         
+        // Update logged episodes set
+        dbEpisodes.forEach(episode => {
+          setLoggedEpisodeIds(prev => new Set(prev).add(episode.id));
+        });
+        
         if (onPostSuccess) {
           onPostSuccess(newPost.id, dbEpisodes);
         }
@@ -696,6 +730,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               <View style={styles.episodesContainer}>
                 {season.episodes.map(episode => {
                   const isSelected = selectedEpisodes.some(ep => ep.id === episode.id);
+                  const isLogged = loggedEpisodeIds.has(episode.id);
                   return (
                     <EpisodeListCard
                       key={episode.id}
@@ -704,6 +739,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                       description={episode.description}
                       thumbnail={episode.thumbnail}
                       isSelected={isSelected}
+                      isLogged={isLogged}
                       onPress={() => handleEpisodeToggle(episode)}
                       onToggleSelect={() => handleEpisodeToggle(episode)}
                       theme="light"
