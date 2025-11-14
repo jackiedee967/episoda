@@ -134,10 +134,18 @@ export default function ShowHub() {
       try {
         console.log('🔍 Querying watch_history for user:', currentUser.id, 'show:', show.id, show.title);
         
-        // Query watch_history table directly for this user and show
+        // Query watch_history with episode details to match by season/episode numbers
         const { data, error } = await supabase
           .from('watch_history')
-          .select('episode_id')
+          .select(`
+            episode_id,
+            episodes:episode_id (
+              id,
+              season_number,
+              episode_number,
+              trakt_id
+            )
+          `)
           .eq('user_id', currentUser.id)
           .eq('show_id', show.id);
 
@@ -146,10 +154,19 @@ export default function ShowHub() {
           return;
         }
 
-        // Extract episode IDs
+        // Build episode IDs in the format used by ShowHub: `${trakt_show_id}-S${season}E${episode}`
+        const dbShow = await getShowById(show.id);
+        if (!dbShow || !dbShow.trakt_id) {
+          console.error('❌ Show missing Trakt ID');
+          return;
+        }
+
         const loggedIds = new Set<string>();
-        (data || []).forEach(item => {
-          loggedIds.add(item.episode_id);
+        (data || []).forEach((item: any) => {
+          if (item.episodes) {
+            const episodeId = `${dbShow.trakt_id}-S${item.episodes.season_number}E${item.episodes.episode_number}`;
+            loggedIds.add(episodeId);
+          }
         });
 
         console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`, Array.from(loggedIds));
