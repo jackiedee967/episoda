@@ -212,35 +212,50 @@ export default function PostDetail() {
     setShowDeleteMenu(!showDeleteMenu);
   };
 
-  const handleDeletePost = () => {
+  const handleDeletePost = async () => {
     setShowDeleteMenu(false);
     
-    Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          },
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            try {
-              await deletePost(post.id);
-              router.back();
-            } catch (error) {
-              console.error('Error deleting post:', error);
-            }
-          },
-        },
-      ]
-    );
+    // Web-compatible confirmation
+    const confirmed = Platform.OS === 'web' 
+      ? window.confirm('Are you sure you want to delete this post?')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Delete Post',
+            'Are you sure you want to delete this post?',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  resolve(false);
+                },
+              },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                  resolve(true);
+                },
+              },
+            ]
+          );
+        });
+    
+    if (confirmed) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      try {
+        await deletePost(post.id);
+        router.back();
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        if (Platform.OS === 'web') {
+          alert('Failed to delete post. Please try again.');
+        } else {
+          Alert.alert('Error', 'Failed to delete post. Please try again.');
+        }
+      }
+    }
   };
 
   return (
