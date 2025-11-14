@@ -73,9 +73,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   queryText: {
-    fontSize: 15,
+    ...tokens.typography.p1M,
     color: tokens.colors.pureWhite,
-    fontFamily: 'Inter',
     flex: 1,
   },
   removeButton: {
