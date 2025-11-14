@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: tokens.colors.cardBackground,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 8,
   },
   pressed: {
