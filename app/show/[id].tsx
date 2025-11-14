@@ -762,15 +762,6 @@ export default function ShowHub() {
 
 const styles = StyleSheet.create({
   container: {
-    ...Platform.select({
-      web: {
-        backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'scroll',
-      } as any,
-    }),
   },
   scrollView: {
     flex: 1,
@@ -778,6 +769,14 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     flexGrow: 1,
+    ...Platform.select({
+      web: {
+        backgroundImage: "url('/app-background.jpg')",
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'top center',
+      } as any,
+    }),
   },
   contentContainer: {
     padding: 20,
