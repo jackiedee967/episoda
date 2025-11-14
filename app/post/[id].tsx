@@ -261,29 +261,17 @@ export default function PostDetail() {
               </Pressable>
               
               {canDelete && (
-                <View>
-                  <Pressable 
-                    onPress={handleDeletePress} 
-                    style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
-                    disabled={isDeletingPost}
-                  >
-                    <MoreVertical 
-                      size={20} 
-                      color={isDeletingPost ? tokens.colors.grey1 : tokens.colors.almostWhite} 
-                      strokeWidth={1.5} 
-                    />
-                  </Pressable>
-                  
-                  {showDeleteMenu && !isDeletingPost && (
-                    <View style={styles.deleteMenu}>
-                      <Pressable onPress={handleDeletePost} style={styles.deleteMenuItem}>
-                        <Text style={styles.deleteMenuText}>
-                          {isDeletingPost ? 'Deleting...' : 'Delete Post'}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  )}
-                </View>
+                <Pressable 
+                  onPress={handleDeletePress} 
+                  style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
+                  disabled={isDeletingPost}
+                >
+                  <MoreVertical 
+                    size={20} 
+                    color={isDeletingPost ? tokens.colors.grey1 : tokens.colors.almostWhite} 
+                    strokeWidth={1.5} 
+                  />
+                </Pressable>
               )}
             </View>
 
@@ -465,6 +453,20 @@ export default function PostDetail() {
             </View>
           </View>
         </KeyboardAvoidingView>
+
+        {/* Delete Menu - Rendered outside ScrollView for proper click handling */}
+        {canDelete && showDeleteMenu && !isDeletingPost && (
+          <Pressable 
+            style={styles.menuOverlay} 
+            onPress={() => setShowDeleteMenu(false)}
+          >
+            <View style={styles.deleteMenu}>
+              <Pressable onPress={handleDeletePost} style={styles.deleteMenuItem}>
+                <Text style={styles.deleteMenuText}>Delete Post</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        )}
       </View>
     </>
   );
@@ -517,10 +519,18 @@ const styles = StyleSheet.create({
   menuButtonDisabled: {
     opacity: 0.5,
   },
-  deleteMenu: {
+  menuOverlay: {
     position: 'absolute',
-    top: 32,
+    top: 0,
+    left: 0,
     right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    alignItems: 'flex-end',
+    paddingTop: 60,
+    paddingRight: 20,
+  },
+  deleteMenu: {
     backgroundColor: tokens.colors.pureWhite,
     borderRadius: 8,
     shadowColor: '#000',
@@ -529,7 +539,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     minWidth: 150,
-    zIndex: 1000,
   },
   deleteMenuItem: {
     paddingVertical: 12,
