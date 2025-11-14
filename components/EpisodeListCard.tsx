@@ -66,6 +66,7 @@ export default function EpisodeListCard({
   
   const checkmarkBorderColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.greenHighlight;
   const checkmarkBackgroundColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.greenHighlight;
+  const checkmarkColor = theme === 'light' ? tokens.colors.black : tokens.colors.pureWhite;
 
   return (
     <Pressable 
@@ -123,7 +124,7 @@ export default function EpisodeListCard({
           {showCheckmark && (
             <Check 
               size={10} 
-              color={tokens.colors.pureWhite}
+              color={checkmarkColor}
               strokeWidth={3}
             />
           )}
