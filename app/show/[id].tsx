@@ -134,27 +134,37 @@ export default function ShowHub() {
       try {
         console.log('🔍 Querying watch_history for user:', currentUser.id, 'show:', show.id, show.title);
         
-        // Query watch_history with episode details to match by season/episode numbers
-        const { data, error } = await supabase
+        // Step 1: Get episode UUIDs from watch_history
+        const { data: watchHistoryData, error: whError } = await supabase
           .from('watch_history')
-          .select(`
-            episode_id,
-            episodes!watch_history_episode_id_fkey (
-              id,
-              season_number,
-              episode_number,
-              trakt_id
-            )
-          `)
+          .select('episode_id')
           .eq('user_id', currentUser.id)
           .eq('show_id', show.id);
 
-        if (error) {
-          console.error('❌ Error loading watch history:', error);
+        if (whError) {
+          console.error('❌ Error loading watch history:', whError);
           return;
         }
 
-        // Build episode IDs in the format used by ShowHub: `${trakt_show_id}-S${season}E${episode}`
+        if (!watchHistoryData || watchHistoryData.length === 0) {
+          console.log('ℹ️ No logged episodes found for this show');
+          setLoggedEpisodeIds(new Set());
+          return;
+        }
+
+        // Step 2: Get episode details from episodes table
+        const episodeUUIDs = watchHistoryData.map((item: any) => item.episode_id);
+        const { data: episodesData, error: episodesError } = await supabase
+          .from('episodes')
+          .select('id, season_number, episode_number')
+          .in('id', episodeUUIDs);
+
+        if (episodesError) {
+          console.error('❌ Error loading episodes:', episodesError);
+          return;
+        }
+
+        // Step 3: Build episode IDs in the format used by ShowHub: `${trakt_show_id}-S${season}E${episode}`
         const dbShow = await getShowById(show.id);
         if (!dbShow || !dbShow.trakt_id) {
           console.error('❌ Show missing Trakt ID');
@@ -162,11 +172,9 @@ export default function ShowHub() {
         }
 
         const loggedIds = new Set<string>();
-        (data || []).forEach((item: any) => {
-          if (item.episodes) {
-            const episodeId = `${dbShow.trakt_id}-S${item.episodes.season_number}E${item.episodes.episode_number}`;
-            loggedIds.add(episodeId);
-          }
+        (episodesData || []).forEach((ep: any) => {
+          const episodeId = `${dbShow.trakt_id}-S${ep.season_number}E${ep.episode_number}`;
+          loggedIds.add(episodeId);
         });
 
         console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`, Array.from(loggedIds));
