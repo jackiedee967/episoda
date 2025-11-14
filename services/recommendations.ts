@@ -59,37 +59,39 @@ function databaseShowToRecommendedShow(dbShow: DatabaseShow): RecommendedShow {
 /**
  * Get shows the user has recently logged episodes from
  * Ordered by most recent log first
+ * Uses posts table as the source of truth for watched shows
  */
 export async function getRecentlyLoggedShows(
   userId: string,
   limit: number = 12
 ): Promise<DatabaseShow[]> {
   try {
-    // Query watch_history to get recently logged shows
-    const { data: watchHistory, error } = await supabase
-      .from('watch_history')
+    // Query posts to get recently logged shows
+    const { data: posts, error } = await supabase
+      .from('posts')
       .select('show_id, created_at')
       .eq('user_id', userId)
+      .not('show_id', 'is', null)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('❌ Error fetching watch history:', error);
+      console.error('❌ Error fetching posts:', error);
       return [];
     }
 
-    if (!watchHistory || watchHistory.length === 0) {
+    if (!posts || posts.length === 0) {
       return [];
     }
 
-    // Group by show_id and get most recent log for each show
+    // Group by show_id and get most recent post for each show
     const showMap = new Map<string, RecentlyLoggedShow>();
     
-    for (const entry of watchHistory) {
-      const existing = showMap.get(entry.show_id);
+    for (const post of posts) {
+      const existing = showMap.get(post.show_id);
       if (!existing) {
-        showMap.set(entry.show_id, {
+        showMap.set(post.show_id, {
           show: null as any, // Will be populated below
-          lastLoggedAt: entry.created_at,
+          lastLoggedAt: post.created_at,
           logCount: 1
         });
       } else {
@@ -100,12 +102,11 @@ export async function getRecentlyLoggedShows(
     // Get unique show IDs
     const showIds = Array.from(showMap.keys());
 
-    // Fetch show details
+    // Fetch show details (NO limit here - we need all shows to sort properly)
     const { data: shows, error: showsError } = await supabase
       .from('shows')
       .select('*')
-      .in('id', showIds)
-      .limit(limit);
+      .in('id', showIds);
 
     if (showsError) {
       console.error('❌ Error fetching shows:', showsError);
@@ -116,7 +117,7 @@ export async function getRecentlyLoggedShows(
       return [];
     }
 
-    // Populate show data and sort by most recent log
+    // Populate show data, sort by most recent post, THEN apply limit
     const recentShows = shows
       .map(show => {
         const metadata = showMap.get(show.id)!;
@@ -126,7 +127,7 @@ export async function getRecentlyLoggedShows(
         };
       })
       .sort((a, b) => new Date(b.lastLoggedAt).getTime() - new Date(a.lastLoggedAt).getTime())
-      .slice(0, limit)
+      .slice(0, limit)  // Apply limit AFTER sorting
       .map(item => item.show);
 
     console.log(`✅ Found ${recentShows.length} recently logged shows`);
@@ -140,22 +141,24 @@ export async function getRecentlyLoggedShows(
 /**
  * Build user's genre interest profile from their logged shows
  * Returns array of genres ordered by frequency
+ * Uses posts table to determine which shows the user has logged
  */
 export async function getUserGenreInterests(userId: string): Promise<string[]> {
   try {
-    // Get all shows the user has logged
-    const { data: watchHistory, error } = await supabase
-      .from('watch_history')
+    // Get all shows the user has posted about
+    const { data: posts, error } = await supabase
+      .from('posts')
       .select('show_id')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .not('show_id', 'is', null);
 
-    if (error || !watchHistory || watchHistory.length === 0) {
-      console.log('ℹ️ No watch history found for genre interests');
+    if (error || !posts || posts.length === 0) {
+      console.log('ℹ️ No posts found for genre interests');
       return [];
     }
 
     // Get unique show IDs
-    const showIds = [...new Set(watchHistory.map(wh => wh.show_id))];
+    const showIds = [...new Set(posts.map(p => p.show_id))];
 
     // Fetch show details to get genres
     const { data: shows, error: showsError } = await supabase

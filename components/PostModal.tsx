@@ -46,6 +46,13 @@ interface Season {
   expanded: boolean;
 }
 
+type RecommendationResult = {
+  show: Show;
+  traktShow?: TraktShow;
+  isDatabaseBacked: boolean;
+  traktId: number;
+};
+
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
@@ -71,7 +78,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [isPosting, setIsPosting] = useState(false);
   const [selectedTraktShow, setSelectedTraktShow] = useState<TraktShow | null>(null);
   const [traktEpisodesMap, setTraktEpisodesMap] = useState<Map<string, TraktEpisode>>(new Map());
-  const [recommendedShows, setRecommendedShows] = useState<Array<{ show: Show; traktShow?: TraktShow; isDatabaseBacked: boolean }>>([]);
+  const [recommendedShows, setRecommendedShows] = useState<RecommendationResult[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -194,6 +201,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               return {
                 show: mapDatabaseShowToShow(dbShow),
                 traktShow,
+                traktId: dbShow.trakt_id,
                 isDatabaseBacked: true
               };
             } else {
@@ -204,6 +212,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 return {
                   show: mapTraktShowToShow(traktShow, undefined),
                   traktShow,
+                  traktId: rec.trakt_id,
                   isDatabaseBacked: false
                 };
               } catch (error) {
@@ -215,7 +224,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         );
         
         // Filter out failed conversions
-        const validShows = convertedShows.filter(s => s !== null) as Array<{ show: Show; traktShow?: TraktShow; isDatabaseBacked: boolean }>;
+        const validShows = convertedShows.filter(s => s !== null) as RecommendationResult[];
         setRecommendedShows(validShows);
         console.log(`✅ Loaded ${validShows.length} valid recommendations`);
       } catch (error) {
@@ -435,6 +444,42 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       }
     };
   }, [searchQuery]);
+
+  const handleRecommendationSelect = async (result: RecommendationResult) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // For Trakt-only shows, save to database first (lazy persistence)
+    if (!result.isDatabaseBacked && result.traktShow) {
+      console.log(`💾 Lazy persisting Trakt-only show: ${result.show.title}`);
+      try {
+        const dbShow = await saveShow(result.traktShow);
+        console.log(`✅ Saved show to database: ${dbShow.id}`);
+        // Now proceed with the database-backed show
+        const { mapDatabaseShowToShow } = await import('@/services/showMappers');
+        const mappedShow = mapDatabaseShowToShow(dbShow);
+        await handleShowSelect(mappedShow, result.traktShow);
+      } catch (error) {
+        console.error('❌ Failed to save show to database:', error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Error', 'Failed to load show. Please try again.');
+      }
+    } else if (result.traktShow) {
+      // Database-backed show - proceed directly
+      await handleShowSelect(result.show, result.traktShow);
+    } else {
+      // Missing traktShow - refetch from API using stored traktId
+      console.warn('⚠️ Missing traktShow for recommendation, refetching...');
+      try {
+        const { getShowDetails } = await import('@/services/trakt');
+        const traktShow = await getShowDetails(result.traktId);
+        await handleShowSelect(result.show, traktShow);
+      } catch (error) {
+        console.error('❌ Failed to refetch show details:', error);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('Error', 'Failed to load show. Please try again.');
+      }
+    }
+  };
 
   const handleShowSelect = async (show: Show, traktShow: TraktShow) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -700,7 +745,51 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               </Pressable>
             </View>
           )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && (
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && isLoadingRecommendations && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+              <Text style={styles.loadingText}>Loading recommendations...</Text>
+            </View>
+          )}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendedShows.length > 0 && (
+            <View>
+              <Text style={styles.recommendationHeader}>Recommended for You</Text>
+              <View style={styles.showsGrid}>
+                {recommendedShows.slice(0, 12).map(result => (
+                  <Pressable
+                    key={result.show.id}
+                    style={styles.showGridItem}
+                    onPress={() => handleRecommendationSelect(result)}
+                  >
+                    <Image 
+                      source={{ uri: getPosterUrl(result.show.poster, result.show.title) }} 
+                      style={styles.showGridPoster}
+                      contentFit="cover"
+                    />
+                    <Pressable 
+                      style={({ pressed }) => [
+                        styles.saveIconGrid,
+                        pressed && styles.saveIconPressed,
+                      ]} 
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSelectedShowForPlaylist(result.show);
+                        setPlaylistModalVisible(true);
+                      }}
+                    >
+                      <IconSymbol 
+                        name={isShowSaved(result.show.id) ? "bookmark.fill" : "bookmark"} 
+                        size={14} 
+                        color={colors.pureWhite} 
+                      />
+                    </Pressable>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendedShows.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>Start typing to search for shows</Text>
             </View>
@@ -1017,6 +1106,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     marginBottom: spacing.gapLarge,
+  },
+  recommendationHeader: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: tokens.colors.black,
+    marginBottom: 16,
+    paddingHorizontal: 4,
   },
   backButton: {
     flexDirection: 'row',
