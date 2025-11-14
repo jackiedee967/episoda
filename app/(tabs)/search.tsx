@@ -346,7 +346,6 @@ export default function SearchScreen() {
       
       return (
         <View style={styles.searchHistoryContainer}>
-          <Text style={styles.searchHistoryTitle}>Recent Searches</Text>
           {currentHistory.map((query, index) => (
             <SearchHistoryItem
               key={`${query}-${index}`}
