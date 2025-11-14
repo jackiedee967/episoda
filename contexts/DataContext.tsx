@@ -644,9 +644,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [authUserId]);
 
   const createPost = useCallback(async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
-    const newPost: Post = {
+    // Create temporary post with fake ID for optimistic UI
+    const tempId = `post_${Date.now()}`;
+    const tempPost: Post = {
       ...postData,
-      id: `post_${Date.now()}`,
+      id: tempId,
       timestamp: new Date(),
       likes: 0,
       comments: 0,
@@ -654,7 +656,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       isLiked: false,
     };
 
-    // Try to save to Supabase
+    // Optimistically add to UI immediately
+    setPosts(prev => {
+      const updatedPosts = [tempPost, ...prev];
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+
+    // Try to save to Supabase and get real UUID
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -678,6 +687,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (!error && data) {
+          // Replace temp ID with real Supabase UUID
+          const realPost: Post = {
+            ...tempPost,
+            id: data.id, // Use the UUID from Supabase
+          };
+
+          // Update posts array with real UUID
+          setPosts(prev => {
+            const updatedPosts = prev.map(p => p.id === tempId ? realPost : p);
+            AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+            return updatedPosts;
+          });
+
           // Log episodes to watch_history
           if (episodeIds.length > 0) {
             const watchHistoryEntries = episodeIds.map(episodeId => ({
@@ -693,19 +715,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
           // Update profile stats
           await supabase.rpc('update_user_profile_stats', { user_id: user.id });
+
+          return realPost;
         }
       }
     } catch (error) {
       console.log('Error saving post to Supabase:', error);
     }
 
-    setPosts(prev => {
-      const updatedPosts = [newPost, ...prev];
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-      return updatedPosts;
-    });
-
-    return newPost;
+    // Return temp post if Supabase failed
+    return tempPost;
   }, []);
 
   const deletePost = useCallback(async (postId: string) => {
@@ -746,7 +765,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return updatedReposts;
     });
 
-    // Try to delete from Supabase
+    // Check if this is a local-only post (not synced to Supabase)
+    const isLocalOnly = postId.startsWith('post_');
+    
+    if (isLocalOnly) {
+      console.log('✅ Local-only post deleted (not synced to Supabase)');
+      setIsDeletingPost(false);
+      return;
+    }
+
+    // Try to delete from Supabase (only for UUID posts)
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
