@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
         backgroundImage: "url('/app-background.jpg')",
         backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center 0px',
+        backgroundPosition: 'center 160px',
       } as any,
     }),
   },
