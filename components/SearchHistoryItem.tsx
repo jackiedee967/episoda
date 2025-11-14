@@ -58,13 +58,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: tokens.colors.tabBack,
+    backgroundColor: tokens.colors.cardBackground,
     borderRadius: 8,
     marginBottom: 8,
   },
   pressed: {
     opacity: 0.7,
-    backgroundColor: tokens.colors.tabBack2,
+    backgroundColor: tokens.colors.grey3,
   },
   leftContent: {
     flexDirection: 'row',
