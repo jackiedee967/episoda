@@ -798,10 +798,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     ...Platform.select({
       web: {
-        backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: '100% auto',
+        backgroundImage: "url('/assets/images/show-hub-background.jpg')",
+        backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center 300px',
+        backgroundPosition: 'center',
       } as any,
     }),
   },
