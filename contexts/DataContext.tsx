@@ -678,7 +678,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // Step 3: Batch fetch all related data (scoped to these 100 posts)
         const [usersResult, showsResult, episodesResult, likesResult, repostsResult, userLikesResult] = await Promise.all([
           // Fetch all user profiles
-          supabase.from('user_profiles' as any).select('*').in('user_id', uniqueUserIds),
+          supabase.from('profiles').select('*').in('user_id', uniqueUserIds),
           // Fetch all shows
           supabase.from('shows').select('*').in('id', uniqueShowIds),
           // Fetch all episodes
@@ -693,6 +693,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         // Step 4: Build lookup maps
         const usersMap = new Map();
+        
+        // Check for errors in user profiles fetch
+        if (usersResult.error) {
+          console.error('❌ Error fetching user profiles:', usersResult.error);
+        }
+        
         (usersResult.data || []).forEach((profile: any) => {
           let avatarUrl = profile.avatar_url || '';
           if (!avatarUrl && profile.avatar_color_scheme && profile.avatar_icon) {
@@ -710,16 +716,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         });
         
-        // Fetch missing profiles individually (fallback for cache misses)
+        // Fetch missing profiles individually (fallback for missing profiles)
         const missingUserIds = uniqueUserIds.filter(uid => !usersMap.has(uid));
         if (missingUserIds.length > 0) {
-          console.log('🔄 Fetching', missingUserIds.length, 'missing profiles...');
-          for (const userId of missingUserIds) {
-            const { data: profileData } = await supabase
-              .from('user_profiles' as any)
-              .select('*')
-              .eq('user_id', userId)
-              .single();
+          console.log('🔄 Fetching', missingUserIds.length, 'missing profiles individually...');
+          const missingProfilesResults = await Promise.all(
+            missingUserIds.map(userId =>
+              supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', userId)
+                .single()
+            )
+          );
+          
+          missingProfilesResults.forEach(({ data: profileData, error }) => {
+            if (error) {
+              console.error('❌ Error fetching individual profile:', error);
+              return;
+            }
             
             if (profileData) {
               let avatarUrl = profileData.avatar_url || '';
@@ -736,8 +751,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 following: [],
                 followers: [],
               });
+              console.log('✅ Fetched missing profile:', profileData.username);
             }
-          }
+          });
         }
 
         const showsMap = new Map();
