@@ -222,8 +222,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       setIsFetchingEpisodes(false);
       setStep('selectEpisodes');
       
-      // Fetch thumbnails in background if TVMaze ID available
-      const dbShow = await getShowById(show.id);
+      // Fetch thumbnails in background if TVMaze ID available (reuse dbShow from earlier)
       if (dbShow && dbShow.tvmaze_id) {
         console.log('📸 Fetching episode thumbnails from TVMaze...');
         const allEpisodes = seasonsArray.flatMap(s => s.episodes);
