@@ -643,6 +643,183 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [authUserId]);
 
+  const loadPosts = useCallback(async () => {
+    try {
+      console.log('📝 Loading posts from Supabase...');
+
+      // If user is authenticated, load from Supabase
+      if (authUserId) {
+        // Step 1: Load recent posts (limit for scalability)
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100); // Only load most recent 100 posts for feed
+
+        if (postsError) {
+          console.error('❌ Error loading posts from Supabase:', postsError);
+          return;
+        }
+
+        if (!postsData || postsData.length === 0) {
+          console.log('📭 No posts found in Supabase');
+          setPosts([]);
+          return;
+        }
+
+        console.log('✅ Loaded', postsData.length, 'posts from Supabase');
+
+        // Step 2: Extract unique IDs for batch fetching
+        const postIds = postsData.map((p: any) => p.id);
+        const uniqueUserIds = [...new Set(postsData.map((p: any) => p.user_id))];
+        const uniqueShowIds = [...new Set(postsData.map((p: any) => p.show_id))];
+        const allEpisodeIds = [...new Set(postsData.flatMap((p: any) => p.episode_ids || []))];
+
+        // Step 3: Batch fetch all related data (scoped to these 100 posts)
+        const [usersResult, showsResult, episodesResult, likesResult, repostsResult, userLikesResult] = await Promise.all([
+          // Fetch all user profiles
+          supabase.from('user_profiles' as any).select('*').in('user_id', uniqueUserIds),
+          // Fetch all shows
+          supabase.from('shows').select('*').in('id', uniqueShowIds),
+          // Fetch all episodes
+          allEpisodeIds.length > 0 ? supabase.from('episodes').select('*').in('id', allEpisodeIds) : { data: [] },
+          // Fetch likes ONLY for these posts
+          supabase.from('post_likes').select('post_id').in('post_id', postIds),
+          // Fetch reposts ONLY for these posts
+          supabase.from('post_reposts' as any).select('post_id').in('post_id', postIds),
+          // Fetch current user's likes ONLY for these posts
+          supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
+        ]);
+
+        // Step 4: Build lookup maps
+        const usersMap = new Map();
+        (usersResult.data || []).forEach((profile: any) => {
+          let avatarUrl = profile.avatar_url || '';
+          if (!avatarUrl && profile.avatar_color_scheme && profile.avatar_icon) {
+            avatarUrl = generateAvatarDataURI(profile.avatar_color_scheme, profile.avatar_icon);
+          }
+          usersMap.set(profile.user_id, {
+            id: profile.user_id,
+            username: profile.username || 'user',
+            displayName: profile.display_name || profile.username || 'User',
+            avatar: avatarUrl,
+            bio: profile.bio || '',
+            socialLinks: profile.social_links || {},
+            following: [],
+            followers: [],
+          });
+        });
+
+        const showsMap = new Map();
+        (showsResult.data || []).forEach((show: any) => {
+          showsMap.set(show.id, show);
+        });
+
+        const episodesMap = new Map();
+        (episodesResult.data || []).forEach((ep: any) => {
+          episodesMap.set(ep.id, {
+            id: ep.id,
+            showId: ep.show_id,
+            seasonNumber: ep.season_number,
+            episodeNumber: ep.episode_number,
+            title: ep.title,
+            description: ep.description || '',
+            rating: ep.rating || 0,
+            postCount: 0,
+            thumbnail: ep.thumbnail_url || undefined,
+          });
+        });
+
+        // Count likes, reposts per post (comments not implemented yet)
+        const likesCount = new Map();
+        (likesResult.data || []).forEach((like: any) => {
+          likesCount.set(like.post_id, (likesCount.get(like.post_id) || 0) + 1);
+        });
+
+        const repostsCount = new Map();
+        (repostsResult.data || []).forEach((repost: any) => {
+          repostsCount.set(repost.post_id, (repostsCount.get(repost.post_id) || 0) + 1);
+        });
+
+        const userLikesSet = new Set((userLikesResult.data || []).map((like: any) => like.post_id));
+
+        // Step 5: Transform posts
+        const loadedPosts: Post[] = postsData.map((dbPost: any) => {
+          const authorProfile = usersMap.get(dbPost.user_id) || {
+            id: dbPost.user_id,
+            username: 'unknown',
+            displayName: 'Unknown User',
+            avatar: '',
+            bio: '',
+            socialLinks: {},
+            following: [],
+            followers: [],
+          };
+
+          const showData = showsMap.get(dbPost.show_id);
+          
+          // Map episode IDs to episodes in original order
+          const episodes = (dbPost.episode_ids || [])
+            .map((id: string) => episodesMap.get(id))
+            .filter((ep: any) => ep !== undefined);
+
+          return {
+            id: dbPost.id,
+            user: authorProfile,
+            show: {
+              id: dbPost.show_id,
+              title: dbPost.show_title || showData?.title || 'Unknown Show',
+              poster: dbPost.show_poster || showData?.poster_url || null,
+              backdrop: showData?.backdrop_url || null,
+              description: showData?.description || '',
+              rating: showData?.rating || 0,
+              totalSeasons: showData?.total_seasons || 0,
+              totalEpisodes: showData?.total_episodes || 0,
+              friendsWatching: 0,
+            },
+            episodes: episodes.length > 0 ? episodes : undefined,
+            episode: episodes.length > 0 ? episodes[0] : undefined,
+            title: dbPost.title || undefined,
+            body: dbPost.body || '',
+            timestamp: new Date(dbPost.created_at),
+            likes: likesCount.get(dbPost.id) || 0,
+            comments: 0, // Comment counts not implemented yet
+            reposts: repostsCount.get(dbPost.id) || 0,
+            isLiked: userLikesSet.has(dbPost.id),
+            rating: dbPost.rating || undefined,
+            tags: dbPost.tags || [],
+            isSpoiler: (dbPost.tags || []).some((tag: string) => tag.toLowerCase().includes('spoiler')),
+          };
+        });
+
+        console.log('✅ Transformed', loadedPosts.length, 'posts successfully');
+        setPosts(loadedPosts);
+        await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(loadedPosts));
+      } else {
+        // Fallback to local storage if not authenticated
+        console.log('⚠️ Loading posts from local storage');
+        const postsData = await AsyncStorage.getItem(STORAGE_KEYS.POSTS);
+        if (postsData) {
+          const parsedPosts = JSON.parse(postsData);
+          setPosts(parsedPosts.map((p: any) => ({
+            ...p,
+            timestamp: new Date(p.timestamp),
+          })));
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading posts:', error);
+    }
+  }, [authUserId]);
+
+  // Load posts and playlists when authUserId is set
+  useEffect(() => {
+    if (authUserId) {
+      loadPosts();
+      loadPlaylists();
+    }
+  }, [authUserId, loadPosts, loadPlaylists]);
+
   const createPost = useCallback(async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
     // Create temporary post with fake ID for optimistic UI
     const tempId = `post_${Date.now()}`;

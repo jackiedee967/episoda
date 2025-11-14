@@ -36,6 +36,7 @@ import { getAllEpisodes } from '@/services/trakt';
 import { getEpisode } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
+import { supabase } from '@/integrations/supabase/client';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -122,33 +123,42 @@ export default function ShowHub() {
     return uniqueFriends;
   }, [posts, currentUser, show]);
 
-  // Load previously logged episodes from posts
+  // Load logged episodes from watch_history table (not posts - more reliable)
   useEffect(() => {
-    if (!show || !currentUser) {
-      setLoggedEpisodeIds(new Set());
-      return;
+    async function loadLoggedEpisodes() {
+      if (!show || !currentUser) {
+        setLoggedEpisodeIds(new Set());
+        return;
+      }
+
+      try {
+        // Query watch_history table directly for this user and show
+        const { data, error } = await supabase
+          .from('watch_history')
+          .select('episode_id')
+          .eq('user_id', currentUser.id)
+          .eq('show_id', show.id);
+
+        if (error) {
+          console.error('Error loading watch history:', error);
+          return;
+        }
+
+        // Extract episode IDs
+        const loggedIds = new Set<string>();
+        (data || []).forEach(item => {
+          loggedIds.add(item.episode_id);
+        });
+
+        console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`);
+        setLoggedEpisodeIds(loggedIds);
+      } catch (error) {
+        console.error('Error loading logged episodes:', error);
+      }
     }
 
-    // Filter posts by current user and this show
-    const userShowPosts = posts.filter(
-      post => post.user.id === currentUser.id && post.show.id === show.id
-    );
-
-    // Extract episode IDs from all posts
-    const loggedIds = new Set<string>();
-    userShowPosts.forEach(post => {
-      // Handle single episode (legacy posts)
-      if (post.episode) {
-        loggedIds.add(post.episode.id);
-      }
-      // Handle multiple episodes (new posts)
-      if (post.episodes && post.episodes.length > 0) {
-        post.episodes.forEach(ep => loggedIds.add(ep.id));
-      }
-    });
-
-    setLoggedEpisodeIds(loggedIds);
-  }, [posts, currentUser, show]);
+    loadLoggedEpisodes();
+  }, [currentUser, show]);
 
   useEffect(() => {
     async function loadShow() {
