@@ -216,7 +216,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                 </Pressable>
               </View>
               {latestPost.rating && (
-                <StarRatings rating={convertToFiveStarRating(latestPost.rating)} size={14} />
+                <StarRatings rating={latestPost.rating} size={14} />
               )}
             </View>
             <Pressable onPress={handleUserPress}>

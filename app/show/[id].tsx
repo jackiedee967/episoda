@@ -352,13 +352,8 @@ export default function ShowHub() {
     });
     setSelectedEpisodeIds(new Set());
     
-    // Redirect to user's profile posts page
-    if (currentUser?.id) {
-      router.push(`/user/${currentUser.id}`);
-    } else {
-      // Fallback to profile tab if currentUser not available
-      router.push('/(tabs)/profile');
-    }
+    // Stay on ShowHub after posting so logged episodes remain visible
+    // (navigating away would trigger useEffect recalculation from stale posts array)
   };
 
   const filteredAndSortedPosts = useMemo(() => {
@@ -760,10 +755,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         backgroundImage: "url('/app-background.jpg')",
-        backgroundSize: '100% 100%',
+        backgroundSize: 'cover',
         backgroundRepeat: 'no-repeat',
-        backgroundPositionX: 'center',
-        backgroundPositionY: '135px',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'scroll',
       } as any,
     }),
   },

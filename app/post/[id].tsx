@@ -307,7 +307,7 @@ export default function PostDetail() {
 
               {/* Star Rating */}
               {post.rating && (
-                <StarRatings rating={convertToFiveStarRating(post.rating)} size={14} />
+                <StarRatings rating={post.rating} size={14} />
               )}
 
               {/* Episode and Show Tags */}
