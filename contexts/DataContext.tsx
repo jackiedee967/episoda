@@ -918,7 +918,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [posts, reposts, isDeletingPost]);
 
   const likePost = useCallback(async (postId: string) => {
-    // Try to save to Supabase
+    // Capture just this post's previous state for rollback
+    let previousLikes = 0;
+    let previousIsLiked = false;
+
+    // Optimistic update: Update UI immediately
+    setPosts(prev => {
+      const updatedPosts = prev.map(post => {
+        if (post.id === postId) {
+          previousLikes = post.likes;
+          previousIsLiked = post.isLiked;
+          return { ...post, likes: post.likes + 1, isLiked: true };
+        }
+        return post;
+      });
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+
+    // Save to Supabase in background
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -944,22 +962,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.log('Error liking post in Supabase:', error);
+      console.error('Error liking post in Supabase:', error);
+      // Rollback only this specific post
+      setPosts(prev => {
+        const rolledBackPosts = prev.map(post =>
+          post.id === postId
+            ? { ...post, likes: previousLikes, isLiked: previousIsLiked }
+            : post
+        );
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(rolledBackPosts));
+        return rolledBackPosts;
+      });
     }
-
-    setPosts(prev => {
-      const updatedPosts = prev.map(post =>
-        post.id === postId
-          ? { ...post, likes: post.likes + 1, isLiked: true }
-          : post
-      );
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-      return updatedPosts;
-    });
   }, []);
 
   const unlikePost = useCallback(async (postId: string) => {
-    // Try to remove from Supabase
+    // Capture just this post's previous state for rollback
+    let previousLikes = 0;
+    let previousIsLiked = false;
+
+    // Optimistic update: Update UI immediately
+    setPosts(prev => {
+      const updatedPosts = prev.map(post => {
+        if (post.id === postId) {
+          previousLikes = post.likes;
+          previousIsLiked = post.isLiked;
+          return { ...post, likes: Math.max(0, post.likes - 1), isLiked: false };
+        }
+        return post;
+      });
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+
+    // Remove from Supabase in background
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -984,18 +1020,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.log('Error unliking post in Supabase:', error);
+      console.error('Error unliking post in Supabase:', error);
+      // Rollback only this specific post
+      setPosts(prev => {
+        const rolledBackPosts = prev.map(post =>
+          post.id === postId
+            ? { ...post, likes: previousLikes, isLiked: previousIsLiked }
+            : post
+        );
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(rolledBackPosts));
+        return rolledBackPosts;
+      });
     }
-
-    setPosts(prev => {
-      const updatedPosts = prev.map(post =>
-        post.id === postId
-          ? { ...post, likes: Math.max(0, post.likes - 1), isLiked: false }
-          : post
-      );
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-      return updatedPosts;
-    });
   }, []);
 
   const repostPost = useCallback(async (postId: string) => {

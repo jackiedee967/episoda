@@ -184,18 +184,21 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                 <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> just watched
               </Text>
               <View style={styles.tagsRow}>
-                {latestPost.episodes && latestPost.episodes.length > 0 && (
-                  <Pressable onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/episode/${latestPost.episodes![0].id}`);
-                  }}>
+                {latestPost.episodes && latestPost.episodes.length > 0 && latestPost.episodes.map((episode, index) => (
+                  <Pressable 
+                    key={episode.id || index}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/episode/${episode.id}`);
+                    }}
+                  >
                     <View style={styles.episodeTag}>
                       <Text style={styles.episodeTagText}>
-                        S{latestPost.episodes[0].seasonNumber} E{latestPost.episodes[0].episodeNumber}
+                        S{episode.seasonNumber} E{episode.episodeNumber}
                       </Text>
                     </View>
                   </Pressable>
-                )}
+                ))}
                 <Pressable onPress={handleShowPress}>
                   <View
                     style={[

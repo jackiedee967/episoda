@@ -343,8 +343,12 @@ export default function ShowHub() {
 
   const handlePostSuccess = (postId: string, postedEpisodes: Episode[]) => {
     // Mark only the episodes that were actually included in the post as logged
-    postedEpisodes.forEach(episode => {
-      setLoggedEpisodeIds(prev => new Set(prev).add(episode.id));
+    setLoggedEpisodeIds(prev => {
+      const newSet = new Set(prev);
+      postedEpisodes.forEach(episode => {
+        newSet.add(episode.id);
+      });
+      return newSet;
     });
     setSelectedEpisodeIds(new Set());
     
