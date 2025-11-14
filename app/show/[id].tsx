@@ -126,12 +126,14 @@ export default function ShowHub() {
   // Load logged episodes from watch_history table (not posts - more reliable)
   useEffect(() => {
     async function loadLoggedEpisodes() {
-      if (!show || !currentUser) {
+      if (!show || !currentUser || !show.id) {
         setLoggedEpisodeIds(new Set());
         return;
       }
 
       try {
+        console.log('🔍 Querying watch_history for user:', currentUser.id, 'show:', show.id, show.title);
+        
         // Query watch_history table directly for this user and show
         const { data, error } = await supabase
           .from('watch_history')
@@ -140,7 +142,7 @@ export default function ShowHub() {
           .eq('show_id', show.id);
 
         if (error) {
-          console.error('Error loading watch history:', error);
+          console.error('❌ Error loading watch history:', error);
           return;
         }
 
@@ -150,15 +152,15 @@ export default function ShowHub() {
           loggedIds.add(item.episode_id);
         });
 
-        console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`);
+        console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`, Array.from(loggedIds));
         setLoggedEpisodeIds(loggedIds);
       } catch (error) {
-        console.error('Error loading logged episodes:', error);
+        console.error('❌ Error loading logged episodes:', error);
       }
     }
 
     loadLoggedEpisodes();
-  }, [currentUser, show]);
+  }, [currentUser, show?.id]);
 
   useEffect(() => {
     async function loadShow() {
