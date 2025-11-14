@@ -36,7 +36,7 @@ import { getAllEpisodes } from '@/services/trakt';
 import { getEpisode } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/app/integrations/supabase/client';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
