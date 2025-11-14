@@ -19,6 +19,8 @@ import { showEnrichmentManager } from '@/services/showEnrichment';
 import { saveShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
+import { searchHistoryManager, SearchCategory as SearchCat } from '@/services/searchHistory';
+import SearchHistoryItem from '@/components/SearchHistoryItem';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -47,6 +49,13 @@ export default function SearchScreen() {
   const currentActiveCategoryRef = useRef<SearchCategory>(activeCategory);
   const searchRequestTokenRef = useRef<number>(0);
 
+  const [searchHistory, setSearchHistory] = useState<{
+    shows: string[];
+    posts: string[];
+    comments: string[];
+    users: string[];
+  }>({ shows: [], posts: [], comments: [], users: [] });
+
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
   const preselectedShow = useMemo(() => {
@@ -68,6 +77,60 @@ export default function SearchScreen() {
       }
       setIsSearchingShows(false);
     }
+  };
+
+  useEffect(() => {
+    const loadSearchHistory = async () => {
+      const history = await searchHistoryManager.getHistory(activeCategory as SearchCat);
+      setSearchHistory(prev => ({
+        ...prev,
+        [activeCategory]: history
+      }));
+    };
+    
+    loadSearchHistory();
+  }, [activeCategory]);
+
+  const addSearchToHistory = async (query: string) => {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+    
+    await searchHistoryManager.addToHistory(activeCategory as SearchCat, trimmedQuery);
+    
+    const updatedHistory = await searchHistoryManager.getHistory(activeCategory as SearchCat);
+    setSearchHistory(prev => ({
+      ...prev,
+      [activeCategory]: updatedHistory
+    }));
+  };
+
+  const removeFromSearchHistory = async (query: string) => {
+    await searchHistoryManager.removeFromHistory(activeCategory as SearchCat, query);
+    
+    const updatedHistory = await searchHistoryManager.getHistory(activeCategory as SearchCat);
+    setSearchHistory(prev => ({
+      ...prev,
+      [activeCategory]: updatedHistory
+    }));
+  };
+
+  const handleHistoryItemPress = (query: string) => {
+    setSearchQuery(query);
+  };
+
+  const handleSearchSubmit = () => {
+    if (activeCategory === 'shows' || !searchQuery.trim()) {
+      return;
+    }
+    
+    const trimmedQuery = searchQuery.trim();
+    const currentHistory = searchHistory[activeCategory];
+    
+    if (currentHistory.length > 0 && currentHistory[0].toLowerCase() === trimmedQuery.toLowerCase()) {
+      return;
+    }
+    
+    addSearchToHistory(trimmedQuery);
   };
 
   useEffect(() => {
@@ -114,6 +177,8 @@ export default function SearchScreen() {
         setTotalPages(response.pagination.pageCount);
         setHasMore(response.pagination.page < response.pagination.pageCount);
         setIsSearchingShows(false);
+        
+        addSearchToHistory(trimmedQuery);
         
         console.log(`📄 Loaded page ${response.pagination.page} of ${response.pagination.pageCount} (${response.pagination.itemCount} total items)`);
         
@@ -259,19 +324,37 @@ export default function SearchScreen() {
   }, [activeCategory, hasMore, isLoadingMore, isSearchingShows, currentPage, totalPages, traktShowResults.results.length]);
 
   const renderEmptyState = useCallback(() => {
-    // Show placeholder when no search query
+    // Show search history when no search query
     if (!searchQuery) {
+      const currentHistory = searchHistory[activeCategory];
+      
+      if (currentHistory.length === 0) {
+        return (
+          <View style={styles.searchPlaceholder}>
+            <Image 
+              source={require('@/assets/search-placeholder.png')} 
+              style={styles.placeholderImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.placeholderTitle}>Type to search</Text>
+            <Text style={styles.placeholderSubtitle}>
+              Search shows, posts, comments or users...
+            </Text>
+          </View>
+        );
+      }
+      
       return (
-        <View style={styles.searchPlaceholder}>
-          <Image 
-            source={require('@/assets/search-placeholder.png')} 
-            style={styles.placeholderImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.placeholderTitle}>Type to search</Text>
-          <Text style={styles.placeholderSubtitle}>
-            Search shows, posts, comments or users...
-          </Text>
+        <View style={styles.searchHistoryContainer}>
+          <Text style={styles.searchHistoryTitle}>Recent Searches</Text>
+          {currentHistory.map((query, index) => (
+            <SearchHistoryItem
+              key={`${query}-${index}`}
+              query={query}
+              onPress={() => handleHistoryItemPress(query)}
+              onRemove={() => removeFromSearchHistory(query)}
+            />
+          ))}
         </View>
       );
     }
@@ -318,7 +401,7 @@ export default function SearchScreen() {
         </Text>
       </View>
     );
-  }, [searchQuery, isSearchingShows, activeCategory, showSearchError]);
+  }, [searchQuery, isSearchingShows, activeCategory, showSearchError, searchHistory, handleHistoryItemPress, removeFromSearchHistory]);
 
   const filteredResults = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -773,6 +856,7 @@ export default function SearchScreen() {
               value={searchQuery}
               onChangeText={setSearchQuery}
               returnKeyType="search"
+              onSubmitEditing={handleSearchSubmit}
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery('')}>
@@ -1156,5 +1240,13 @@ const styles = StyleSheet.create({
   allCaughtUpText: {
     ...tokens.typography.p1,
     color: tokens.colors.grey1,
+  },
+  searchHistoryContainer: {
+    padding: 16,
+  },
+  searchHistoryTitle: {
+    ...tokens.typography.h3,
+    color: tokens.colors.pureWhite,
+    marginBottom: 16,
   },
 });
