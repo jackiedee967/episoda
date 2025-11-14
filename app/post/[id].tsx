@@ -9,14 +9,15 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send } from 'lucide-react-native';
+import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send, MoreVertical } from 'lucide-react-native';
 import CommentCard from '@/components/CommentCard';
 import PostTags from '@/components/PostTags';
 import StarRatings from '@/components/StarRatings';
-import { mockComments, currentUser } from '@/data/mockData';
+import { mockComments } from '@/data/mockData';
 import * as ImagePicker from 'expo-image-picker';
 import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
@@ -41,15 +42,17 @@ function getRelativeTime(timestamp: Date): string {
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { getPost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts } = useData();
+  const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts, isDeletingPost } = useData();
   const [comments, setComments] = useState<Comment[]>(mockComments.filter(c => c.postId === id));
   const [commentText, setCommentText] = useState('');
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string; textPreview: string } | null>(null);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
+  const canDelete = post && currentUser && post.user.id === currentUser.id;
 
   useEffect(() => {
     if (post && comments.length !== post.comments) {
@@ -204,6 +207,42 @@ export default function PostDetail() {
     setReplyingTo(null);
   };
 
+  const handleDeletePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowDeleteMenu(!showDeleteMenu);
+  };
+
+  const handleDeletePost = () => {
+    setShowDeleteMenu(false);
+    
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          },
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            try {
+              await deletePost(post.id);
+              router.back();
+            } catch (error) {
+              console.error('Error deleting post:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -214,11 +253,39 @@ export default function PostDetail() {
           keyboardVerticalOffset={100}
         >
           <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Back Button */}
-            <Pressable onPress={handleBack} style={styles.backButton}>
-              <ChevronLeft size={16} color={tokens.colors.almostWhite} strokeWidth={1.5} />
-              <Text style={styles.backText}>Back</Text>
-            </Pressable>
+            {/* Header with Back Button and Menu */}
+            <View style={styles.headerRow}>
+              <Pressable onPress={handleBack} style={styles.backButton}>
+                <ChevronLeft size={16} color={tokens.colors.almostWhite} strokeWidth={1.5} />
+                <Text style={styles.backText}>Back</Text>
+              </Pressable>
+              
+              {canDelete && (
+                <View>
+                  <Pressable 
+                    onPress={handleDeletePress} 
+                    style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
+                    disabled={isDeletingPost}
+                  >
+                    <MoreVertical 
+                      size={20} 
+                      color={isDeletingPost ? tokens.colors.grey1 : tokens.colors.almostWhite} 
+                      strokeWidth={1.5} 
+                    />
+                  </Pressable>
+                  
+                  {showDeleteMenu && !isDeletingPost && (
+                    <View style={styles.deleteMenu}>
+                      <Pressable onPress={handleDeletePost} style={styles.deleteMenuItem}>
+                        <Text style={styles.deleteMenuText}>
+                          {isDeletingPost ? 'Deleting...' : 'Delete Post'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
 
             {/* Post Content - No background */}
             <View style={styles.postContainer}>
@@ -427,17 +494,52 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 160,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 14,
   },
   backText: {
     color: tokens.colors.almostWhite,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 13,
     fontWeight: '300',
+  },
+  menuButton: {
+    padding: 4,
+  },
+  menuButtonDisabled: {
+    opacity: 0.5,
+  },
+  deleteMenu: {
+    position: 'absolute',
+    top: 32,
+    right: 0,
+    backgroundColor: tokens.colors.pureWhite,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    minWidth: 150,
+    zIndex: 1000,
+  },
+  deleteMenuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  deleteMenuText: {
+    color: tokens.colors.error,
+    fontFamily: 'FunnelDisplay_500Medium',
+    fontSize: 13,
+    fontWeight: '500',
   },
   postContainer: {
     gap: 14,

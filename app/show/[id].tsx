@@ -704,14 +704,16 @@ export default function ShowHub() {
     <>
       <Stack.Screen options={{ title: show.title, headerShown: false }} />
       <View style={[commonStyles.container, styles.container]}>
-        {renderBanner()}
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
-          {renderShowInfo()}
-          {renderProgressBar()}
-          {renderLogButton()}
-          <Vector3Divider style={styles.divider} />
-          {renderTabs()}
-          {renderFeed()}
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContentContainer}>
+          {renderBanner()}
+          <View style={styles.contentContainer}>
+            {renderShowInfo()}
+            {renderProgressBar()}
+            {renderLogButton()}
+            <Vector3Divider style={styles.divider} />
+            {renderTabs()}
+            {renderFeed()}
+          </View>
         </ScrollView>
       </View>
       <PostModal 
@@ -764,6 +766,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
   },
   contentContainer: {
     padding: 20,

@@ -37,6 +37,7 @@ interface DataContextType {
   loadPlaylists: (userId?: string) => Promise<void>;
   posts: Post[];
   createPost: (post: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>) => Promise<Post>;
+  deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   repostPost: (postId: string) => Promise<void>;
@@ -58,6 +59,7 @@ interface DataContextType {
   getTotalLikesReceived: (userId: string) => Promise<number>;
   getWatchHistory: (userId: string) => WatchHistoryItem[];
   isLoading: boolean;
+  isDeletingPost: boolean;
 }
 
 const STORAGE_KEYS = {
@@ -101,6 +103,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   
   const [currentUserData, setCurrentUserData] = useState<User>(EMPTY_USER);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
   const [userProfileCache, setUserProfileCache] = useState<Record<string, User>>({});
@@ -704,6 +707,187 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     return newPost;
   }, []);
+
+  const deletePost = useCallback(async (postId: string) => {
+    // Guard against concurrent deletion calls
+    if (isDeletingPost) {
+      console.log('⚠️ Delete already in progress, ignoring concurrent call');
+      return;
+    }
+
+    setIsDeletingPost(true);
+    console.log('🗑️ Deleting post:', postId);
+
+    // Get the post to backup for potential rollback
+    const postToDelete = posts.find(p => p.id === postId);
+    if (!postToDelete) {
+      console.error('❌ Post not found:', postId);
+      Alert.alert('Error', 'Post not found');
+      setIsDeletingPost(false);
+      return;
+    }
+
+    // Backup current state for rollback
+    const previousPosts = [...posts];
+    const previousReposts = [...reposts];
+    const isReposted = reposts.some(r => r.postId === postId);
+
+    // Optimistically update local state
+    setPosts(prev => {
+      const updatedPosts = prev.filter(p => p.id !== postId);
+      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      return updatedPosts;
+    });
+
+    // Remove reposts locally
+    setReposts(prev => {
+      const updatedReposts = prev.filter(r => r.postId !== postId);
+      saveRepostsToStorage(updatedReposts);
+      return updatedReposts;
+    });
+
+    // Try to delete from Supabase
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('⚠️ No authenticated user - local delete only');
+        return;
+      }
+
+      // Verify user owns the post
+      const { data: postData, error: fetchError } = await supabase
+        .from('posts')
+        .select('user_id, episode_ids')
+        .eq('id', postId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Error fetching post:', fetchError);
+        throw fetchError;
+      }
+
+      if (postData.user_id !== user.id) {
+        console.error('❌ User does not own this post');
+        throw new Error('You do not have permission to delete this post');
+      }
+
+      console.log('📝 Starting cascade deletion from Supabase...');
+
+      // Step 1: Get episode IDs from the post
+      const episodeIds = postData.episode_ids || [];
+      
+      // Step 2: Delete watch_history entries for these episodes (only for this user)
+      // Note: We only delete watch history if NO other posts reference these episodes
+      if (episodeIds.length > 0) {
+        // Check if any other posts by this user reference these episodes
+        const { data: otherPosts } = await supabase
+          .from('posts')
+          .select('id, episode_ids')
+          .eq('user_id', user.id)
+          .neq('id', postId);
+
+        const otherPostEpisodeIds = new Set<string>();
+        otherPosts?.forEach(post => {
+          post.episode_ids?.forEach((epId: string) => otherPostEpisodeIds.add(epId));
+        });
+
+        // Only delete watch history for episodes not referenced by other posts
+        const episodesToRemoveFromHistory = episodeIds.filter(
+          (epId: string) => !otherPostEpisodeIds.has(epId)
+        );
+
+        if (episodesToRemoveFromHistory.length > 0) {
+          console.log('🗑️ Deleting watch history for episodes:', episodesToRemoveFromHistory);
+          const { error: watchHistoryError } = await supabase
+            .from('watch_history')
+            .delete()
+            .eq('user_id', user.id)
+            .in('episode_id', episodesToRemoveFromHistory);
+
+          if (watchHistoryError) {
+            console.error('❌ Error deleting watch history:', watchHistoryError);
+            // Continue anyway - this is not critical
+          }
+        }
+      }
+
+      // Step 3: Delete likes referencing this post
+      const { error: likesError } = await supabase
+        .from('post_likes')
+        .delete()
+        .eq('post_id', postId);
+
+      if (likesError) {
+        console.error('❌ Error deleting likes:', likesError);
+        throw likesError;
+      }
+
+      // Step 4: Delete comments referencing this post
+      const { error: commentsError } = await supabase
+        .from('comments')
+        .delete()
+        .eq('post_id', postId);
+
+      if (commentsError) {
+        console.error('❌ Error deleting comments:', commentsError);
+        throw commentsError;
+      }
+
+      // Step 5: Delete reposts referencing this post
+      const { error: repostsError } = await supabase
+        .from('reposts')
+        .delete()
+        .eq('post_id', postId);
+
+      if (repostsError) {
+        console.error('❌ Error deleting reposts:', repostsError);
+        throw repostsError;
+      }
+
+      // Step 6: Finally, delete the post itself
+      const { error: deleteError } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        console.error('❌ Error deleting post:', deleteError);
+        throw deleteError;
+      }
+
+      // Step 7: Update profile stats
+      await supabase.rpc('update_user_profile_stats', { user_id: user.id });
+
+      console.log('✅ Post deleted successfully from Supabase');
+    } catch (error) {
+      console.error('❌ Error deleting post:', error);
+      
+      // Rollback React state
+      console.log('⚠️ Rolling back local state...');
+      setPosts(previousPosts);
+      if (isReposted) {
+        setReposts(previousReposts);
+      }
+      
+      // Rollback AsyncStorage
+      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(previousPosts));
+      if (isReposted) {
+        await AsyncStorage.setItem(STORAGE_KEYS.REPOSTS, JSON.stringify(previousReposts));
+      }
+
+      Alert.alert(
+        'Error',
+        'Failed to delete post. Please try again.',
+        [{ text: 'OK' }]
+      );
+      
+      throw error;
+    } finally {
+      setIsDeletingPost(false);
+    }
+  }, [posts, reposts, isDeletingPost]);
 
   const likePost = useCallback(async (postId: string) => {
     // Try to save to Supabase
@@ -1319,8 +1503,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     userData,
     currentUserData,
     isLoading,
+    isDeletingPost,
     authUserId,
-  }), [posts, reposts, playlists, userData, currentUserData, isLoading, authUserId]);
+  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId]);
 
   // LAYER 2: Selectors - Memoized derived data and read operations
   const selectors = useMemo(() => ({
@@ -1343,6 +1528,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updatePlaylistPrivacy,
     loadPlaylists,
     createPost,
+    deletePost,
     likePost,
     unlikePost,
     repostPost,
@@ -1364,6 +1550,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updatePlaylistPrivacy,
     loadPlaylists,
     createPost,
+    deletePost,
     likePost,
     unlikePost,
     repostPost,
