@@ -1243,11 +1243,12 @@ const styles = StyleSheet.create({
   },
   searchHistoryContainer: {
     width: '100%',
-    padding: 16,
+    paddingTop: 16,
   },
   searchHistoryTitle: {
     ...tokens.typography.h3,
     color: tokens.colors.pureWhite,
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
 });
