@@ -1242,7 +1242,6 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
   },
   searchHistoryContainer: {
-    backgroundColor: tokens.colors.cardBackground,
     width: '100%',
     padding: 16,
   },
