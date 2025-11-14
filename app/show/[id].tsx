@@ -139,7 +139,7 @@ export default function ShowHub() {
           .from('watch_history')
           .select(`
             episode_id,
-            episodes:episode_id (
+            episodes!watch_history_episode_id_fkey (
               id,
               season_number,
               episode_number,
