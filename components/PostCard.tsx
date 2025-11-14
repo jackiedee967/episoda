@@ -184,21 +184,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                 <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> just watched
               </Text>
               <View style={styles.tagsRow}>
-                {latestPost.episodes && latestPost.episodes.length > 0 && latestPost.episodes.map((episode, index) => (
-                  <Pressable 
-                    key={episode.id || index}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/episode/${episode.id}`);
-                    }}
-                  >
-                    <View style={styles.episodeTag}>
-                      <Text style={styles.episodeTagText}>
-                        S{episode.seasonNumber} E{episode.episodeNumber}
-                      </Text>
-                    </View>
-                  </Pressable>
-                ))}
                 <Pressable onPress={handleShowPress}>
                   <View
                     style={[
@@ -214,6 +199,21 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                     </Text>
                   </View>
                 </Pressable>
+                {latestPost.episodes && latestPost.episodes.length > 0 && latestPost.episodes.map((episode, index) => (
+                  <Pressable 
+                    key={episode.id || index}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push(`/episode/${episode.id}`);
+                    }}
+                  >
+                    <View style={styles.episodeTag}>
+                      <Text style={styles.episodeTagText}>
+                        S{episode.seasonNumber} E{episode.episodeNumber}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
               </View>
               {latestPost.rating && (
                 <StarRatings rating={latestPost.rating} size={14} />
