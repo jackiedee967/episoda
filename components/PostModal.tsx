@@ -98,16 +98,16 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       post => post.user.id === currentUser.id && post.show.id === selectedShow.id
     );
 
-    // Extract episode IDs from all posts
+    // Extract episode keys from all posts (use deterministic format, not UUIDs)
     const loggedIds = new Set<string>();
     userShowPosts.forEach(post => {
       // Handle single episode (legacy posts)
       if (post.episode) {
-        loggedIds.add(post.episode.id);
+        loggedIds.add(getEpisodeKey(post.episode));
       }
       // Handle multiple episodes (new posts)
       if (post.episodes && post.episodes.length > 0) {
-        post.episodes.forEach(ep => loggedIds.add(ep.id));
+        post.episodes.forEach(ep => loggedIds.add(getEpisodeKey(ep)));
       }
     });
 
@@ -539,7 +539,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         
         // Update logged episodes set
         dbEpisodes.forEach(episode => {
-          setLoggedEpisodeIds(prev => new Set(prev).add(episode.id));
+          setLoggedEpisodeIds(prev => new Set(prev).add(getEpisodeKey(episode)));
         });
         
         if (onPostSuccess) {
@@ -693,7 +693,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               <View style={styles.episodesContainer}>
                 {season.episodes.map(episode => {
                   const isSelected = selectedEpisodes.some(ep => ep.id === episode.id);
-                  const isLogged = loggedEpisodeIds.has(episode.id);
+                  const isLogged = loggedEpisodeIds.has(getEpisodeKey(episode));
                   return (
                     <EpisodeListCard
                       key={episode.id}
