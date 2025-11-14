@@ -81,6 +81,30 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 - **Account Management**: Implemented account deletion via Supabase Edge Functions and a phone number change feature for SMS-authenticated users.
 - **Robust Authentication**: Addressed OTP verification race conditions and username persistence bugs for a smoother onboarding experience.
 
+## Database Schema
+**CRITICAL: Always verify table names before writing queries. Use `execute_sql_tool` to check schema if unsure.**
+
+### Supabase Tables (Verified Schema):
+- `profiles` — User profiles (username, display_name, avatar_url, bio, etc.)
+- `posts` — User posts about shows/episodes
+- `shows` — TV show metadata (title, poster_url, backdrop_url, etc.)
+- `episodes` — Episode metadata (season_number, episode_number, title, etc.)
+- `playlists` — User-created show playlists
+- `playlist_shows` — Many-to-many relationship between playlists and shows
+- `likes` — Post likes (NOT "post_likes")
+- `reposts` — Post reposts (NOT "post_reposts")  
+- `comments` — Post comments
+- `follows` — User follow relationships
+- `post_episodes` — Many-to-many relationship between posts and episodes
+- `watch_history` — User episode watch history
+- `social_links` — User social media links
+- `help_desk_posts` — Support/help desk posts
+
+### Query Best Practices:
+1. **Before writing any new query**: Check existing queries in `contexts/DataContext.tsx` to see table names
+2. **If unsure**: Use `execute_sql_tool` with `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';`
+3. **Never assume table names** - verify first
+
 ## External Dependencies
 - **Supabase**: Database, authentication, and real-time functionalities.
 - **Trakt API**: TV show metadata (TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET required)
