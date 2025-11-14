@@ -185,7 +185,7 @@ export default function ShowHub() {
     }
 
     loadLoggedEpisodes();
-  }, [currentUser, show?.id]);
+  }, [currentUser, show?.id, posts]);
 
   useEffect(() => {
     async function loadShow() {
