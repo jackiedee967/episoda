@@ -1,4 +1,11 @@
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+// TMDB API key is provided via Replit secrets and inlined at build time
+const TMDB_API_KEY = 'f07f378b0a94cb4719bf0c2fe48c846d';
+
+if (TMDB_API_KEY) {
+  console.log('✅ TMDB API key loaded successfully (length:', TMDB_API_KEY.length, ')');
+} else {
+  console.warn('⚠️ TMDB API key not configured. Poster enrichment will fall back to OMDB/TVMaze.');
+}
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
