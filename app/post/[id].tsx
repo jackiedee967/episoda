@@ -312,6 +312,12 @@ export default function PostDetail() {
 
               {/* Episode and Show Tags */}
               <View style={styles.tagsRow}>
+                <PostTags
+                  prop="Large"
+                  state="Show_Name"
+                  text={post.show.title}
+                  onPress={handleShowPress}
+                />
                 {post.episodes && post.episodes.length > 0 && (
                   <PostTags
                     prop="Large"
@@ -320,12 +326,6 @@ export default function PostDetail() {
                     onPress={() => handleEpisodePress(post.episodes![0].id)}
                   />
                 )}
-                <PostTags
-                  prop="Large"
-                  state="Show_Name"
-                  text={post.show.title}
-                  onPress={handleShowPress}
-                />
               </View>
 
               {/* Post Title */}
