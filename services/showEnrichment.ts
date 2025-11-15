@@ -1,6 +1,7 @@
 import { TraktShow, getShowSeasons } from './trakt';
 import { getShowByImdbId, getShowByTvdbId, searchShowByName, TVMazeShow } from './tvmaze';
 import { getOMDBByTitle } from './omdb';
+import { searchShowByName as searchTMDB, getPosterUrl as getTMDBPosterUrl } from './tmdb';
 
 export interface EnrichedShowData {
   totalSeasons: number;
@@ -51,14 +52,24 @@ class ShowEnrichmentManager {
     this.activeRequests++;
 
     try {
-      // Fast path: OMDB poster only (skip seasons and backdrop for speed)
-      const omdbData = await this.fetchOMDBData(traktShow.title, traktShow.year);
+      // Multi-tier poster fallback for 99% coverage
+      let posterUrl: string | null = null;
+      let imdbId: string | null = traktShow.ids.imdb || null;
       
-      const omdbImdbId = omdbData?.imdbId || null;
-      const imdbId = omdbImdbId || traktShow.ids.imdb || null;
-      let posterUrl = omdbData?.posterUrl || null;
+      // Tier 1: TMDB (best coverage, especially for international shows)
+      const tmdbData = await this.fetchTMDBData(traktShow.title, traktShow.year);
+      posterUrl = tmdbData?.posterUrl || null;
+      
+      // Tier 2: OMDB (high quality posters)
+      if (!posterUrl) {
+        const omdbData = await this.fetchOMDBData(traktShow.title, traktShow.year);
+        posterUrl = omdbData?.posterUrl || null;
+        if (omdbData?.imdbId) {
+          imdbId = omdbData.imdbId;
+        }
+      }
 
-      // TVMaze fallback with title search as final resort
+      // Tier 3: TVMaze (ID-based + title search fallback)
       if (!posterUrl) {
         const tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, traktShow.title);
         posterUrl = tvmazeData?.posterUrl || null;
@@ -70,7 +81,7 @@ class ShowEnrichmentManager {
         backdropUrl: null, // Skip backdrop for search results
         tvmazeId: null,
         imdbId,
-        isEnriched: true,
+        isEnriched: !!posterUrl,
       };
       
       return enriched;
@@ -94,6 +105,18 @@ class ShowEnrichmentManager {
   private async fetchSeasons(traktId: number): Promise<number> {
     const seasons = await getShowSeasons(traktId);
     return seasons.filter(s => s.number > 0).length;
+  }
+
+  private async fetchTMDBData(title: string, year: number | null): Promise<{ posterUrl: string | null } | null> {
+    const tmdbResult = await searchTMDB(title, year);
+    
+    if (!tmdbResult) {
+      return null;
+    }
+    
+    return {
+      posterUrl: tmdbResult.poster_path ? getTMDBPosterUrl(tmdbResult.poster_path) : null,
+    };
   }
 
   private async fetchOMDBData(title: string, year: number | null): Promise<{ posterUrl: string | null; imdbId: string | null } | null> {
