@@ -56,6 +56,8 @@ export default function PostDetail() {
   const canDelete = post && currentUser && post.user.id === currentUser.id;
 
   // Load comments from Supabase
+  const [rawComments, setRawComments] = useState<any[]>([]);
+  
   useEffect(() => {
     const loadComments = async () => {
       if (!id) return;
@@ -74,27 +76,7 @@ export default function PostDetail() {
 
         if (data) {
           console.log('📝 Fetched', data.length, 'comments from Supabase for post:', id);
-          const transformedComments: Comment[] = data.map((c: any) => ({
-            id: c.id,
-            postId: c.post_id,
-            user: userProfileCache?.[c.user_id] || {
-              id: c.user_id,
-              username: 'user',
-              displayName: 'User',
-              avatar: '',
-              bio: '',
-              socialLinks: {},
-              following: [],
-              followers: [],
-            },
-            text: c.comment_text,
-            likes: 0, // TODO: Load likes count
-            isLiked: false, // TODO: Check if current user liked
-            timestamp: new Date(c.created_at),
-            replies: [],
-          }));
-          console.log('✅ Loaded', transformedComments.length, 'comments from Supabase');
-          setComments(transformedComments);
+          setRawComments(data);
         }
       } catch (error: any) {
         console.error('❌ Error loading comments:', error);
@@ -105,6 +87,33 @@ export default function PostDetail() {
 
     loadComments();
   }, [id]);
+
+  // Transform raw comments when userProfileCache updates
+  useEffect(() => {
+    if (rawComments.length === 0) return;
+    
+    const transformedComments: Comment[] = rawComments.map((c: any) => ({
+      id: c.id,
+      postId: c.post_id,
+      user: userProfileCache?.[c.user_id] || {
+        id: c.user_id,
+        username: 'user',
+        displayName: 'User',
+        avatar: '',
+        bio: '',
+        socialLinks: {},
+        following: [],
+        followers: [],
+      },
+      text: c.comment_text,
+      likes: 0, // TODO: Load likes count
+      isLiked: false, // TODO: Check if current user liked
+      timestamp: new Date(c.created_at),
+      replies: [],
+    }));
+    console.log('✅ Loaded', transformedComments.length, 'comments from Supabase');
+    setComments(transformedComments);
+  }, [rawComments, userProfileCache]);
 
   useEffect(() => {
     if (post && comments.length !== post.comments) {
