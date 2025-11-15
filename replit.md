@@ -33,9 +33,12 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 - **Data Management**: All mock data removed, users interact only with real Supabase data. Supabase-backed user profile cache.
 - **TV Show Data Integration**:
   - **Trakt API**: Primary data source for metadata (search, show details, seasons, episodes). Hybrid API approach for scalability (direct calls in dev, secure backend proxy in prod).
-  - **OMDB API**: High-quality posters and IMDb ID enrichment. Features a three-tier poster fallback system (OMDB → TVMaze → Deterministic SVG Placeholder) and `expo-image` integration.
+  - **TMDB API**: Primary poster source for near-99% coverage, especially for international shows. Integrated via Expo Constants and environment variables.
+  - **OMDB API**: High-quality posters and IMDb ID enrichment (fallback after TMDB). Features `expo-image` integration.
+  - **TVMaze API**: Tertiary poster source and episode thumbnails. Used for ID-based lookups (IMDb/TVDB) and title-based search as final fallback.
+  - **Poster Fallback Chain**: TMDB → OMDB → TVMaze (ID lookup) → TVMaze (title search) → Deterministic SVG placeholder with full show title in P1 text style.
+  - **Search Result Sorting**: Shows with actual posters display first, placeholder shows appear at bottom for better UX.
   - **Rating Conversion System**: Production-grade 10-point to 5-star rating conversion with half-star support using a `convertToFiveStarRating()` utility.
-  - **TVMaze API**: Secondary source for posters and episode thumbnails.
   - **Search Enrichment System**: Background worker enhances search results with complete metadata using throttled parallel fetching, progressive enhancement, and smart caching.
   - **Database Persistence**: Shows and episodes saved to Supabase before post creation.
   - **Search-to-Hub Flow**: Simplified single-source-of-truth architecture where Search saves to Supabase and ShowHub reads from Supabase.
@@ -70,9 +73,10 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 
 ## External Dependencies
 - **Supabase**: Database, authentication, and real-time functionalities.
-- **Trakt API**: TV show metadata.
-- **OMDB API**: High-quality show posters and IMDb ID enrichment.
-- **TVMaze API**: Show posters and episode thumbnails.
+- **Trakt API**: TV show metadata (search, details, seasons, episodes).
+- **TMDB API**: Primary poster source (near-99% coverage).
+- **OMDB API**: Fallback posters and IMDb ID enrichment.
+- **TVMaze API**: Tertiary poster source and episode thumbnails.
 - **Expo**: Core framework for React Native development.
 - **AsyncStorage**: Local storage for session persistence.
 - **expo-symbols**: UI icons.
