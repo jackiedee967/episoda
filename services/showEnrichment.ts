@@ -14,7 +14,7 @@ export interface EnrichedShowData {
 class ShowEnrichmentManager {
   private cache: Map<number, EnrichedShowData> = new Map();
   private pendingRequests: Map<number, Promise<EnrichedShowData>> = new Map();
-  private readonly MAX_CONCURRENT = 4;
+  private readonly MAX_CONCURRENT = 50; // Allow massive parallelization for instant loading
   private activeRequests = 0;
   private queue: Array<{ traktId: number; resolve: () => void }> = [];
 
@@ -51,46 +51,24 @@ class ShowEnrichmentManager {
     this.activeRequests++;
 
     try {
-      console.log(`🎬 Enriching: ${traktShow.title}, IMDb: ${traktShow.ids.imdb || 'N/A'}, TVDB: ${traktShow.ids.tvdb || 'N/A'}`);
+      // Fast path: OMDB poster only (skip seasons and backdrop for speed)
+      const omdbData = await this.fetchOMDBData(traktShow.title, traktShow.year);
       
-      const [seasons, omdbData] = await Promise.all([
-        this.fetchSeasons(traktShow.ids.trakt),
-        this.fetchOMDBData(traktShow.title, traktShow.year),
-      ]);
-
       const omdbImdbId = omdbData?.imdbId || null;
       const imdbId = omdbImdbId || traktShow.ids.imdb || null;
       let posterUrl = omdbData?.posterUrl || null;
-      console.log(`  OMDB poster: ${posterUrl ? 'Yes' : 'No'}`);
 
-      let tvmazeData = null;
-      if (!posterUrl) {
-        console.log(`  Trying TVMaze fallback...`);
-        tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, traktShow.title);
+      // Only try TVMaze if OMDB failed completely
+      if (!posterUrl && (imdbId || traktShow.ids.tvdb)) {
+        const tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, undefined); // Skip title search
         posterUrl = tvmazeData?.posterUrl || null;
-        console.log(`  TVMaze poster: ${posterUrl ? 'Yes' : 'No'}`);
       }
-
-      let backdropUrl = null;
-      if (tvmazeData?.tvmazeId) {
-        backdropUrl = await this.fetchBackdropUrl(tvmazeData.tvmazeId);
-      } else if (!posterUrl && traktShow.ids.tvdb) {
-        const tvmazeShow = await this.fetchTVMazeByTvdb(traktShow.ids.tvdb);
-        if (tvmazeShow) {
-          backdropUrl = await this.fetchBackdropUrl(tvmazeShow.tvmazeId);
-          if (!posterUrl) {
-            posterUrl = tvmazeShow.posterUrl;
-          }
-        }
-      }
-
-      console.log(`✅ Enriched ${traktShow.title}: Poster=${!!posterUrl}, Backdrop=${!!backdropUrl}`);
 
       const enriched = {
-        totalSeasons: seasons,
+        totalSeasons: 0, // Lazy load seasons later if needed
         posterUrl,
-        backdropUrl,
-        tvmazeId: tvmazeData?.tvmazeId || null,
+        backdropUrl: null, // Skip backdrop for search results
+        tvmazeId: null,
         imdbId,
         isEnriched: true,
       };
