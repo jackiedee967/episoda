@@ -75,6 +75,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [postBody, setPostBody] = useState('');
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTags, setCustomTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -716,8 +717,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   const handleAddCustomTag = () => {
     const trimmedTag = customTag.trim();
-    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
+    if (trimmedTag && !customTags.includes(trimmedTag)) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setCustomTags([...customTags, trimmedTag]);
       setSelectedTags([...selectedTags, trimmedTag]);
       setCustomTag('');
       setTimeout(() => {
@@ -727,8 +729,14 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   };
 
   const handlePost = async () => {
-    if (!selectedShow || !postBody.trim()) {
+    if (!selectedShow) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
+
+    if (rating === 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert('Rating Required', 'Please select a star rating before posting.');
       return;
     }
 
@@ -858,6 +866,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     setPostBody('');
     setRating(0);
     setSelectedTags([]);
+    setCustomTags([]);
     setCustomTag('');
     setSearchQuery('');
     setSeasons([]);
@@ -1071,7 +1080,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         />
         <TextInput
           style={styles.bodyInput}
-          placeholder="What did you think?"
+          placeholder="What did you think? (optional)"
           placeholderTextColor={colors.textSecondary}
           value={postBody}
           onChangeText={setPostBody}
@@ -1081,7 +1090,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         />
         
         <View style={styles.ratingSection}>
-          <Text style={styles.sectionLabel}>Rating</Text>
+          <Text style={styles.sectionLabel}>Rating *</Text>
           <View style={styles.starsContainer}>
             {[1, 2, 3, 4, 5].map(star => (
               <Pressable
@@ -1102,7 +1111,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         </View>
 
         <View style={styles.tagsSection}>
-          <Text style={styles.sectionLabel}>Tags</Text>
+          <Text style={styles.sectionLabel}>Tags (Optional)</Text>
           <View style={styles.tagsContainer}>
             {['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].map(tag => (
               <Pressable
@@ -1123,20 +1132,26 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 </Text>
               </Pressable>
             ))}
+            {customTags.map(tag => (
+              <Pressable
+                key={tag}
+                style={[
+                  styles.tagButton,
+                  selectedTags.includes(tag) && styles.tagButtonSelected,
+                ]}
+                onPress={() => handleTagToggle(tag)}
+              >
+                <Text
+                  style={[
+                    styles.tagButtonText,
+                    selectedTags.includes(tag) && styles.tagButtonTextSelected,
+                  ]}
+                >
+                  {tag}
+                </Text>
+              </Pressable>
+            ))}
           </View>
-          
-          {selectedTags.filter(tag => !['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].includes(tag)).length > 0 && (
-            <View style={styles.customTagsList}>
-              {selectedTags.filter(tag => !['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].includes(tag)).map((tag, index) => (
-                <View key={index} style={styles.customTagChip}>
-                  <Text style={styles.customTagChipText}>{tag}</Text>
-                  <Pressable onPress={() => handleTagToggle(tag)}>
-                    <IconSymbol name="xmark.circle.fill" size={18} color={colors.textSecondary} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          )}
           
           <View style={styles.customTagContainer}>
             <TextInput
@@ -1161,9 +1176,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         </View>
       </ScrollView>
       <Pressable
-        style={[styles.postButton, (!postBody.trim() || isPosting) && styles.postButtonDisabled]}
+        style={[styles.postButton, (rating === 0 || isPosting) && styles.postButtonDisabled]}
         onPress={handlePost}
-        disabled={!postBody.trim() || isPosting}
+        disabled={rating === 0 || isPosting}
       >
         {isPosting ? (
           <ActivityIndicator color={tokens.colors.black} />
