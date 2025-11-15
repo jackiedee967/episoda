@@ -113,6 +113,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [userProfileCache, setUserProfileCache] = useState<Record<string, User>>({});
   const [cachedRecommendations, setCachedRecommendations] = useState<any[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // Memoize currentUser to prevent recreation on every render
   const currentUser = useMemo(() => ({
@@ -160,12 +161,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: new Date(p.createdAt),
         })));
       }
+      
+      // Mark as hydrated after initial load
+      setIsHydrated(true);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isHydrated]);
 
   // Load current user's profile from Supabase
   const loadCurrentUserProfile = useCallback(async (userId: string) => {
@@ -208,7 +212,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error loading user profile from Supabase:', error);
     }
-  }, []);
+  }, [isHydrated]);
 
   const loadFollowDataFromSupabase = useCallback(async (userId: string) => {
     try {
@@ -241,7 +245,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error loading follow data from Supabase:', error);
     }
-  }, []);
+  }, [isHydrated]);
 
   // Recommendation caching with staleness checking (10-minute cache)
   const RECOMMENDATION_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -445,7 +449,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error batch-loading user profiles:', error);
     }
-  }, []);
+  }, [isHydrated]);
 
   // Load data from storage on mount
   useEffect(() => {
@@ -1011,7 +1015,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         console.log('✅ Transformed', loadedPosts.length, 'posts successfully');
         setPosts(loadedPosts);
-        await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(loadedPosts));
+        if (isHydrated) {
+          await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(loadedPosts));
+        }
       } else {
         // Fallback to local storage if not authenticated
         console.log('⚠️ Loading posts from local storage');
@@ -1053,7 +1059,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Optimistically add to UI immediately
     setPosts(prev => {
       const updatedPosts = [tempPost, ...prev];
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
 
@@ -1090,7 +1098,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Update posts array with real UUID
           setPosts(prev => {
             const updatedPosts = prev.map(p => p.id === tempId ? realPost : p);
-            AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+            if (isHydrated) {
+              AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+            }
             return updatedPosts;
           });
 
@@ -1151,7 +1161,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Optimistically update local state
     setPosts(prev => {
       const updatedPosts = prev.filter(p => p.id !== postId);
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
 
@@ -1300,9 +1312,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       
       // Rollback AsyncStorage
-      await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(previousPosts));
-      if (isReposted) {
-        await AsyncStorage.setItem(STORAGE_KEYS.REPOSTS, JSON.stringify(previousReposts));
+      if (isHydrated) {
+        await AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(previousPosts));
+        if (isReposted) {
+          await AsyncStorage.setItem(STORAGE_KEYS.REPOSTS, JSON.stringify(previousReposts));
+        }
       }
 
       Alert.alert(
@@ -1332,7 +1346,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
         return post;
       });
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
 
@@ -1370,11 +1386,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ? { ...post, likes: previousLikes, isLiked: previousIsLiked }
             : post
         );
-        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(rolledBackPosts));
+        if (isHydrated) {
+          AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(rolledBackPosts));
+        }
         return rolledBackPosts;
       });
     }
-  }, []);
+  }, [isHydrated]);
 
   const unlikePost = useCallback(async (postId: string) => {
     // Capture just this post's previous state for rollback
@@ -1391,7 +1409,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
         return post;
       });
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
 
@@ -1428,11 +1448,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ? { ...post, likes: previousLikes, isLiked: previousIsLiked }
             : post
         );
-        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(rolledBackPosts));
+        if (isHydrated) {
+          AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(rolledBackPosts));
+        }
         return rolledBackPosts;
       });
     }
-  }, []);
+  }, [isHydrated]);
 
   const repostPost = useCallback(async (postId: string) => {
     const newRepost: RepostData = {
@@ -1453,10 +1475,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ? { ...post, reposts: post.reposts + 1 }
           : post
       );
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
-  }, [currentUser.id]);
+  }, [currentUser.id, isHydrated]);
 
   const unrepostPost = useCallback(async (postId: string) => {
     setReposts(prev => {
@@ -1473,10 +1497,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ? { ...post, reposts: Math.max(0, post.reposts - 1) }
           : post
       );
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
-  }, [currentUser.id]);
+  }, [currentUser.id, isHydrated]);
 
   const hasUserReposted = useCallback((postId: string): boolean => {
     return reposts.some(r => r.postId === postId && r.userId === currentUser.id);
@@ -1511,10 +1537,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ? { ...post, comments: count }
           : post
       );
-      AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      if (isHydrated) {
+        AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
+      }
       return updatedPosts;
     });
-  }, []);
+  }, [isHydrated]);
 
   const getPost = useCallback((postId: string): Post | undefined => {
     return posts.find(p => p.id === postId);
