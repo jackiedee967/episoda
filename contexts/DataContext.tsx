@@ -1112,47 +1112,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw error;
       }
         
-      if (!error && data) {
-          console.log('✅ Post saved to Supabase successfully:', data.id);
-          // Replace temp ID with real Supabase UUID
-          const realPost: Post = {
-            ...tempPost,
-            id: data.id, // Use the UUID from Supabase
-          };
+      console.log('✅ Post saved to Supabase successfully:', data.id);
+      // Replace temp ID with real Supabase UUID
+      const realPost: Post = {
+        ...tempPost,
+        id: data.id, // Use the UUID from Supabase
+      };
 
-          // Update posts array with real UUID
-          setPosts(prev => {
-            const updatedPosts = prev.map(p => p.id === tempId ? realPost : p);
-            if (isHydrated) {
-              AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
-            }
-            return updatedPosts;
-          });
-
-          // Log episodes to watch_history
-          if (episodeIds.length > 0) {
-            const watchHistoryEntries = episodeIds.map(episodeId => ({
-              user_id: user.id,
-              show_id: postData.show.id,
-              episode_id: episodeId,
-            }));
-
-            await supabase
-              .from('watch_history')
-              .insert(watchHistoryEntries);
-          }
-
-          // Update profile stats
-          await supabase.rpc('update_user_profile_stats', { user_id: user.id });
-
-          // Mark recommendations as stale since user's watch history changed
-          markRecommendationsStale();
-
-          return realPost;
+      // Update posts array with real UUID
+      setPosts(prev => {
+        const updatedPosts = prev.map(p => p.id === tempId ? realPost : p);
+        if (isHydrated) {
+          AsyncStorage.setItem(STORAGE_KEYS.POSTS, JSON.stringify(updatedPosts));
         }
+        return updatedPosts;
+      });
+
+      // Log episodes to watch_history
+      if (episodeIds.length > 0) {
+        const watchHistoryEntries = episodeIds.map(episodeId => ({
+          user_id: user.id,
+          show_id: postData.show.id,
+          episode_id: episodeId,
+        }));
+
+        await supabase
+          .from('watch_history')
+          .insert(watchHistoryEntries);
       }
+
+      // Update profile stats
+      await supabase.rpc('update_user_profile_stats', { user_id: user.id });
+
+      // Mark recommendations as stale since user's watch history changed
+      markRecommendationsStale();
+
+      return realPost;
     } catch (error) {
-      console.log('Error saving post to Supabase:', error);
+      console.error('❌ Error saving post to Supabase:', error);
     }
 
     // Return temp post if Supabase failed
