@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, Pressable } from 'react-native';
-import { MessageCircle, RefreshCw, AlertTriangle, Lightbulb, Hash, HelpCircle } from 'lucide-react-native';
+import { MessageCircle, RefreshCw, AlertTriangle, Lightbulb, Hash, Plus } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 
@@ -147,7 +147,7 @@ export default function PostTags({
       case 'Misc':
         return <Hash size={iconSize} color={iconColor} strokeWidth={1.5} />;
       case 'Custom':
-        return <HelpCircle size={iconSize} color={iconColor} strokeWidth={1.5} />;
+        return <Plus size={iconSize} color={iconColor} strokeWidth={1.5} />;
       default:
         return null;
     }

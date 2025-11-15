@@ -29,6 +29,7 @@ import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown, Star } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
 import { supabase } from '@/app/integrations/supabase/client';
+import PostTags from '@/components/PostTags';
 
 interface PostModalProps {
   visible: boolean;
@@ -149,6 +150,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTags, setCustomTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [isEditingCustomTag, setIsEditingCustomTag] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
@@ -1315,126 +1317,141 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     </View>
   );
 
-  const renderPostDetails = () => (
-    <View style={styles.stepContainer}>
-      <Pressable style={styles.backButton} onPress={() => setStep('selectEpisodes')}>
-        <IconSymbol name="chevron.left" size={20} color={colors.text} />
-        <Text style={styles.backButtonText}>Back</Text>
-      </Pressable>
-      <Text style={styles.stepTitle}>Post Details</Text>
-      <ScrollView style={styles.detailsForm} showsVerticalScrollIndicator={false}>
-        <TextInput
-          style={styles.titleInput}
-          placeholder="Title (optional)"
-          placeholderTextColor={colors.textSecondary}
-          value={postTitle}
-          onChangeText={setPostTitle}
-        />
-        <TextInput
-          style={styles.bodyInput}
-          placeholder="What did you think? (optional)"
-          placeholderTextColor={colors.textSecondary}
-          value={postBody}
-          onChangeText={setPostBody}
-          multiline
-          numberOfLines={6}
-          textAlignVertical="top"
-        />
-        
-        <View style={styles.ratingSection}>
-          <Text style={styles.sectionLabel}>Rating *</Text>
-          <Text style={styles.ratingHint}>Tap or drag for half-stars</Text>
-          <HalfStarRating rating={rating} onRatingChange={setRating} />
-        </View>
+  const renderPostDetails = () => {
+    const tagMap = {
+      'Fan Theory': 'Fan_Theory',
+      'Discussion': 'Discussion',
+      'Spoiler Alert': 'Spoiler',
+      'Episode Recap': 'Episode_Recap',
+      'Misc': 'Misc',
+    };
 
-        <View style={styles.tagsSection}>
-          <Text style={styles.sectionLabel}>Tags (Optional)</Text>
-          {!canSelectTags && (
-            <Text style={styles.tagsHint}>Add a title or body text to enable tags</Text>
-          )}
-          <View style={[styles.tagsContainer, !canSelectTags && styles.tagsContainerDisabled]}>
-            {['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].map(tag => (
-              <Pressable
-                key={tag}
-                style={[
-                  styles.tagButton,
-                  selectedTags.includes(tag) && styles.tagButtonSelected,
-                  !canSelectTags && styles.tagButtonDisabled,
-                ]}
-                onPress={() => handleTagToggle(tag)}
-                disabled={!canSelectTags}
-              >
-                <Text
-                  style={[
-                    styles.tagButtonText,
-                    selectedTags.includes(tag) && styles.tagButtonTextSelected,
-                    !canSelectTags && styles.tagButtonTextDisabled,
-                  ]}
-                >
-                  {tag}
-                </Text>
-              </Pressable>
-            ))}
-            {customTags.map(tag => (
-              <Pressable
-                key={tag}
-                style={[
-                  styles.tagButton,
-                  selectedTags.includes(tag) && styles.tagButtonSelected,
-                  !canSelectTags && styles.tagButtonDisabled,
-                ]}
-                onPress={() => handleTagToggle(tag)}
-                disabled={!canSelectTags}
-              >
-                <Text
-                  style={[
-                    styles.tagButtonText,
-                    selectedTags.includes(tag) && styles.tagButtonTextSelected,
-                    !canSelectTags && styles.tagButtonTextDisabled,
-                  ]}
-                >
-                  {tag}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+    const handleCustomTagPress = () => {
+      setIsEditingCustomTag(true);
+      setTimeout(() => customTagInputRef.current?.focus(), 100);
+    };
+
+    const handleCustomTagBlur = () => {
+      if (customTag.trim()) {
+        handleAddCustomTag();
+      }
+      setIsEditingCustomTag(false);
+    };
+
+    return (
+      <View style={styles.stepContainer}>
+        <Pressable style={styles.backButton} onPress={() => setStep('selectEpisodes')}>
+          <IconSymbol name="chevron.left" size={20} color={tokens.colors.black} />
+          <Text style={styles.backButtonText}>Back</Text>
+        </Pressable>
+        <Text style={styles.stepTitle}>Log Details</Text>
+        <ScrollView style={styles.detailsForm} showsVerticalScrollIndicator={false}>
           
-          <View style={styles.customTagContainer}>
-            <TextInput
-              ref={customTagInputRef}
-              style={[styles.customTagInput, !canSelectTags && styles.customTagInputDisabled]}
-              placeholder="Add custom tag"
-              placeholderTextColor={colors.textSecondary}
-              value={customTag}
-              onChangeText={setCustomTag}
-              onSubmitEditing={handleAddCustomTag}
-              returnKeyType="done"
-              blurOnSubmit={false}
-              editable={canSelectTags}
-            />
-            <Pressable
-              style={[styles.addTagButton, (!customTag.trim() || !canSelectTags) && styles.addTagButtonDisabled]}
-              onPress={handleAddCustomTag}
-              disabled={!customTag.trim() || !canSelectTags}
-            >
-              <IconSymbol name="plus" size={20} color={(customTag.trim() && canSelectTags) ? '#000000' : colors.textSecondary} />
-            </Pressable>
+          {/* Rating Section - FIRST */}
+          <View style={styles.ratingSection}>
+            <Text style={styles.sectionLabel}>Rating</Text>
+            <HalfStarRating rating={rating} onRatingChange={setRating} />
           </View>
-        </View>
-      </ScrollView>
-      <Pressable
-        style={[styles.postButton, (rating === 0 || isPosting) && styles.postButtonDisabled]}
-        onPress={handlePost}
-        disabled={rating === 0 || isPosting}
-      >
-        {isPosting ? (
-          <ActivityIndicator color={tokens.colors.black} />
-        ) : (
-          <Text style={styles.postButtonText}>Post</Text>
-        )}
-      </Pressable>
-    </View>
-  );
+
+          {/* Title Input */}
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabelRow}>
+              <Text style={styles.inputLabelText}>Title</Text>
+              <Text style={styles.inputLabelOptional}> (Optional)</Text>
+            </Text>
+            <TextInput
+              style={styles.titleInput}
+              placeholder="That episode was insane"
+              placeholderTextColor={tokens.colors.grey1}
+              value={postTitle}
+              onChangeText={setPostTitle}
+            />
+          </View>
+
+          {/* Body Input */}
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabelRow}>
+              <Text style={styles.inputLabelText}>Body</Text>
+              <Text style={styles.inputLabelOptional}> (Optional)</Text>
+            </Text>
+            <TextInput
+              style={styles.bodyInput}
+              placeholder="Tell us how it made you feel"
+              placeholderTextColor={tokens.colors.grey1}
+              value={postBody}
+              onChangeText={setPostBody}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Tags Section */}
+          <View style={styles.tagsSection}>
+            <Text style={styles.sectionLabel}>Tags</Text>
+            <View style={styles.tagsContainer}>
+              {Object.entries(tagMap).map(([displayName, stateName]) => (
+                <PostTags
+                  key={displayName}
+                  prop="Small"
+                  state={stateName as any}
+                  text={displayName}
+                  onPress={() => handleTagToggle(displayName)}
+                  style={selectedTags.includes(displayName) ? styles.tagSelected : styles.tagUnselected}
+                />
+              ))}
+              {customTags.map(tag => (
+                <PostTags
+                  key={tag}
+                  prop="Small"
+                  state="Custom"
+                  text={tag}
+                  onPress={() => handleTagToggle(tag)}
+                  style={selectedTags.includes(tag) ? styles.tagSelected : styles.tagUnselected}
+                />
+              ))}
+              
+              {/* Custom Tag - Editable */}
+              {isEditingCustomTag ? (
+                <View style={styles.customTagEditing}>
+                  <TextInput
+                    ref={customTagInputRef}
+                    style={styles.customTagInput}
+                    placeholder="Type here"
+                    placeholderTextColor={tokens.colors.grey1}
+                    value={customTag}
+                    onChangeText={setCustomTag}
+                    onBlur={handleCustomTagBlur}
+                    onSubmitEditing={handleCustomTagBlur}
+                    returnKeyType="done"
+                    autoFocus
+                  />
+                </View>
+              ) : (
+                <PostTags
+                  prop="Small"
+                  state="Custom"
+                  text="Custom"
+                  onPress={handleCustomTagPress}
+                />
+              )}
+            </View>
+          </View>
+        </ScrollView>
+        <Pressable
+          style={[styles.postButton, (rating === 0 || isPosting) && styles.postButtonDisabled]}
+          onPress={handlePost}
+          disabled={rating === 0 || isPosting}
+        >
+          {isPosting ? (
+            <ActivityIndicator color={tokens.colors.black} />
+          ) : (
+            <Text style={styles.postButtonText}>Post</Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  };
 
   return (
     <Modal
@@ -1645,35 +1662,49 @@ const styles = StyleSheet.create({
   detailsForm: {
     flex: 1,
   },
+  inputSection: {
+    marginBottom: 16,
+  },
+  inputLabelRow: {
+    marginBottom: 8,
+  },
+  inputLabelText: {
+    ...tokens.typography.smallSubtitle,
+    color: tokens.colors.black,
+  },
+  inputLabelOptional: {
+    ...tokens.typography.smallSubtitle,
+    color: tokens.colors.grey1,
+  },
   titleInput: {
-    backgroundColor: colors.card,
-    borderRadius: components.borderRadiusButton,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapLarge,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: spacing.gapMedium,
+    backgroundColor: tokens.colors.almostWhite,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    ...tokens.typography.p1,
+    color: tokens.colors.black,
   },
   bodyInput: {
-    backgroundColor: colors.card,
-    borderRadius: components.borderRadiusButton,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapLarge,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: spacing.gapLarge,
-    minHeight: 120,
+    backgroundColor: tokens.colors.almostWhite,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    ...tokens.typography.p1,
+    color: tokens.colors.black,
+    minHeight: 313,
+    textAlignVertical: 'top',
   },
   ratingSection: {
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.gapMedium,
+    ...tokens.typography.smallSubtitle,
+    color: tokens.colors.black,
+    marginBottom: 12,
   },
   starsContainer: {
     flexDirection: 'row',
@@ -1722,106 +1753,42 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: 'transparent',
   },
-  ratingHint: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 8,
-  },
   tagsSection: {
     marginBottom: 24,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.gapSmall,
-    marginBottom: spacing.gapMedium,
-  },
-  tagButton: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    paddingHorizontal: spacing.gapLarge,
-    paddingVertical: spacing.gapSmall,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-  },
-  tagButtonSelected: {
-    backgroundColor: tokens.colors.greenHighlight,
-    borderColor: tokens.colors.greenHighlight,
-  },
-  tagButtonText: {
-    ...tokens.typography.p1B,
-    fontSize: 14,
-    color: colors.text,
-  },
-  tagButtonTextSelected: {
-    color: tokens.colors.black,
-  },
-  tagsHint: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 8,
-    fontStyle: 'italic',
-  },
-  tagsContainerDisabled: {
-    opacity: 0.5,
-  },
-  tagButtonDisabled: {
-    opacity: 0.5,
-  },
-  tagButtonTextDisabled: {
-    color: colors.textSecondary,
-  },
-  customTagInputDisabled: {
-    opacity: 0.5,
-  },
-  customTagsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.gapSmall,
-    marginBottom: spacing.gapMedium,
-  },
-  customTagChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    paddingHorizontal: spacing.gapMedium,
-    paddingVertical: 6,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
   },
-  customTagChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+  tagSelected: {
+    opacity: 1,
   },
-  customTagContainer: {
+  tagUnselected: {
+    opacity: 0.6,
+  },
+  customTagEditing: {
     flexDirection: 'row',
-    gap: spacing.gapMedium,
-  },
-  customTagInput: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: components.borderRadiusButton,
-    borderWidth: 0.5,
-    borderColor: colors.cardStroke,
-    padding: spacing.gapMedium,
-    fontSize: 14,
-    color: colors.text,
-  },
-  addTagButton: {
-    backgroundColor: tokens.colors.greenHighlight,
-    borderRadius: components.borderRadiusButton,
-    width: 44,
-    height: 44,
+    paddingTop: 5,
+    paddingLeft: 9,
+    paddingBottom: 5,
+    paddingRight: 9,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 4,
+    borderRadius: 10,
+    borderWidth: 0.25,
+    borderStyle: 'solid',
+    borderColor: tokens.colors.grey3,
+    backgroundColor: tokens.colors.almostWhite,
+    minWidth: 80,
   },
-  addTagButtonDisabled: {
-    opacity: 0.5,
+  customTagInput: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.grey3,
+    padding: 0,
+    margin: 0,
+    minWidth: 60,
   },
   postButton: {
     backgroundColor: tokens.colors.greenHighlight,
