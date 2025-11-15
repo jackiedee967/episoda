@@ -58,7 +58,7 @@ export default function PostDetail() {
   // Load comments from Supabase
   useEffect(() => {
     const loadComments = async () => {
-      if (!id || !userProfileCache) return;
+      if (!id) return;
       
       try {
         const { data, error } = await supabase
@@ -73,10 +73,11 @@ export default function PostDetail() {
         }
 
         if (data) {
+          console.log('📝 Fetched', data.length, 'comments from Supabase for post:', id);
           const transformedComments: Comment[] = data.map((c: any) => ({
             id: c.id,
             postId: c.post_id,
-            user: userProfileCache[c.user_id] || {
+            user: userProfileCache?.[c.user_id] || {
               id: c.user_id,
               username: 'user',
               displayName: 'User',
@@ -103,7 +104,7 @@ export default function PostDetail() {
     };
 
     loadComments();
-  }, [id, userProfileCache]);
+  }, [id]);
 
   useEffect(() => {
     if (post && comments.length !== post.comments) {
