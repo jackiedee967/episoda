@@ -224,7 +224,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
         </View>
       )}
 
-      <View style={[styles.engagementRow, latestPost.tags.length === 0 && styles.engagementRowNoTags]}>
+      <View style={styles.engagementRow}>
         <View style={styles.engagementIconsAndCount}>
           <Pressable onPress={handleLikePress} style={styles.likes}>
             <Heart
@@ -408,8 +408,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  engagementRowNoTags: {
     paddingTop: 16,
   },
   engagementIconsAndCount: {
