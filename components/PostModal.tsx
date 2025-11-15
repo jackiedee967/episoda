@@ -27,7 +27,7 @@ import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason,
 import { saveShow, saveEpisode, getShowByTraktId, getShowById } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
-import { ChevronUp, ChevronDown } from 'lucide-react-native';
+import { ChevronUp, ChevronDown, Star } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
 import { supabase } from '@/app/integrations/supabase/client';
 
@@ -123,21 +123,33 @@ function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
   const renderStar = (starNumber: number) => {
     const difference = rating - starNumber;
     
-    let iconName: any = 'star';
-    if (difference >= 0) {
-      iconName = 'star.fill';
-    } else if (difference >= -0.5) {
-      iconName = 'star.leadinghalf.filled';
-    }
+    // Determine star state: full (>= 0), half (>= -0.5), empty (< -0.5)
+    const isFull = difference >= 0;
+    const isHalf = !isFull && difference >= -0.5;
+    const isEmpty = !isFull && !isHalf;
     
-    const isHighlighted = starNumber <= Math.ceil(rating);
+    const highlightColor = '#8bfc76';
+    const emptyColor = colors.textSecondary;
+    
+    if (isHalf) {
+      // Half star: overlay filled star (clipped to 50%) over outline star
+      return (
+        <View key={starNumber} style={styles.starWrapper}>
+          <Star size={32} color={emptyColor} fill="none" strokeWidth={2} />
+          <View style={styles.halfStarOverlay}>
+            <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={2} />
+          </View>
+        </View>
+      );
+    }
     
     return (
       <View key={starNumber} style={styles.starWrapper}>
-        <IconSymbol
-          name={iconName}
-          size={32}
-          color={isHighlighted ? '#8bfc76' : colors.textSecondary}
+        <Star 
+          size={32} 
+          color={isFull ? highlightColor : emptyColor}
+          fill={isFull ? highlightColor : 'none'}
+          strokeWidth={2}
         />
       </View>
     );
@@ -1521,6 +1533,14 @@ const styles = StyleSheet.create({
   },
   starWrapper: {
     padding: 4,
+    position: 'relative',
+  },
+  halfStarOverlay: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    width: '50%',
+    overflow: 'hidden',
   },
   ratingHint: {
     fontSize: 12,
