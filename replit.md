@@ -77,11 +77,19 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Log Episodes Integration**: FloatingTabBar transforms to "Log X episode(s)" button when episodes selected, opens PostModal with pre-selected episodes
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
   - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
-  - **Smart Show Recommendations (Nov 2025)**: Production-grade personalized recommendation system for PostModal
+  - **Smart Show Recommendations (Nov 2025)**: Production-grade personalized recommendation system with instant-loading caching
     - **Data Source**: Uses `posts` table as source of truth for user's watched shows (not a separate watch_history table)
     - **Recommendation Algorithm**: Combines recently logged shows (from user posts) + genre-based recommendations (from Trakt) + trending shows (fallback)
     - **Hybrid Architecture**: Database-backed shows fetched from Supabase with Trakt metadata; Trakt-only shows lazy-persisted on click
-    - **UI Integration**: 4×3 grid of recommended shows displayed when search query is empty, with loading states and bookmark icons
+    - **UI Integration**: 3×4 grid of recommended shows (126×172px posters) displayed when search query is empty, matching Explore tab styling
+    - **Instant-Loading Cache System**: In-memory recommendation caching for zero-delay PostModal opening
+      - **Preload Strategy**: Recommendations fetched automatically on user authentication, before PostModal opens
+      - **10-Minute TTL**: Fresh caches served instantly; stale caches refetched automatically
+      - **Mutex Pattern**: Prevents concurrent fetch requests, coalesces duplicate calls
+      - **Cross-User Safety**: User ID verification prevents recommendation contamination during logout/login sequences
+      - **Empty Result Handling**: Timestamp-based freshness checks prevent infinite refetch loops on empty recommendations
+      - **Mutation Hooks**: Cache invalidated automatically when user creates/deletes posts (watch history changes)
+      - **Fallback Retry**: PostModal triggers reload if cache unavailable (resilient to auth race conditions)
     - **Production-Safe**: Post-sorted limiting (handles 100+ logged shows), refetch fallback uses stored `traktId` (handles both UUID and Trakt IDs)
     - **Services**: `services/recommendations.ts` (getRecentlyLoggedShows, getUserGenreInterests, getGenreBasedRecommendations, getCombinedRecommendations)
 - **Mock User Seeding**: Database seeding script (`scripts/seedMockUsers.ts`) creates 4 real mock users (jackie, max, mia, liz) in development database with auto-generated avatars and follow relationships. Run via `npm run seed:mock-users`. Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable.

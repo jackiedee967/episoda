@@ -381,7 +381,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     loadRecommendationsRef.current = loadPromise;
     return loadPromise;
-  }, [authUserId, cachedRecommendations, RECOMMENDATION_CACHE_TTL]);
+  }, [authUserId]);
 
   const markRecommendationsStale = useCallback(() => {
     setLastRecommendationFetch(null);
