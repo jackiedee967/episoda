@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { colors, spacing, components } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Show, Episode, PostTag } from '@/types';
@@ -834,6 +835,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         
         resetModal();
         onClose();
+        
+        // Navigate to the post page
+        router.push(`/post/${newPost.id}`);
       } else {
         console.error('No Trakt show data available');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
