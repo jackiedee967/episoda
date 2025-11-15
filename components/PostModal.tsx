@@ -744,12 +744,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       <View style={styles.stepContainer}>
         <Text style={styles.stepTitle}>Select a Show</Text>
         <View style={styles.searchInputContainer}>
-          <IconSymbol name="magnifyingglass" size={20} color="#999999" />
+          <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />
           <TextInput
             ref={inputRef}
             style={styles.searchInput}
             placeholder="Search shows..."
-            placeholderTextColor="#999999"
+            placeholderTextColor={tokens.colors.grey1}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -776,9 +776,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             </View>
           )}
           {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendedShows.length > 0 && (
-            <View>
-              <Text style={styles.recommendationHeader}>Recommended for You</Text>
-              <View style={styles.showsGrid}>
+            <View style={styles.showsGrid}>
                 {recommendedShows.slice(0, 12).map(result => (
                   <Pressable
                     key={result.show.id}
@@ -810,7 +808,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                     </Pressable>
                   </Pressable>
                 ))}
-              </View>
             </View>
           )}
           {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendedShows.length === 0 && (
@@ -1131,13 +1128,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.gapLarge,
   },
-  recommendationHeader: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: tokens.colors.black,
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1154,8 +1144,7 @@ const styles = StyleSheet.create({
     maxWidth: 392,
     height: 46,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tokens.colors.pureWhite,
+    backgroundColor: tokens.colors.almostWhite,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: tokens.colors.grey2,
@@ -1180,8 +1169,8 @@ const styles = StyleSheet.create({
   },
   showGridItem: {
     position: 'relative',
-    width: 91,
-    height: 124,
+    width: 126,
+    height: 172,
     marginLeft: 3.5,
     marginRight: 3.5,
     marginBottom: 7,

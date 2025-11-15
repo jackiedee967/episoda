@@ -107,6 +107,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
   const [userProfileCache, setUserProfileCache] = useState<Record<string, User>>({});
+  const [cachedRecommendations, setCachedRecommendations] = useState<any[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   
   // Memoize currentUser to prevent recreation on every render
   const currentUser = useMemo(() => ({
@@ -237,6 +239,130 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Recommendation caching with staleness checking (10-minute cache)
+  const RECOMMENDATION_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+  const loadRecommendationsRef = useRef<Promise<any> | null>(null);
+  const [lastRecommendationFetch, setLastRecommendationFetch] = useState<number | null>(null);
+
+  const loadRecommendations = useCallback(async (options: { force?: boolean } = {}) => {
+    // Check if recommendations are fresh (not stale)
+    if (!options.force && lastRecommendationFetch && cachedRecommendations.length > 0) {
+      const age = Date.now() - lastRecommendationFetch;
+      if (age < RECOMMENDATION_CACHE_TTL) {
+        console.log('📊 Using cached recommendations (age:', Math.floor(age / 1000), 'seconds)');
+        return;
+      }
+    }
+
+    // Mutex: If already loading, return existing promise
+    if (loadRecommendationsRef.current) {
+      console.log('📊 Recommendation load already in progress, waiting...');
+      return loadRecommendationsRef.current;
+    }
+
+    const loadPromise = (async () => {
+      try {
+        console.log('📊 Preloading recommendations for instant PostModal display...');
+        setIsLoadingRecommendations(true);
+
+        const { getCombinedRecommendations } = await import('@/services/recommendations');
+        const { mapDatabaseShowToShow, mapTraktShowToShow } = await import('@/services/showMappers');
+        const { getShowDetails } = await import('@/services/trakt');
+        const { getShowById } = await import('@/services/showDatabase');
+
+        if (!authUserId) {
+          console.warn('Cannot load recommendations: no authenticated user');
+          return;
+        }
+
+        const recommendations = await getCombinedRecommendations(authUserId, 12);
+        console.log(`✅ Fetched ${recommendations.length} raw recommendations for caching`);
+
+        // Convert to display-ready format (same as PostModal)
+        const convertedShows = await Promise.all(
+          recommendations.map(async (rec) => {
+            if (rec.isFromDatabase && rec.id) {
+              const dbShow = await getShowById(rec.id);
+              if (!dbShow) return null;
+
+              let traktShow: any;
+              try {
+                traktShow = await getShowDetails(dbShow.trakt_id);
+              } catch (error) {
+                console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}`);
+              }
+
+              // Enrich poster if missing
+              let posterUrl = dbShow.poster_url;
+              if (!posterUrl && traktShow) {
+                try {
+                  const { showEnrichmentManager } = await import('@/services/showEnrichment');
+                  const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                  posterUrl = enrichedData.posterUrl;
+                } catch (error) {
+                  console.warn(`Failed to enrich poster for ${dbShow.title}`);
+                }
+              }
+
+              return {
+                show: { ...mapDatabaseShowToShow(dbShow), poster: posterUrl },
+                traktShow,
+                traktId: dbShow.trakt_id,
+                isDatabaseBacked: true
+              };
+            } else {
+              // Trakt-only show with enrichment
+              try {
+                const { showEnrichmentManager } = await import('@/services/showEnrichment');
+                const traktShow = await getShowDetails(rec.trakt_id);
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+
+                return {
+                  show: mapTraktShowToShow(traktShow, {
+                    posterUrl: enrichedData.posterUrl,
+                    totalSeasons: enrichedData.totalSeasons,
+                    totalEpisodes: traktShow.aired_episodes
+                  }),
+                  traktShow,
+                  traktId: rec.trakt_id,
+                  isDatabaseBacked: false
+                };
+              } catch (error) {
+                console.warn(`Failed to fetch Trakt show ${rec.trakt_id}`);
+                return null;
+              }
+            }
+          })
+        );
+
+        const validShows = convertedShows.filter(s => s !== null);
+        
+        // Only cache if we got valid results - don't poison cache with empty array
+        if (validShows.length > 0) {
+          setCachedRecommendations(validShows);
+          setLastRecommendationFetch(Date.now());
+          console.log(`✅ Cached ${validShows.length} enriched recommendations for instant display`);
+        } else {
+          console.warn('⚠️ No valid recommendations - keeping existing cache');
+        }
+      } catch (error) {
+        console.error('❌ Failed to load recommendations:', error);
+        setCachedRecommendations([]);
+      } finally {
+        setIsLoadingRecommendations(false);
+        loadRecommendationsRef.current = null;
+      }
+    })();
+
+    loadRecommendationsRef.current = loadPromise;
+    return loadPromise;
+  }, [authUserId, lastRecommendationFetch]);
+
+  const markRecommendationsStale = useCallback(() => {
+    setLastRecommendationFetch(null);
+    console.log('📊 Marked recommendations as stale - will refresh on next load');
+  }, []);
+
   const loadUserProfiles = useCallback(async (userIds: string[]) => {
     if (userIds.length === 0) return;
     
@@ -293,6 +419,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setAuthUserId(user.id);
       loadCurrentUserProfile(user.id);
       loadFollowDataFromSupabase(user.id);
+      loadRecommendations(); // Preload recommendations in background
     } else {
       console.log('⚠️ User signed out - clearing all data');
       setAuthUserId(null);
@@ -305,8 +432,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setReposts([]);
       setPlaylists([]);
       setUserProfileCache({});
+      setCachedRecommendations([]); // Clear cached recommendations
+      setLastRecommendationFetch(null);
     }
-  }, [user, profileRefreshKey, loadCurrentUserProfile, loadFollowDataFromSupabase]);
+  }, [user, profileRefreshKey, loadCurrentUserProfile, loadFollowDataFromSupabase, loadRecommendations]);
 
   useEffect(() => {
     const repostUserIds = reposts.map(r => r.userId);
@@ -939,6 +1068,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Update profile stats
           await supabase.rpc('update_user_profile_stats', { user_id: user.id });
 
+          // Mark recommendations as stale since user's watch history changed
+          markRecommendationsStale();
+
           return realPost;
         }
       }
@@ -948,7 +1080,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Return temp post if Supabase failed
     return tempPost;
-  }, []);
+  }, [markRecommendationsStale]);
 
   const deletePost = useCallback(async (postId: string) => {
     // Guard against concurrent deletion calls
@@ -1111,6 +1243,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Step 7: Update profile stats
       await supabase.rpc('update_user_profile_stats', { user_id: user.id });
 
+      // Mark recommendations as stale since user's watch history changed
+      markRecommendationsStale();
+
       console.log('✅ Post deleted successfully from Supabase');
     } catch (error) {
       console.error('❌ Error deleting post:', error);
@@ -1138,7 +1273,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsDeletingPost(false);
     }
-  }, [posts, reposts, isDeletingPost]);
+  }, [posts, reposts, isDeletingPost, markRecommendationsStale]);
 
   const likePost = useCallback(async (postId: string) => {
     // Capture just this post's previous state for rollback
@@ -1782,6 +1917,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // STATE/ACTIONS/SELECTORS ARCHITECTURE
   // This prevents both stale closures and excessive re-renders by memoizing each layer independently
   
+  // Derived selector: check if recommendations are ready (cached and not stale)
+  const recommendationsReady = useMemo(() => {
+    if (cachedRecommendations.length === 0) return false;
+    if (!lastRecommendationFetch) return false;
+    const age = Date.now() - lastRecommendationFetch;
+    return age < RECOMMENDATION_CACHE_TTL;
+  }, [cachedRecommendations.length, lastRecommendationFetch]);
+
   // LAYER 1: State - Memoized object containing all raw state
   const state = useMemo(() => ({
     posts,
@@ -1792,7 +1935,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     isLoading,
     isDeletingPost,
     authUserId,
-  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId]);
+    cachedRecommendations,
+    isLoadingRecommendations,
+  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId, cachedRecommendations, isLoadingRecommendations]);
 
   // LAYER 2: Selectors - Memoized derived data and read operations
   const selectors = useMemo(() => ({
@@ -1804,7 +1949,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     hasUserReposted,
     getUserReposts,
     isFollowing,
-  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing]);
+    recommendationsReady,
+  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing, recommendationsReady]);
 
   // LAYER 3: Actions - All mutation callbacks (already stable via useCallback)
   const actions = useMemo(() => ({
@@ -1829,6 +1975,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getTopFollowing,
     getEpisodesWatchedCount,
     getTotalLikesReceived,
+    loadRecommendations,
   }), [
     createPlaylist,
     addShowToPlaylist,
@@ -1851,6 +1998,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getTopFollowing,
     getEpisodesWatchedCount,
     getTotalLikesReceived,
+    loadRecommendations,
   ]);
 
   // Assemble the context value from the three stable layers
