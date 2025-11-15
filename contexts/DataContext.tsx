@@ -1088,7 +1088,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
           .select()
           .single();
 
+        if (error) {
+          console.error('❌ FAILED TO SAVE POST TO SUPABASE:', error);
+          console.error('Post data:', { user_id: user.id, show_id: postData.show.id, episode_ids: episodeIds, title: postData.title, body: postData.body, rating: postData.rating, tags: postData.tags });
+        }
+        
         if (!error && data) {
+          console.log('✅ Post saved to Supabase successfully:', data.id);
           // Replace temp ID with real Supabase UUID
           const realPost: Post = {
             ...tempPost,
