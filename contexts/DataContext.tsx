@@ -1067,33 +1067,52 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     // Try to save to Supabase and get real UUID
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log('📝 Attempting to save post to Supabase...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (user) {
-        const episodeIds = postData.episodes?.map(ep => ep.id) || [];
-        
-        const { data, error } = await supabase
-          .from('posts')
-          .insert({
-            user_id: user.id,
-            show_id: postData.show.id,
-            show_title: postData.show.title,
-            show_poster: postData.show.poster,
-            episode_ids: episodeIds,
-            title: postData.title,
-            body: postData.body,
-            rating: postData.rating,
-            tags: postData.tags,
-          })
-          .select()
-          .single();
+      if (authError) {
+        console.error('❌ AUTH ERROR:', authError);
+        throw authError;
+      }
+      
+      if (!user) {
+        console.error('❌ POST SAVE FAILED: No authenticated user');
+        throw new Error('Not authenticated');
+      }
 
-        if (error) {
-          console.error('❌ FAILED TO SAVE POST TO SUPABASE:', error);
-          console.error('Post data:', { user_id: user.id, show_id: postData.show.id, episode_ids: episodeIds, title: postData.title, body: postData.body, rating: postData.rating, tags: postData.tags });
-        }
+      console.log('✅ User authenticated:', user.id);
+      const episodeIds = postData.episodes?.map(ep => ep.id) || [];
+      
+      const insertPayload = {
+        user_id: user.id,
+        show_id: postData.show.id,
+        show_title: postData.show.title,
+        show_poster: postData.show.poster,
+        episode_ids: episodeIds,
+        title: postData.title,
+        body: postData.body,
+        rating: postData.rating,
+        tags: postData.tags,
+      };
+
+      console.log('📤 Inserting post with payload:', insertPayload);
         
-        if (!error && data) {
+      const { data, error } = await supabase
+        .from('posts')
+        .insert(insertPayload)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ FAILED TO SAVE POST TO SUPABASE:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Post payload:', insertPayload);
+        throw error;
+      }
+        
+      if (!error && data) {
           console.log('✅ Post saved to Supabase successfully:', data.id);
           // Replace temp ID with real Supabase UUID
           const realPost: Post = {
@@ -1362,29 +1381,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (user) {
-        // Insert like
-        await supabase
-          .from('post_likes')
-          .insert({
-            post_id: postId,
-            user_id: user.id,
-          });
+      if (!user) {
+        console.error('❌ LIKE FAILED: No authenticated user');
+        throw new Error('Not authenticated');
+      }
 
-        // Get the post owner to update their stats
-        const { data: postData } = await supabase
-          .from('posts')
-          .select('user_id')
-          .eq('id', postId)
-          .single();
+      console.log('💚 Attempting to save like:', { postId, userId: user.id });
+      
+      // Insert like
+      const { data, error } = await supabase
+        .from('likes')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+        })
+        .select();
 
-        if (postData) {
-          // Update profile stats for the post owner
-          await supabase.rpc('update_user_profile_stats', { user_id: postData.user_id });
-        }
+      if (error) {
+        console.error('❌ LIKE INSERT FAILED:', error);
+        throw error;
+      }
+
+      console.log('✅ Like saved to Supabase:', data);
+
+      // Get the post owner to update their stats
+      const { data: postData } = await supabase
+        .from('posts')
+        .select('user_id')
+        .eq('id', postId)
+        .single();
+
+      if (postData) {
+        // Update profile stats for the post owner
+        await supabase.rpc('update_user_profile_stats', { user_id: postData.user_id });
       }
     } catch (error) {
-      console.error('Error liking post in Supabase:', error);
+      console.error('❌ Error liking post in Supabase:', error);
       // Rollback only this specific post
       setPosts(prev => {
         const rolledBackPosts = prev.map(post =>
@@ -1428,7 +1460,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (user) {
         // Delete like
         await supabase
-          .from('post_likes')
+          .from('likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
