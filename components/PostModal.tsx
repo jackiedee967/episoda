@@ -94,18 +94,18 @@ function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
         {/* Visual star */}
         <View style={styles.starVisual} pointerEvents="none">
           {isEmpty && (
-            <Star size={32} color={emptyColor} fill="none" strokeWidth={2} />
+            <Star size={32} color={emptyColor} fill="none" strokeWidth={1} />
           )}
           {isHalf && (
             <View style={styles.starWrapper}>
-              <Star size={32} color={emptyColor} fill="none" strokeWidth={2} />
+              <Star size={32} color={emptyColor} fill="none" strokeWidth={1} />
               <View style={styles.halfStarOverlay}>
-                <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={2} />
+                <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={1} />
               </View>
             </View>
           )}
           {isFull && (
-            <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={2} />
+            <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={1} />
           )}
         </View>
         
@@ -1389,27 +1389,36 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           {/* Tags Section */}
           <View style={styles.tagsSection}>
             <Text style={styles.sectionLabel}>Tags</Text>
+            {!canSelectTags && (
+              <Text style={styles.tagsHelperText}>Write a title or body text to select a tag</Text>
+            )}
             <View style={styles.tagsContainer}>
-              {Object.entries(tagMap).map(([displayName, stateName]) => (
-                <PostTags
-                  key={displayName}
-                  prop="Small"
-                  state={stateName as any}
-                  text={displayName}
-                  onPress={() => handleTagToggle(displayName)}
-                  style={selectedTags.includes(displayName) ? styles.tagSelected : styles.tagUnselected}
-                />
-              ))}
-              {customTags.map(tag => (
-                <PostTags
-                  key={tag}
-                  prop="Small"
-                  state="Custom"
-                  text={tag}
-                  onPress={() => handleTagToggle(tag)}
-                  style={selectedTags.includes(tag) ? styles.tagSelected : styles.tagUnselected}
-                />
-              ))}
+              {Object.entries(tagMap).map(([displayName, stateName]) => {
+                const isSelected = selectedTags.includes(displayName);
+                return (
+                  <PostTags
+                    key={displayName}
+                    prop="Small"
+                    state={stateName as any}
+                    text={displayName}
+                    onPress={() => handleTagToggle(displayName)}
+                    style={isSelected ? { opacity: 1, borderWidth: 2 } : styles.tagUnselected}
+                  />
+                );
+              })}
+              {customTags.map(tag => {
+                const isSelected = selectedTags.includes(tag);
+                return (
+                  <PostTags
+                    key={tag}
+                    prop="Small"
+                    state="Custom"
+                    text={tag}
+                    onPress={() => handleTagToggle(tag)}
+                    style={isSelected ? { opacity: 1, borderWidth: 2 } : styles.tagUnselected}
+                  />
+                );
+              })}
               
               {/* Custom Tag - Editable */}
               {isEditingCustomTag ? (
@@ -1669,11 +1678,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputLabelText: {
-    ...tokens.typography.smallSubtitle,
+    fontSize: 13,
+    fontFamily: 'Funnel Display',
+    fontWeight: '500',
     color: tokens.colors.black,
   },
   inputLabelOptional: {
-    ...tokens.typography.smallSubtitle,
+    fontSize: 13,
+    fontFamily: 'Funnel Display',
+    fontWeight: '300',
     color: tokens.colors.grey1,
   },
   titleInput: {
@@ -1685,6 +1698,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     ...tokens.typography.p1,
     color: tokens.colors.black,
+    height: 46,
   },
   bodyInput: {
     backgroundColor: tokens.colors.almostWhite,
@@ -1756,6 +1770,13 @@ const styles = StyleSheet.create({
   tagsSection: {
     marginBottom: 24,
   },
+  tagsHelperText: {
+    fontSize: 13,
+    fontFamily: 'Funnel Display',
+    fontWeight: '300',
+    color: tokens.colors.grey1,
+    marginBottom: 8,
+  },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1766,6 +1787,9 @@ const styles = StyleSheet.create({
   },
   tagUnselected: {
     opacity: 0.6,
+  },
+  tagSelectedBorder: {
+    borderWidth: 2,
   },
   customTagEditing: {
     flexDirection: 'row',
