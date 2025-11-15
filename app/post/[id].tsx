@@ -58,7 +58,7 @@ export default function PostDetail() {
   // Load comments from Supabase
   useEffect(() => {
     const loadComments = async () => {
-      if (!id) return;
+      if (!id || !userProfileCache) return;
       
       try {
         const { data, error } = await supabase
