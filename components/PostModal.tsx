@@ -178,6 +178,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     return `${episode.showId}-${episode.seasonNumber}-${episode.episodeNumber}`;
   };
 
+  // Can only select tags if post has title or body
+  const canSelectTags = postTitle.trim().length > 0 || postBody.trim().length > 0;
+
 
   // Load previously logged episodes from posts when show changes
   useEffect(() => {
@@ -791,6 +794,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   };
 
   const handleTagToggle = (tag: string) => {
+    if (!canSelectTags) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedTags(prev => {
       if (prev.includes(tag)) {
@@ -802,6 +809,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   };
 
   const handleAddCustomTag = () => {
+    if (!canSelectTags) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
     const trimmedTag = customTag.trim();
     if (trimmedTag && !customTags.includes(trimmedTag)) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1183,20 +1194,26 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         <View style={styles.tagsSection}>
           <Text style={styles.sectionLabel}>Tags (Optional)</Text>
-          <View style={styles.tagsContainer}>
+          {!canSelectTags && (
+            <Text style={styles.tagsHint}>Add a title or body text to enable tags</Text>
+          )}
+          <View style={[styles.tagsContainer, !canSelectTags && styles.tagsContainerDisabled]}>
             {['Fan Theory', 'Discussion', 'Spoiler Alert', 'Episode Recap', 'Misc'].map(tag => (
               <Pressable
                 key={tag}
                 style={[
                   styles.tagButton,
                   selectedTags.includes(tag) && styles.tagButtonSelected,
+                  !canSelectTags && styles.tagButtonDisabled,
                 ]}
                 onPress={() => handleTagToggle(tag)}
+                disabled={!canSelectTags}
               >
                 <Text
                   style={[
                     styles.tagButtonText,
                     selectedTags.includes(tag) && styles.tagButtonTextSelected,
+                    !canSelectTags && styles.tagButtonTextDisabled,
                   ]}
                 >
                   {tag}
@@ -1209,13 +1226,16 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 style={[
                   styles.tagButton,
                   selectedTags.includes(tag) && styles.tagButtonSelected,
+                  !canSelectTags && styles.tagButtonDisabled,
                 ]}
                 onPress={() => handleTagToggle(tag)}
+                disabled={!canSelectTags}
               >
                 <Text
                   style={[
                     styles.tagButtonText,
                     selectedTags.includes(tag) && styles.tagButtonTextSelected,
+                    !canSelectTags && styles.tagButtonTextDisabled,
                   ]}
                 >
                   {tag}
@@ -1227,7 +1247,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           <View style={styles.customTagContainer}>
             <TextInput
               ref={customTagInputRef}
-              style={styles.customTagInput}
+              style={[styles.customTagInput, !canSelectTags && styles.customTagInputDisabled]}
               placeholder="Add custom tag"
               placeholderTextColor={colors.textSecondary}
               value={customTag}
@@ -1235,13 +1255,14 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               onSubmitEditing={handleAddCustomTag}
               returnKeyType="done"
               blurOnSubmit={false}
+              editable={canSelectTags}
             />
             <Pressable
-              style={[styles.addTagButton, !customTag.trim() && styles.addTagButtonDisabled]}
+              style={[styles.addTagButton, (!customTag.trim() || !canSelectTags) && styles.addTagButtonDisabled]}
               onPress={handleAddCustomTag}
-              disabled={!customTag.trim()}
+              disabled={!customTag.trim() || !canSelectTags}
             >
-              <IconSymbol name="plus" size={20} color={customTag.trim() ? '#000000' : colors.textSecondary} />
+              <IconSymbol name="plus" size={20} color={(customTag.trim() && canSelectTags) ? '#000000' : colors.textSecondary} />
             </Pressable>
           </View>
         </View>
@@ -1580,6 +1601,25 @@ const styles = StyleSheet.create({
   },
   tagButtonTextSelected: {
     color: tokens.colors.black,
+  },
+  tagsHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  tagsContainerDisabled: {
+    opacity: 0.5,
+  },
+  tagButtonDisabled: {
+    opacity: 0.5,
+  },
+  tagButtonTextDisabled: {
+    color: colors.textSecondary,
+  },
+  customTagInputDisabled: {
+    opacity: 0.5,
   },
   customTagsList: {
     flexDirection: 'row',
