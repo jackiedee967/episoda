@@ -86,7 +86,7 @@ export default function PostDetail() {
               following: [],
               followers: [],
             },
-            text: c.content,
+            text: c.comment_text,
             likes: 0, // TODO: Load likes count
             isLiked: false, // TODO: Check if current user liked
             timestamp: new Date(c.created_at),
