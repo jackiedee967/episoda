@@ -225,7 +225,7 @@ export default function PostDetail() {
           .insert({
             post_id: post.id,
             user_id: currentUser.id,
-            content: commentText,
+            comment_text: commentText,
           })
           .select()
           .single();

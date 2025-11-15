@@ -1387,7 +1387,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       // Insert like
       const { data, error } = await supabase
-        .from('likes')
+        .from('post_likes')
         .insert({
           post_id: postId,
           user_id: user.id,
@@ -1457,7 +1457,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (user) {
         // Delete like
         await supabase
-          .from('likes')
+          .from('post_likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
