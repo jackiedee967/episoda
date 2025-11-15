@@ -450,6 +450,39 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         }));
         setShowSearchResults(mappedShows);
         setIsSearching(false);
+        
+        // Background enrichment: fetch posters from TVMaze for better display
+        const { getShowByImdbId, getShowByTvdbId } = await import('@/services/tvmaze');
+        mappedShows.forEach(async (result, index) => {
+          const traktShow = result.traktShow;
+          let posterUrl = null;
+          
+          if (traktShow.ids.imdb) {
+            const tvmazeShow = await getShowByImdbId(traktShow.ids.imdb);
+            posterUrl = tvmazeShow?.image?.original || null;
+          }
+          
+          if (!posterUrl && traktShow.ids.tvdb) {
+            const tvmazeShow = await getShowByTvdbId(traktShow.ids.tvdb);
+            posterUrl = tvmazeShow?.image?.original || null;
+          }
+          
+          if (posterUrl) {
+            setShowSearchResults(prev => {
+              const updated = [...prev];
+              if (updated[index]) {
+                updated[index] = {
+                  ...updated[index],
+                  show: {
+                    ...updated[index].show,
+                    poster: posterUrl
+                  }
+                };
+              }
+              return updated;
+            });
+          }
+        });
       } catch (error) {
         console.error('Error searching shows:', error);
         setSearchError('Failed to search shows. Please try again.');
