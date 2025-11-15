@@ -16,7 +16,6 @@ function HalfStar({ size = 14 }: { size?: number }) {
         color="#8bfc76"
         fill="none"
         strokeWidth={1.5}
-        style={styles.starBase}
       />
       <View style={[styles.halfStarOverlay, { width: size / 2, height: size }]}>
         <Star
@@ -67,9 +66,6 @@ const styles = StyleSheet.create({
   },
   starWrapper: {
     position: 'relative',
-  },
-  starBase: {
-    position: 'absolute',
   },
   halfStarOverlay: {
     position: 'absolute',
