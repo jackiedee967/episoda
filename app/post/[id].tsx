@@ -241,7 +241,7 @@ export default function PostDetail() {
           ));
           
           // Update post comment count
-          updateCommentCount(post.id);
+          updateCommentCount(post.id, comments.length + 1);
         }
       } catch (error) {
         console.error('Error saving comment:', error);

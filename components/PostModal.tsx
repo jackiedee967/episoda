@@ -983,16 +983,20 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   };
 
   const handlePost = async () => {
+    console.log("🚀 POST CREATION STARTED - Show:", selectedShow?.title, "Rating:", rating, "Episodes:", selectedEpisodes.length, "TraktMap size:", traktEpisodesMap.size);
     if (!selectedShow) {
+      console.log("❌ BLOCKED: No selected show");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       return;
     }
 
+      console.log("❌ BLOCKED: Rating is 0");
     if (rating === 0) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert('Rating Required', 'Please select a star rating before posting.');
       return;
     }
+      console.log("✅ Initial validation passed - proceeding with show save");
 
     setIsPosting(true);
     
@@ -1022,6 +1026,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             }
           }
 
+          console.log("❌ EPISODE VALIDATION FAILED - BLOCKING POST", validationErrors);
           if (validationErrors.length > 0) {
             console.error('Episode validation failed:', validationErrors);
             Alert.alert(
