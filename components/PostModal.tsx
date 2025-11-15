@@ -27,6 +27,7 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
+import { supabase } from '@/app/integrations/supabase/client';
 
 interface PostModalProps {
   visible: boolean;
@@ -408,6 +409,58 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     }
   };
 
+  const getWatchedEpisodeKeys = async (showId: string): Promise<Set<string>> => {
+    if (!currentUser) return new Set();
+    
+    try {
+      const { data: userPosts, error } = await supabase
+        .from('posts')
+        .select('episode_ids')
+        .eq('user_id', currentUser.id)
+        .eq('show_id', showId);
+      
+      if (error) throw error;
+      
+      const episodeUUIDs = new Set<string>();
+      userPosts?.forEach((post: any) => {
+        post.episode_ids?.forEach((id: string) => episodeUUIDs.add(id));
+      });
+      
+      if (episodeUUIDs.size === 0) return new Set();
+      
+      const { data: episodesData } = await supabase
+        .from('episodes')
+        .select('season_number, episode_number')
+        .in('id', Array.from(episodeUUIDs));
+      
+      const watchedKeys = new Set<string>();
+      episodesData?.forEach((ep: any) => {
+        const key = `S${ep.season_number}E${ep.episode_number}`;
+        watchedKeys.add(key);
+      });
+      
+      return watchedKeys;
+    } catch (error) {
+      console.error('Error fetching watched episodes:', error);
+      return new Set();
+    }
+  };
+
+  const findSeasonToExpand = (seasonsData: Season[], watchedKeys: Set<string>): number => {
+    for (let i = 0; i < seasonsData.length; i++) {
+      const season = seasonsData[i];
+      const hasUnwatchedEpisode = season.episodes.some(ep => {
+        const key = `S${ep.seasonNumber}E${ep.episodeNumber}`;
+        return !watchedKeys.has(key);
+      });
+      
+      if (hasUnwatchedEpisode) {
+        return i;
+      }
+    }
+    return seasonsData.length - 1;
+  };
+
   const handleShowSelect = async (show: Show, traktShow: TraktShow) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedShow(show);
@@ -416,40 +469,135 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     
     try {
       const traktId = traktShow.ids.trakt;
-
-      const seasonsData = await getShowSeasons(traktId);
       const { mapTraktEpisodeToEpisode } = await import('@/services/showMappers');
+      
+      const { data: dbEpisodes } = await supabase
+        .from('episodes')
+        .select('*')
+        .eq('show_id', show.id);
+      
+      if (dbEpisodes && dbEpisodes.length > 0) {
+        console.log(`⚡ Using ${dbEpisodes.length} cached episodes from database`);
+        
+        const watchedKeys = await getWatchedEpisodeKeys(show.id);
+        
+        const seasonMap = new Map<number, Episode[]>();
+        const traktEpsMap = new Map<string, TraktEpisode>();
+        
+        dbEpisodes.forEach((ep: any) => {
+          const mappedEpisode: Episode = {
+            id: ep.id,
+            showId: ep.show_id,
+            seasonNumber: ep.season_number,
+            episodeNumber: ep.episode_number,
+            title: ep.title,
+            description: ep.description || '',
+            rating: ep.rating || 0,
+            postCount: 0,
+            thumbnail: ep.thumbnail_url || undefined,
+          };
+          
+          if (!seasonMap.has(ep.season_number)) {
+            seasonMap.set(ep.season_number, []);
+          }
+          seasonMap.get(ep.season_number)!.push(mappedEpisode);
+        });
+        
+        const seasonsArray: Season[] = Array.from(seasonMap.entries())
+          .sort(([a], [b]) => a - b)
+          .map(([seasonNumber, episodes]) => ({
+            seasonNumber,
+            episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+            expanded: false,
+          }));
+        
+        const expandIndex = findSeasonToExpand(seasonsArray, watchedKeys);
+        seasonsArray[expandIndex].expanded = true;
+        
+        setSeasons(seasonsArray);
+        setTraktEpisodesMap(traktEpsMap);
+        setIsFetchingEpisodes(false);
+        setStep('selectEpisodes');
+        return;
+      }
+      
+      console.log('📡 Fetching episodes from Trakt API...');
+      const seasonsData = await getShowSeasons(traktId);
+      const watchedKeys = await getWatchedEpisodeKeys(show.id);
       
       const seasonMap = new Map<number, Episode[]>();
       const traktEpsMap = new Map<string, TraktEpisode>();
       
-      for (const season of seasonsData) {
-        if (season.number === 0) continue;
-        
-        const episodesData = await getSeasonEpisodes(traktId, season.number);
+      const firstSeason = seasonsData.find(s => s.number > 0);
+      if (firstSeason) {
+        const episodesData = await getSeasonEpisodes(traktId, firstSeason.number);
         
         for (const episode of episodesData) {
+          const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
+          const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+          
           if (!seasonMap.has(episode.season)) {
             seasonMap.set(episode.season, []);
           }
-          const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-          // Use deterministic key format for consistent lookups
-          const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
-          traktEpsMap.set(episodeKey, episode);
           seasonMap.get(episode.season)!.push(mappedEpisode);
+          traktEpsMap.set(episodeKey, episode);
         }
       }
-
-      const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+      
+      const initialSeasons: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
         seasonNumber,
         episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-        expanded: index === 0, // Auto-expand first season
+        expanded: true,
       }));
-
-      setSeasons(seasonsArray);
+      
+      setSeasons(initialSeasons);
       setTraktEpisodesMap(traktEpsMap);
       setIsFetchingEpisodes(false);
       setStep('selectEpisodes');
+      
+      const remainingSeasons = seasonsData.filter(s => s.number > 0 && s.number !== firstSeason?.number);
+      if (remainingSeasons.length > 0) {
+        Promise.all(
+          remainingSeasons.map(season => 
+            getSeasonEpisodes(traktId, season.number).catch(err => {
+              console.error(`Failed to load season ${season.number}:`, err);
+              return [];
+            })
+          )
+        ).then(allEpisodesData => {
+          const updatedSeasonMap = new Map(seasonMap);
+          const updatedTraktMap = new Map(traktEpsMap);
+          
+          allEpisodesData.forEach((episodesData, idx) => {
+            const season = remainingSeasons[idx];
+            episodesData.forEach(episode => {
+              const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
+              const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+              
+              if (!updatedSeasonMap.has(episode.season)) {
+                updatedSeasonMap.set(episode.season, []);
+              }
+              updatedSeasonMap.get(episode.season)!.push(mappedEpisode);
+              updatedTraktMap.set(episodeKey, episode);
+            });
+          });
+          
+          const allSeasonsArray: Season[] = Array.from(updatedSeasonMap.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([seasonNumber, episodes]) => ({
+              seasonNumber,
+              episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+              expanded: false,
+            }));
+          
+          const expandIndex = findSeasonToExpand(allSeasonsArray, watchedKeys);
+          allSeasonsArray[expandIndex].expanded = true;
+          
+          setSeasons(allSeasonsArray);
+          setTraktEpisodesMap(updatedTraktMap);
+          console.log(`✅ Background loaded ${remainingSeasons.length} additional seasons`);
+        });
+      }
     } catch (error) {
       console.error('Error fetching episodes:', error);
       setIsFetchingEpisodes(false);

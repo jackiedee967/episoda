@@ -123,7 +123,7 @@ export default function ShowHub() {
     return uniqueFriends;
   }, [posts, currentUser, show]);
 
-  // Load logged episodes from watch_history table (not posts - more reliable)
+  // Load logged episodes from posts table (watch history)
   useEffect(() => {
     async function loadLoggedEpisodes() {
       if (!show || !currentUser || !show.id) {
@@ -132,39 +132,44 @@ export default function ShowHub() {
       }
 
       try {
-        console.log('🔍 Querying watch_history for user:', currentUser.id, 'show:', show.id, show.title);
+        console.log('🔍 Querying posts for user:', currentUser.id, 'show:', show.id, show.title);
         
-        // Step 1: Get episode UUIDs from watch_history
-        const { data: watchHistoryData, error: whError } = await supabase
-          .from('watch_history')
-          .select('episode_id')
+        // Query posts to get episode IDs
+        const { data: userPosts, error: postsError } = await supabase
+          .from('posts')
+          .select('episode_ids')
           .eq('user_id', currentUser.id)
           .eq('show_id', show.id);
 
-        if (whError) {
-          console.error('❌ Error loading watch history:', whError);
+        if (postsError) {
+          console.error('❌ Error loading posts:', postsError);
           return;
         }
 
-        if (!watchHistoryData || watchHistoryData.length === 0) {
+        if (!userPosts || userPosts.length === 0) {
           console.log('ℹ️ No logged episodes found for this show');
           setLoggedEpisodeIds(new Set());
           return;
         }
 
-        // Step 2: Get episode details from episodes table
-        const episodeUUIDs = watchHistoryData.map((item: any) => item.episode_id);
+        // Collect all episode UUIDs from posts
+        const episodeUUIDs = new Set<string>();
+        userPosts.forEach((post: any) => {
+          post.episode_ids?.forEach((id: string) => episodeUUIDs.add(id));
+        });
+
+        // Fetch episode details to map to Trakt-style IDs
         const { data: episodesData, error: episodesError } = await supabase
           .from('episodes')
           .select('id, season_number, episode_number')
-          .in('id', episodeUUIDs);
+          .in('id', Array.from(episodeUUIDs));
 
         if (episodesError) {
           console.error('❌ Error loading episodes:', episodesError);
           return;
         }
 
-        // Step 3: Build episode IDs in the format used by ShowHub: `${trakt_show_id}-S${season}E${episode}`
+        // Build episode IDs in the format used by ShowHub: `${trakt_show_id}-S${season}E${episode}`
         const dbShow = await getShowById(show.id);
         if (!dbShow || !dbShow.trakt_id) {
           console.error('❌ Show missing Trakt ID');
@@ -177,7 +182,7 @@ export default function ShowHub() {
           loggedIds.add(episodeId);
         });
 
-        console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`, Array.from(loggedIds));
+        console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`);
         setLoggedEpisodeIds(loggedIds);
       } catch (error) {
         console.error('❌ Error loading logged episodes:', error);
@@ -342,7 +347,22 @@ export default function ShowHub() {
         }))
         .sort((a, b) => a.seasonNumber - b.seasonNumber);
 
+      // Smart season expansion: Find first season with unwatched episodes
+      let expandIndex = seasonsData.length - 1;
+      for (let i = 0; i < seasonsData.length; i++) {
+        const season = seasonsData[i];
+        const hasUnwatchedEpisode = season.episodes.some(ep => !loggedEpisodeIds.has(ep.id));
+        
+        if (hasUnwatchedEpisode) {
+          expandIndex = i;
+          break;
+        }
+      }
+      
+      seasonsData[expandIndex].expanded = true;
+
       setSeasons(seasonsData);
+      console.log(`✅ Smart season expansion: Opened Season ${seasonsData[expandIndex].seasonNumber} (first with unwatched episodes)`);
     } catch (error) {
       console.error('Error initializing seasons:', error);
     }
