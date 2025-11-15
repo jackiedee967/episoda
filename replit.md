@@ -43,6 +43,7 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
   - **PostModal Flow**: Guides users through selecting a show, fetching/validating episodes, saving to DB, creating a post, and redirecting to the post page.
     - **Validation**: Rating is the ONLY required field. Title, body text, and tags are all optional.
     - **Custom Tags**: Users can create custom tags that appear as toggleable buttons alongside predefined tags, allowing selection/deselection for flexible post categorization.
+    - **Half-Star Rating System**: Cross-platform (web, iOS, Android) implementation using Lucide icons. Supports 0.5-5.0 ratings in 0.5 increments with tap-on-half detection (left half = X.5, right half = X.0) and drag gesture support with haptic feedback. Uses overlay technique with 50% clipped filled star over outline star for consistent half-star rendering across all platforms.
   - **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, and background loading for remaining seasons.
   - **Smart Season Logic**: Intelligent season dropdown expansion based on watch history for PostModal and ShowHub.
   - **Smart Show Recommendations**: Production-grade personalized recommendation system using user posts, genre interests, and trending shows. Features an instant-loading caching system with preloading, TTL, mutex patterns, and cache invalidation.
