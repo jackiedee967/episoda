@@ -1256,12 +1256,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     <View style={styles.stepContainer}>
       {!preselectedShow && (
         <Pressable style={styles.backButton} onPress={() => setStep('selectShow')}>
-          <IconSymbol name="chevron.left" size={20} color={colors.text} />
+          <IconSymbol name="chevron.left" size={20} color={tokens.colors.black} />
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
       )}
-      <Text style={styles.stepTitle}>Select Episodes (Optional)</Text>
-      <Text style={styles.stepSubtitle}>{selectedShow?.title}</Text>
+      <Text style={styles.stepTitle}>Select Episodes</Text>
+      <Text style={styles.stepSubtitle}>Optional</Text>
       <ScrollView style={styles.episodesList} showsVerticalScrollIndicator={false}>
         {seasons.map(season => (
           <View key={season.seasonNumber} style={styles.seasonContainer}>
@@ -1517,8 +1517,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   stepSubtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    ...tokens.typography.smallSubtitle,
+    color: tokens.colors.grey1,
     marginBottom: spacing.gapLarge,
   },
   backButton: {
@@ -1528,8 +1528,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.gapLarge,
   },
   backButtonText: {
-    fontSize: 16,
-    color: colors.text,
+    ...tokens.typography.p3R,
+    color: tokens.colors.black,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -1595,7 +1595,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   seasonContainer: {
-    marginBottom: spacing.gapLarge,
+    marginBottom: 6,
   },
   seasonHeader: {
     flexDirection: 'row',
