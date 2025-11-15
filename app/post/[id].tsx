@@ -23,6 +23,7 @@ import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
+import { supabase } from '@/integrations/supabase/client';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -42,8 +43,8 @@ function getRelativeTime(timestamp: Date): string {
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts, isDeletingPost } = useData();
-  const [comments, setComments] = useState<Comment[]>(mockComments.filter(c => c.postId === id));
+  const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts, isDeletingPost, userProfileCache } = useData();
+  const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string; textPreview: string } | null>(null);
@@ -53,6 +54,53 @@ export default function PostDetail() {
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
   const canDelete = post && currentUser && post.user.id === currentUser.id;
+
+  // Load comments from Supabase
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .select('*')
+          .eq('post_id', id)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('Error loading comments:', error);
+          return;
+        }
+
+        if (data) {
+          const transformedComments: Comment[] = data.map((c: any) => ({
+            id: c.id,
+            postId: c.post_id,
+            user: userProfileCache[c.user_id] || {
+              id: c.user_id,
+              username: 'user',
+              displayName: 'User',
+              avatar: '',
+              bio: '',
+              socialLinks: {},
+              following: [],
+              followers: [],
+            },
+            text: c.content,
+            likes: 0, // TODO: Load likes count
+            isLiked: false, // TODO: Check if current user liked
+            timestamp: new Date(c.created_at),
+            replies: [],
+          }));
+          setComments(transformedComments);
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error);
+      }
+    };
+
+    loadComments();
+  }, [id, userProfileCache]);
 
   useEffect(() => {
     if (post && comments.length !== post.comments) {
@@ -128,13 +176,13 @@ export default function PostDetail() {
     }
   };
 
-  const handleSubmitComment = () => {
+  const handleSubmitComment = async () => {
     if (!commentText.trim() && !commentImage) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (replyingTo) {
-      // Submit as a reply
+      // Submit as a reply - TODO: Implement reply saving to Supabase
       const newReply = {
         id: `reply_${Date.now()}`,
         commentId: replyingTo.commentId,
@@ -153,9 +201,10 @@ export default function PostDetail() {
       ));
       setReplyingTo(null);
     } else {
-      // Submit as a new comment
+      // Submit as a new comment - with Supabase persistence
+      const tempId = `comment_${Date.now()}`;
       const newComment: Comment = {
-        id: `comment_${Date.now()}`,
+        id: tempId,
         postId: post.id,
         user: currentUser,
         text: commentText,
@@ -166,7 +215,37 @@ export default function PostDetail() {
         replies: [],
       };
 
+      // Optimistically update UI
       setComments([...comments, newComment]);
+
+      // Save to Supabase
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .insert({
+            post_id: post.id,
+            user_id: currentUser.id,
+            content: commentText,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ FAILED TO SAVE COMMENT TO SUPABASE:', error);
+          // TODO: Show error to user and remove optimistic comment
+        } else if (data) {
+          console.log('✅ Comment saved to Supabase:', data.id);
+          // Update comment with real ID from Supabase
+          setComments(prev => prev.map(c => 
+            c.id === tempId ? { ...c, id: data.id } : c
+          ));
+          
+          // Update post comment count
+          updateCommentCount(post.id);
+        }
+      } catch (error) {
+        console.error('Error saving comment:', error);
+      }
     }
 
     setCommentText('');
