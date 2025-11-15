@@ -111,6 +111,25 @@ export async function saveShow(
 
   if (error) {
     console.error('❌ Upsert error:', error);
+    if (error.message?.includes('genres')) {
+      console.warn('⚠️ Genres column cache issue - retrying without genres...');
+      const { genres, ...showDataWithoutGenres } = showData;
+      const { data: retryData, error: retryError } = await supabase
+        .from('shows')
+        .upsert(showDataWithoutGenres, {
+          onConflict: 'trakt_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
+      
+      if (retryError) {
+        console.error('❌ Retry failed:', retryError);
+        throw retryError;
+      }
+      console.log('✅ saveShow COMPLETE (without genres), ID:', retryData.id);
+      return retryData as DatabaseShow;
+    }
     throw error;
   }
 

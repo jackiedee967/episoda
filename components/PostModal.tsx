@@ -556,6 +556,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       setStep('selectEpisodes');
       
       const remainingSeasons = seasonsData.filter(s => s.number > 0 && s.number !== firstSeason?.number);
+      console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${show.title}...`);
       if (remainingSeasons.length > 0) {
         Promise.all(
           remainingSeasons.map(season => 
