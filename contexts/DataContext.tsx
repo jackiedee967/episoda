@@ -859,11 +859,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Fetch all episodes
           allEpisodeIds.length > 0 ? supabase.from('episodes').select('*').in('id', allEpisodeIds) : { data: [] },
           // Fetch likes ONLY for these posts
-          supabase.from('likes').select('post_id').in('post_id', postIds),
+          supabase.from('post_likes').select('post_id').in('post_id', postIds),
           // Fetch reposts ONLY for these posts
-          supabase.from('reposts').select('post_id').in('post_id', postIds),
+          supabase.from('post_reposts').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
-          supabase.from('likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
+          supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
         ]);
 
         // Step 4: Build lookup maps

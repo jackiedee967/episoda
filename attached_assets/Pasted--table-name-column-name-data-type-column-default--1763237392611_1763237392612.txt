@@ -1,0 +1,37 @@
+| table_name   | column_name      | data_type                | column_default    |
+| ------------ | ---------------- | ------------------------ | ----------------- |
+| comments     | id               | uuid                     | gen_random_uuid() |
+| comments     | post_id          | uuid                     | null              |
+| comments     | user_id          | uuid                     | null              |
+| comments     | comment_text     | text                     | null              |
+| comments     | image_url        | text                     | null              |
+| comments     | likes_count      | integer                  | 0                 |
+| comments     | created_at       | timestamp with time zone | now()             |
+| comments     | updated_at       | timestamp with time zone | now()             |
+| post_likes   | id               | uuid                     | gen_random_uuid() |
+| post_likes   | post_id          | uuid                     | null              |
+| post_likes   | user_id          | uuid                     | null              |
+| post_likes   | created_at       | timestamp with time zone | now()             |
+| post_reposts | id               | uuid                     | gen_random_uuid() |
+| post_reposts | post_id          | uuid                     | null              |
+| post_reposts | user_id          | uuid                     | null              |
+| post_reposts | created_at       | timestamp with time zone | now()             |
+| posts        | id               | uuid                     | gen_random_uuid() |
+| posts        | user_id          | uuid                     | null              |
+| posts        | show_id          | text                     | null              |
+| posts        | show_title       | text                     | null              |
+| posts        | show_poster      | text                     | null              |
+| posts        | episode_ids      | ARRAY                    | null              |
+| posts        | title            | text                     | null              |
+| posts        | body             | text                     | null              |
+| posts        | rating           | numeric                  | null              |
+| posts        | tags             | ARRAY                    | null              |
+| posts        | likes_count      | integer                  | 0                 |
+| posts        | comments_count   | integer                  | 0                 |
+| posts        | reposts_count    | integer                  | 0                 |
+| posts        | created_at       | timestamp with time zone | now()             |
+| posts        | updated_at       | timestamp with time zone | now()             |
+| reposts      | id               | uuid                     | gen_random_uuid() |
+| reposts      | user_id          | uuid                     | null              |
+| reposts      | original_post_id | text                     | null              |
+| reposts      | created_at       | timestamp with time zone | now()             |
