@@ -95,9 +95,10 @@ export default function PostDetail() {
           console.log('✅ Loaded', transformedComments.length, 'comments from Supabase');
           setComments(transformedComments);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error loading comments:', error);
-        console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Error message:', error?.message);
+        console.error('Error stack:', error?.stack);
       }
     };
 
