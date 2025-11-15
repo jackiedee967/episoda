@@ -310,11 +310,18 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         }
       }
       
-      let seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+      let seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
         seasonNumber,
         episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-        expanded: index === 0, // Auto-expand first season
+        expanded: false,
       }));
+      
+      // Apply smart season expansion based on watch history
+      const watchedKeys = await getWatchedEpisodeKeys(show.id);
+      const expandIndex = findSeasonToExpand(seasonsArray, watchedKeys);
+      if (expandIndex >= 0) {
+        seasonsArray[expandIndex].expanded = true;
+      }
       
       console.log(`✅ Created ${seasonsArray.length} seasons`);
       
@@ -354,11 +361,18 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           thumbnailSeasonMap.get(ep.seasonNumber)!.push(ep);
         });
         
-        seasonsArray = Array.from(thumbnailSeasonMap.entries()).map(([seasonNumber, episodes], index) => ({
+        seasonsArray = Array.from(thumbnailSeasonMap.entries()).map(([seasonNumber, episodes]) => ({
           seasonNumber,
           episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-          expanded: index === 0,
+          expanded: false,
         }));
+        
+        // Reapply smart season expansion after thumbnails loaded
+        const watchedKeys = await getWatchedEpisodeKeys(show.id);
+        const expandIndex = findSeasonToExpand(seasonsArray, watchedKeys);
+        if (expandIndex >= 0) {
+          seasonsArray[expandIndex].expanded = true;
+        }
         
         setSeasons(seasonsArray);
         console.log('✅ Updated episodes with thumbnails');
