@@ -12,7 +12,6 @@ import {
   Animated,
   ActivityIndicator,
   Alert,
-  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -64,9 +63,6 @@ interface HalfStarRatingProps {
 }
 
 function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<View>(null);
-  const containerWidthRef = useRef(0);
   const currentRatingRef = useRef(rating);
   
   // Keep ref in sync with prop
@@ -74,97 +70,59 @@ function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
     currentRatingRef.current = rating;
   }, [rating]);
 
-  const calculateRatingFromTouch = (locationX: number) => {
-    if (!containerWidthRef.current) return 0;
-    
-    const starWidth = containerWidthRef.current / 5;
-    const starIndex = Math.floor(locationX / starWidth);
-    const positionInStar = (locationX % starWidth) / starWidth;
-    
-    // Left half = .5, right half = full star
-    const starValue = starIndex + 1;
-    const isLeftHalf = positionInStar < 0.5;
-    
-    const newRating = isLeftHalf ? starValue - 0.5 : starValue;
-    return Math.max(0.5, Math.min(5, newRating));
+  const handlePress = (value: number) => {
+    currentRatingRef.current = value;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onRatingChange(value);
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        if (containerWidthRef.current === 0) return;
-        
-        setIsDragging(true);
-        const locationX = evt.nativeEvent.locationX;
-        const newRating = calculateRatingFromTouch(locationX);
-        currentRatingRef.current = newRating;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onRatingChange(newRating);
-      },
-      onPanResponderMove: (evt) => {
-        if (containerWidthRef.current === 0) return;
-        
-        const locationX = evt.nativeEvent.locationX;
-        const newRating = calculateRatingFromTouch(locationX);
-        if (newRating !== currentRatingRef.current) {
-          currentRatingRef.current = newRating;
-          Haptics.selectionAsync();
-          onRatingChange(newRating);
-        }
-      },
-      onPanResponderRelease: () => {
-        setIsDragging(false);
-      },
-    })
-  ).current;
-
   const renderStar = (starNumber: number) => {
-    const difference = rating - starNumber;
-    
-    // Determine star state: full (>= 0), half (>= -0.5), empty (< -0.5)
-    const isFull = difference >= 0;
-    const isHalf = !isFull && difference >= -0.5;
-    const isEmpty = !isFull && !isHalf;
-    
     const highlightColor = '#8bfc76';
     const emptyColor = colors.textSecondary;
     
-    if (isHalf) {
-      // Half star: overlay filled star (clipped to 50%) over outline star
-      return (
-        <View key={starNumber} style={styles.starWrapper}>
-          <Star size={32} color={emptyColor} fill="none" strokeWidth={2} />
-          <View style={styles.halfStarOverlay}>
-            <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={2} />
-          </View>
-        </View>
-      );
-    }
+    // Calculate how much of this star should be filled
+    const fillAmount = Math.max(0, Math.min(1, rating - (starNumber - 1)));
+    
+    // Determine star state
+    const isFull = fillAmount >= 1;
+    const isHalf = fillAmount >= 0.5 && fillAmount < 1;
+    const isEmpty = fillAmount < 0.5;
     
     return (
-      <View key={starNumber} style={styles.starWrapper}>
-        <Star 
-          size={32} 
-          color={isFull ? highlightColor : emptyColor}
-          fill={isFull ? highlightColor : 'none'}
-          strokeWidth={2}
+      <View key={starNumber} style={styles.starContainer}>
+        {/* Visual star */}
+        <View style={styles.starVisual} pointerEvents="none">
+          {isEmpty && (
+            <Star size={32} color={emptyColor} fill="none" strokeWidth={2} />
+          )}
+          {isHalf && (
+            <View style={styles.starWrapper}>
+              <Star size={32} color={emptyColor} fill="none" strokeWidth={2} />
+              <View style={styles.halfStarOverlay}>
+                <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={2} />
+              </View>
+            </View>
+          )}
+          {isFull && (
+            <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={2} />
+          )}
+        </View>
+        
+        {/* Two invisible touch zones for left/right half */}
+        <Pressable
+          onPress={() => handlePress(starNumber - 0.5)}
+          style={styles.touchZoneLeft}
+        />
+        <Pressable
+          onPress={() => handlePress(starNumber)}
+          style={styles.touchZoneRight}
         />
       </View>
     );
   };
 
   return (
-    <View
-      ref={containerRef}
-      onLayout={(event) => {
-        const { width } = event.nativeEvent.layout;
-        containerWidthRef.current = width;
-      }}
-      {...panResponder.panHandlers}
-      style={styles.starsContainer}
-    >
+    <View style={styles.starsContainer}>
       {[1, 2, 3, 4, 5].map(renderStar)}
     </View>
   );
@@ -1531,16 +1489,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.gapSmall,
   },
-  starWrapper: {
-    padding: 4,
+  starContainer: {
     position: 'relative',
+    width: 40,
+    height: 40,
+  },
+  starVisual: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  starWrapper: {
+    position: 'relative',
+    width: 32,
+    height: 32,
   },
   halfStarOverlay: {
     position: 'absolute',
-    top: 4,
-    left: 4,
-    width: '50%',
+    top: 0,
+    left: 0,
+    width: 16,
+    height: 32,
     overflow: 'hidden',
+  },
+  touchZoneLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 20,
+    height: 40,
+    backgroundColor: 'transparent',
+  },
+  touchZoneRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 20,
+    height: 40,
+    backgroundColor: 'transparent',
   },
   ratingHint: {
     fontSize: 12,
