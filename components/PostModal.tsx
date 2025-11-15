@@ -1067,15 +1067,12 @@ const styles = StyleSheet.create({
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -24,
-    paddingHorizontal: 20.5,
+    gap: 7,
   },
   showGridItem: {
     position: 'relative',
     width: 109,
     height: 164,
-    marginHorizontal: 3.5,
-    marginBottom: 7,
   },
   showGridPoster: {
     width: '100%',
