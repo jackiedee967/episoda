@@ -75,8 +75,19 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
     - **Live Data - Friends Watching**: Real-time calculation from posts by followed users (replaced mock data)
     - **Live Data - Episodes Tab**: Fetches episodes from database via getEpisodesByShowId, maps to Episode type with postCount, groups into seasons, handles show transitions correctly
     - **Log Episodes Integration**: FloatingTabBar transforms to "Log X episode(s)" button when episodes selected, opens PostModal with pre-selected episodes
+    - **Smart Season Expansion**: Fixed posts table query (was using non-existent watch_history table), now queries posts correctly and auto-expands season with next unwatched episode
   - **PostModal Flow**: Search → Select show → Fetch episodes → Validate metadata → Save to DB → Create post
   - **Error Handling**: Pre-save validation alerts users if episode metadata incomplete (specials/unaired episodes)
+  - **Performance Optimizations (Nov 2025)**: Production-grade episode loading with <200ms target
+    - **Database-First Approach**: Checks if episodes exist in database (instant loading if cached)
+    - **Lazy Loading**: Fetches only Season 1 initially for new shows (~1 API call vs 10+ sequential calls)
+    - **Background Loading**: Remaining seasons load in background after popup appears
+    - **Smart Season Expansion**: Auto-opens first season with unwatched episodes (not always Season 1)
+  - **Smart Season Logic**: Intelligent season dropdown expansion across PostModal and ShowHub
+    - **Watch History Detection**: Queries user's posts to find logged episodes
+    - **Season/Episode Matching**: Uses `S#E#` format (e.g., "S1E1") for robust ID-agnostic matching
+    - **Auto-Expansion Algorithm**: Finds first season with unwatched episodes, expands that dropdown by default
+    - **Edge Case Handling**: If all episodes watched, expands latest season
   - **Smart Show Recommendations (Nov 2025)**: Production-grade personalized recommendation system with instant-loading caching
     - **Data Source**: Uses `posts` table as source of truth for user's watched shows (not a separate watch_history table)
     - **Recommendation Algorithm**: Combines recently logged shows (from user posts) + genre-based recommendations (from Trakt) + trending shows (fallback)
