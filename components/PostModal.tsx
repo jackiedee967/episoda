@@ -1068,6 +1068,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginHorizontal: -24,
+    paddingHorizontal: 24,
   },
   showGridItem: {
     position: 'relative',
