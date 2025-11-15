@@ -1057,7 +1057,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    ...tokens.typography.subtitle,
+    ...tokens.typography.p1,
     fontSize: 16,
     color: tokens.colors.black,
   },
@@ -1072,8 +1072,8 @@ const styles = StyleSheet.create({
   },
   showGridItem: {
     position: 'relative',
-    width: 126,
-    height: 172,
+    width: 109,
+    height: 164,
     marginLeft: 3.5,
     marginRight: 3.5,
     marginBottom: 7,
