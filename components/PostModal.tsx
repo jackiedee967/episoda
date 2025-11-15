@@ -442,47 +442,169 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log(`🔍 Searching for: "${searchQuery}"`);
         const searchResponse = await searchShows(searchQuery);
-        const { mapTraktShowToShow } = await import('@/services/showMappers');
-        const mappedShows = searchResponse.results.map(result => ({
-          show: mapTraktShowToShow(result.show, undefined),
-          traktShow: result.show
-        }));
-        setShowSearchResults(mappedShows);
-        setIsSearching(false);
+        const traktShows = searchResponse.results.map(r => r.show);
         
-        // Background enrichment: fetch posters from TVMaze for better display
-        const { getShowByImdbId, getShowByTvdbId } = await import('@/services/tvmaze');
-        mappedShows.forEach(async (result, index) => {
-          const traktShow = result.traktShow;
-          let posterUrl = null;
-          
-          if (traktShow.ids.imdb) {
-            const tvmazeShow = await getShowByImdbId(traktShow.ids.imdb);
-            posterUrl = tvmazeShow?.image?.original || null;
+        console.log(`✅ Found ${traktShows.length} shows from Trakt`);
+        
+        // Handle empty results early
+        if (traktShows.length === 0) {
+          setShowSearchResults([]);
+          setIsSearching(false);
+          return;
+        }
+        
+        console.log('🎯 Starting instant poster enrichment (DB-first + batched API)...');
+        
+        const { mapTraktShowToShow } = await import('@/services/showMappers');
+        const { showEnrichmentManager } = await import('@/services/showEnrichment');
+        
+        // Step 1: Check database for cached posters (instant)
+        const traktIds = traktShows.map(s => s.ids.trakt);
+        const { data: dbShows } = await supabase
+          .from('shows')
+          .select('trakt_id, poster_url, backdrop_url, tvmaze_id, imdb_id, total_seasons')
+          .in('trakt_id', traktIds);
+        
+        const dbShowsMap = new Map(
+          (dbShows || []).map(show => [show.trakt_id, show])
+        );
+        console.log(`📦 Found ${dbShowsMap.size}/${traktShows.length} shows in database cache`);
+        
+        // Step 2: Prioritize visible shows (first 12) for enrichment
+        const visibleCount = 12;
+        const visibleShows = traktShows.slice(0, visibleCount);
+        const remainingShows = traktShows.slice(visibleCount);
+        
+        // Step 3: Batch enrich visible shows with Promise.allSettled (parallel, reliable)
+        const visibleEnrichmentPromises = visibleShows.map(async (traktShow) => {
+          const dbShow = dbShowsMap.get(traktShow.ids.trakt);
+          if (dbShow?.poster_url) {
+            // Already cached in DB - instant
+            return {
+              traktShow,
+              posterUrl: dbShow.poster_url,
+              totalSeasons: dbShow.total_seasons || 0,
+            };
           }
           
-          if (!posterUrl && traktShow.ids.tvdb) {
-            const tvmazeShow = await getShowByTvdbId(traktShow.ids.tvdb);
-            posterUrl = tvmazeShow?.image?.original || null;
-          }
+          // Not in DB - enrich via ShowEnrichmentManager, then persist
+          const enriched = await showEnrichmentManager.enrichShow(traktShow);
           
-          if (posterUrl) {
-            setShowSearchResults(prev => {
-              const updated = [...prev];
-              if (updated[index]) {
-                updated[index] = {
-                  ...updated[index],
-                  show: {
-                    ...updated[index].show,
-                    poster: posterUrl
-                  }
-                };
-              }
-              return updated;
+          // Persist enriched data to Supabase for future caching
+          try {
+            await saveShow(traktShow, {
+              enrichedPosterUrl: enriched.posterUrl || undefined,
+              enrichedBackdropUrl: enriched.backdropUrl || undefined,
+              enrichedTVMazeId: enriched.tvmazeId || undefined,
+              enrichedImdbId: enriched.imdbId || undefined,
+              enrichedSeasonCount: enriched.totalSeasons || undefined,
             });
+            console.log(`💾 Cached ${traktShow.title} to database`);
+          } catch (saveError) {
+            console.warn(`⚠️ Failed to cache ${traktShow.title}:`, saveError);
+          }
+          
+          return {
+            traktShow,
+            posterUrl: enriched.posterUrl,
+            totalSeasons: enriched.totalSeasons || 0,
+          };
+        });
+        
+        const visibleResults = await Promise.allSettled(visibleEnrichmentPromises);
+        
+        // Step 4: Map enriched visible shows
+        const mappedVisibleShows = visibleResults.map((result, index) => {
+          const traktShow = visibleShows[index];
+          if (result.status === 'fulfilled') {
+            return {
+              show: mapTraktShowToShow(traktShow, {
+                posterUrl: result.value.posterUrl,
+                totalSeasons: result.value.totalSeasons,
+              }),
+              traktShow
+            };
+          } else {
+            // Fallback on error
+            console.warn(`⚠️ Enrichment failed for ${traktShow.title}:`, result.reason);
+            return {
+              show: mapTraktShowToShow(traktShow, undefined),
+              traktShow
+            };
           }
         });
+        
+        // Display visible shows immediately (with posters!)
+        setShowSearchResults(mappedVisibleShows);
+        setIsSearching(false);
+        console.log(`✅ Displayed ${mappedVisibleShows.length} shows with instant posters`);
+        
+        // Step 5: Background enrich remaining shows (AFTER visible batch completes)
+        if (remainingShows.length > 0) {
+          // Use setImmediate/setTimeout to ensure visible batch is fully rendered first
+          setTimeout(async () => {
+            try {
+              console.log(`⏳ Background enriching ${remainingShows.length} remaining shows...`);
+              const remainingPromises = remainingShows.map(async (traktShow) => {
+                const dbShow = dbShowsMap.get(traktShow.ids.trakt);
+                if (dbShow?.poster_url) {
+                  return {
+                    traktShow,
+                    posterUrl: dbShow.poster_url,
+                    totalSeasons: dbShow.total_seasons || 0,
+                  };
+                }
+                const enriched = await showEnrichmentManager.enrichShow(traktShow);
+                
+                // Persist to DB
+                try {
+                  await saveShow(traktShow, {
+                    enrichedPosterUrl: enriched.posterUrl || undefined,
+                    enrichedBackdropUrl: enriched.backdropUrl || undefined,
+                    enrichedTVMazeId: enriched.tvmazeId || undefined,
+                    enrichedImdbId: enriched.imdbId || undefined,
+                    enrichedSeasonCount: enriched.totalSeasons || undefined,
+                  });
+                } catch (saveError) {
+                  console.warn(`⚠️ Failed to cache ${traktShow.title}:`, saveError);
+                }
+                
+                return {
+                  traktShow,
+                  posterUrl: enriched.posterUrl,
+                  totalSeasons: enriched.totalSeasons || 0,
+                };
+              });
+              
+              const remainingResults = await Promise.allSettled(remainingPromises);
+              const mappedRemainingShows = remainingResults.map((result, index) => {
+                const traktShow = remainingShows[index];
+                if (result.status === 'fulfilled') {
+                  return {
+                    show: mapTraktShowToShow(traktShow, {
+                      posterUrl: result.value.posterUrl,
+                      totalSeasons: result.value.totalSeasons,
+                    }),
+                    traktShow
+                  };
+                } else {
+                  return {
+                    show: mapTraktShowToShow(traktShow, undefined),
+                    traktShow
+                  };
+                }
+              });
+              
+              // Append remaining shows
+              setShowSearchResults(prev => [...prev, ...mappedRemainingShows]);
+              console.log(`✅ Background enrichment complete: +${mappedRemainingShows.length} shows`);
+            } catch (bgError) {
+              console.error('❌ Background enrichment failed:', bgError);
+            }
+          }, 100); // Delay to prevent queue contention with visible batch
+        }
       } catch (error) {
         console.error('Error searching shows:', error);
         setSearchError('Failed to search shows. Please try again.');
