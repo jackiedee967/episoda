@@ -267,37 +267,37 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               })}
             </View>
           )}
-
-          <View style={styles.engagementRow}>
-            <View style={styles.engagementIconsAndCount}>
-              <Pressable onPress={handleLikePress} style={styles.likes}>
-                <Heart
-                  size={16}
-                  color={latestPost.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                  fill={latestPost.isLiked ? tokens.colors.greenHighlight : 'none'}
-                  strokeWidth={1.5}
-                />
-                <Text style={styles.countText}>{latestPost.likes}</Text>
-              </Pressable>
-
-              <Pressable onPress={handleCommentPress} style={styles.comments}>
-                <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
-                <Text style={styles.countText}>{latestPost.comments}</Text>
-              </Pressable>
-
-              <Pressable onPress={handleRepostPress} style={styles.reposts}>
-                <RefreshCw
-                  size={16}
-                  color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                  strokeWidth={1.5}
-                />
-                <Text style={styles.countText}>{latestPost.reposts}</Text>
-              </Pressable>
-            </View>
-            <Text style={styles.timestampText}>{getRelativeTime(latestPost.timestamp)}</Text>
-          </View>
         </View>
       )}
+
+      <View style={styles.engagementRow}>
+        <View style={styles.engagementIconsAndCount}>
+          <Pressable onPress={handleLikePress} style={styles.likes}>
+            <Heart
+              size={16}
+              color={latestPost.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+              fill={latestPost.isLiked ? tokens.colors.greenHighlight : 'none'}
+              strokeWidth={1.5}
+            />
+            <Text style={styles.countText}>{latestPost.likes}</Text>
+          </Pressable>
+
+          <Pressable onPress={handleCommentPress} style={styles.comments}>
+            <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
+            <Text style={styles.countText}>{latestPost.comments}</Text>
+          </Pressable>
+
+          <Pressable onPress={handleRepostPress} style={styles.reposts}>
+            <RefreshCw
+              size={16}
+              color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
+              strokeWidth={1.5}
+            />
+            <Text style={styles.countText}>{latestPost.reposts}</Text>
+          </Pressable>
+        </View>
+        <Text style={styles.timestampText}>{getRelativeTime(latestPost.timestamp)}</Text>
+      </View>
     </Pressable>
   );
 }

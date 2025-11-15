@@ -34,35 +34,57 @@ export default function StarRatings({ rating, size = 14 }: StarRatingsProps) {
   const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
+  const renderStars = () => {
+    const stars = [];
+    
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <View key={`full-${i}`} style={styles.starContainer}>
+          <Star
+            size={size}
+            color="#8bfc76"
+            fill="#8bfc76"
+            strokeWidth={1.5}
+          />
+        </View>
+      );
+    }
+    
+    if (hasHalfStar) {
+      stars.push(
+        <View key="half" style={styles.starContainer}>
+          <HalfStar size={size} />
+        </View>
+      );
+    }
+    
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <View key={`empty-${i}`} style={styles.starContainer}>
+          <Star
+            size={size}
+            color={tokens.colors.grey1}
+            fill="none"
+            strokeWidth={1.5}
+          />
+        </View>
+      );
+    }
+    
+    return stars;
+  };
+
   return (
-    <View style={styles.container}>
-      {[...Array(fullStars)].map((_, i) => (
-        <Star
-          key={`full-${i}`}
-          size={size}
-          color="#8bfc76"
-          fill="#8bfc76"
-          strokeWidth={1.5}
-        />
-      ))}
-      {hasHalfStar && <HalfStar key="half" size={size} />}
-      {[...Array(emptyStars)].map((_, i) => (
-        <Star
-          key={`empty-${i}`}
-          size={size}
-          color={tokens.colors.grey1}
-          fill="none"
-          strokeWidth={1.5}
-        />
-      ))}
-    </View>
+    <View style={styles.container}>{renderStars()}</View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: 2,
+  },
+  starContainer: {
+    marginRight: 2,
   },
   starWrapper: {
     position: 'relative',
