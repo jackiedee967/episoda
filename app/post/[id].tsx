@@ -23,7 +23,7 @@ import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/app/integrations/supabase/client';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
