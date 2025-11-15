@@ -198,7 +198,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           console.log('🎨 Generated avatar data URI for user:', profileData.username);
         }
         
-        setCurrentUserData({
+        const userData = {
           id: userId,
           username: profileData.username || 'user',
           displayName: profileData.display_name || profileData.username || 'User',
@@ -207,7 +207,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
           socialLinks: profileData.social_links || {},
           following: [],
           followers: [],
-        });
+        };
+        
+        setCurrentUserData(userData);
+        
+        // Add current user to profile cache so their comments show correct username
+        setUserProfileCache(prev => ({
+          ...prev,
+          [userId]: userData
+        }));
       }
     } catch (error) {
       console.error('Error loading user profile from Supabase:', error);
