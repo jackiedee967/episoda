@@ -27,26 +27,64 @@ function getColorSchemeForTitle(title: string) {
   return POSTER_COLOR_SCHEMES[index];
 }
 
-function getInitials(title: string): string {
-  const words = title.trim().split(/\s+/);
+function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
   
-  if (words.length === 1) {
-    return words[0].substring(0, 2).toUpperCase();
+  // Approximate character width as 0.6 * fontSize
+  const approxCharWidth = fontSize * 0.6;
+  const maxCharsPerLine = Math.floor(maxWidth / approxCharWidth);
+  
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    
+    if (testLine.length <= maxCharsPerLine) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      currentLine = word;
+    }
   }
   
-  return words
-    .slice(0, 2)
-    .map(word => word[0])
-    .join('')
-    .toUpperCase();
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  return lines.slice(0, 4); // Max 4 lines
 }
 
 export function generatePosterPlaceholder(title: string, width: number = 160, height: number = 240): string {
   const colorScheme = getColorSchemeForTitle(title);
-  const initials = getInitials(title);
   
-  const fontSize = width * 0.35;
-  const textY = height / 2 + fontSize * 0.35;
+  // P1 style: fontSize 13 with 300 weight
+  const fontSize = 13;
+  const lineHeight = 15.6;
+  const padding = 12;
+  
+  // Wrap text to fit within poster
+  const lines = wrapText(title, width - (padding * 2), fontSize);
+  
+  // Calculate starting Y position to center the text block
+  const totalTextHeight = lines.length * lineHeight;
+  const startY = (height - totalTextHeight) / 2 + lineHeight;
+  
+  // Generate text elements for each line
+  const textElements = lines.map((line, index) => {
+    const y = startY + (index * lineHeight);
+    return `<text
+        x="${width / 2}"
+        y="${y}"
+        font-family="Funnel Display, sans-serif"
+        font-size="${fontSize}"
+        font-weight="300"
+        fill="${colorScheme.text}"
+        text-anchor="middle"
+        dominant-baseline="middle"
+      >${line}</text>`;
+  }).join('\n      ');
   
   const svg = `
     <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
@@ -57,16 +95,7 @@ export function generatePosterPlaceholder(title: string, width: number = 160, he
         </linearGradient>
       </defs>
       <rect x="0" y="0" width="${width}" height="${height}" fill="url(#bg-${simpleHash(title)})"/>
-      <text
-        x="${width / 2}"
-        y="${textY}"
-        font-family="Funnel Display, sans-serif"
-        font-size="${fontSize}"
-        font-weight="700"
-        fill="${colorScheme.text}"
-        text-anchor="middle"
-        dominant-baseline="middle"
-      >${initials}</text>
+      ${textElements}
     </svg>
   `.trim();
   
