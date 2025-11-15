@@ -106,7 +106,7 @@ export default function PostDetail() {
     if (post && comments.length !== post.comments) {
       updateCommentCount(post.id, comments.length);
     }
-  }, [comments.length, post, updateCommentCount, posts]);
+  }, [comments.length, post?.id, post?.comments, updateCommentCount]);
 
   if (!post) {
     return (

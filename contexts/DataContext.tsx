@@ -1538,6 +1538,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const updateCommentCount = useCallback(async (postId: string, count: number) => {
     setPosts(prev => {
+      // Find the post to check if update is needed
+      const existingPost = prev.find(p => p.id === postId);
+      
+      // Only update if count actually changed (prevent infinite loops)
+      if (existingPost && existingPost.comments === count) {
+        return prev; // No change needed
+      }
+      
       const updatedPosts = prev.map(post =>
         post.id === postId
           ? { ...post, comments: count }
