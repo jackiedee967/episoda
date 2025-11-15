@@ -92,10 +92,12 @@ export default function PostDetail() {
             timestamp: new Date(c.created_at),
             replies: [],
           }));
+          console.log('✅ Loaded', transformedComments.length, 'comments from Supabase');
           setComments(transformedComments);
         }
       } catch (error) {
-        console.error('Error loading comments:', error);
+        console.error('❌ Error loading comments:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
       }
     };
 
