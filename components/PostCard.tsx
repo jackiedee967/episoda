@@ -5,9 +5,10 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Post } from '@/types';
-import { Heart, MessageCircle, RefreshCw, Lightbulb, AlertTriangle, List, HelpCircle } from 'lucide-react-native';
+import { Heart, MessageCircle, RefreshCw, AlertTriangle } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
 import StarRatings from '@/components/StarRatings';
+import PostTags from '@/components/PostTags';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
@@ -136,39 +137,14 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     setSpoilerRevealed(true);
   };
 
-  const getShowTagColor = (showTitle: string) => {
-    const tagColors = [
-      { bg: tokens.colors.tabBack, border: tokens.colors.tabStroke, text: tokens.colors.tabStroke }, // Orange - Love Island
-      { bg: tokens.colors.tabBack2, border: tokens.colors.tabStroke2, text: tokens.colors.tabStroke2 }, // Purple
-      { bg: tokens.colors.tabBack4, border: tokens.colors.tabStroke4, text: tokens.colors.tabStroke4 }, // Blue
-      { bg: tokens.colors.tabBack5, border: tokens.colors.tabStroke5, text: tokens.colors.tabStroke5 }, // Pink/Red
-      { bg: tokens.colors.tabBack3, border: tokens.colors.tabStroke3, text: tokens.colors.tabStroke3 }, // Green
-      { bg: tokens.colors.tabBack6, border: tokens.colors.tabStroke6, text: tokens.colors.tabStroke6 }, // Magenta
-    ];
-    const index = Math.abs(showTitle.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % tagColors.length;
-    return tagColors[index];
-  };
-
-  const getTagColor = (tag: string) => {
+  const getTagState = (tag: string): 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' => {
     const tagLower = tag.toLowerCase();
-    if (tagLower.includes('theory') || tagLower.includes('fan')) return { bg: tokens.colors.tabBack3, border: tokens.colors.tabStroke3, text: tokens.colors.tabStroke3 };
-    if (tagLower.includes('discussion')) return { bg: tokens.colors.tabBack4, border: tokens.colors.tabStroke4, text: tokens.colors.tabStroke4 };
-    if (tagLower.includes('spoiler')) return { bg: tokens.colors.tabBack5, border: tokens.colors.tabStroke, text: tokens.colors.tabStroke };
-    if (tagLower.includes('recap')) return { bg: tokens.colors.tabBack4, border: tokens.colors.tabStroke4, text: tokens.colors.tabStroke4 };
-    return { bg: tokens.colors.tabBack2, border: tokens.colors.tabStroke2, text: tokens.colors.tabStroke2 };
+    if (tagLower.includes('theory') || tagLower.includes('fan')) return 'Fan_Theory';
+    if (tagLower.includes('discussion')) return 'Discussion';
+    if (tagLower.includes('recap')) return 'Episode_Recap';
+    if (tagLower.includes('spoiler')) return 'Spoiler';
+    return 'Misc';
   };
-
-  const getTagIcon = (tag: string) => {
-    const tagLower = tag.toLowerCase();
-    const tagColor = getTagColor(tag);
-    if (tagLower.includes('theory') || tagLower.includes('fan')) return <Lightbulb size={12} color={tagColor.text} />;
-    if (tagLower.includes('discussion')) return <MessageCircle size={12} color={tagColor.text} />;
-    if (tagLower.includes('spoiler')) return <AlertTriangle size={12} color={tagColor.text} />;
-    if (tagLower.includes('recap')) return <List size={12} color={tagColor.text} />;
-    return <HelpCircle size={12} color={tagColor.text} />;
-  };
-
-  const showTagColor = getShowTagColor(latestPost.show.title);
 
   return (
     <Pressable style={styles.card} onPress={handlePostPress}>
@@ -184,35 +160,23 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                 <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> just watched
               </Text>
               <View style={styles.tagsRow}>
-                <Pressable onPress={handleShowPress}>
-                  <View
-                    style={[
-                      styles.showTag,
-                      {
-                        backgroundColor: showTagColor.bg,
-                        borderColor: showTagColor.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.showTagText, { color: showTagColor.text }]}>
-                      {latestPost.show.title}
-                    </Text>
-                  </View>
-                </Pressable>
+                <PostTags
+                  prop="Large"
+                  state="Show_Name"
+                  text={latestPost.show.title}
+                  onPress={handleShowPress}
+                />
                 {latestPost.episodes && latestPost.episodes.length > 0 && latestPost.episodes.map((episode, index) => (
-                  <Pressable 
+                  <PostTags
                     key={episode.id || index}
+                    prop="Large"
+                    state="S_E_"
+                    text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       router.push(`/episode/${episode.id}`);
                     }}
-                  >
-                    <View style={styles.episodeTag}>
-                      <Text style={styles.episodeTagText}>
-                        S{episode.seasonNumber} E{episode.episodeNumber}
-                      </Text>
-                    </View>
-                  </Pressable>
+                  />
                 ))}
               </View>
               {latestPost.rating && (
@@ -244,29 +208,19 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               <Text style={styles.postBody}>{latestPost.body}</Text>
             )
           )}
-          
-          {latestPost.tags.length > 0 && (
-            <View style={styles.postTagsContainer}>
-              {latestPost.tags.map((tag, index) => {
-                const tagColor = getTagColor(tag);
-                return (
-                  <View
-                    key={index}
-                    style={[
-                      styles.postTag,
-                      {
-                        backgroundColor: tagColor.bg,
-                        borderColor: tagColor.border,
-                      },
-                    ]}
-                  >
-                    {getTagIcon(tag)}
-                    <Text style={[styles.postTagText, { color: tagColor.text }]}>{tag}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+        </View>
+      )}
+
+      {latestPost.tags.length > 0 && (
+        <View style={styles.postTagsContainer}>
+          {latestPost.tags.map((tag, index) => (
+            <PostTags
+              key={index}
+              prop="Small"
+              state={getTagState(tag)}
+              text={tag}
+            />
+          ))}
         </View>
       )}
 
@@ -430,6 +384,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 12,
   },
   postTag: {
     flexDirection: 'row',
