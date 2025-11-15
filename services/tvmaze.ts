@@ -64,7 +64,8 @@ export async function getShowByImdbId(imdbId: string): Promise<TVMazeShow | null
     console.log(`✅ TVMaze found: ${data.name}, poster: ${!!data.image}`);
     return data;
   } catch (error) {
-    console.error('❌ TVMaze IMDb error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ TVMaze IMDb error for ${imdbId}:`, errorMsg);
     return null;
   }
 }
@@ -88,7 +89,8 @@ export async function getShowByTvdbId(tvdbId: number): Promise<TVMazeShow | null
     console.log(`✅ TVMaze found: ${data.name}, poster: ${!!data.image}`);
     return data;
   } catch (error) {
-    console.error('❌ TVMaze TVDB error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ TVMaze TVDB error for ${tvdbId}:`, errorMsg);
     return null;
   }
 }
@@ -112,7 +114,8 @@ export async function searchShowByName(showName: string): Promise<TVMazeShow | n
     console.log(`✅ TVMaze search found: ${data.name}, poster: ${!!data.image}`);
     return data;
   } catch (error) {
-    console.error('❌ TVMaze search error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ TVMaze search error for "${showName}":`, errorMsg);
     return null;
   }
 }

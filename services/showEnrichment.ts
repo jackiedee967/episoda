@@ -58,9 +58,9 @@ class ShowEnrichmentManager {
       const imdbId = omdbImdbId || traktShow.ids.imdb || null;
       let posterUrl = omdbData?.posterUrl || null;
 
-      // Only try TVMaze if OMDB failed completely
-      if (!posterUrl && (imdbId || traktShow.ids.tvdb)) {
-        const tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, undefined); // Skip title search
+      // TVMaze fallback with title search as final resort
+      if (!posterUrl) {
+        const tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, traktShow.title);
         posterUrl = tvmazeData?.posterUrl || null;
       }
 
@@ -75,8 +75,16 @@ class ShowEnrichmentManager {
       
       return enriched;
     } catch (error) {
-      console.error(`Error enriching show ${traktShow.title}:`, error);
-      throw error;
+      console.error(`❌ ENRICHMENT ERROR for ${traktShow.title}:`, error);
+      // Return partial data instead of throwing
+      return {
+        totalSeasons: 0,
+        posterUrl: null,
+        backdropUrl: null,
+        tvmazeId: null,
+        imdbId: traktShow.ids.imdb || null,
+        isEnriched: false,
+      };
     } finally {
       this.activeRequests--;
       this.processQueue();
