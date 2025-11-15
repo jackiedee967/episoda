@@ -1036,7 +1036,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           const savedEpisodes = await Promise.allSettled(
             selectedEpisodes.map(async (episode) => {
               const episodeKey = getEpisodeKey(episode);
-              const traktEpisode = traktEpisodesMap.get(episodeKey)!;
+              const traktEpisode = traktEpisodesMap.get(episodeKey);
+              
+              if (!traktEpisode) {
+                console.error('❌ Missing Trakt episode data for:', episodeKey);
+                throw new Error(`Missing episode data for ${episode.title}`);
+              }
 
               const dbEpisode = await saveEpisode(
                 dbShow!.id,
@@ -1056,14 +1061,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
           const failedSaves = savedEpisodes.filter(result => result.status === 'rejected' || result.value === null);
           if (failedSaves.length > 0) {
-            console.error('Failed to save episodes:', failedSaves);
-            Alert.alert(
-              'Save Failed',
-              `Failed to save ${failedSaves.length} of ${selectedEpisodes.length} episodes. Please try again.`,
-              [{ text: 'OK' }]
-            );
-            setIsPosting(false);
-            return;
+            console.error('⚠️ Some episodes failed to save, but continuing with post creation');
+            console.error('Failed episodes:', failedSaves);
+            // Don't block post creation - just skip failed episodes
           }
 
           dbEpisodes = savedEpisodes
@@ -1071,6 +1071,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             .map(result => mapDatabaseEpisodeToEpisode((result as PromiseFulfilledResult<any>).value));
         }
 
+        // CRITICAL: Create post FIRST, even if episode saving failed
+        console.log('📝 Creating post in Supabase...');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         const newPost = await createPost({
