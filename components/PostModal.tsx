@@ -1067,9 +1067,8 @@ const styles = StyleSheet.create({
   showsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
     marginHorizontal: -24,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20.5,
   },
   showGridItem: {
     position: 'relative',
