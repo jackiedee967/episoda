@@ -12,6 +12,7 @@ import {
   Animated,
   ActivityIndicator,
   Alert,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -55,6 +56,107 @@ type RecommendationResult = {
 };
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+// HalfStarRating Component
+interface HalfStarRatingProps {
+  rating: number;
+  onRatingChange: (rating: number) => void;
+}
+
+function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<View>(null);
+  const containerWidthRef = useRef(0);
+  const currentRatingRef = useRef(rating);
+  
+  // Keep ref in sync with prop
+  useEffect(() => {
+    currentRatingRef.current = rating;
+  }, [rating]);
+
+  const calculateRatingFromTouch = (locationX: number) => {
+    if (!containerWidthRef.current) return 0;
+    
+    const starWidth = containerWidthRef.current / 5;
+    const starIndex = Math.floor(locationX / starWidth);
+    const positionInStar = (locationX % starWidth) / starWidth;
+    
+    // Left half = .5, right half = full star
+    const starValue = starIndex + 1;
+    const isLeftHalf = positionInStar < 0.5;
+    
+    const newRating = isLeftHalf ? starValue - 0.5 : starValue;
+    return Math.max(0.5, Math.min(5, newRating));
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        if (containerWidthRef.current === 0) return;
+        
+        setIsDragging(true);
+        const locationX = evt.nativeEvent.locationX;
+        const newRating = calculateRatingFromTouch(locationX);
+        currentRatingRef.current = newRating;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onRatingChange(newRating);
+      },
+      onPanResponderMove: (evt) => {
+        if (containerWidthRef.current === 0) return;
+        
+        const locationX = evt.nativeEvent.locationX;
+        const newRating = calculateRatingFromTouch(locationX);
+        if (newRating !== currentRatingRef.current) {
+          currentRatingRef.current = newRating;
+          Haptics.selectionAsync();
+          onRatingChange(newRating);
+        }
+      },
+      onPanResponderRelease: () => {
+        setIsDragging(false);
+      },
+    })
+  ).current;
+
+  const renderStar = (starNumber: number) => {
+    const difference = rating - starNumber;
+    
+    let iconName: any = 'star';
+    if (difference >= 0) {
+      iconName = 'star.fill';
+    } else if (difference >= -0.5) {
+      iconName = 'star.leadinghalf.filled';
+    }
+    
+    const isHighlighted = starNumber <= Math.ceil(rating);
+    
+    return (
+      <View key={starNumber} style={styles.starWrapper}>
+        <IconSymbol
+          name={iconName}
+          size={32}
+          color={isHighlighted ? '#8bfc76' : colors.textSecondary}
+        />
+      </View>
+    );
+  };
+
+  return (
+    <View
+      ref={containerRef}
+      onLayout={(event) => {
+        const { width } = event.nativeEvent.layout;
+        containerWidthRef.current = width;
+      }}
+      {...panResponder.panHandlers}
+      style={styles.starsContainer}
+    >
+      {[1, 2, 3, 4, 5].map(renderStar)}
+    </View>
+  );
+}
 
 export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
   const { 
@@ -1091,23 +1193,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         
         <View style={styles.ratingSection}>
           <Text style={styles.sectionLabel}>Rating *</Text>
-          <View style={styles.starsContainer}>
-            {[1, 2, 3, 4, 5].map(star => (
-              <Pressable
-                key={star}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setRating(star);
-                }}
-              >
-                <IconSymbol
-                  name={star <= rating ? 'star.fill' : 'star'}
-                  size={32}
-                  color={star <= rating ? '#8bfc76' : colors.textSecondary}
-                />
-              </Pressable>
-            ))}
-          </View>
+          <Text style={styles.ratingHint}>Tap or drag for half-stars</Text>
+          <HalfStarRating rating={rating} onRatingChange={setRating} />
         </View>
 
         <View style={styles.tagsSection}>
@@ -1431,6 +1518,15 @@ const styles = StyleSheet.create({
   starsContainer: {
     flexDirection: 'row',
     gap: spacing.gapSmall,
+  },
+  starWrapper: {
+    padding: 4,
+  },
+  ratingHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginBottom: 8,
   },
   tagsSection: {
     marginBottom: 24,
