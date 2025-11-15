@@ -1,0 +1,233 @@
+pserting to database...
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/shows?on_conflict=trakt_id&select=*:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+injected.js:27 ❌ Upsert error: Object
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 ⚠️ Genres column cache issue - retrying without genres...
+(anonymous) @ injected.js:27Understand this warning
+injected.js:27 ✅ saveShow COMPLETE (without genres), ID: 027b1f20-676e-4ca8-9048-31993c42082c
+injected.js:27 ❌ EPISODE VALIDATION FAILED - BLOCKING POST Array(0)
+injected.js:27 📝 Creating post in Supabase...
+9injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/posts?select=*:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+injected.js:27 ❌ FAILED TO SAVE POST TO SUPABASE: Object
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 Post data: Object
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 Post created successfully
+5injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/comments?select=*&post_id=eq.post_1763233193106&order=created_at.asc:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+injected.js:27 Error loading comments: Object
+(anonymous) @ injected.js:27Understand this error
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/comments?select=*&post_id=eq.post_1763233193106&order=created_at.asc:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+injected.js:27 Error loading comments: Object
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 ✅ Loaded 4 logged episodes for Loot
+14injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/post_likes:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/posts?select=user_id&id=eq.post_1763233193106:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+injected.js:27 ✅ Loaded 4 logged episodes for Loot
+19injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+11injected.js:27 Unexpected text node: . A text node cannot be a child of a <View>.
+(anonymous) @ injected.js:27Understand this error
+injected.js:27 🔍 Querying posts for user: 0e8b3464-d39e-4881-87de-033ca899657d show: 027b1f20-676e-4ca8-9048-31993c42082c Loot
+injected.js:27 Error: Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+    at getRootForUpdatedFiber (react-dom-client.development.js:3801:11)
+    at enqueueConcurrentHookUpdate (react-dom-client.development.js:3763:14)
+    at dispatchSetStateInternal (react-dom-client.development.js:7205:18)
+    at dispatchSetState (react-dom-client.development.js:7161:7)
+    at Object.setOptions (useNavigationCache.js:129:11)
+    at Screen.js:22:28
+    at react-stack-bottom-frame (react-dom-client.development.js:22509:20)
+    at runWithFiberInDEV (react-dom-client.development.js:543:16)
+    at commitHookEffectListMount (react-dom-client.development.js:10758:29)
+    at commitHookLayoutEffects (react-dom-client.development.js:10708:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11415:13)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11529:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11529:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11529:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11418:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11529:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+    at recursivelyTraverseLayoutEffects (react-dom-client.development.js:12412:11)
+    at commitLayoutEffectOnFiber (react-dom-client.development.js:11413:11)
+
+The above error occurred in the <Screen> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, LogBoxStateSubscription.
+
+(anonymous) @ injected.js:27Understand this error
+mbwuoqoktdgudzaemjhx.supabase.co/rest/v1/comments?select=*:1  Failed to load resource: the server responded with a status of 400 ()Understand this error
+injected.js:27 ❌ FAILED TO SAVE COMMENT TO SUPABASE: Object
+(anonymous) @ injected.js:27Understand this error
+35injected.js:27 ✅ Loaded 4 logged episodes for Loot
+16injected.js:27 ✅ Loaded 4 logged episodes for Loot
