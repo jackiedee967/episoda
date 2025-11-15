@@ -27,7 +27,6 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
-import { getCombinedRecommendations, RecommendedShow } from '@/services/recommendations';
 
 interface PostModalProps {
   visible: boolean;
@@ -56,7 +55,17 @@ type RecommendationResult = {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
-  const { createPost, currentUser, isShowInPlaylist, playlists, posts } = useData();
+  const { 
+    createPost, 
+    currentUser, 
+    isShowInPlaylist, 
+    playlists, 
+    posts,
+    cachedRecommendations,
+    isLoadingRecommendations,
+    recommendationsReady,
+    loadRecommendations,
+  } = useData();
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
@@ -78,8 +87,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [isPosting, setIsPosting] = useState(false);
   const [selectedTraktShow, setSelectedTraktShow] = useState<TraktShow | null>(null);
   const [traktEpisodesMap, setTraktEpisodesMap] = useState<Map<string, TraktEpisode>>(new Map());
-  const [recommendedShows, setRecommendedShows] = useState<RecommendationResult[]>([]);
-  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -151,118 +158,14 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     }
   }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes]);
 
-  // Load show recommendations when modal opens on selectShow step
+  // Fallback: if recommendations aren't ready when modal opens, trigger a load
   useEffect(() => {
-    // Clear recommendations when step changes or modal closes
-    if (!visible || step !== 'selectShow') {
-      setRecommendedShows([]);
-      return;
+    if (visible && step === 'selectShow' && !recommendationsReady && !isLoadingRecommendations && currentUser?.id) {
+      console.log('📊 Recommendations not ready, triggering fallback load...');
+      loadRecommendations({ force: true });
     }
+  }, [visible, step, recommendationsReady, isLoadingRecommendations, currentUser?.id, loadRecommendations]);
 
-    // Only load recommendations when:
-    // 1. Modal is visible
-    // 2. Step is selectShow (not preselected show flow)
-    // 3. User is logged in
-    // 4. Not currently searching
-    if (!currentUser?.id || searchQuery.trim() !== '') {
-      return;
-    }
-
-    const loadRecommendations = async () => {
-      console.log('📊 Loading show recommendations for user:', currentUser.id);
-      setIsLoadingRecommendations(true);
-      
-      try {
-        const { mapDatabaseShowToShow, mapTraktShowToShow } = await import('@/services/showMappers');
-        const { getShowDetails } = await import('@/services/trakt');
-        
-        const recommendations = await getCombinedRecommendations(currentUser.id, 12);
-        console.log(`✅ Fetched ${recommendations.length} raw recommendations`);
-        
-        // Convert RecommendedShow to Show using appropriate mappers
-        const convertedShows = await Promise.all(
-          recommendations.map(async (rec) => {
-            if (rec.isFromDatabase && rec.id) {
-              // Database-backed show: Fetch full DatabaseShow and convert
-              const dbShow = await getShowById(rec.id);
-              if (!dbShow) {
-                console.warn(`Database show ${rec.id} not found, skipping`);
-                return null;
-              }
-              
-              // Fetch TraktShow for this database show (needed for episode fetching)
-              let traktShow: TraktShow | undefined;
-              try {
-                traktShow = await getShowDetails(dbShow.trakt_id);
-              } catch (error) {
-                console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}`);
-              }
-              
-              // If poster is missing, enrich with three-tier fallback
-              let posterUrl = dbShow.poster_url;
-              if (!posterUrl && traktShow) {
-                try {
-                  const { showEnrichmentManager } = await import('@/services/showEnrichment');
-                  const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                  posterUrl = enrichedData.posterUrl;
-                } catch (error) {
-                  console.warn(`Failed to enrich poster for ${dbShow.title}`);
-                }
-              }
-              
-              return {
-                show: {
-                  ...mapDatabaseShowToShow(dbShow),
-                  poster: posterUrl
-                },
-                traktShow,
-                traktId: dbShow.trakt_id,
-                isDatabaseBacked: true
-              };
-            } else {
-              // Trakt-only show: Fetch full TraktShow and enrich with poster
-              // We'll save to DB when user clicks on it
-              try {
-                const { showEnrichmentManager } = await import('@/services/showEnrichment');
-                const traktShow = await getShowDetails(rec.trakt_id);
-                
-                // Enrich with three-tier poster fallback (OMDB → TVMaze → title search)
-                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                
-                return {
-                  show: mapTraktShowToShow(traktShow, {
-                    posterUrl: enrichedData.posterUrl,
-                    totalSeasons: enrichedData.totalSeasons,
-                    totalEpisodes: traktShow.aired_episodes
-                  }),
-                  traktShow,
-                  traktId: rec.trakt_id,
-                  isDatabaseBacked: false
-                };
-              } catch (error) {
-                console.warn(`Failed to fetch Trakt show ${rec.trakt_id}, skipping`);
-                return null;
-              }
-            }
-          })
-        );
-        
-        // Filter out failed conversions
-        const validShows = convertedShows.filter(s => s !== null) as RecommendationResult[];
-        setRecommendedShows(validShows);
-        console.log(`✅ Loaded ${validShows.length} valid recommendations`);
-      } catch (error) {
-        console.error('❌ Failed to load recommendations:', error);
-        // Silently fail - user can still search for shows
-        setRecommendedShows([]);
-      } finally {
-        setIsLoadingRecommendations(false);
-      }
-    };
-
-    loadRecommendations();
-  }, [visible, step, currentUser?.id, searchQuery]);
-  
   const loadTraktDataForPreselectedShow = async (show: Show, skipToReview: boolean) => {
     setIsFetchingEpisodes(true);
     try {
@@ -775,9 +678,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               <Text style={styles.loadingText}>Loading recommendations...</Text>
             </View>
           )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendedShows.length > 0 && (
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length > 0 && (
             <View style={styles.showsGrid}>
-                {recommendedShows.slice(0, 12).map(result => (
+                {cachedRecommendations.slice(0, 12).map(result => (
                   <Pressable
                     key={result.show.id}
                     style={styles.showGridItem}
@@ -810,7 +713,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 ))}
             </View>
           )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendedShows.length === 0 && (
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>Start typing to search for shows</Text>
             </View>

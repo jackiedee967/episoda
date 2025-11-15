@@ -1,6 +1,6 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { Post, Show, User, Playlist, Episode } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
@@ -60,6 +60,10 @@ interface DataContextType {
   getWatchHistory: (userId: string) => WatchHistoryItem[];
   isLoading: boolean;
   isDeletingPost: boolean;
+  cachedRecommendations: any[];
+  isLoadingRecommendations: boolean;
+  recommendationsReady: boolean;
+  loadRecommendations: (options?: { force?: boolean }) => Promise<void>;
 }
 
 const STORAGE_KEYS = {
@@ -242,14 +246,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Recommendation caching with staleness checking (10-minute cache)
   const RECOMMENDATION_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
   const loadRecommendationsRef = useRef<Promise<any> | null>(null);
+  const lastRecommendationFetchRef = useRef<number | null>(null);
   const [lastRecommendationFetch, setLastRecommendationFetch] = useState<number | null>(null);
+  const hasPreloadedForUserRef = useRef<string | null>(null);
 
   const loadRecommendations = useCallback(async (options: { force?: boolean } = {}) => {
-    // Check if recommendations are fresh (not stale)
-    if (!options.force && lastRecommendationFetch && cachedRecommendations.length > 0) {
-      const age = Date.now() - lastRecommendationFetch;
+    // Skip if we already have a fresh fetch (regardless of result count) - unless forced
+    if (!options.force && lastRecommendationFetchRef.current) {
+      const age = Date.now() - lastRecommendationFetchRef.current;
       if (age < RECOMMENDATION_CACHE_TTL) {
-        console.log('📊 Using cached recommendations (age:', Math.floor(age / 1000), 'seconds)');
+        console.log('📊 Using cached recommendations (age:', Math.floor(age / 1000), 'seconds, count:', cachedRecommendations.length, ')');
         return;
       }
     }
@@ -259,6 +265,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('📊 Recommendation load already in progress, waiting...');
       return loadRecommendationsRef.current;
     }
+
+    // Capture requesting user ID to prevent cross-user contamination
+    const requestUserId = authUserId;
 
     const loadPromise = (async () => {
       try {
@@ -270,12 +279,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { getShowDetails } = await import('@/services/trakt');
         const { getShowById } = await import('@/services/showDatabase');
 
-        if (!authUserId) {
+        if (!requestUserId) {
           console.warn('Cannot load recommendations: no authenticated user');
           return;
         }
 
-        const recommendations = await getCombinedRecommendations(authUserId, 12);
+        const recommendations = await getCombinedRecommendations(requestUserId, 12);
         console.log(`✅ Fetched ${recommendations.length} raw recommendations for caching`);
 
         // Convert to display-ready format (same as PostModal)
@@ -337,17 +346,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const validShows = convertedShows.filter(s => s !== null);
         
-        // Only cache if we got valid results - don't poison cache with empty array
+        // Guard: only commit state if requester is still the current user (prevent cross-user contamination)
+        if (authUserId !== requestUserId) {
+          console.warn('⚠️ User changed during recommendation fetch (was:', requestUserId, 'now:', authUserId, '), discarding results');
+          return;
+        }
+        
+        // Always update timestamp, even for empty results, to enable cache reuse logic
+        const timestamp = Date.now();
         if (validShows.length > 0) {
           setCachedRecommendations(validShows);
-          setLastRecommendationFetch(Date.now());
+          setLastRecommendationFetch(timestamp);
+          lastRecommendationFetchRef.current = timestamp;
           console.log(`✅ Cached ${validShows.length} enriched recommendations for instant display`);
         } else {
-          console.warn('⚠️ No valid recommendations - keeping existing cache');
+          // Empty results: still update timestamp to prevent re-fetching immediately
+          setLastRecommendationFetch(timestamp);
+          lastRecommendationFetchRef.current = timestamp;
+          console.warn('⚠️ No valid recommendations - marked as fetched to prevent retry storm');
         }
       } catch (error) {
         console.error('❌ Failed to load recommendations:', error);
-        setCachedRecommendations([]);
+        // Only commit error state if requester is still the current user
+        if (authUserId === requestUserId) {
+          setCachedRecommendations([]);
+          setLastRecommendationFetch(null);
+          lastRecommendationFetchRef.current = null;
+        }
       } finally {
         setIsLoadingRecommendations(false);
         loadRecommendationsRef.current = null;
@@ -356,12 +381,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     loadRecommendationsRef.current = loadPromise;
     return loadPromise;
-  }, [authUserId, lastRecommendationFetch]);
+  }, [authUserId, cachedRecommendations, RECOMMENDATION_CACHE_TTL]);
 
   const markRecommendationsStale = useCallback(() => {
     setLastRecommendationFetch(null);
+    lastRecommendationFetchRef.current = null;
     console.log('📊 Marked recommendations as stale - will refresh on next load');
   }, []);
+
+  // Preload recommendations once when user authenticates, clear on logout
+  useEffect(() => {
+    if (authUserId && authUserId !== hasPreloadedForUserRef.current) {
+      console.log('📊 New user authenticated, preloading recommendations...');
+      hasPreloadedForUserRef.current = authUserId;
+      loadRecommendations({ force: false });
+    } else if (!authUserId) {
+      // User logged out - reset recommendation cache and metadata
+      console.log('📊 User logged out, clearing recommendation cache...');
+      setCachedRecommendations([]);
+      setLastRecommendationFetch(null);
+      lastRecommendationFetchRef.current = null;
+      hasPreloadedForUserRef.current = null;
+    }
+  }, [authUserId, loadRecommendations]);
 
   const loadUserProfiles = useCallback(async (userIds: string[]) => {
     if (userIds.length === 0) return;
@@ -1917,13 +1959,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // STATE/ACTIONS/SELECTORS ARCHITECTURE
   // This prevents both stale closures and excessive re-renders by memoizing each layer independently
   
-  // Derived selector: check if recommendations are ready (cached and not stale)
+  // Derived selector: check if recommendations are ready (fetched recently, regardless of result count)
   const recommendationsReady = useMemo(() => {
-    if (cachedRecommendations.length === 0) return false;
     if (!lastRecommendationFetch) return false;
     const age = Date.now() - lastRecommendationFetch;
     return age < RECOMMENDATION_CACHE_TTL;
-  }, [cachedRecommendations.length, lastRecommendationFetch]);
+  }, [lastRecommendationFetch]);
 
   // LAYER 1: State - Memoized object containing all raw state
   const state = useMemo(() => ({
