@@ -60,9 +60,9 @@ export function generatePosterPlaceholder(title: string, width: number = 160, he
       <text
         x="${width / 2}"
         y="${textY}"
-        font-family="InstrumentSerif_400Regular, serif"
+        font-family="Funnel Display, sans-serif"
         font-size="${fontSize}"
-        font-weight="400"
+        font-weight="700"
         fill="${colorScheme.text}"
         text-anchor="middle"
         dominant-baseline="middle"

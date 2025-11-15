@@ -198,19 +198,43 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}`);
               }
               
+              // If poster is missing, enrich with three-tier fallback
+              let posterUrl = dbShow.poster_url;
+              if (!posterUrl && traktShow) {
+                try {
+                  const { showEnrichmentManager } = await import('@/services/showEnrichment');
+                  const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                  posterUrl = enrichedData.posterUrl;
+                } catch (error) {
+                  console.warn(`Failed to enrich poster for ${dbShow.title}`);
+                }
+              }
+              
               return {
-                show: mapDatabaseShowToShow(dbShow),
+                show: {
+                  ...mapDatabaseShowToShow(dbShow),
+                  poster: posterUrl
+                },
                 traktShow,
                 traktId: dbShow.trakt_id,
                 isDatabaseBacked: true
               };
             } else {
-              // Trakt-only show: Fetch full TraktShow
+              // Trakt-only show: Fetch full TraktShow and enrich with poster
               // We'll save to DB when user clicks on it
               try {
+                const { showEnrichmentManager } = await import('@/services/showEnrichment');
                 const traktShow = await getShowDetails(rec.trakt_id);
+                
+                // Enrich with three-tier poster fallback (OMDB → TVMaze → title search)
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                
                 return {
-                  show: mapTraktShowToShow(traktShow, undefined),
+                  show: mapTraktShowToShow(traktShow, {
+                    posterUrl: enrichedData.posterUrl,
+                    totalSeasons: enrichedData.totalSeasons,
+                    totalEpisodes: traktShow.aired_episodes
+                  }),
                   traktShow,
                   traktId: rec.trakt_id,
                   isDatabaseBacked: false
@@ -1126,7 +1150,8 @@ const styles = StyleSheet.create({
   },
   searchInputContainer: {
     flexDirection: 'row',
-    width: 392,
+    width: '100%',
+    maxWidth: 392,
     height: 46,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1155,8 +1180,8 @@ const styles = StyleSheet.create({
   },
   showGridItem: {
     position: 'relative',
-    width: 126,
-    height: 172,
+    width: 91,
+    height: 124,
     marginLeft: 3.5,
     marginRight: 3.5,
     marginBottom: 7,
