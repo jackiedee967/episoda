@@ -210,7 +210,17 @@ export default function SearchScreen() {
                   return r;
                 });
                 
-                return { ...prevResults, results: updatedResults };
+                // Sort: shows with posters first, placeholder shows last
+                const sortedResults = updatedResults.sort((a, b) => {
+                  const aHasPoster = !!a.show.poster && !a.show.poster.startsWith('data:image/svg+xml');
+                  const bHasPoster = !!b.show.poster && !b.show.poster.startsWith('data:image/svg+xml');
+                  
+                  if (aHasPoster && !bHasPoster) return -1;
+                  if (!aHasPoster && bHasPoster) return 1;
+                  return 0;
+                });
+                
+                return { ...prevResults, results: sortedResults };
               });
             }
           } catch (error) {

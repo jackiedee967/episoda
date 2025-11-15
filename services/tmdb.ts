@@ -1,11 +1,24 @@
-// TMDB API key is provided via Replit secrets and inlined at build time
-const TMDB_API_KEY = 'f07f378b0a94cb4719bf0c2fe48c846d';
+import Constants from 'expo-constants';
 
-if (TMDB_API_KEY) {
-  console.log('✅ TMDB API key loaded successfully (length:', TMDB_API_KEY.length, ')');
-} else {
-  console.warn('⚠️ TMDB API key not configured. Poster enrichment will fall back to OMDB/TVMaze.');
-}
+const getTMDBApiKey = () => {
+  // Prefer runtime process.env for server environments, then fall back to Expo Constants
+  const key = 
+    process.env.TMDB_API_KEY ||
+    Constants.expoConfig?.extra?.tmdbApiKey ||
+    Constants.manifest?.extra?.tmdbApiKey ||
+    Constants.manifest2?.extra?.expoClient?.extra?.tmdbApiKey ||
+    '';
+  
+  if (!key) {
+    console.warn('⚠️ TMDB API key not configured. Poster enrichment will fall back to OMDB/TVMaze.');
+  } else {
+    console.log('✅ TMDB API key loaded successfully (length:', key.length, ')');
+  }
+  
+  return key;
+};
+
+const TMDB_API_KEY = getTMDBApiKey();
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
