@@ -212,6 +212,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setCurrentUserData(userData);
         
         // Add current user to profile cache so their comments show correct username
+        console.log('📝 Adding current user to profile cache:', userId, userData.username);
         setUserProfileCache(prev => ({
           ...prev,
           [userId]: userData
@@ -2057,7 +2058,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     authUserId,
     cachedRecommendations,
     isLoadingRecommendations,
-  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId, cachedRecommendations, isLoadingRecommendations]);
+    userProfileCache,
+  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId, cachedRecommendations, isLoadingRecommendations, userProfileCache]);
 
   // LAYER 2: Selectors - Memoized derived data and read operations
   const selectors = useMemo(() => ({
