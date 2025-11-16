@@ -28,6 +28,7 @@ import FloatingTabBar from '@/components/FloatingTabBar';
 import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
 import { mockShows, mockUsers } from '@/data/mockData';
 import FadeInView from '@/components/FadeInView';
+import FadeInImage from '@/components/FadeInImage';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
@@ -508,7 +509,7 @@ export default function ShowHub() {
       <View style={styles.showInfoContainer}>
         <View style={styles.showDetailsRow}>
           <View style={styles.posterWrapper}>
-            <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} />
+            <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} contentFit="cover" />
             <Pressable 
               style={({ pressed }) => [
                 styles.saveIcon,

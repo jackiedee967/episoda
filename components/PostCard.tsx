@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import * as Haptics from 'expo-haptics';
@@ -11,6 +11,7 @@ import StarRatings from '@/components/StarRatings';
 import PostTags from '@/components/PostTags';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import FadeInImage from './FadeInImage';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -150,7 +151,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
     <Pressable style={styles.card} onPress={handlePostPress}>
       <View style={styles.userPostInfo}>
         <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
-          <Image source={{ uri: getPosterUrl(latestPost.show.poster, latestPost.show.title) }} style={styles.showPoster} />
+          <FadeInImage source={{ uri: getPosterUrl(latestPost.show.poster, latestPost.show.title) }} style={styles.showPoster} contentFit="cover" />
         </Pressable>
 
         <View style={styles.contentContainer}>
@@ -184,7 +185,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
               )}
             </View>
             <Pressable onPress={handleUserPress}>
-              <Image source={{ uri: latestPost.user.avatar }} style={styles.userProfilePic} />
+              <FadeInImage source={{ uri: latestPost.user.avatar }} style={styles.userProfilePic} contentFit="cover" />
             </Pressable>
           </View>
         </View>
