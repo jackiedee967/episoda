@@ -13,6 +13,7 @@ import { useData } from '@/contexts/DataContext';
 import { ChevronRight, Bookmark } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
+import FadeInView from '@/components/FadeInView';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -302,15 +303,16 @@ export default function HomeScreen() {
           </>
         ) : allActivity.length > 0 ? (
           allActivity.slice(0, 5).map((item, index) => (
-            <PostCard
-              key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`}
-              post={item.post}
-              onLike={() => handleLike(item.post.id)}
-              onRepost={() => handleRepost(item.post.id)}
-              onShare={() => handleShare(item.post.id)}
-              isRepost={item.isRepost}
-              repostedBy={item.repostedBy}
-            />
+            <FadeInView key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} delay={index * 50}>
+              <PostCard
+                post={item.post}
+                onLike={() => handleLike(item.post.id)}
+                onRepost={() => handleRepost(item.post.id)}
+                onShare={() => handleShare(item.post.id)}
+                isRepost={item.isRepost}
+                repostedBy={item.repostedBy}
+              />
+            </FadeInView>
           ))
         ) : (
           <View style={styles.emptyState}>
