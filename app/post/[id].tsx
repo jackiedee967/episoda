@@ -141,6 +141,7 @@ export default function PostDetail() {
           followers: [],
         },
         text: r.comment_text,
+        image: r.image_url || undefined,
         likes: likesCount.get(r.id) || 0,
         isLiked: userCommentLikes.has(r.id),
         timestamp: new Date(r.created_at),
@@ -160,6 +161,7 @@ export default function PostDetail() {
           followers: [],
         },
         text: c.comment_text,
+        image: c.image_url || undefined,
         likes: likesCount.get(c.id) || 0,
         isLiked: userCommentLikes.has(c.id),
         timestamp: new Date(c.created_at),
@@ -280,6 +282,7 @@ export default function PostDetail() {
             user_id: currentUser.id,
             comment_text: commentText,
             parent_comment_id: replyingTo.commentId,
+            image_url: commentImage || null,
           })
           .select()
           .single();
@@ -340,6 +343,7 @@ export default function PostDetail() {
             post_id: post.id,
             user_id: currentUser.id,
             comment_text: commentText,
+            image_url: commentImage || null,
           })
           .select()
           .single();
