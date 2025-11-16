@@ -173,11 +173,8 @@ export default function PostDetail() {
     setComments(transformedComments);
   }, [rawComments, userProfileCache, commentLikesData, userCommentLikes]);
 
-  useEffect(() => {
-    if (post && comments.length !== post.comments) {
-      updateCommentCount(post.id, comments.length);
-    }
-  }, [comments.length, post?.id, post?.comments, updateCommentCount]);
+  // Note: Comment count is updated in submit handlers, not here
+  // Removed useEffect that was causing infinite loop
 
   if (!post) {
     return (
