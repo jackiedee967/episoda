@@ -27,10 +27,10 @@ export default function FadeInImage({
   };
 
   return (
-    <Animated.View style={{ opacity: fadeAnim }}>
+    <Animated.View style={[style, { opacity: fadeAnim }]}>
       <Image
         {...imageProps}
-        style={style}
+        style={{ width: '100%', height: '100%' }}
         onLoad={handleLoad}
       />
     </Animated.View>
