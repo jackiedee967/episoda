@@ -12,6 +12,7 @@ import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight, Bookmark } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function HomeScreen() {
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
+  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -42,6 +44,14 @@ export default function HomeScreen() {
       ])
     ).start();
   }, []);
+
+  useEffect(() => {
+    // Once we have posts loaded, set loading to false
+    const timer = setTimeout(() => {
+      setIsLoadingFeed(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [posts]);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -284,7 +294,13 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Friend Activity</Text>
         </View>
-        {allActivity.length > 0 ? (
+        {isLoadingFeed ? (
+          <>
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+          </>
+        ) : allActivity.length > 0 ? (
           allActivity.slice(0, 5).map((item, index) => (
             <PostCard
               key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`}

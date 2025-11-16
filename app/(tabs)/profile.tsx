@@ -19,6 +19,7 @@ import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
 import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
+import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -59,6 +60,7 @@ export default function ProfileScreen() {
   const [topFollowers, setTopFollowers] = useState<any[]>([]);
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist ? isShowInPlaylist(pl.id, showId) : false);
@@ -123,6 +125,7 @@ export default function ProfileScreen() {
 
   const loadStats = async () => {
     if (!profileUser) return;
+    setIsLoadingStats(true);
     try {
       const episodesCount = await getEpisodesWatchedCount(profileUser.id);
       const likesCount = await getTotalLikesReceived(profileUser.id);
@@ -130,6 +133,8 @@ export default function ProfileScreen() {
       setTotalLikes(likesCount);
     } catch (error) {
       console.error('Error loading stats:', error);
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -384,25 +389,34 @@ export default function ProfileScreen() {
   // Section 3: Stats Grid
   const renderStatsGrid = () => (
     <View style={styles.statsSection}>
-      <View style={styles.statCard}>
-        <View style={styles.statContent}>
-          <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
-          <Text style={styles.statValue}>
-            <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
-          </Text>
-        </View>
-      </View>
+      {isLoadingStats ? (
+        <>
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </>
+      ) : (
+        <>
+          <View style={styles.statCard}>
+            <View style={styles.statContent}>
+              <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
+              <Text style={styles.statValue}>
+                <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+              </Text>
+            </View>
+          </View>
 
-      <View style={styles.statCard}>
-        <View style={styles.statContent}>
-          <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
-          <Text style={styles.statValue}>
-            <Text style={styles.statNumber}>{totalLikes}</Text> Likes
-          </Text>
-        </View>
-      </View>
+          <View style={styles.statCard}>
+            <View style={styles.statContent}>
+              <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
+              <Text style={styles.statValue}>
+                <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+              </Text>
+            </View>
+          </View>
 
-      <Pressable style={styles.statCard} onPress={handleShowFollowers}>
+          <Pressable style={styles.statCard} onPress={handleShowFollowers}>
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowers.slice(0, 3).map((follower, index) => (
@@ -471,6 +485,8 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </Pressable>
+        </>
+      )}
     </View>
   );
 
