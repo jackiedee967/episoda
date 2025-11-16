@@ -11,6 +11,12 @@ I prefer iterative development, focusing on one feature or fix at a time. Please
 ### UI/UX Decisions
 The application features a pixel-perfect UI overhaul aligned with Figma specifications, utilizing a comprehensive design token system for consistent styling (colors, typography, spacing). Gradient backgrounds are used for visual consistency.
 
+- **Skeleton Loader System**: Professional loading states with shimmer animation using `expo-linear-gradient` and Animated API. Replaces blank screens throughout the app with contextual skeleton components:
+  - **Base Components**: SkeletonContainer, SkeletonLine, SkeletonCircle, SkeletonBlock for building custom skeletons
+  - **Specialized Components**: CommentSkeleton, StatCardSkeleton, ProgressBarSkeleton, PosterSkeleton, PostCardSkeleton, SearchResultSkeleton
+  - **Implemented In**: Home feed, search results, post comments, profile stats (both user profiles and main profile page)
+  - **Architecture**: Local loading states (not DataContext-based) for component-specific control and better perceived performance
+
 ### Technical Implementations
 - **Framework**: Expo Router v6 (React Native 0.81.4, React 19.1.0)
 - **Backend**: Supabase (authentication, database, real-time)

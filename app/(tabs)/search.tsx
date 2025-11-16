@@ -21,6 +21,7 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { searchHistoryManager, SearchCategory as SearchCat } from '@/services/searchHistory';
 import SearchHistoryItem from '@/components/SearchHistoryItem';
+import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -371,9 +372,12 @@ export default function SearchScreen() {
     // Show loading state during initial search for shows
     if (activeCategory === 'shows' && isSearchingShows) {
       return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
-          <Text style={styles.loadingText}>Searching shows...</Text>
+        <View style={styles.skeletonContainer}>
+          <SearchResultSkeleton />
+          <SearchResultSkeleton />
+          <SearchResultSkeleton />
+          <SearchResultSkeleton />
+          <SearchResultSkeleton />
         </View>
       );
     }
@@ -1201,6 +1205,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
+  },
+  skeletonContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   loadingText: {
     ...tokens.typography.p1,
