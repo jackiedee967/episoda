@@ -55,28 +55,43 @@ export default function PostDetail() {
   const isReposted = post ? hasUserReposted(post.id) : false;
   const canDelete = post && currentUser && post.user.id === currentUser.id;
 
-  // Load comments from Supabase
+  // Load comments from Supabase with likes and replies
   const [rawComments, setRawComments] = useState<any[]>([]);
+  const [commentLikesData, setCommentLikesData] = useState<any[]>([]);
+  const [userCommentLikes, setUserCommentLikes] = useState<Set<string>>(new Set());
   
   useEffect(() => {
     const loadComments = async () => {
       if (!id) return;
       
       try {
-        const { data, error } = await supabase
+        // Fetch all comments (both top-level and replies)
+        const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
           .select('*')
           .eq('post_id', id)
           .order('created_at', { ascending: true });
 
-        if (error) {
-          console.error('Error loading comments:', error);
+        if (commentsError) {
+          console.error('Error loading comments:', commentsError);
           return;
         }
 
-        if (data) {
-          console.log('📝 Fetched', data.length, 'comments from Supabase for post:', id);
-          setRawComments(data);
+        if (commentsData) {
+          console.log('📝 Fetched', commentsData.length, 'comments and replies from Supabase for post:', id);
+          setRawComments(commentsData);
+          
+          // Fetch comment likes for all comments
+          const commentIds = commentsData.map((c: any) => c.id);
+          if (commentIds.length > 0) {
+            const [likesResult, userLikesResult] = await Promise.all([
+              supabase.from('comment_likes').select('comment_id').in('comment_id', commentIds),
+              supabase.from('comment_likes').select('comment_id').eq('user_id', currentUser.id).in('comment_id', commentIds),
+            ]);
+            
+            setCommentLikesData(likesResult.data || []);
+            setUserCommentLikes(new Set((userLikesResult.data || []).map((like: any) => like.comment_id)));
+          }
         }
       } catch (error: any) {
         console.error('❌ Error loading comments:', error);
@@ -86,34 +101,75 @@ export default function PostDetail() {
     };
 
     loadComments();
-  }, [id]);
+  }, [id, currentUser.id]);
 
   // Transform raw comments when userProfileCache updates
   useEffect(() => {
     if (rawComments.length === 0) return;
     
-    const transformedComments: Comment[] = rawComments.map((c: any) => ({
-      id: c.id,
-      postId: c.post_id,
-      user: userProfileCache?.[c.user_id] || {
-        id: c.user_id,
-        username: 'user',
-        displayName: 'User',
-        avatar: '',
-        bio: '',
-        socialLinks: {},
-        following: [],
-        followers: [],
-      },
-      text: c.comment_text,
-      likes: 0, // TODO: Load likes count
-      isLiked: false, // TODO: Check if current user liked
-      timestamp: new Date(c.created_at),
-      replies: [],
-    }));
-    console.log('✅ Loaded', transformedComments.length, 'comments from Supabase');
+    // Count likes per comment
+    const likesCount = new Map<string, number>();
+    commentLikesData.forEach((like: any) => {
+      likesCount.set(like.comment_id, (likesCount.get(like.comment_id) || 0) + 1);
+    });
+    
+    // Separate top-level comments from replies
+    const topLevelComments = rawComments.filter((c: any) => !c.parent_comment_id);
+    const repliesByParent = new Map<string, any[]>();
+    
+    rawComments.filter((c: any) => c.parent_comment_id).forEach((reply: any) => {
+      const parentId = reply.parent_comment_id;
+      if (!repliesByParent.has(parentId)) {
+        repliesByParent.set(parentId, []);
+      }
+      repliesByParent.get(parentId)!.push(reply);
+    });
+    
+    // Transform comments with nested replies
+    const transformedComments: Comment[] = topLevelComments.map((c: any) => {
+      const replies = (repliesByParent.get(c.id) || []).map((r: any) => ({
+        id: r.id,
+        commentId: c.id,
+        user: userProfileCache?.[r.user_id] || {
+          id: r.user_id,
+          username: 'user',
+          displayName: 'User',
+          avatar: '',
+          bio: '',
+          socialLinks: {},
+          following: [],
+          followers: [],
+        },
+        text: r.comment_text,
+        likes: likesCount.get(r.id) || 0,
+        isLiked: userCommentLikes.has(r.id),
+        timestamp: new Date(r.created_at),
+      }));
+      
+      return {
+        id: c.id,
+        postId: c.post_id,
+        user: userProfileCache?.[c.user_id] || {
+          id: c.user_id,
+          username: 'user',
+          displayName: 'User',
+          avatar: '',
+          bio: '',
+          socialLinks: {},
+          following: [],
+          followers: [],
+        },
+        text: c.comment_text,
+        likes: likesCount.get(c.id) || 0,
+        isLiked: userCommentLikes.has(c.id),
+        timestamp: new Date(c.created_at),
+        replies,
+      };
+    });
+    
+    console.log('✅ Loaded', transformedComments.length, 'comments with', rawComments.length - topLevelComments.length, 'replies from Supabase');
     setComments(transformedComments);
-  }, [rawComments, userProfileCache]);
+  }, [rawComments, userProfileCache, commentLikesData, userCommentLikes]);
 
   useEffect(() => {
     if (post && comments.length !== post.comments) {
@@ -195,9 +251,10 @@ export default function PostDetail() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     if (replyingTo) {
-      // Submit as a reply - TODO: Implement reply saving to Supabase
+      // Submit as a reply with Supabase persistence
+      const tempId = `reply_${Date.now()}`;
       const newReply = {
-        id: `reply_${Date.now()}`,
+        id: tempId,
         commentId: replyingTo.commentId,
         user: currentUser,
         text: commentText,
@@ -207,11 +264,55 @@ export default function PostDetail() {
         timestamp: new Date(),
       };
 
+      // Optimistically update UI
       setComments(comments.map(comment =>
         comment.id === replyingTo.commentId
           ? { ...comment, replies: [...comment.replies, newReply] }
           : comment
       ));
+      
+      // Save reply to Supabase
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .insert({
+            post_id: post.id,
+            user_id: currentUser.id,
+            comment_text: commentText,
+            parent_comment_id: replyingTo.commentId,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('❌ FAILED TO SAVE REPLY TO SUPABASE:', error);
+          // Revert optimistic update
+          setComments(prev => prev.map(comment =>
+            comment.id === replyingTo.commentId
+              ? { ...comment, replies: comment.replies.filter(r => r.id !== tempId) }
+              : comment
+          ));
+        } else if (data) {
+          console.log('✅ Reply saved to Supabase:', data.id);
+          // Update reply with real ID from Supabase
+          setComments(prev => prev.map(comment =>
+            comment.id === replyingTo.commentId
+              ? { 
+                  ...comment, 
+                  replies: comment.replies.map(r => 
+                    r.id === tempId ? { ...r, id: data.id } : r
+                  )
+                }
+              : comment
+          ));
+          
+          // Update post comment count (replies count as comments)
+          updateCommentCount(post.id, comments.length + 1);
+        }
+      } catch (error) {
+        console.error('Error saving reply:', error);
+      }
+      
       setReplyingTo(null);
     } else {
       // Submit as a new comment - with Supabase persistence
@@ -265,29 +366,140 @@ export default function PostDetail() {
     setCommentImage(null);
   };
 
-  const handleCommentLike = (commentId: string) => {
+  const handleCommentLike = async (commentId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setComments(comments.map(comment =>
-      comment.id === commentId
-        ? { ...comment, likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1, isLiked: !comment.isLiked }
-        : comment
+    
+    const comment = comments.find(c => c.id === commentId);
+    if (!comment) return;
+    
+    const isCurrentlyLiked = comment.isLiked;
+    
+    // Optimistic update
+    setComments(comments.map(c =>
+      c.id === commentId
+        ? { ...c, likes: isCurrentlyLiked ? c.likes - 1 : c.likes + 1, isLiked: !isCurrentlyLiked }
+        : c
     ));
+    
+    try {
+      if (isCurrentlyLiked) {
+        // Unlike: delete from comment_likes
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('user_id', currentUser.id);
+        
+        if (error) {
+          console.error('❌ Failed to unlike comment:', error);
+          // Revert optimistic update
+          setComments(prev => prev.map(c =>
+            c.id === commentId ? { ...c, likes: c.likes + 1, isLiked: true } : c
+          ));
+        } else {
+          console.log('✅ Comment unliked');
+        }
+      } else {
+        // Like: insert into comment_likes
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: commentId,
+            user_id: currentUser.id,
+          });
+        
+        if (error) {
+          console.error('❌ Failed to like comment:', error);
+          // Revert optimistic update
+          setComments(prev => prev.map(c =>
+            c.id === commentId ? { ...c, likes: c.likes - 1, isLiked: false } : c
+          ));
+        } else {
+          console.log('✅ Comment liked');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling comment like:', error);
+    }
   };
 
-  const handleReplyLike = (commentId: string, replyId: string) => {
+  const handleReplyLike = async (commentId: string, replyId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setComments(comments.map(comment =>
-      comment.id === commentId
+    
+    const comment = comments.find(c => c.id === commentId);
+    const reply = comment?.replies.find(r => r.id === replyId);
+    if (!reply) return;
+    
+    const isCurrentlyLiked = reply.isLiked;
+    
+    // Optimistic update
+    setComments(comments.map(c =>
+      c.id === commentId
         ? {
-            ...comment,
-            replies: comment.replies.map(reply =>
-              reply.id === replyId
-                ? { ...reply, likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1, isLiked: !reply.isLiked }
-                : reply
+            ...c,
+            replies: c.replies.map(r =>
+              r.id === replyId
+                ? { ...r, likes: isCurrentlyLiked ? r.likes - 1 : r.likes + 1, isLiked: !isCurrentlyLiked }
+                : r
             ),
           }
-        : comment
+        : c
     ));
+    
+    try {
+      if (isCurrentlyLiked) {
+        // Unlike: delete from comment_likes
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('comment_id', replyId)
+          .eq('user_id', currentUser.id);
+        
+        if (error) {
+          console.error('❌ Failed to unlike reply:', error);
+          // Revert optimistic update
+          setComments(prev => prev.map(c =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  replies: c.replies.map(r =>
+                    r.id === replyId ? { ...r, likes: r.likes + 1, isLiked: true } : r
+                  ),
+                }
+              : c
+          ));
+        } else {
+          console.log('✅ Reply unliked');
+        }
+      } else {
+        // Like: insert into comment_likes
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({
+            comment_id: replyId,
+            user_id: currentUser.id,
+          });
+        
+        if (error) {
+          console.error('❌ Failed to like reply:', error);
+          // Revert optimistic update
+          setComments(prev => prev.map(c =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  replies: c.replies.map(r =>
+                    r.id === replyId ? { ...r, likes: r.likes - 1, isLiked: false } : r
+                  ),
+                }
+              : c
+          ));
+        } else {
+          console.log('✅ Reply liked');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling reply like:', error);
+    }
   };
 
   const handleReplyStart = (commentId: string, username: string, textPreview: string) => {
