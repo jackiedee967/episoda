@@ -1,10 +1,10 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import React from 'react';
-import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import tokens from '@/styles/tokens';
 import { Star, Check } from 'lucide-react-native';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
+import FadeInImage from './FadeInImage';
 
 interface EpisodeListCardProps {
   episodeNumber: string;
@@ -74,7 +74,7 @@ export default function EpisodeListCard({
       style={[styles.episodeCard, { borderColor: cardBorderColor, backgroundColor: cardBackgroundColor }]}
     >
       {thumbnail && (
-        <Image 
+        <FadeInImage 
           source={{ uri: thumbnail }} 
           style={styles.thumbnail}
           contentFit="cover"

@@ -29,7 +29,7 @@ export default function FadeInView({
   }, [fadeAnim, duration, delay]);
 
   return (
-    <Animated.View style={[style, { opacity: fadeAnim }]}>
+    <Animated.View style={[{ opacity: fadeAnim }, style]}>
       {children}
     </Animated.View>
   );

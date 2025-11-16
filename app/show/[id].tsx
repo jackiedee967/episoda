@@ -27,6 +27,7 @@ import EpisodeListCard from '@/components/EpisodeListCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
 import { mockShows, mockUsers } from '@/data/mockData';
+import FadeInView from '@/components/FadeInView';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
@@ -589,13 +590,15 @@ export default function ShowHub() {
     const totalCount = showEpisodes.length;
     
     return (
-      <ShowsEpisodeProgressBar
-        episodeNumber={mostRecentEpisode ? `S${mostRecentEpisode.seasonNumber} E${mostRecentEpisode.episodeNumber}` : undefined}
-        episodeTitle={mostRecentEpisode?.title}
-        loggedCount={loggedCount}
-        totalCount={totalCount}
-        style={styles.progressBar}
-      />
+      <FadeInView>
+        <ShowsEpisodeProgressBar
+          episodeNumber={mostRecentEpisode ? `S${mostRecentEpisode.seasonNumber} E${mostRecentEpisode.episodeNumber}` : undefined}
+          episodeTitle={mostRecentEpisode?.title}
+          loggedCount={loggedCount}
+          totalCount={totalCount}
+          style={styles.progressBar}
+        />
+      </FadeInView>
     );
   };
 
