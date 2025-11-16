@@ -23,6 +23,7 @@ import { searchHistoryManager, SearchCategory as SearchCat } from '@/services/se
 import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
 import FadeInView from '@/components/FadeInView';
+import FadeInImage from '@/components/FadeInImage';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -343,10 +344,10 @@ export default function SearchScreen() {
       if (currentHistory.length === 0) {
         return (
           <View style={styles.searchPlaceholder}>
-            <Image 
+            <FadeInImage 
               source={require('@/assets/search-placeholder.png')} 
               style={styles.placeholderImage}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.placeholderTitle}>Type to search</Text>
             <Text style={styles.placeholderSubtitle}>
@@ -405,9 +406,10 @@ export default function SearchScreen() {
     // Show empty results message
     return (
       <View style={styles.emptyState}>
-        <Image 
+        <FadeInImage 
           source={require('@/attached_assets/right-pointing-magnifying-glass_1f50e_1761617614380.png')} 
           style={styles.emptyStateIcon}
+          contentFit="contain"
         />
         <Text style={styles.emptyStateText}>No results found</Text>
         <Text style={styles.emptyStateSubtext}>
@@ -573,13 +575,12 @@ export default function SearchScreen() {
             }}
           >
             <View style={styles.showPosterContainer}>
-              <Image 
+              <FadeInImage 
                 source={{ uri: getPosterUrl(show.poster, show.title) }} 
                 style={styles.showPoster}
                 priority="high"
                 cachePolicy="memory-disk"
                 contentFit="cover"
-                transition={200}
               />
               {isEnriching && (
                 <View style={styles.enrichingOverlay}>
@@ -665,7 +666,7 @@ export default function SearchScreen() {
               onPress={() => router.push(`/post/${comment.postId}`)}
             >
               <View style={styles.commentCardContent}>
-                <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
+                <FadeInImage source={{ uri: comment.user.avatar }} style={styles.commentAvatar} contentFit="cover" />
                 <View style={styles.commentInfo}>
                   <Text style={styles.commentTextMixed}>
                     <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
@@ -687,7 +688,7 @@ export default function SearchScreen() {
                   <Text style={styles.commentTime}>{timeAgo}</Text>
                 </View>
               </View>
-              <Image source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} style={styles.commentShowPoster} />
+              <FadeInImage source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} style={styles.commentShowPoster} contentFit="cover" />
             </Pressable>
           </FadeInView>
         );
