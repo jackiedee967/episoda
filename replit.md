@@ -19,14 +19,14 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
   
 - **Fade Transition System**: Smooth crossfade animations eliminate loading jumpiness across the entire app:
   - **FadeInView Component**: Reusable wrapper with configurable duration (default 300ms) and staggered delays for sequential items
-  - **FadeInImage Component**: Specialized component for image fade-in on load using expo-image with Animated API wrapper. Layout styles applied to wrapper, image fills 100% of wrapper
+  - **FadeInImage Component**: Specialized component for image fade-in on load using expo-image with Animated API wrapper. Supports both `style` (applied to image) and `containerStyle` (applied to wrapper) for flexible layout control
   - **Crossfade Pattern**: Skeleton fades out 200ms → content fades in 300ms for smooth visual transition
   - **Implemented In**: 
     - Content fade-ins: Home feed posts, search results, profile stats, post comments (FadeInView with staggered delays)
-    - Image fade-ins: Episode thumbnails, show posters, user avatars, rotation posters, search placeholder image, empty state emojis, comment show posters (FadeInImage)
+    - Image fade-ins: Episode thumbnails, show posters, user avatars, rotation posters, search placeholder image, empty state emojis, comment show posters, stat icons, notification avatars, action button icons (FadeInImage)
     - Empty states: Logs, watch history, and playlists empty state images (FadeInImage)
     - Progress bars (wrapped with FadeInView)
-  - **Technical**: Uses React Native Animated API with `useNativeDriver: false` for web compatibility. All static and remote images use FadeInImage for consistent smooth loading throughout app
+  - **Technical**: Uses React Native Animated API with `useNativeDriver: false` for web compatibility. All static and remote images use FadeInImage for consistent smooth loading throughout app. Image-specific styles (borderRadius, tintColor) are preserved via the `style` prop
 
 ### Technical Implementations
 - **Framework**: Expo Router v6 (React Native 0.81.4, React 19.1.0)

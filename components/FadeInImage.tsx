@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { Animated } from 'react-native';
-import { Image, ImageProps } from 'expo-image';
+import { Animated, ViewStyle, StyleSheet } from 'react-native';
+import { Image, ImageProps, ImageStyle } from 'expo-image';
 
 interface FadeInImageProps extends ImageProps {
   duration?: number;
+  containerStyle?: ViewStyle;
 }
 
 export default function FadeInImage({ 
   duration = 300, 
   style,
+  containerStyle,
   onLoad,
   ...imageProps 
 }: FadeInImageProps) {
@@ -27,10 +29,10 @@ export default function FadeInImage({
   };
 
   return (
-    <Animated.View style={[style, { opacity: fadeAnim }]}>
+    <Animated.View style={[containerStyle, { opacity: fadeAnim }]}>
       <Image
         {...imageProps}
-        style={{ width: '100%', height: '100%' }}
+        style={style || { width: '100%', height: '100%' }}
         onLoad={handleLoad}
       />
     </Animated.View>
