@@ -548,10 +548,10 @@ export default function ProfileScreen() {
         ))
       ) : (
         <View style={styles.emptyState}>
-          <Image 
+          <FadeInImage 
             source={require('@/assets/images/empty-states/logs-empty.png')} 
             style={styles.emptyStateImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={styles.emptyStateTitle}>No posts yet</Text>
           <Text style={styles.emptyStateText}>
@@ -581,10 +581,10 @@ export default function ProfileScreen() {
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <Image 
+          <FadeInImage 
             source={require('@/assets/images/empty-states/watch-history-empty.png')} 
             style={styles.emptyStateImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={styles.emptyStateTitle}>No shows yet</Text>
           <Text style={styles.emptyStateText}>
@@ -640,10 +640,10 @@ export default function ProfileScreen() {
         </>
       ) : (
         <View style={styles.emptyState}>
-          <Image 
+          <FadeInImage 
             source={require('@/assets/images/empty-states/playlists-empty.png')} 
             style={styles.emptyStateImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
           <Text style={styles.emptyStateText}>
