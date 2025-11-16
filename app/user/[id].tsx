@@ -565,6 +565,8 @@ export default function UserProfile() {
           </Text>
         </View>
       </Pressable>
+        </>
+      )}
     </View>
   );
 
