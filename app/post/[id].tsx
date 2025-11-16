@@ -24,6 +24,7 @@ import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/app/integrations/supabase/client';
+import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -59,11 +60,13 @@ export default function PostDetail() {
   const [rawComments, setRawComments] = useState<any[]>([]);
   const [commentLikesData, setCommentLikesData] = useState<any[]>([]);
   const [userCommentLikes, setUserCommentLikes] = useState<Set<string>>(new Set());
+  const [isLoadingComments, setIsLoadingComments] = useState(true);
   
   useEffect(() => {
     const loadComments = async () => {
       if (!id) return;
       
+      setIsLoadingComments(true);
       try {
         // Fetch all comments (both top-level and replies)
         const { data: commentsData, error: commentsError } = await supabase
@@ -74,6 +77,7 @@ export default function PostDetail() {
 
         if (commentsError) {
           console.error('Error loading comments:', commentsError);
+          setIsLoadingComments(false);
           return;
         }
 
@@ -97,6 +101,8 @@ export default function PostDetail() {
         console.error('❌ Error loading comments:', error);
         console.error('Error message:', error?.message);
         console.error('Error stack:', error?.stack);
+      } finally {
+        setIsLoadingComments(false);
       }
     };
 
@@ -699,15 +705,23 @@ export default function PostDetail() {
 
             {/* Comments - No background */}
             <View style={styles.commentsContainer}>
-              {comments.map((comment) => (
-                <CommentCard
-                  key={comment.id}
-                  comment={comment}
-                  onLike={() => handleCommentLike(comment.id)}
-                  onReplyStart={handleReplyStart}
-                  onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
-                />
-              ))}
+              {isLoadingComments ? (
+                <>
+                  <CommentSkeleton />
+                  <CommentSkeleton />
+                  <CommentSkeleton />
+                </>
+              ) : (
+                comments.map((comment) => (
+                  <CommentCard
+                    key={comment.id}
+                    comment={comment}
+                    onLike={() => handleCommentLike(comment.id)}
+                    onReplyStart={handleReplyStart}
+                    onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
+                  />
+                ))
+              )}
             </View>
           </ScrollView>
 

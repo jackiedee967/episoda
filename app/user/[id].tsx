@@ -33,6 +33,7 @@ import { User, Playlist, ReportReason, Show, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe, Eye, EyeOff } from 'lucide-react-native';
 import { supabase } from '@/app/integrations/supabase/client';
+import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -73,6 +74,7 @@ export default function UserProfile() {
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
   const [episodesWatched, setEpisodesWatched] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [followers, setFollowers] = useState<any[]>([]);
   const [following, setFollowing] = useState<any[]>([]);
   const [topFollowers, setTopFollowers] = useState<any[]>([]);
@@ -98,6 +100,7 @@ export default function UserProfile() {
   };
 
   const loadStats = async () => {
+    setIsLoadingStats(true);
     try {
       const episodesCount = await getEpisodesWatchedCount(id as string);
       const likesCount = await getTotalLikesReceived(id as string);
@@ -105,6 +108,8 @@ export default function UserProfile() {
       setTotalLikes(likesCount);
     } catch (error) {
       console.error('Error loading stats:', error);
+    } finally {
+      setIsLoadingStats(false);
     }
   };
 
@@ -464,23 +469,32 @@ export default function UserProfile() {
   // Section 3: Stats Grid
   const renderStatsGrid = () => (
     <View style={styles.statsSection}>
-      <View style={styles.statCard}>
-        <View style={styles.statContent}>
-          <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
-          <Text style={styles.statValue}>
-            <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
-          </Text>
-        </View>
-      </View>
+      {isLoadingStats ? (
+        <>
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </>
+      ) : (
+        <>
+          <View style={styles.statCard}>
+            <View style={styles.statContent}>
+              <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
+              <Text style={styles.statValue}>
+                <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+              </Text>
+            </View>
+          </View>
 
-      <View style={styles.statCard}>
-        <View style={styles.statContent}>
-          <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
-          <Text style={styles.statValue}>
-            <Text style={styles.statNumber}>{totalLikes}</Text> Likes
-          </Text>
-        </View>
-      </View>
+          <View style={styles.statCard}>
+            <View style={styles.statContent}>
+              <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
+              <Text style={styles.statValue}>
+                <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+              </Text>
+            </View>
+          </View>
 
       <Pressable style={styles.statCard} onPress={handleShowFollowers}>
         <View style={styles.statContent}>
