@@ -39,7 +39,7 @@ export default function SkeletonContainer({ children, style, fadeOut = false, on
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start(() => {
         onFadeComplete?.();
       });

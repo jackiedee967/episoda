@@ -21,7 +21,7 @@ export default function FadeInView({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start();
     }, delay);
 

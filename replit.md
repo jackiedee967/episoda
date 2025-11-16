@@ -12,10 +12,16 @@ I prefer iterative development, focusing on one feature or fix at a time. Please
 The application features a pixel-perfect UI overhaul aligned with Figma specifications, utilizing a comprehensive design token system for consistent styling (colors, typography, spacing). Gradient backgrounds are used for visual consistency.
 
 - **Skeleton Loader System**: Professional loading states with shimmer animation using `expo-linear-gradient` and Animated API. Replaces blank screens throughout the app with contextual skeleton components:
-  - **Base Components**: SkeletonContainer, SkeletonLine, SkeletonCircle, SkeletonBlock for building custom skeletons
+  - **Base Components**: SkeletonContainer (with shimmer + fade-out), SkeletonLine, SkeletonCircle, SkeletonBlock for building custom skeletons
   - **Specialized Components**: CommentSkeleton, StatCardSkeleton, ProgressBarSkeleton, PosterSkeleton, PostCardSkeleton, SearchResultSkeleton
   - **Implemented In**: Home feed, search results, post comments, profile stats (both user profiles and main profile page)
   - **Architecture**: Local loading states (not DataContext-based) for component-specific control and better perceived performance
+  
+- **Fade Transition System**: Smooth crossfade animations eliminate loading jumpiness across the entire app:
+  - **FadeInView Component**: Reusable wrapper with configurable duration (default 300ms) and staggered delays for sequential items
+  - **Crossfade Pattern**: Skeleton fades out 200ms → content fades in 300ms for smooth visual transition
+  - **Implemented In**: Home feed posts, search results, profile stats, post comments with staggered delays for sequential animations
+  - **Technical**: Uses React Native Animated API with `useNativeDriver: false` for web compatibility
 
 ### Technical Implementations
 - **Framework**: Expo Router v6 (React Native 0.81.4, React 19.1.0)
