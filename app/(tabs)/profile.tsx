@@ -372,17 +372,17 @@ export default function ProfileScreen() {
   const renderActionButtons = () => (
     <View style={styles.actionButtonsSection}>
       <Pressable style={styles.actionButton} onPress={handleEditProfile}>
-        <Image source={require('@/assets/images/edit_1761625354124.png')} style={styles.actionIcon} />
+        <FadeInImage source={require('@/assets/images/edit_1761625354124.png')} style={styles.actionIcon} contentFit="contain" />
         <Text style={styles.actionButtonLabel}>Edit</Text>
       </Pressable>
       
       <Pressable style={styles.actionButton} onPress={handleSettingsPress}>
-        <Image source={require('@/assets/images/Setting_line_light_1761625354125.png')} style={styles.actionIcon} />
+        <FadeInImage source={require('@/assets/images/Setting_line_light_1761625354125.png')} style={styles.actionIcon} contentFit="contain" />
         <Text style={styles.actionButtonLabel}>Settings</Text>
       </Pressable>
       
       <Pressable style={styles.actionButton} onPress={handleHelpPress}>
-        <Image source={require('@/assets/images/Question_light_1761625354125.png')} style={styles.actionIcon} />
+        <FadeInImage source={require('@/assets/images/Question_light_1761625354125.png')} style={styles.actionIcon} contentFit="contain" />
         <Text style={styles.actionButtonLabel}>Help</Text>
       </Pressable>
     </View>
@@ -400,23 +400,27 @@ export default function ProfileScreen() {
         </>
       ) : (
         <>
-          <FadeInView delay={0} style={styles.statCard}>
-            <View style={styles.statContent}>
-              <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
-              <Text style={styles.statValue}>
-                <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
-              </Text>
-            </View>
-          </FadeInView>
+          <View style={styles.statCard}>
+            <FadeInView delay={0}>
+              <View style={styles.statContent}>
+                <FadeInImage source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+                <Text style={styles.statValue}>
+                  <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+                </Text>
+              </View>
+            </FadeInView>
+          </View>
 
-          <FadeInView delay={50} style={styles.statCard}>
-            <View style={styles.statContent}>
-              <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
-              <Text style={styles.statValue}>
-                <Text style={styles.statNumber}>{totalLikes}</Text> Likes
-              </Text>
-            </View>
-          </FadeInView>
+          <View style={styles.statCard}>
+            <FadeInView delay={50}>
+              <View style={styles.statContent}>
+                <FadeInImage source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+                <Text style={styles.statValue}>
+                  <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+                </Text>
+              </View>
+            </FadeInView>
+          </View>
 
           <Pressable style={styles.statCard} onPress={handleShowFollowers}>
             <FadeInView delay={100}>
@@ -424,13 +428,14 @@ export default function ProfileScreen() {
                 <View style={styles.avatarRow}>
                   {topFollowers.slice(0, 3).map((follower, index) => (
                     follower.avatar ? (
-                      <Image
+                      <FadeInImage
                         key={follower.id}
                         source={{ uri: follower.avatar }}
                         style={[
                           styles.miniAvatar,
                           index > 0 && { marginLeft: -8 }
                         ]}
+                        contentFit="cover"
                       />
                     ) : (
                       <View
@@ -461,13 +466,14 @@ export default function ProfileScreen() {
                 <View style={styles.avatarRow}>
                   {topFollowing.slice(0, 3).map((user, index) => (
                     user.avatar ? (
-                      <Image
+                      <FadeInImage
                         key={user.id}
                         source={{ uri: user.avatar }}
                         style={[
                           styles.miniAvatar,
                           index > 0 && { marginLeft: -8 }
                         ]}
+                        contentFit="cover"
                       />
                     ) : (
                       <View

@@ -18,6 +18,7 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import Button from '@/components/Button';
 import tokens from '@/styles/tokens';
+import FadeInImage from '@/components/FadeInImage';
 
 type Tab = 'you' | 'friends';
 
@@ -165,9 +166,10 @@ export default function NotificationsScreen() {
         onPress={() => handleNotificationPress(notification)}
       >
         <View style={styles.cardContent}>
-          <Image
+          <FadeInImage
             source={{ uri: notification.actor.avatar }}
             style={styles.actorAvatar}
+            contentFit="cover"
           />
           <View style={styles.textContent}>
             <Text style={styles.notificationText} numberOfLines={2}>
@@ -180,9 +182,10 @@ export default function NotificationsScreen() {
         </View>
         
         {thumbnail && (
-          <Image
+          <FadeInImage
             source={{ uri: thumbnail }}
             style={styles.thumbnail}
+            contentFit="cover"
           />
         )}
       </Pressable>
@@ -219,9 +222,10 @@ export default function NotificationsScreen() {
           <View style={styles.resultsContainer}>
             {notifications.length === 0 ? (
               <View style={styles.emptyState}>
-                <Image 
+                <FadeInImage 
                   source={require('@/assets/images/invite-friends.png')} 
                   style={styles.emptyStateImage}
+                  contentFit="contain"
                 />
                 <Text style={styles.emptyStateText}>Invite your friends!</Text>
                 <Text style={styles.emptyStateSubtext}>
