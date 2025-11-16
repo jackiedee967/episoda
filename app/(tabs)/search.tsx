@@ -22,6 +22,7 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { searchHistoryManager, SearchCategory as SearchCat } from '@/services/searchHistory';
 import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
+import FadeInView from '@/components/FadeInView';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -523,7 +524,11 @@ export default function SearchScreen() {
   const renderItem = useCallback(({ item, index }: { item: any; index: number }) => {
     switch (activeCategory) {
       case 'posts':
-        return <PostCard key={item.id} post={item} />;
+        return (
+          <FadeInView key={item.id} delay={index * 30}>
+            <PostCard post={item} />
+          </FadeInView>
+        );
 
       case 'shows':
         const show = item;
@@ -531,10 +536,10 @@ export default function SearchScreen() {
         const isEnriching = traktId ? enrichingShows.has(traktId) : false;
 
         return (
-          <Pressable
-            key={show.id}
-            style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
-            onPress={async () => {
+          <FadeInView key={show.id} delay={index * 30}>
+            <Pressable
+              style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
+              onPress={async () => {
               console.log('🎬 Show card pressed:', show.title);
               console.log('📊 Show data:', JSON.stringify(show, null, 2));
               
@@ -614,7 +619,8 @@ export default function SearchScreen() {
                 </View>
               )}
             </View>
-          </Pressable>
+            </Pressable>
+          </FadeInView>
         );
 
       case 'users':
@@ -622,18 +628,20 @@ export default function SearchScreen() {
         const isCurrentUserProfile = user.id === currentUser.id;
         
         return (
-          <View key={user.id} style={styles.userCardWrapper}>
-            <UserCard
-              username={user.username}
-              displayName={user.displayName}
-              bio={user.bio}
-              avatar={user.avatar}
-              isFollowing={isFollowing(user.id)}
-              onPress={() => router.push(`/user/${user.id}`)}
-              onFollowPress={() => handleFollowToggle(user.id)}
-              showFollowButton={!isCurrentUserProfile}
-            />
-          </View>
+          <FadeInView key={user.id} delay={index * 30}>
+            <View style={styles.userCardWrapper}>
+              <UserCard
+                username={user.username}
+                displayName={user.displayName}
+                bio={user.bio}
+                avatar={user.avatar}
+                isFollowing={isFollowing(user.id)}
+                onPress={() => router.push(`/user/${user.id}`)}
+                onFollowPress={() => handleFollowToggle(user.id)}
+                showFollowButton={!isCurrentUserProfile}
+              />
+            </View>
+          </FadeInView>
         );
 
       case 'comments':
@@ -651,36 +659,37 @@ export default function SearchScreen() {
         const truncatedComment = comment.text.length > 60 ? comment.text.slice(0, 60) + '...' : comment.text;
 
         return (
-          <Pressable
-            key={comment.id}
-            style={({ pressed }) => [styles.commentCard, pressed && styles.pressed]}
-            onPress={() => router.push(`/post/${comment.postId}`)}
-          >
-            <View style={styles.commentCardContent}>
-              <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
-              <View style={styles.commentInfo}>
-                <Text style={styles.commentTextMixed}>
-                  <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
-                  <Text style={styles.commentTextWhite}> commented on post "</Text>
-                  <Text style={styles.commentTextWhite}>{truncatedPostTitle}</Text>
-                  <Text style={styles.commentTextWhite}>" about </Text>
-                  {episodeText && (
-                    <>
-                      <Text style={styles.commentTextGreen}>{episodeText}</Text>
-                      <Text style={styles.commentTextWhite}> of </Text>
-                    </>
-                  )}
-                  <Text style={styles.commentTextGreen}>{post.show.title}</Text>
-                  <Text style={styles.commentTextWhite}>:</Text>
-                </Text>
-                <Text style={styles.commentTextMixed}>
-                  <Text style={styles.commentTextWhite}>"{truncatedComment}"</Text>
-                </Text>
-                <Text style={styles.commentTime}>{timeAgo}</Text>
+          <FadeInView key={comment.id} delay={index * 30}>
+            <Pressable
+              style={({ pressed }) => [styles.commentCard, pressed && styles.pressed]}
+              onPress={() => router.push(`/post/${comment.postId}`)}
+            >
+              <View style={styles.commentCardContent}>
+                <Image source={{ uri: comment.user.avatar }} style={styles.commentAvatar} />
+                <View style={styles.commentInfo}>
+                  <Text style={styles.commentTextMixed}>
+                    <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
+                    <Text style={styles.commentTextWhite}> commented on post "</Text>
+                    <Text style={styles.commentTextWhite}>{truncatedPostTitle}</Text>
+                    <Text style={styles.commentTextWhite}>" about </Text>
+                    {episodeText && (
+                      <>
+                        <Text style={styles.commentTextGreen}>{episodeText}</Text>
+                        <Text style={styles.commentTextWhite}> of </Text>
+                      </>
+                    )}
+                    <Text style={styles.commentTextGreen}>{post.show.title}</Text>
+                    <Text style={styles.commentTextWhite}>:</Text>
+                  </Text>
+                  <Text style={styles.commentTextMixed}>
+                    <Text style={styles.commentTextWhite}>"{truncatedComment}"</Text>
+                  </Text>
+                  <Text style={styles.commentTime}>{timeAgo}</Text>
+                </View>
               </View>
-            </View>
-            <Image source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} style={styles.commentShowPoster} />
-          </Pressable>
+              <Image source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} style={styles.commentShowPoster} />
+            </Pressable>
+          </FadeInView>
         );
 
       default:
