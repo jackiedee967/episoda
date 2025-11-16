@@ -35,6 +35,7 @@ import { Instagram, Music, Globe, Eye, EyeOff } from 'lucide-react-native';
 import { supabase } from '@/app/integrations/supabase/client';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
+import FadeInImage from '@/components/FadeInImage';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -479,101 +480,103 @@ export default function UserProfile() {
         </>
       ) : (
         <>
-          <FadeInView delay={0}>
-            <View style={styles.statCard}>
+          <View style={styles.statCard}>
+            <FadeInView delay={0}>
               <View style={styles.statContent}>
-                <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
+                <FadeInImage source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
                 <Text style={styles.statValue}>
                   <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
                 </Text>
               </View>
-            </View>
-          </FadeInView>
+            </FadeInView>
+          </View>
 
-          <FadeInView delay={50}>
-            <View style={styles.statCard}>
+          <View style={styles.statCard}>
+            <FadeInView delay={50}>
               <View style={styles.statContent}>
-                <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
+                <FadeInImage source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
                 <Text style={styles.statValue}>
                   <Text style={styles.statNumber}>{totalLikes}</Text> Likes
                 </Text>
               </View>
-            </View>
-          </FadeInView>
-
-      <FadeInView delay={100}>
-        <Pressable style={styles.statCard} onPress={handleShowFollowers}>
-        <View style={styles.statContent}>
-          <View style={styles.avatarRow}>
-            {topFollowers.slice(0, 3).map((follower, index) => (
-              follower.avatar ? (
-                <Image
-                  key={follower.id}
-                  source={{ uri: follower.avatar }}
-                  style={[
-                    styles.miniAvatar,
-                    index > 0 && { marginLeft: -8 }
-                  ]}
-                />
-              ) : (
-                <View
-                  key={follower.id}
-                  style={[
-                    styles.miniAvatar,
-                    styles.miniAvatarPlaceholder,
-                    index > 0 && { marginLeft: -8 }
-                  ]}
-                >
-                  <Text style={styles.miniAvatarText}>
-                    {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )
-            ))}
+            </FadeInView>
           </View>
-          <Text style={styles.statValue}>
-            <Text style={styles.statNumber}>{followers.length}</Text> Followers
-          </Text>
-        </View>
-        </Pressable>
-      </FadeInView>
 
-      <FadeInView delay={150}>
-        <Pressable style={styles.statCard} onPress={handleShowFollowing}>
-        <View style={styles.statContent}>
-          <View style={styles.avatarRow}>
-            {topFollowing.slice(0, 3).map((user, index) => (
-              user.avatar ? (
-                <Image
-                  key={user.id}
-                  source={{ uri: user.avatar }}
-                  style={[
-                    styles.miniAvatar,
-                    index > 0 && { marginLeft: -8 }
-                  ]}
-                />
-              ) : (
-                <View
-                  key={user.id}
-                  style={[
-                    styles.miniAvatar,
-                    styles.miniAvatarPlaceholder,
-                    index > 0 && { marginLeft: -8 }
-                  ]}
-                >
-                  <Text style={styles.miniAvatarText}>
-                    {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
-                  </Text>
+          <Pressable style={styles.statCard} onPress={handleShowFollowers}>
+            <FadeInView delay={100}>
+              <View style={styles.statContent}>
+                <View style={styles.avatarRow}>
+                  {topFollowers.slice(0, 3).map((follower, index) => (
+                    follower.avatar ? (
+                      <FadeInImage
+                        key={follower.id}
+                        source={{ uri: follower.avatar }}
+                        style={[
+                          styles.miniAvatar,
+                          index > 0 && { marginLeft: -8 }
+                        ]}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View
+                        key={follower.id}
+                        style={[
+                          styles.miniAvatar,
+                          styles.miniAvatarPlaceholder,
+                          index > 0 && { marginLeft: -8 }
+                        ]}
+                      >
+                        <Text style={styles.miniAvatarText}>
+                          {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )
+                  ))}
                 </View>
-              )
-            ))}
-          </View>
-          <Text style={styles.statValue}>
-            <Text style={styles.statNumber}>{following.length}</Text> Following
-          </Text>
-        </View>
-        </Pressable>
-      </FadeInView>
+                <Text style={styles.statValue}>
+                  <Text style={styles.statNumber}>{followers.length}</Text> Followers
+                </Text>
+              </View>
+            </FadeInView>
+          </Pressable>
+
+          <Pressable style={styles.statCard} onPress={handleShowFollowing}>
+            <FadeInView delay={150}>
+              <View style={styles.statContent}>
+                <View style={styles.avatarRow}>
+                  {topFollowing.slice(0, 3).map((user, index) => (
+                    user.avatar ? (
+                      <FadeInImage
+                        key={user.id}
+                        source={{ uri: user.avatar }}
+                        style={[
+                          styles.miniAvatar,
+                          index > 0 && { marginLeft: -8 }
+                        ]}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <View
+                        key={user.id}
+                        style={[
+                          styles.miniAvatar,
+                          styles.miniAvatarPlaceholder,
+                          index > 0 && { marginLeft: -8 }
+                        ]}
+                      >
+                        <Text style={styles.miniAvatarText}>
+                          {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )
+                  ))}
+                </View>
+                <Text style={styles.statValue}>
+                  <Text style={styles.statNumber}>{following.length}</Text> Following
+                </Text>
+              </View>
+            </FadeInView>
+          </Pressable>
         </>
       )}
     </View>
@@ -595,7 +598,7 @@ export default function UserProfile() {
                 style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <Image source={{ uri: show.poster }} style={styles.rotationPosterImage} />
+                <FadeInImage source={{ uri: show.poster }} style={styles.rotationPosterImage} contentFit="cover" />
                 <Pressable 
                   style={({ pressed }) => [
                     styles.saveIconRotation,
