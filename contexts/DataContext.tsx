@@ -860,7 +860,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const allEpisodeIds = [...new Set(postsData.flatMap((p: any) => p.episode_ids || []))];
 
         // Step 3: Batch fetch all related data (scoped to these 100 posts)
-        const [usersResult, showsResult, episodesResult, likesResult, repostsResult, userLikesResult] = await Promise.all([
+        const [usersResult, showsResult, episodesResult, likesResult, repostsResult, userLikesResult, commentsResult] = await Promise.all([
           // Fetch all user profiles
           supabase.from('profiles').select('*').in('user_id', uniqueUserIds),
           // Fetch all shows
@@ -873,6 +873,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('post_reposts').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
           supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
+          // Fetch comments ONLY for these posts
+          supabase.from('comments').select('post_id').in('post_id', postIds),
         ]);
 
         // Step 4: Build lookup maps
@@ -960,7 +962,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           });
         });
 
-        // Count likes, reposts per post (comments not implemented yet)
+        // Count likes, reposts, comments per post
         const likesCount = new Map();
         (likesResult.data || []).forEach((like: any) => {
           likesCount.set(like.post_id, (likesCount.get(like.post_id) || 0) + 1);
@@ -969,6 +971,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const repostsCount = new Map();
         (repostsResult.data || []).forEach((repost: any) => {
           repostsCount.set(repost.post_id, (repostsCount.get(repost.post_id) || 0) + 1);
+        });
+
+        const commentsCount = new Map();
+        (commentsResult.data || []).forEach((comment: any) => {
+          commentsCount.set(comment.post_id, (commentsCount.get(comment.post_id) || 0) + 1);
         });
 
         const userLikesSet = new Set((userLikesResult.data || []).map((like: any) => like.post_id));
@@ -1013,7 +1020,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             body: dbPost.body || '',
             timestamp: new Date(dbPost.created_at),
             likes: likesCount.get(dbPost.id) || 0,
-            comments: 0, // Comment counts not implemented yet
+            comments: commentsCount.get(dbPost.id) || 0,
             reposts: repostsCount.get(dbPost.id) || 0,
             isLiked: userLikesSet.has(dbPost.id),
             rating: dbPost.rating || undefined,
