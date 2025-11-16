@@ -25,6 +25,7 @@ import tokens from '@/styles/tokens';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/app/integrations/supabase/client';
 import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
+import FadeInView from '@/components/FadeInView';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -712,14 +713,15 @@ export default function PostDetail() {
                   <CommentSkeleton />
                 </>
               ) : (
-                comments.map((comment) => (
-                  <CommentCard
-                    key={comment.id}
-                    comment={comment}
-                    onLike={() => handleCommentLike(comment.id)}
-                    onReplyStart={handleReplyStart}
-                    onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
-                  />
+                comments.map((comment, index) => (
+                  <FadeInView key={comment.id} delay={index * 30}>
+                    <CommentCard
+                      comment={comment}
+                      onLike={() => handleCommentLike(comment.id)}
+                      onReplyStart={handleReplyStart}
+                      onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
+                    />
+                  </FadeInView>
                 ))
               )}
             </View>

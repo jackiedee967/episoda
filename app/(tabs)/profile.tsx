@@ -20,6 +20,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
 import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
+import FadeInView from '@/components/FadeInView';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -398,25 +399,30 @@ export default function ProfileScreen() {
         </>
       ) : (
         <>
-          <View style={styles.statCard}>
-            <View style={styles.statContent}>
-              <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
-              <Text style={styles.statValue}>
-                <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
-              </Text>
+          <FadeInView delay={0}>
+            <View style={styles.statCard}>
+              <View style={styles.statContent}>
+                <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} />
+                <Text style={styles.statValue}>
+                  <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+                </Text>
+              </View>
             </View>
-          </View>
+          </FadeInView>
 
-          <View style={styles.statCard}>
-            <View style={styles.statContent}>
-              <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
-              <Text style={styles.statValue}>
-                <Text style={styles.statNumber}>{totalLikes}</Text> Likes
-              </Text>
+          <FadeInView delay={50}>
+            <View style={styles.statCard}>
+              <View style={styles.statContent}>
+                <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} />
+                <Text style={styles.statValue}>
+                  <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+                </Text>
+              </View>
             </View>
-          </View>
+          </FadeInView>
 
-          <Pressable style={styles.statCard} onPress={handleShowFollowers}>
+          <FadeInView delay={100}>
+            <Pressable style={styles.statCard} onPress={handleShowFollowers}>
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowers.slice(0, 3).map((follower, index) => (
@@ -449,9 +455,11 @@ export default function ProfileScreen() {
             <Text style={styles.statNumber}>{followers.length}</Text> Followers
           </Text>
         </View>
-      </Pressable>
+            </Pressable>
+          </FadeInView>
 
-      <Pressable style={styles.statCard} onPress={handleShowFollowing}>
+          <FadeInView delay={150}>
+            <Pressable style={styles.statCard} onPress={handleShowFollowing}>
         <View style={styles.statContent}>
           <View style={styles.avatarRow}>
             {topFollowing.slice(0, 3).map((user, index) => (
@@ -484,7 +492,8 @@ export default function ProfileScreen() {
             <Text style={styles.statNumber}>{following.length}</Text> Following
           </Text>
         </View>
-      </Pressable>
+            </Pressable>
+          </FadeInView>
         </>
       )}
     </View>
