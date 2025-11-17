@@ -682,11 +682,11 @@ export default function ShowHub() {
         </View>
       </Pressable>
 
-      {season.expanded && (
+      {season.expanded ? (
         <View style={styles.episodesList}>
           {season.episodes.map(episode => renderEpisodeRow(episode))}
         </View>
-      )}
+      ) : null}
     </View>
   );
 
@@ -695,7 +695,7 @@ export default function ShowHub() {
 
     return (
       <View style={styles.feedContainer}>
-        {activeTab !== 'episodes' && renderSortDropdown()}
+        {activeTab !== 'episodes' ? renderSortDropdown() : null}
         
         {activeTab === 'episodes' ? (
           <View style={styles.episodesContainer}>
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    alignItems: 'center',
+    alignItems: 'stretch',
   },
   bannerContainer: {
     height: 160,

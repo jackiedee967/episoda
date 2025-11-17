@@ -513,13 +513,16 @@ export default function ProfileScreen() {
       <View style={styles.rotationSection}>
         <Text style={styles.rotationTitle}>Currently Watching</Text>
         <View style={styles.rotationRow}>
-          {myRotation.map((show) => (
-            <Pressable
-              key={show.id}
-              style={styles.rotationPoster}
-              onPress={() => router.push(`/show/${show.id}`)}
-            >
-              <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.rotationPosterImage} contentFit="cover" />
+          {myRotation.map((show) => {
+            const posterUrl = getPosterUrl(show.poster, show.title);
+            console.log(`🖼️ Rendering poster for "${show.title}":`, show.poster, '→', posterUrl.substring(0, 100));
+            return (
+              <Pressable
+                key={show.id}
+                style={styles.rotationPoster}
+                onPress={() => router.push(`/show/${show.id}`)}
+              >
+                <FadeInImage source={{ uri: posterUrl }} style={styles.rotationPosterImage} contentFit="cover" />
               <Pressable 
                 style={({ pressed }) => [
                   styles.saveIconRotation,
@@ -537,8 +540,9 @@ export default function ProfileScreen() {
                   color={colors.pureWhite} 
                 />
               </Pressable>
-            </Pressable>
-          ))}
+              </Pressable>
+            );
+          })}
         </View>
       </View>
     );
