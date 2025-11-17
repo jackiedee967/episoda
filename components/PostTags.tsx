@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.almostWhite,
   },
   text: {
-    ...tokens.typography.subtitle,
+    ...tokens.typography.p1B,
     textAlign: 'center',
   },
   textSmall: {
