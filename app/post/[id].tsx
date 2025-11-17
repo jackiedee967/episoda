@@ -26,6 +26,8 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/app/integrations/supabase/client';
 import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
 import FadeInView from '@/components/FadeInView';
+import FadeInImage from '@/components/FadeInImage';
+import { getPosterUrl } from '@/utils/posterHelpers';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -580,66 +582,84 @@ export default function PostDetail() {
           keyboardVerticalOffset={100}
         >
           <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* Header with Back Button and Menu */}
+            {/* Header with Back Button, Menu, and User Avatar */}
             <View style={styles.headerRow}>
               <Pressable onPress={handleBack} style={styles.backButton}>
                 <ChevronLeft size={16} color={tokens.colors.almostWhite} strokeWidth={1.5} />
                 <Text style={styles.backText}>Back</Text>
               </Pressable>
               
-              {canDelete && (
-                <Pressable 
-                  onPress={handleDeletePress} 
-                  style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
-                  disabled={isDeletingPost}
-                >
-                  <MoreVertical 
-                    size={20} 
-                    color={isDeletingPost ? tokens.colors.grey1 : tokens.colors.almostWhite} 
-                    strokeWidth={1.5} 
-                  />
+              <View style={styles.headerRight}>
+                {canDelete && (
+                  <Pressable 
+                    onPress={handleDeletePress} 
+                    style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
+                    disabled={isDeletingPost}
+                  >
+                    <MoreVertical 
+                      size={20} 
+                      color={isDeletingPost ? tokens.colors.grey1 : tokens.colors.almostWhite} 
+                      strokeWidth={1.5} 
+                    />
+                  </Pressable>
+                )}
+                <Pressable onPress={handleUserPress}>
+                  <FadeInImage source={{ uri: post.user.avatar }} style={styles.headerUserAvatar} contentFit="cover" />
                 </Pressable>
-              )}
+              </View>
             </View>
 
-            {/* Post Content - No background */}
-            <View style={styles.postContainer}>
-              {/* User Info */}
-              <View style={styles.userRow}>
-                <Pressable onPress={handleUserPress}>
-                  <Image source={{ uri: post.user.avatar }} style={styles.userAvatar} />
-                </Pressable>
-                <View style={styles.userInfoColumn}>
+            {/* Show Information Header Section */}
+            <View style={styles.showHeaderSection}>
+              {/* Show Poster */}
+              <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
+                <FadeInImage 
+                  source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} 
+                  style={styles.showPoster} 
+                  contentFit="cover" 
+                />
+              </Pressable>
+
+              {/* Info Column */}
+              <View style={styles.infoColumn}>
+                <Text style={styles.timestamp}>{getRelativeTime(post.timestamp)}</Text>
+                <Text style={styles.watchedText}>
                   <Pressable onPress={handleUserPress}>
                     <Text style={styles.username}>{post.user.displayName}</Text>
                   </Pressable>
-                  <Text style={styles.timestamp}>{getRelativeTime(post.timestamp)}</Text>
-                </View>
-              </View>
-
-              {/* Star Rating */}
-              {post.rating && (
-                <StarRatings rating={post.rating} size={14} />
-              )}
-
-              {/* Episode and Show Tags */}
-              <View style={styles.tagsRow}>
-                <PostTags
-                  prop="Large"
-                  state="Show_Name"
-                  text={post.show.title}
-                  onPress={handleShowPress}
-                />
-                {post.episodes && post.episodes.length > 0 && (
+                  {' watched'}
+                </Text>
+                
+                {/* Show and Episode Tags */}
+                <View style={styles.tagsRow}>
                   <PostTags
                     prop="Large"
-                    state="S_E_"
-                    text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
-                    onPress={() => handleEpisodePress(post.episodes![0].id)}
+                    state="Show_Name"
+                    text={post.show.title}
+                    onPress={handleShowPress}
                   />
+                  {post.episodes && post.episodes.length > 0 && (
+                    <PostTags
+                      prop="Large"
+                      state="S_E_"
+                      text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
+                      onPress={() => handleEpisodePress(post.episodes![0].id)}
+                    />
+                  )}
+                </View>
+
+                {/* Star Rating */}
+                {post.rating && (
+                  <StarRatings rating={post.rating} size={14} />
                 )}
               </View>
+            </View>
 
+            {/* Divider */}
+            <View style={styles.headerDivider} />
+
+            {/* Post Content */}
+            <View style={styles.postContentContainer}>
               {/* Post Title */}
               {post.title && (
                 <Text style={styles.postTitle}>{post.title}</Text>
@@ -849,11 +869,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '300',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   menuButton: {
     padding: 4,
   },
   menuButtonDisabled: {
     opacity: 0.5,
+  },
+  headerUserAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   menuOverlay: {
     position: 'absolute',
@@ -886,21 +916,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-  postContainer: {
-    gap: 14,
-  },
-  userRow: {
+  showHeaderSection: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    gap: 14,
+    marginBottom: 20,
   },
-  userAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  showPosterContainer: {
+    width: 120,
+    height: 180,
   },
-  userInfoColumn: {
-    flexDirection: 'column',
+  showPoster: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  infoColumn: {
+    flex: 1,
+    gap: 8,
+    justifyContent: 'flex-start',
+  },
+  timestamp: {
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 10,
+    fontWeight: '300',
+  },
+  watchedText: {
+    color: tokens.colors.almostWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
   },
   username: {
     color: tokens.colors.greenHighlight,
@@ -908,23 +953,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  timestamp: {
-    color: tokens.colors.grey1,
-    fontFamily: 'FunnelDisplay_300Light',
-    fontSize: 8,
-    fontWeight: '300',
-  },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
+  headerDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 20,
+  },
+  postContentContainer: {
+    gap: 14,
+  },
   postTitle: {
     color: tokens.colors.pureWhite,
-    fontFamily: 'FunnelDisplay_700Bold',
-    fontSize: 25,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    ...tokens.typography.titleL,
   },
   postBody: {
     color: tokens.colors.almostWhite,
