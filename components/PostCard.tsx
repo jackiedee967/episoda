@@ -158,7 +158,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <Text style={styles.justWatchedText}>
-                <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> just watched
+                <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> watched
               </Text>
               <View style={styles.tagsRow}>
                 <PostTags
