@@ -42,7 +42,7 @@ export default function FadeInImage({
     }
   };
 
-  const handleLoadEnd = (event: any) => {
+  const handleLoadEnd = () => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration,
@@ -50,7 +50,7 @@ export default function FadeInImage({
     }).start();
     
     if (onLoadEnd) {
-      onLoadEnd(event);
+      onLoadEnd();
     }
   };
 
