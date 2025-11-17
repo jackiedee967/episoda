@@ -32,6 +32,8 @@ const styles = StyleSheet.create({
     padding: 11,
     gap: 17,
     marginBottom: 12,
+    alignSelf: 'stretch',
+    width: '100%',
   },
   info: {
     flex: 1,
