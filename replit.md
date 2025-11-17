@@ -4,6 +4,9 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations.
 
 ## Recent Changes (Nov 2025)
+- **CRITICAL FIX - Search Navigation**: Fixed show cards not navigating to ShowHub by making navigation immediate instead of waiting for database save. The saveShow() function now runs asynchronously in the background, eliminating the 10+ second blocking delay caused by Supabase upserts hanging. Backdrop images are fetched and saved successfully via background process.
+- **Episode Title Truncation**: Added `ellipsizeMode="tail"` to episode titles in PostModal and ShowHub dropdowns to prevent text overflow with "..." truncation
+- **Skeleton Loader Width Fix**: Fixed search skeleton loaders appearing narrower than actual cards by removing duplicate padding (skeletonContainer had extra 20px padding on top of FlatList's contentContainerStyle padding)
 - **Progress Bar Layout Fix**: Removed `maxWidth` constraint from ShowsEpisodeProgressBar component to allow full-width display within containers
 - **Currently Watching Posters**: Added `getPosterUrl()` helper to normalize poster URLs across profile pages (handles `posterUrl`, `poster_path`, and `poster` field variations)
 - **Console Error Elimination**: Fixed "Unexpected text node" React Native Web errors by converting `&&` conditionals to ternaries with explicit `null` returns and adding null checks to stat card maps
