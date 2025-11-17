@@ -27,7 +27,7 @@ import { supabase } from '@/app/integrations/supabase/client';
 import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
-import { getPosterUrl } from '@/utils/posterHelpers';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
