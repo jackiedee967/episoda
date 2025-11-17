@@ -156,7 +156,9 @@ export async function getShowDetails(traktId: number | string): Promise<TraktSho
 
 export async function getShowSeasons(traktId: number | string): Promise<TraktSeason[]> {
   if (!TRAKT_CLIENT_ID) {
-    throw new Error('Trakt API credentials not configured');
+    const errorMsg = 'Trakt API credentials not configured';
+    console.error('❌', errorMsg);
+    throw new Error(errorMsg);
   }
 
   try {
@@ -166,13 +168,16 @@ export async function getShowSeasons(traktId: number | string): Promise<TraktSea
     );
 
     if (!response.ok) {
-      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
     }
 
     const data: TraktSeason[] = await response.json();
     return data.filter(season => season.number > 0);
   } catch (error) {
-    console.error('Error fetching show seasons from Trakt:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching seasons';
+    console.error('❌ Error fetching show seasons from Trakt:', errorMsg);
     throw error;
   }
 }
@@ -182,7 +187,9 @@ export async function getSeasonEpisodes(
   seasonNumber: number
 ): Promise<TraktEpisode[]> {
   if (!TRAKT_CLIENT_ID) {
-    throw new Error('Trakt API credentials not configured');
+    const errorMsg = 'Trakt API credentials not configured';
+    console.error('❌', errorMsg);
+    throw new Error(errorMsg);
   }
 
   try {
@@ -192,13 +199,16 @@ export async function getSeasonEpisodes(
     );
 
     if (!response.ok) {
-      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
     }
 
     const data: TraktEpisode[] = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching season episodes from Trakt:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching episodes';
+    console.error('❌ Error fetching season episodes from Trakt:', errorMsg);
     throw error;
   }
 }
@@ -215,7 +225,8 @@ export async function getAllEpisodes(traktId: number | string): Promise<TraktEpi
 
     return allEpisodes;
   } catch (error) {
-    console.error('Error fetching all episodes from Trakt:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching all episodes';
+    console.error('❌ Error fetching all episodes from Trakt:', errorMsg);
     throw error;
   }
 }

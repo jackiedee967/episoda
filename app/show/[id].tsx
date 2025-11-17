@@ -294,7 +294,13 @@ export default function ShowHub() {
         const dbEpisodes = await getEpisodesByShowId(show.id);
         
         if (dbEpisodes && dbEpisodes.length > 0) {
-          const mappedEpisodes = dbEpisodes.map(mapDatabaseEpisodeToEpisode);
+          // CRITICAL: Use Trakt-style IDs for consistency with logged episode tracking
+          const mappedEpisodes = dbEpisodes.map(ep => ({
+            ...mapDatabaseEpisodeToEpisode(ep),
+            id: dbShow.trakt_id 
+              ? `${dbShow.trakt_id}-S${ep.season_number}E${ep.episode_number}`
+              : ep.id, // Fallback to UUID if no Trakt ID (rare edge case)
+          }));
           setEpisodes(mappedEpisodes);
           console.log('✅ Loaded', mappedEpisodes.length, 'episodes from Supabase');
         } else {
