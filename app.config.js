@@ -1,6 +1,8 @@
 const traktClientId = process.env.TRAKT_CLIENT_ID || '235d184cb03ded3292ed89fe4347e3452a3087027d76f5edd13bdb65ccf2d456';
 const omdbApiKey = process.env.OMDB_API_KEY || '';
 const tmdbApiKey = process.env.TMDB_API_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
 
 module.exports = {
   expo: {
@@ -61,6 +63,8 @@ module.exports = {
       traktClientId: traktClientId,
       omdbApiKey: omdbApiKey,
       tmdbApiKey: tmdbApiKey,
+      SUPABASE_URL: supabaseUrl,
+      SUPABASE_ANON_KEY: supabaseAnonKey,
       eas: {
         projectId: "97b05198-6f1d-4374-b216-f0b119eb3c0c"
       }
