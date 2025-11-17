@@ -13,6 +13,7 @@ export default function FadeInImage({
   containerStyle,
   onLoad,
   onError,
+  onLoadEnd,
   ...imageProps 
 }: FadeInImageProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -41,12 +42,16 @@ export default function FadeInImage({
     }
   };
 
-  const handleLoadEnd = () => {
+  const handleLoadEnd = (event: any) => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration,
       useNativeDriver: false,
     }).start();
+    
+    if (onLoadEnd) {
+      onLoadEnd(event);
+    }
   };
 
   return (
