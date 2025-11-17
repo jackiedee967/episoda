@@ -599,7 +599,7 @@ export default function UserProfile() {
                 style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.rotationPosterImage} contentFit="cover" />
+                <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.rotationPosterImage} contentFit="cover" />
                 <Pressable 
                   style={({ pressed }) => [
                     styles.saveIconRotation,
