@@ -533,14 +533,14 @@ export default function ShowHub() {
               {show.description}
             </Text>
             <View style={styles.statsRow}>
-              {show.rating > 0 && (
+              {show.rating > 0 ? (
                 <View style={styles.ratingContainer}>
                   <Text style={styles.ratingText}>
                     {convertToFiveStarRating(show.rating).toFixed(1)}
                   </Text>
                   <Text style={styles.starIcon}>★</Text>
                 </View>
-              )}
+              ) : null}
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>

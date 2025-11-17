@@ -427,8 +427,9 @@ export default function ProfileScreen() {
             <FadeInView delay={100}>
               <View style={styles.statContent}>
                 <View style={styles.avatarRow}>
-                  {topFollowers.slice(0, 3).map((follower, index) => (
-                    follower.avatar ? (
+                  {topFollowers.slice(0, 3).map((follower, index) => {
+                    if (!follower) return null;
+                    return follower.avatar ? (
                       <FadeInImage
                         key={follower.id}
                         source={{ uri: follower.avatar }}
@@ -451,8 +452,8 @@ export default function ProfileScreen() {
                           {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
                         </Text>
                       </View>
-                    )
-                  ))}
+                    );
+                  })}
                 </View>
                 <Text style={styles.statValue}>
                   <Text style={styles.statNumber}>{followers.length}</Text> Followers
@@ -465,8 +466,9 @@ export default function ProfileScreen() {
             <FadeInView delay={150}>
               <View style={styles.statContent}>
                 <View style={styles.avatarRow}>
-                  {topFollowing.slice(0, 3).map((user, index) => (
-                    user.avatar ? (
+                  {topFollowing.slice(0, 3).map((user, index) => {
+                    if (!user) return null;
+                    return user.avatar ? (
                       <FadeInImage
                         key={user.id}
                         source={{ uri: user.avatar }}
@@ -489,8 +491,8 @@ export default function ProfileScreen() {
                           {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
                         </Text>
                       </View>
-                    )
-                  ))}
+                    );
+                  })}
                 </View>
                 <Text style={styles.statValue}>
                   <Text style={styles.statNumber}>{following.length}</Text> Following
