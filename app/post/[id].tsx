@@ -923,8 +923,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   showPosterContainer: {
-    width: 100,
-    height: 150,
+    width: 85,
+    height: 128,
   },
   showPoster: {
     width: '100%',
