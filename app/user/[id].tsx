@@ -36,6 +36,7 @@ import { supabase } from '@/app/integrations/supabase/client';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -598,7 +599,7 @@ export default function UserProfile() {
                 style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <FadeInImage source={{ uri: show.poster }} style={styles.rotationPosterImage} contentFit="cover" />
+                <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.rotationPosterImage} contentFit="cover" />
                 <Pressable 
                   style={({ pressed }) => [
                     styles.saveIconRotation,
