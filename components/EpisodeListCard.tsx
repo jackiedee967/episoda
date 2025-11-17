@@ -86,7 +86,7 @@ export default function EpisodeListCard({
           <View style={[styles.episodeTag, { backgroundColor: tagBackgroundColor, borderColor: tagBorderColor }]}>
             <Text style={[styles.episodeTagText, { color: tagTextColor }]}>{episodeNumber}</Text>
           </View>
-          <Text style={[styles.episodeTitle, { color: titleColor }]} numberOfLines={1}>{title}</Text>
+          <Text style={[styles.episodeTitle, { color: titleColor }]} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
         </View>
         
         {description && (
@@ -168,6 +168,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    maxWidth: '100%',
   },
   episodeTag: {
     flexDirection: 'row',
