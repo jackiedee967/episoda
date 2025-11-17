@@ -595,15 +595,13 @@ export default function UserProfile() {
         <View style={styles.rotationRow}>
           {myRotation.map((show) => {
             const isCommon = commonShows.some((s) => s.id === show.id);
-            const posterUrl = getPosterUrl(show.poster, show.title);
-            console.log(`🖼️ Rendering poster for "${show.title}":`, show.poster, '→', posterUrl.substring(0, 100));
             return (
               <Pressable
                 key={show.id}
                 style={[styles.rotationPoster, isCommon && styles.commonShowPoster]}
                 onPress={() => router.push(`/show/${show.id}`)}
               >
-                <FadeInImage source={{ uri: posterUrl }} style={styles.rotationPosterImage} contentFit="cover" />
+                <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.rotationPosterImage} contentFit="cover" />
                 <Pressable 
                   style={({ pressed }) => [
                     styles.saveIconRotation,

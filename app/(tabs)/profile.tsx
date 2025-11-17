@@ -349,9 +349,9 @@ export default function ProfileScreen() {
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>
         <Text style={styles.displayName}>{profileUser.displayName}</Text>
-        {profileUser.bio && <Text style={styles.bio}>{profileUser.bio}</Text>}
+        {profileUser.bio ? <Text style={styles.bio}>{profileUser.bio}</Text> : null}
         
-        {profileUser.socialLinks && profileUser.socialLinks.length > 0 && (
+        {profileUser.socialLinks && profileUser.socialLinks.length > 0 ? (
           <View style={styles.socialLinksRow}>
             {profileUser.socialLinks.map((link, index) => (
               <Pressable
@@ -363,7 +363,7 @@ export default function ProfileScreen() {
               </Pressable>
             ))}
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );
@@ -513,16 +513,13 @@ export default function ProfileScreen() {
       <View style={styles.rotationSection}>
         <Text style={styles.rotationTitle}>Currently Watching</Text>
         <View style={styles.rotationRow}>
-          {myRotation.map((show) => {
-            const posterUrl = getPosterUrl(show.poster, show.title);
-            console.log(`🖼️ Rendering poster for "${show.title}":`, show.poster, '→', posterUrl.substring(0, 100));
-            return (
-              <Pressable
-                key={show.id}
-                style={styles.rotationPoster}
-                onPress={() => router.push(`/show/${show.id}`)}
-              >
-                <FadeInImage source={{ uri: posterUrl }} style={styles.rotationPosterImage} contentFit="cover" />
+          {myRotation.map((show) => (
+            <Pressable
+              key={show.id}
+              style={styles.rotationPoster}
+              onPress={() => router.push(`/show/${show.id}`)}
+            >
+              <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.rotationPosterImage} contentFit="cover" />
               <Pressable 
                 style={({ pressed }) => [
                   styles.saveIconRotation,
@@ -540,9 +537,8 @@ export default function ProfileScreen() {
                   color={colors.pureWhite} 
                 />
               </Pressable>
-              </Pressable>
-            );
-          })}
+            </Pressable>
+          ))}
         </View>
       </View>
     );
@@ -707,9 +703,9 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {activeTab === 'posts' && renderPostsTab()}
-          {activeTab === 'shows' && renderShowsTab()}
-          {activeTab === 'playlists' && renderPlaylistsTab()}
+          {activeTab === 'posts' ? renderPostsTab() : null}
+          {activeTab === 'shows' ? renderShowsTab() : null}
+          {activeTab === 'playlists' ? renderPlaylistsTab() : null}
           <View style={{ height: 100 }} />
         </ScrollView>
 
@@ -747,14 +743,14 @@ export default function ProfileScreen() {
           onClose={() => setShowInviteFriendsModal(false)}
         />
 
-        {showPlaylistModal && (
+        {showPlaylistModal ? (
           <PlaylistModal
             visible={!!showPlaylistModal}
             onClose={() => setShowPlaylistModal(null)}
             show={showPlaylistModal}
             onAddToPlaylist={() => {}}
           />
-        )}
+        ) : null}
       </View>
     </>
   );
