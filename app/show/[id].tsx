@@ -35,7 +35,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode } from '@/services/showDatabase';
 import { getAllEpisodes } from '@/services/trakt';
-import { getEpisode } from '@/services/tvmaze';
+import { getEpisode, getAllEpisodes as getAllTVMazeEpisodes } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/app/integrations/supabase/client';
@@ -285,12 +285,43 @@ export default function ShowHub() {
               return;
             }
           } catch (traktError) {
-            console.error('❌ Trakt API failed, falling back to Supabase:', traktError);
+            console.error('❌ Trakt API failed, trying TVMaze fallback...', traktError);
           }
         }
         
-        // Fallback: Load episodes from Supabase database
-        console.log('💾 Loading episodes from Supabase database...');
+        // Second fallback: Try TVMaze if we have a TVMaze ID
+        if (dbShow.tvmaze_id) {
+          try {
+            console.log('📺 Fetching ALL episodes from TVMaze API...');
+            const tvmazeEpisodes = await getAllTVMazeEpisodes(dbShow.tvmaze_id);
+            
+            if (tvmazeEpisodes && tvmazeEpisodes.length > 0) {
+              const mappedEpisodes = tvmazeEpisodes.map((ep) => ({
+                id: dbShow.trakt_id 
+                  ? `${dbShow.trakt_id}-S${ep.season}E${ep.number}`
+                  : `tvmaze-${dbShow.tvmaze_id}-S${ep.season}E${ep.number}`,
+                showId: show.id,
+                seasonNumber: ep.season,
+                episodeNumber: ep.number,
+                title: ep.name || `Episode ${ep.number}`,
+                description: ep.summary?.replace(/<[^>]+>/g, '') || 'No description available.',
+                rating: 0,
+                postCount: 0,
+                thumbnail: ep.image?.original || undefined,
+              }));
+              
+              setEpisodes(mappedEpisodes);
+              setLoadingEpisodes(false);
+              console.log('✅ Loaded', mappedEpisodes.length, 'episodes from TVMaze');
+              return;
+            }
+          } catch (tvmazeError) {
+            console.error('❌ TVMaze API also failed, falling back to logged episodes only:', tvmazeError);
+          }
+        }
+        
+        // Final fallback: Load only logged episodes from Supabase database
+        console.log('💾 Loading logged episodes from Supabase database...');
         const dbEpisodes = await getEpisodesByShowId(show.id);
         
         if (dbEpisodes && dbEpisodes.length > 0) {
@@ -302,7 +333,7 @@ export default function ShowHub() {
               : ep.id, // Fallback to UUID if no Trakt ID (rare edge case)
           }));
           setEpisodes(mappedEpisodes);
-          console.log('✅ Loaded', mappedEpisodes.length, 'episodes from Supabase');
+          console.log('✅ Loaded', mappedEpisodes.length, 'logged episodes from Supabase');
         } else {
           console.log('⚠️ No episodes found in database');
           setEpisodes([]);

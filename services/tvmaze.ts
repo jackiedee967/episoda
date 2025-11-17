@@ -185,6 +185,31 @@ export async function getEpisode(
   }
 }
 
+export async function getAllEpisodes(tvmazeShowId: number): Promise<TVMazeEpisode[]> {
+  try {
+    console.log(`📺 TVMaze: Fetching all episodes for show ${tvmazeShowId}`);
+    const response = await fetch(
+      `${TVMAZE_BASE_URL}/shows/${tvmazeShowId}/episodes`
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`⚠️ TVMaze: No episodes for show ${tvmazeShowId}`);
+        return [];
+      }
+      throw new Error(`TVMaze API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data: TVMazeEpisode[] = await response.json();
+    console.log(`✅ TVMaze: Found ${data.length} episodes`);
+    return data.filter(ep => ep.season > 0);
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ TVMaze error fetching episodes:`, errorMsg);
+    return [];
+  }
+}
+
 export async function getPosterUrl(imdbId: string | null, tvdbId: number | null): Promise<string | null> {
   if (!imdbId && !tvdbId) {
     return null;
