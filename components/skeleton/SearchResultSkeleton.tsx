@@ -24,7 +24,6 @@ export default function SearchResultSkeleton() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     flexDirection: 'row',
     backgroundColor: tokens.colors.cardBackground,
     borderRadius: 10,
@@ -32,7 +31,7 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.cardStroke,
     padding: 11,
     gap: 17,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   info: {
     flex: 1,

@@ -1217,8 +1217,8 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   skeletonContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 18,
   },
   loadingText: {
     ...tokens.typography.p1,
