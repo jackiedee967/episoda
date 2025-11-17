@@ -551,26 +551,24 @@ export default function SearchScreen() {
                 
                 if (!traktShow) {
                   console.error('❌ Trakt show data not found for:', show.title);
+                  setIsSavingShow(false);
                   return;
                 }
 
                 const enrichedInfo = traktShowResults.results.find(r => r.show.id === show.id)?.enrichedData;
                 
-                console.log('🚀 Navigating immediately to:', show.id);
-                router.push(`/show/${show.id}`);
-                
-                console.log('💾 Saving show to database in background...');
-                saveShow(traktShow, {
+                console.log('💾 Saving show to database (quick save with retry logic)...');
+                const dbShow = await saveShow(traktShow, {
                   enrichedPosterUrl: enrichedInfo?.posterUrl,
                   enrichedBackdropUrl: enrichedInfo?.backdropUrl,
                   enrichedSeasonCount: enrichedInfo?.totalSeasons,
                   enrichedTVMazeId: enrichedInfo?.tvmazeId,
                   enrichedImdbId: enrichedInfo?.imdbId
-                }).then(dbShow => {
-                  console.log('✅ Show saved with DB ID:', dbShow.id);
-                }).catch(error => {
-                  console.error('❌ Error saving show in background:', error);
                 });
+                console.log('✅ Show saved with DB UUID:', dbShow.id);
+                
+                console.log('🚀 Navigating to ShowHub with UUID:', dbShow.id);
+                router.push(`/show/${dbShow.id}`);
               } catch (error) {
                 console.error('❌ Error navigating to show:', error);
               } finally {
