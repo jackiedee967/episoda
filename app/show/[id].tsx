@@ -226,58 +226,85 @@ export default function ShowHub() {
       if (!show?.id) return;
       
       const dbShow = await getShowById(show.id);
-      if (!dbShow || !dbShow.trakt_id) {
-        console.error('Show not found or missing Trakt ID');
+      if (!dbShow) {
+        console.error('Show not found in database');
         return;
       }
       
       setSeasons([]);
       setLoadingEpisodes(true);
+      
       try {
-        // Fetch all episodes from Trakt API using the service
-        const traktEpisodes = await getAllEpisodes(dbShow.trakt_id);
-        
-        // Map Trakt episodes to Episode type (without thumbnails first for fast display)
-        const mappedEpisodes = traktEpisodes.map((ep) => ({
-          id: `${dbShow.trakt_id}-S${ep.season}E${ep.number}`,
-          showId: show.id,
-          seasonNumber: ep.season,
-          episodeNumber: ep.number,
-          title: ep.title || `Episode ${ep.number}`,
-          description: ep.overview || 'No description available.',
-          rating: ep.rating || 0,
-          postCount: 0,
-          thumbnail: undefined,
-        }));
-        
-        setEpisodes(mappedEpisodes);
-        setLoadingEpisodes(false);
-        
-        // Fetch thumbnails in the background if TVMaze ID is available
-        if (dbShow.tvmaze_id) {
-          const episodesWithThumbnails = await Promise.all(
-            mappedEpisodes.map(async (ep) => {
-              try {
-                const tvmazeEpisode = await getEpisode(
-                  dbShow.tvmaze_id!,
-                  ep.seasonNumber,
-                  ep.episodeNumber
+        // Try to fetch from Trakt first if we have a Trakt ID
+        if (dbShow.trakt_id) {
+          try {
+            console.log('📺 Fetching episodes from Trakt API...');
+            const traktEpisodes = await getAllEpisodes(dbShow.trakt_id);
+            
+            if (traktEpisodes && traktEpisodes.length > 0) {
+              // Map Trakt episodes to Episode type (without thumbnails first for fast display)
+              const mappedEpisodes = traktEpisodes.map((ep) => ({
+                id: `${dbShow.trakt_id}-S${ep.season}E${ep.number}`,
+                showId: show.id,
+                seasonNumber: ep.season,
+                episodeNumber: ep.number,
+                title: ep.title || `Episode ${ep.number}`,
+                description: ep.overview || 'No description available.',
+                rating: ep.rating || 0,
+                postCount: 0,
+                thumbnail: undefined,
+              }));
+              
+              setEpisodes(mappedEpisodes);
+              setLoadingEpisodes(false);
+              console.log('✅ Loaded', mappedEpisodes.length, 'episodes from Trakt');
+              
+              // Fetch thumbnails in the background if TVMaze ID is available
+              if (dbShow.tvmaze_id) {
+                const episodesWithThumbnails = await Promise.all(
+                  mappedEpisodes.map(async (ep) => {
+                    try {
+                      const tvmazeEpisode = await getEpisode(
+                        dbShow.tvmaze_id!,
+                        ep.seasonNumber,
+                        ep.episodeNumber
+                      );
+                      return {
+                        ...ep,
+                        thumbnail: tvmazeEpisode?.image?.original || undefined,
+                      };
+                    } catch (error) {
+                      console.error(`Error fetching thumbnail for S${ep.seasonNumber}E${ep.episodeNumber}:`, error);
+                      return ep;
+                    }
+                  })
                 );
-                return {
-                  ...ep,
-                  thumbnail: tvmazeEpisode?.image?.original || undefined,
-                };
-              } catch (error) {
-                console.error(`Error fetching thumbnail for S${ep.seasonNumber}E${ep.episodeNumber}:`, error);
-                return ep;
+                
+                setEpisodes(episodesWithThumbnails);
               }
-            })
-          );
-          
-          setEpisodes(episodesWithThumbnails);
+              return;
+            }
+          } catch (traktError) {
+            console.error('❌ Trakt API failed, falling back to Supabase:', traktError);
+          }
         }
+        
+        // Fallback: Load episodes from Supabase database
+        console.log('💾 Loading episodes from Supabase database...');
+        const dbEpisodes = await getEpisodesByShowId(show.id);
+        
+        if (dbEpisodes && dbEpisodes.length > 0) {
+          const mappedEpisodes = dbEpisodes.map(mapDatabaseEpisodeToEpisode);
+          setEpisodes(mappedEpisodes);
+          console.log('✅ Loaded', mappedEpisodes.length, 'episodes from Supabase');
+        } else {
+          console.log('⚠️ No episodes found in database');
+          setEpisodes([]);
+        }
+        
+        setLoadingEpisodes(false);
       } catch (error) {
-        console.error('Error loading episodes:', error);
+        console.error('❌ Error loading episodes:', error);
         setEpisodes([]);
         setLoadingEpisodes(false);
       }
