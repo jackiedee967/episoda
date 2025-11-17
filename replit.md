@@ -3,6 +3,11 @@
 ## Overview
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations.
 
+## Recent Changes (Nov 2025)
+- **Progress Bar Layout Fix**: Removed `maxWidth` constraint from ShowsEpisodeProgressBar component to allow full-width display within containers
+- **Currently Watching Posters**: Added `getPosterUrl()` helper to normalize poster URLs across profile pages (handles `posterUrl`, `poster_path`, and `poster` field variations)
+- **Console Error Elimination**: Fixed "Unexpected text node" React Native Web errors by converting `&&` conditionals to ternaries with explicit `null` returns and adding null checks to stat card maps
+
 ## User Preferences
 I prefer iterative development, focusing on one feature or fix at a time. Please ask for confirmation before making large-scale changes or refactoring. I value clear, concise explanations and prefer to focus on high-level architectural decisions and critical features rather than minor implementation details. Do not make changes to files related to authentication without explicit instruction.
 
