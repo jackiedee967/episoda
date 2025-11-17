@@ -9,7 +9,7 @@ export default function SearchResultSkeleton() {
     <View style={styles.container}>
       <SkeletonBlock width={80.34} height={98.79} borderRadius={8} />
       <View style={styles.info}>
-        <SkeletonLine width={180} height={16} style={styles.title} />
+        <SkeletonLine width="100%" height={16} style={styles.title} />
         <SkeletonLine width="95%" height={12} style={styles.descriptionLine1} />
         <SkeletonLine width="80%" height={12} style={styles.descriptionLine2} />
         <View style={styles.statsRow}>
@@ -24,6 +24,7 @@ export default function SearchResultSkeleton() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: tokens.colors.cardBackground,
     borderRadius: 10,
@@ -32,8 +33,6 @@ const styles = StyleSheet.create({
     padding: 11,
     gap: 17,
     marginBottom: 12,
-    alignSelf: 'stretch',
-    width: '100%',
   },
   info: {
     flex: 1,
