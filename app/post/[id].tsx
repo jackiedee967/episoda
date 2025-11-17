@@ -612,9 +612,10 @@ export default function PostDetail() {
             {/* Show Information Header Section */}
             <View style={styles.showHeaderSection}>
               {/* Show Poster */}
-              <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
+              <Pressable onPress={handleShowPress}>
                 <FadeInImage 
                   source={{ uri: getPosterUrl(post.show.poster, post.show.title) }} 
+                  containerStyle={styles.showPosterContainer}
                   style={styles.showPoster} 
                   contentFit="cover" 
                 />
