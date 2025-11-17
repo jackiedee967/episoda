@@ -75,8 +75,11 @@ class ShowEnrichmentManager {
         posterUrl = tvmazeData?.posterUrl || null;
       }
 
+      // Fetch season count from Trakt
+      const totalSeasons = await this.fetchSeasons(traktShow.ids.trakt);
+
       const enriched = {
-        totalSeasons: 0, // Lazy load seasons later if needed
+        totalSeasons,
         posterUrl,
         backdropUrl: null, // Skip backdrop for search results
         tvmazeId: null,
