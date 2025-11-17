@@ -544,7 +544,7 @@ export default function ShowHub() {
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
-            {friendsWatching.length > 0 && (
+            {friendsWatching.length > 0 ? (
               <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
                 <View style={styles.friendAvatarsRow}>
                   {friendsWatching.slice(0, 4).map((friend, index) => (
@@ -562,7 +562,7 @@ export default function ShowHub() {
                   <Text style={styles.friendsWatchingNumber}>{friendsWatching.length}</Text> friends watching
                 </Text>
               </Pressable>
-            )}
+            ) : null}
           </View>
         </View>
       </View>
@@ -997,6 +997,7 @@ const styles = StyleSheet.create({
     color: tokens.colors.greenHighlight,
   },
   progressBar: {
+    width: '100%',
     marginBottom: 10,
   },
   logButton: {
