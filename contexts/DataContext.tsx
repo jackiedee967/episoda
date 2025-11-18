@@ -43,7 +43,6 @@ interface DataContextType {
   repostPost: (postId: string) => Promise<void>;
   unrepostPost: (postId: string) => Promise<void>;
   updateCommentCount: (postId: string, count: number) => Promise<void>;
-  deleteComment: (commentId: string) => Promise<void>;
   getPost: (postId: string) => Post | undefined;
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
@@ -1637,40 +1636,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, [isHydrated]);
 
-  const deleteComment = useCallback(async (commentId: string) => {
-    if (!authUserId) {
-      console.error('❌ Cannot delete comment: user not authenticated');
-      return;
-    }
-
-    try {
-      // Call Edge Function to bypass PostgREST cache
-      const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/soft-delete-comment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          commentId,
-          userId: authUserId,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || result.error) {
-        throw new Error(result.error || 'Failed to delete comment');
-      }
-
-      console.log('✅ Comment soft-deleted successfully');
-    } catch (error) {
-      console.error('❌ Failed to delete comment:', error);
-      throw error;
-    }
-  }, [authUserId]);
-
   const getPost = useCallback((postId: string): Post | undefined => {
     return posts.find(p => p.id === postId);
   }, [posts]);
@@ -2164,7 +2129,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     repostPost,
     unrepostPost,
     updateCommentCount,
-    deleteComment,
     followUser,
     unfollowUser,
     getFollowers,
@@ -2188,7 +2152,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     repostPost,
     unrepostPost,
     updateCommentCount,
-    deleteComment,
     followUser,
     unfollowUser,
     getFollowers,
