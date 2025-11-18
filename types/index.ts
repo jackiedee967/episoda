@@ -77,6 +77,18 @@ export interface Post {
   isSpoiler: boolean;
 }
 
+export interface RepostContext {
+  repostedBy: User;
+  repostedAt: Date;
+  isSelfRepost: boolean;
+}
+
+export interface FeedItem {
+  post: Post;
+  repostContext?: RepostContext;
+  sortTimestamp: Date;
+}
+
 export type PostTag = 'spoiler alert' | 'fan theory' | 'discussion' | 'episode recap' | 'misc';
 
 export type NotificationType = 

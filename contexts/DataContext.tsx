@@ -1,7 +1,7 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
-import { Post, Show, User, Playlist, Episode } from '@/types';
+import { Post, Show, User, Playlist, Episode, FeedItem } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +64,8 @@ interface DataContextType {
   isLoadingRecommendations: boolean;
   recommendationsReady: boolean;
   loadRecommendations: (options?: { force?: boolean }) => Promise<void>;
+  getProfileFeed: (userId: string) => FeedItem[];
+  getHomeFeed: () => FeedItem[];
 }
 
 const STORAGE_KEYS = {
@@ -888,12 +890,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         // Step 2: Extract unique IDs for batch fetching
         const postIds = postsData.map((p: any) => p.id);
-        const uniqueUserIds = [...new Set(postsData.map((p: any) => p.user_id))];
+        let uniqueUserIds = [...new Set(postsData.map((p: any) => p.user_id))];
         const uniqueShowIds = [...new Set(postsData.map((p: any) => p.show_id))];
         const allEpisodeIds = [...new Set(postsData.flatMap((p: any) => p.episode_ids || []))];
 
+        // Fetch reposts first to get reposter user IDs
+        const { data: repostsData } = await supabase
+          .from('post_reposts')
+          .select('post_id, user_id, created_at')
+          .in('post_id', postIds);
+        
+        // Add reposter user IDs to the batch
+        if (repostsData) {
+          const reposterUserIds = repostsData.map((r: any) => r.user_id);
+          uniqueUserIds = [...new Set([...uniqueUserIds, ...reposterUserIds])];
+        }
+
         // Step 3: Batch fetch all related data (scoped to these 100 posts)
-        const [usersResult, showsResult, episodesResult, likesResult, repostsResult, userLikesResult, commentsResult] = await Promise.all([
+        const [usersResult, showsResult, episodesResult, likesResult, userLikesResult, commentsResult] = await Promise.all([
           // Fetch all user profiles
           supabase.from('profiles').select('*').in('user_id', uniqueUserIds),
           // Fetch all shows
@@ -902,13 +916,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
           allEpisodeIds.length > 0 ? supabase.from('episodes').select('*').in('id', allEpisodeIds) : { data: [] },
           // Fetch likes ONLY for these posts
           supabase.from('post_likes').select('post_id').in('post_id', postIds),
-          // Fetch reposts ONLY for these posts
-          supabase.from('post_reposts').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
           supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
           // Fetch comments ONLY for these posts
           supabase.from('comments').select('post_id').in('post_id', postIds),
         ]);
+        
+        // Use pre-fetched repost data
+        const repostsResult = { data: repostsData };
 
         // Step 4: Build lookup maps
         const usersMap = new Map();
@@ -1006,6 +1021,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         (repostsResult.data || []).forEach((repost: any) => {
           repostsCount.set(repost.post_id, (repostsCount.get(repost.post_id) || 0) + 1);
         });
+        
+        // Update reposts state with full metadata
+        const repostDataArray: RepostData[] = (repostsResult.data || []).map((r: any) => ({
+          postId: r.post_id,
+          userId: r.user_id,
+          timestamp: new Date(r.created_at),
+        }));
+        setReposts(repostDataArray);
 
         const commentsCount = new Map();
         (commentsResult.data || []).forEach((comment: any) => {
@@ -1622,6 +1645,47 @@ export function DataProvider({ children }: { children: ReactNode }) {
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
   }, [posts, reposts, userProfileCache]);
+  
+  const getProfileFeed = useCallback((userId: string): FeedItem[] => {
+    const feedItems: FeedItem[] = [];
+    
+    // Add original posts by this user
+    posts.filter(p => p.user.id === userId).forEach(post => {
+      feedItems.push({
+        post,
+        sortTimestamp: post.timestamp,
+      });
+    });
+    
+    // Add reposts by this user
+    reposts.filter(r => r.userId === userId).forEach(repost => {
+      const post = posts.find(p => p.id === repost.postId);
+      const reposterUser = userProfileCache[repost.userId];
+      if (post && reposterUser) {
+        feedItems.push({
+          post,
+          repostContext: {
+            repostedBy: reposterUser,
+            repostedAt: repost.timestamp,
+            isSelfRepost: post.user.id === repost.userId,
+          },
+          sortTimestamp: repost.timestamp,
+        });
+      }
+    });
+    
+    // Sort by sortTimestamp (most recent first)
+    return feedItems.sort((a, b) => b.sortTimestamp.getTime() - a.sortTimestamp.getTime());
+  }, [posts, reposts, userProfileCache]);
+  
+  const getHomeFeed = useCallback((): FeedItem[] => {
+    // For home feed, just wrap posts without repost context
+    // (In the future, this could be enhanced to show reposts from followed users)
+    return posts.map(post => ({
+      post,
+      sortTimestamp: post.timestamp,
+    }));
+  }, [posts]);
 
   const updateCommentCount = useCallback(async (postId: string, count: number) => {
     setPosts(prev => {
@@ -2121,7 +2185,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getUserReposts,
     isFollowing,
     recommendationsReady,
-  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing, recommendationsReady]);
+    getProfileFeed,
+    getHomeFeed,
+  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing, recommendationsReady, getProfileFeed, getHomeFeed]);
 
   // LAYER 3: Actions - All mutation callbacks (already stable via useCallback)
   const actions = useMemo(() => ({
