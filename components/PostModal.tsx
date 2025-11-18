@@ -261,11 +261,31 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       const dbShow = await getShowById(show.id);
       if (!dbShow || !dbShow.trakt_id) {
         console.error('No Trakt ID found for show:', show.id);
-        setIsFetchingEpisodes(false);
-        // Only reset step if this is blocking (not skipToReview mode)
-        if (!skipToReview) {
-          setStep('selectShow');
+        // Fallback: Load episodes from database instead
+        const dbEpisodes = await getEpisodesByShowId(show.id);
+        if (dbEpisodes && dbEpisodes.length > 0) {
+          console.log(`✅ Loaded ${dbEpisodes.length} episodes from database as fallback`);
+          const { mapDatabaseEpisodeToEpisode } = await import('@/services/showMappers');
+          
+          // Group episodes by season
+          const seasonMap = new Map<number, Episode[]>();
+          for (const dbEp of dbEpisodes) {
+            const episode = mapDatabaseEpisodeToEpisode(dbEp);
+            if (!seasonMap.has(episode.seasonNumber)) {
+              seasonMap.set(episode.seasonNumber, []);
+            }
+            seasonMap.get(episode.seasonNumber)!.push(episode);
+          }
+          
+          const seasonsArray: Season[] = Array.from(seasonMap.entries()).map(([seasonNumber, episodes]) => ({
+            seasonNumber,
+            episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
+            expanded: seasonNumber === 1, // Expand first season by default
+          }));
+          
+          setSeasons(seasonsArray);
         }
+        setIsFetchingEpisodes(false);
         return;
       }
       
