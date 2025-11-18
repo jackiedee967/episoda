@@ -45,7 +45,8 @@ export default function ProfileScreen() {
     getTotalLikesReceived,
     isShowInPlaylist,
     getWatchHistory: getWatchHistoryFromContext,
-    currentUser: contextCurrentUser
+    currentUser: contextCurrentUser,
+    getProfileFeed
   } = useData();
 
   const [activeTab, setActiveTab] = useState<Tab>('posts');
@@ -162,30 +163,10 @@ export default function ProfileScreen() {
     }
   };
 
-  const userPosts = useMemo(() => 
-    posts.filter((p) => p.user.id === profileUser?.id),
-    [posts, profileUser?.id]
-  );
-  
-  const userReposts = useMemo(() => 
-    allReposts.filter(repost => repost.repostedBy.id === profileUser?.id),
-    [allReposts, profileUser?.id]
-  );
-  
-  const allUserActivity = useMemo(() => [
-    ...userPosts.map(post => ({ 
-      post, 
-      isRepost: false, 
-      timestamp: post.timestamp,
-      repostedBy: undefined
-    })),
-    ...userReposts.map(repost => ({ 
-      post: repost.post, 
-      isRepost: true, 
-      timestamp: repost.timestamp,
-      repostedBy: { id: profileUser?.id || '', displayName: profileUser?.displayName || '' }
-    }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [userPosts, userReposts, profileUser?.id, profileUser?.displayName]);
+  const allUserActivity = useMemo(() => {
+    if (!profileUser) return [];
+    return getProfileFeed(profileUser.id);
+  }, [getProfileFeed, profileUser?.id]);
 
   const myRotation = useMemo((): Show[] => {
     if (!profileUser) return [];
@@ -547,10 +528,9 @@ export default function ProfileScreen() {
       {allUserActivity.length > 0 ? (
         allUserActivity.map((item, index) => (
           <PostCard 
-            key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} 
+            key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} 
             post={item.post}
-            isRepost={item.isRepost}
-            repostedBy={item.repostedBy}
+            repostContext={item.repostContext}
           />
         ))
       ) : (

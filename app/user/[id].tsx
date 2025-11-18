@@ -61,6 +61,7 @@ export default function UserProfile() {
     getTotalLikesReceived,
     isShowInPlaylist,
     getWatchHistory: getWatchHistoryFromContext,
+    getProfileFeed
   } = useData();
 
   const [activeTab, setActiveTab] = useState<Tab>('posts');
@@ -160,30 +161,10 @@ export default function UserProfile() {
     setUserPlaylists(userPlaylistsData);
   }, [id, playlists, isCurrentUser]);
 
-  const userPosts = useMemo(() => 
-    posts.filter((p) => p.user.id === id),
-    [posts, id]
-  );
-  
-  const userReposts = useMemo(() => 
-    allReposts.filter(repost => repost.repostedBy.id === id),
-    [allReposts, id]
-  );
-  
-  const allUserActivity = useMemo(() => [
-    ...userPosts.map(post => ({ 
-      post, 
-      isRepost: false, 
-      timestamp: post.timestamp,
-      repostedBy: undefined
-    })),
-    ...userReposts.map(repost => ({ 
-      post: repost.post, 
-      isRepost: true, 
-      timestamp: repost.timestamp,
-      repostedBy: { id: id as string, displayName: user?.displayName || '' }
-    }))
-  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()), [userPosts, userReposts, id, user?.displayName]);
+  const allUserActivity = useMemo(() => {
+    if (!id) return [];
+    return getProfileFeed(id as string);
+  }, [getProfileFeed, id]);
 
   const myRotation = useMemo((): Show[] => {
     const userShowPosts = posts.filter((p) => p.user.id === id);
@@ -630,10 +611,9 @@ export default function UserProfile() {
       {allUserActivity.length > 0 ? (
         allUserActivity.map((item, index) => (
           <PostCard 
-            key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} 
+            key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} 
             post={item.post}
-            isRepost={item.isRepost}
-            repostedBy={item.repostedBy}
+            repostContext={item.repostContext}
           />
         ))
       ) : (

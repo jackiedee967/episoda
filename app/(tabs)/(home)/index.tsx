@@ -17,7 +17,7 @@ import FadeInView from '@/components/FadeInView';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
@@ -261,31 +261,11 @@ export default function HomeScreen() {
   };
 
   const friendActivityData = useMemo(() => {
-    const friendPosts = posts.filter(post => 
-      currentUser.following?.includes(post.user.id)
-    );
-
-    const friendReposts = allReposts.filter(repost =>
-      repost && repost.repostedBy && currentUser.following?.includes(repost.repostedBy.id)
-    );
-
-    const allActivity = [
-      ...friendPosts.map(post => ({
-        post,
-        isRepost: false,
-        repostedBy: undefined,
-        timestamp: post.timestamp,
-      })),
-      ...friendReposts.map(repost => ({
-        post: repost.post,
-        isRepost: true,
-        repostedBy: { id: repost.repostedBy.id, displayName: repost.repostedBy.displayName },
-        timestamp: repost.timestamp,
-      })),
-    ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-    return allActivity;
-  }, [posts, allReposts, currentUser.following]);
+    const homeFeed = getHomeFeed();
+    
+    // Filter to only friend activity (posts from followed users)
+    return homeFeed.filter(item => currentUser.following?.includes(item.post.user.id));
+  }, [getHomeFeed, currentUser.following]);
 
   const renderFriendActivity = () => {
     const allActivity = friendActivityData;
@@ -303,14 +283,13 @@ export default function HomeScreen() {
           </>
         ) : allActivity.length > 0 ? (
           allActivity.slice(0, 5).map((item, index) => (
-            <FadeInView key={`${item.post.id}-${item.isRepost ? 'repost' : 'post'}-${index}`} delay={index * 50}>
+            <FadeInView key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} delay={index * 50}>
               <PostCard
                 post={item.post}
                 onLike={() => handleLike(item.post.id)}
                 onRepost={() => handleRepost(item.post.id)}
                 onShare={() => handleShare(item.post.id)}
-                isRepost={item.isRepost}
-                repostedBy={item.repostedBy}
+                repostContext={item.repostContext}
               />
             </FadeInView>
           ))

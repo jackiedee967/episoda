@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
-import { Post } from '@/types';
+import { Post, RepostContext } from '@/types';
 import { Heart, MessageCircle, RefreshCw, AlertTriangle } from 'lucide-react-native';
 import { useData } from '@/contexts/DataContext';
 import StarRatings from '@/components/StarRatings';
@@ -40,11 +40,10 @@ interface PostCardProps {
   onComment?: () => void;
   onRepost?: () => void;
   onShare?: () => void;
-  isRepost?: boolean;
-  repostedBy?: { id: string; displayName: string };
+  repostContext?: RepostContext;
 }
 
-export default function PostCard({ post, onLike, onComment, onRepost, onShare, isRepost, repostedBy }: PostCardProps) {
+export default function PostCard({ post, onLike, onComment, onRepost, onShare, repostContext }: PostCardProps) {
   const router = useRouter();
   const { likePost, unlikePost, repostPost, unrepostPost, getPost, hasUserReposted, posts, currentUser } = useData();
   
@@ -150,6 +149,16 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
 
   return (
     <Pressable style={styles.card} onPress={handlePostPress}>
+      {repostContext && (
+        <View style={styles.repostBanner}>
+          <RefreshCw size={12} color={tokens.colors.grey1} strokeWidth={1.5} />
+          <Text style={styles.repostBannerText}>
+            {repostContext.isSelfRepost 
+              ? `${repostContext.repostedBy.displayName} reposted their own post`
+              : `${repostContext.repostedBy.displayName} reposted`}
+          </Text>
+        </View>
+      )}
       <View style={styles.userPostInfo}>
         <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
           <FadeInImage source={{ uri: getPosterUrl(latestPost.show.poster, latestPost.show.title) }} style={styles.showPoster} contentFit="cover" />
@@ -283,6 +292,17 @@ const styles = StyleSheet.create({
     shadowRadius: 10.9,
     shadowOffset: { width: 0, height: 4 },
     marginBottom: 5,
+  },
+  repostBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  repostBannerText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: tokens.colors.grey1,
   },
   userPostInfo: {
     flexDirection: 'row',
