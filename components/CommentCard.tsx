@@ -12,7 +12,7 @@ interface CommentCardProps {
   comment: Comment;
   depth?: number;
   onLike?: (commentId: string) => void;
-  onReplyStart?: (commentId: string, username: string, textPreview: string) => void;
+  onReplyStart?: (commentId: string, username: string, textPreview: string, depth: number, parentId: string | null) => void;
 }
 
 const MAX_DEPTH = 3;
@@ -69,7 +69,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
   const handleReplyPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const textPreview = comment.text.length > 50 ? comment.text.substring(0, 50) + '...' : comment.text;
-    onReplyStart?.(comment.id, comment.user.displayName, textPreview);
+    onReplyStart?.(comment.id, comment.user.displayName, textPreview, depth, comment.parentId || null);
   };
 
   if (!comment) {

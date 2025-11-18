@@ -458,8 +458,11 @@ export default function PostDetail() {
     }
   };
 
-  const handleReplyStart = (commentId: string, username: string, textPreview: string) => {
-    setReplyingTo({ commentId, username, textPreview });
+  const handleReplyStart = (commentId: string, username: string, textPreview: string, depth: number, parentId: string | null) => {
+    // If replying to a 4th tier comment (depth 3), make it a sibling by using its parent
+    const MAX_DEPTH = 3;
+    const actualParentId = depth >= MAX_DEPTH && parentId ? parentId : commentId;
+    setReplyingTo({ commentId: actualParentId, username, textPreview });
   };
 
   const handleCancelReply = () => {
