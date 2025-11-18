@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
 import { searchShows, TraktShow } from '@/services/trakt';
-import { mapTraktShowToShow } from '@/services/showMappers';
+import { mapTraktShowToShow, mapDatabaseShowToShow } from '@/services/showMappers';
 import { showEnrichmentManager } from '@/services/showEnrichment';
 import { saveShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
@@ -24,6 +24,8 @@ import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import { supabase } from '@/app/integrations/supabase/client';
+import { isTraktHealthy } from '@/services/traktHealth';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -164,15 +166,48 @@ export default function SearchScreen() {
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log(`🔍 Searching Trakt for: "${trimmedQuery}" (page 1, limit 20)`);
+        // Check Trakt health FIRST to avoid slow timeouts
+        const traktHealthy = await isTraktHealthy();
         let response;
         
-        // Try Trakt API first
+        if (!traktHealthy) {
+          // Skip Trakt entirely - go straight to database
+          console.log('⚠️ Trakt API down - using database-only search');
+          const { data: dbShows, error: dbError } = await supabase
+            .from('shows')
+            .select('*')
+            .ilike('title', `%${trimmedQuery}%`)
+            .limit(20);
+          
+          if (dbError || !dbShows || dbShows.length === 0) {
+            setShowSearchError(dbError ? 'Database error occurred' : 'No shows found in database');
+            setIsSearchingShows(false);
+            setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: [] });
+            return;
+          }
+          
+          console.log(`📦 Found ${dbShows.length} shows from database (Trakt unavailable)`);
+          const mappedShows = dbShows.map(dbShow => ({
+            show: mapDatabaseShowToShow(dbShow),
+            traktShow: null
+          }));
+          
+          setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
+          setCurrentPage(1);
+          setTotalPages(1);
+          setHasMore(false);
+          setIsSearchingShows(false);
+          addSearchToHistory(trimmedQuery);
+          return;
+        }
+        
+        // Try Trakt API (only if healthy)
+        console.log(`🔍 Searching Trakt for: "${trimmedQuery}" (page 1, limit 20)`);
         try {
           response = await searchShows(trimmedQuery, { page: 1, limit: 20 });
         } catch (traktError) {
-          // FALLBACK: Search database if Trakt fails
-          console.warn('⚠️ Trakt search failed in Search tab, falling back to database', traktError);
+          // FALLBACK: Search database if Trakt fails despite health check
+          console.warn('⚠️ Trakt search failed, falling back to database', traktError);
           const { data: dbShows, error: dbError } = await supabase
             .from('shows')
             .select('*')
@@ -187,10 +222,9 @@ export default function SearchScreen() {
           }
           
           console.log(`📦 Found ${dbShows.length} shows from database fallback`);
-          const { mapDatabaseShowToShow } = await import('@/services/showMappers');
           const mappedShows = dbShows.map(dbShow => ({
             show: mapDatabaseShowToShow(dbShow),
-            traktShow: null // No Trakt data available
+            traktShow: null
           }));
           
           setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });

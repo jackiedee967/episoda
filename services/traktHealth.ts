@@ -28,12 +28,12 @@ export async function isTraktHealthy(): Promise<boolean> {
   }
 
   try {
-    // Lightweight HEAD request to trending endpoint
+    // Lightweight GET request to trending endpoint (limit=1 for minimal data)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
 
     const response = await fetch(`${TRAKT_BASE_URL}/shows/trending?limit=1`, {
-      method: 'HEAD',
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
@@ -47,7 +47,9 @@ export async function isTraktHealthy(): Promise<boolean> {
     const isHealthy = response.ok;
     healthCache = { isHealthy, lastChecked: Date.now() };
     
-    if (!isHealthy) {
+    if (isHealthy) {
+      console.log('✅ Trakt API health check passed');
+    } else {
       console.warn(`⚠️ Trakt API health check failed: ${response.status} ${response.statusText}`);
     }
 
