@@ -266,6 +266,8 @@ export default function SearchScreen() {
               setTraktShowResults(prevResults => {
                 if (prevResults.query !== trimmedQuery.toLowerCase()) return prevResults;
                 
+                // Update the enriched show in-place without re-sorting
+                // This preserves Trakt's relevance ordering
                 const updatedResults = prevResults.results.map(r => {
                   if (r.traktShow.ids.trakt === traktId) {
                     const enrichedShow = {
@@ -283,17 +285,7 @@ export default function SearchScreen() {
                   return r;
                 });
                 
-                // Sort: shows with posters first, placeholder shows last
-                const sortedResults = updatedResults.sort((a, b) => {
-                  const aHasPoster = !!a.show.poster && !a.show.poster.startsWith('data:image/svg+xml');
-                  const bHasPoster = !!b.show.poster && !b.show.poster.startsWith('data:image/svg+xml');
-                  
-                  if (aHasPoster && !bHasPoster) return -1;
-                  if (!aHasPoster && bHasPoster) return 1;
-                  return 0;
-                });
-                
-                return { ...prevResults, results: sortedResults };
+                return { ...prevResults, results: updatedResults };
               });
             }
           } catch (error) {
