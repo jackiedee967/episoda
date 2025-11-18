@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -129,9 +129,9 @@ export default function PostDetail() {
     loadComments();
   }, [id, currentUser.id, refreshTrigger]);
 
-  // Transform raw comments into recursive tree structure
-  useEffect(() => {
-    if (rawComments.length === 0) return;
+  // Transform raw comments into recursive tree structure using useMemo for performance
+  const transformedComments = useMemo(() => {
+    if (rawComments.length === 0) return [];
     
     // Count likes per comment
     const likesCount = new Map<string, number>();
@@ -198,12 +198,17 @@ export default function PostDetail() {
     
     // Build tree starting from root-level comments
     const topLevelComments = childrenByParent.get('root') || [];
-    const transformedComments: Comment[] = topLevelComments.map(c => buildCommentTree(c));
+    const result: Comment[] = topLevelComments.map(c => buildCommentTree(c));
     
     const totalReplies = rawComments.length - topLevelComments.length;
-    console.log('✅ Loaded', transformedComments.length, 'comments with', totalReplies, 'replies from Supabase');
-    setComments(transformedComments);
+    console.log('✅ Loaded', result.length, 'comments with', totalReplies, 'replies from Supabase');
+    return result;
   }, [rawComments, commentLikesData, userCommentLikes]);
+
+  // Update state when transformed comments change
+  useEffect(() => {
+    setComments(transformedComments);
+  }, [transformedComments]);
 
   // Note: Comment count is updated in submit handlers, not here
   // Removed useEffect that was causing infinite loop
