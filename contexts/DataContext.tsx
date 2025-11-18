@@ -43,6 +43,7 @@ interface DataContextType {
   repostPost: (postId: string) => Promise<void>;
   unrepostPost: (postId: string) => Promise<void>;
   updateCommentCount: (postId: string, count: number) => Promise<void>;
+  deleteComment: (commentId: string) => Promise<void>;
   getPost: (postId: string) => Post | undefined;
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
@@ -1636,6 +1637,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, [isHydrated]);
 
+  const deleteComment = useCallback(async (commentId: string) => {
+    if (!authUserId) {
+      console.error('❌ Cannot delete comment: user not authenticated');
+      return;
+    }
+
+    try {
+      // Soft delete: Set is_deleted to true instead of actually deleting
+      const { error } = await supabase
+        .from('comments')
+        .update({ is_deleted: true })
+        .eq('id', commentId)
+        .eq('user_id', authUserId); // Security: Only allow users to delete their own comments
+
+      if (error) {
+        console.error('❌ Error deleting comment:', error);
+        throw error;
+      }
+
+      console.log('✅ Comment soft-deleted successfully');
+    } catch (error) {
+      console.error('❌ Failed to delete comment:', error);
+      throw error;
+    }
+  }, [authUserId]);
+
   const getPost = useCallback((postId: string): Post | undefined => {
     return posts.find(p => p.id === postId);
   }, [posts]);
@@ -2129,6 +2156,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     repostPost,
     unrepostPost,
     updateCommentCount,
+    deleteComment,
     followUser,
     unfollowUser,
     getFollowers,
@@ -2152,6 +2180,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     repostPost,
     unrepostPost,
     updateCommentCount,
+    deleteComment,
     followUser,
     unfollowUser,
     getFollowers,

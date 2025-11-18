@@ -1,18 +1,21 @@
 
-import React from 'react';
-import { View, Text, StyleSheet, Image, Pressable, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, Pressable, Platform, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Comment } from '@/types';
 import { useRouter } from 'expo-router';
-import { Heart, MessageCircle } from 'lucide-react-native';
+import { Heart, MessageCircle, Trash2 } from 'lucide-react-native';
+import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CommentCardProps {
   comment: Comment;
   depth?: number;
   onLike?: (commentId: string) => void;
   onReplyStart?: (commentId: string, username: string, textPreview: string, depth: number, parentId: string | null) => void;
+  onRefresh?: () => void;
 }
 
 const MAX_DEPTH = 3;
@@ -37,11 +40,16 @@ const getAvatarRadius = (depth: number) => {
   }
 };
 
-export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }: CommentCardProps) {
+export default function CommentCard({ comment, depth = 0, onLike, onReplyStart, onRefresh }: CommentCardProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  const { deleteComment } = useData();
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const avatarSize = getAvatarSize(depth);
   const avatarRadius = getAvatarRadius(depth);
   const leftIndent = depth > 0 ? depth * 8 : 0;
+  const isOwner = user?.id === comment.user.id;
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -70,6 +78,35 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const textPreview = comment.text.length > 50 ? comment.text.substring(0, 50) + '...' : comment.text;
     onReplyStart?.(comment.id, comment.user.displayName, textPreview, depth, comment.parentId || null);
+  };
+
+  const handleDeletePress = () => {
+    if (isDeleting) return;
+
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment? It will be replaced with a placeholder.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              await deleteComment(comment.id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              onRefresh?.();
+            } catch (error) {
+              console.error('Failed to delete comment:', error);
+              Alert.alert('Error', 'Failed to delete comment. Please try again.');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (!comment) {
@@ -104,7 +141,11 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
           <Text style={styles.timestamp}>{formatTimestamp(comment.timestamp)}</Text>
         </View>
 
-        <Text style={styles.text}>{comment.text}</Text>
+        {comment.isDeleted ? (
+          <Text style={styles.deletedText}>[Comment deleted]</Text>
+        ) : (
+          <Text style={styles.text}>{comment.text}</Text>
+        )}
 
         {comment.image && (
           <View style={styles.commentImageContainer}>
@@ -125,31 +166,47 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
           </View>
         )}
 
-        <View style={styles.actions}>
-          <Pressable
-            style={styles.actionButton}
-            onPress={handleLikePress}
-          >
-            <Heart
-              size={9}
-              color={comment.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
-              fill={comment.isLiked ? tokens.colors.greenHighlight : 'none'}
-              strokeWidth={1.5}
-            />
-            <Text style={styles.actionText}>{comment.likes}</Text>
-          </Pressable>
+        {!comment.isDeleted && (
+          <View style={styles.actions}>
+            <Pressable
+              style={styles.actionButton}
+              onPress={handleLikePress}
+            >
+              <Heart
+                size={9}
+                color={comment.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                fill={comment.isLiked ? tokens.colors.greenHighlight : 'none'}
+                strokeWidth={1.5}
+              />
+              <Text style={styles.actionText}>{comment.likes}</Text>
+            </Pressable>
 
-          <Pressable
-            style={styles.actionButton}
-            onPress={handleReplyPress}
-          >
-            <MessageCircle
-              size={9}
-              color={tokens.colors.grey1}
-              strokeWidth={1.5}
-            />
-          </Pressable>
-        </View>
+            <Pressable
+              style={styles.actionButton}
+              onPress={handleReplyPress}
+            >
+              <MessageCircle
+                size={9}
+                color={tokens.colors.grey1}
+                strokeWidth={1.5}
+              />
+            </Pressable>
+
+            {isOwner && (
+              <Pressable
+                style={styles.actionButton}
+                onPress={handleDeletePress}
+                disabled={isDeleting}
+              >
+                <Trash2
+                  size={9}
+                  color={tokens.colors.grey1}
+                  strokeWidth={1.5}
+                />
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {/* Nested Replies - Recursive rendering up to MAX_DEPTH */}
         {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH && (
@@ -161,6 +218,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
                 depth={depth + 1}
                 onLike={onLike}
                 onReplyStart={onReplyStart}
+                onRefresh={onRefresh}
               />
             ))}
           </View>
@@ -214,6 +272,12 @@ const styles = StyleSheet.create({
   text: {
     ...tokens.typography.p3R,
     color: tokens.colors.pureWhite,
+    marginBottom: 8,
+  },
+  deletedText: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.grey1,
+    fontStyle: 'italic',
     marginBottom: 8,
   },
   commentImageContainer: {

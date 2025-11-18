@@ -64,6 +64,7 @@ export default function PostDetail() {
   const [commentLikesData, setCommentLikesData] = useState<any[]>([]);
   const [userCommentLikes, setUserCommentLikes] = useState<Set<string>>(new Set());
   const [isLoadingComments, setIsLoadingComments] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   useEffect(() => {
     const loadComments = async () => {
@@ -113,7 +114,7 @@ export default function PostDetail() {
     };
 
     loadComments();
-  }, [id, currentUser.id]);
+  }, [id, currentUser.id, refreshTrigger]);
 
   // Transform raw comments into recursive tree structure
   useEffect(() => {
@@ -166,6 +167,7 @@ export default function PostDetail() {
         isLiked: userCommentLikes.has(commentData.id),
         timestamp: new Date(commentData.created_at),
         replies: replies,
+        isDeleted: commentData.is_deleted || false,
       };
     };
     
@@ -441,6 +443,10 @@ export default function PostDetail() {
       }
     }
     return null;
+  };
+
+  const refreshComments = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleCommentLike = async (commentId: string) => {
@@ -735,6 +741,7 @@ export default function PostDetail() {
                       comment={comment}
                       onLike={handleCommentLike}
                       onReplyStart={handleReplyStart}
+                      onRefresh={refreshComments}
                     />
                   </FadeInView>
                 ))

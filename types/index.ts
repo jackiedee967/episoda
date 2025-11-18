@@ -55,6 +55,7 @@ export interface Comment {
   timestamp: Date;
   replies: Comment[];
   depth?: number;
+  isDeleted?: boolean;
 }
 
 export interface Post {
