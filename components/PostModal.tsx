@@ -1022,23 +1022,26 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         if (selectedEpisodes.length > 0 && dbShow) {
           const validationErrors: string[] = [];
           
+          // Validate episodes - check if we have data from EITHER Trakt OR ShowHub
           for (const episode of selectedEpisodes) {
             const episodeKey = getEpisodeKey(episode);
             const traktEpisode = traktEpisodesMap.get(episodeKey);
             
-            if (!traktEpisode) {
-              validationErrors.push(`Missing data for ${episode.title}`);
-              continue;
-            }
-
-            if (!traktEpisode.season || !traktEpisode.number || !traktEpisode.title || !traktEpisode.ids?.trakt) {
-              validationErrors.push(`Incomplete metadata for ${episode.title} (S${episode.seasonNumber}E${episode.episodeNumber})`);
+            // If Trakt data available, validate it
+            if (traktEpisode) {
+              if (!traktEpisode.season || !traktEpisode.number || !traktEpisode.title || !traktEpisode.ids?.trakt) {
+                validationErrors.push(`Incomplete metadata for ${episode.title} (S${episode.seasonNumber}E${episode.episodeNumber})`);
+              }
+            } else {
+              // No Trakt data - check if ShowHub episode has required fields
+              if (!episode.seasonNumber || !episode.episodeNumber || !episode.title) {
+                validationErrors.push(`Missing data for ${episode.title}`);
+              }
             }
           }
 
-          console.log("❌ EPISODE VALIDATION FAILED - BLOCKING POST", validationErrors);
           if (validationErrors.length > 0) {
-            console.error('Episode validation failed:', validationErrors);
+            console.error('❌ Episode validation failed:', validationErrors);
             Alert.alert(
               'Episode Data Incomplete',
               `Cannot post due to missing episode information:\n${validationErrors.join('\n')}\n\nThis may happen with specials or unaired episodes. Please try selecting different episodes.`,
@@ -1047,30 +1050,76 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             setIsPosting(false);
             return;
           }
+          
+          console.log("✅ Episode validation passed - using", traktEpisodesMap.size > 0 ? "Trakt data" : "ShowHub data");
 
           const savedEpisodes = await Promise.allSettled(
             selectedEpisodes.map(async (episode) => {
               const episodeKey = getEpisodeKey(episode);
               const traktEpisode = traktEpisodesMap.get(episodeKey);
               
-              if (!traktEpisode) {
-                console.error('❌ Missing Trakt episode data for:', episodeKey);
-                throw new Error(`Missing episode data for ${episode.title}`);
-              }
-
-              const dbEpisode = await saveEpisode(
-                dbShow!.id,
-                dbShow!.tvmaze_id,
-                {
-                  ids: traktEpisode.ids,
-                  season: traktEpisode.season,
-                  number: traktEpisode.number,
-                  title: traktEpisode.title,
-                  overview: traktEpisode.overview || '',
-                  rating: traktEpisode.rating || 0,
+              // Use Trakt data if available, otherwise use ShowHub episode data
+              if (traktEpisode) {
+                // Full Trakt data available - use it for complete metadata
+                const dbEpisode = await saveEpisode(
+                  dbShow!.id,
+                  dbShow!.tvmaze_id,
+                  {
+                    ids: traktEpisode.ids,
+                    season: traktEpisode.season,
+                    number: traktEpisode.number,
+                    title: traktEpisode.title,
+                    overview: traktEpisode.overview || '',
+                    rating: traktEpisode.rating || 0,
+                  }
+                );
+                return dbEpisode;
+              } else {
+                // Trakt unavailable - use ShowHub episode data
+                console.log('⚠️ Using ShowHub data for episode:', episode.title);
+                
+                // First, check if episode is already in database
+                const { getEpisodesByShowId } = await import('@/services/showDatabase');
+                const dbEpisodes = await getEpisodesByShowId(dbShow!.id);
+                const matchingEpisode = dbEpisodes.find(
+                  ep => ep.season_number === episode.seasonNumber && ep.episode_number === episode.episodeNumber
+                );
+                
+                if (matchingEpisode) {
+                  console.log('✅ Episode already in database, reusing');
+                  return matchingEpisode;
                 }
-              );
-              return dbEpisode;
+                
+                // Episode not in database - save it using ShowHub data
+                console.log('💾 Saving new episode from ShowHub data');
+                
+                // Generate collision-free episode ID using larger bases
+                // Formula: showTraktId * 100000000 + season * 10000 + episode
+                // This supports seasons up to 9999 and episodes up to 9999
+                // Example: Show 12345, S1E101 → 1234500010101 | S2E1 → 1234500020001 (no collision!)
+                const uniqueEpisodeId = dbShow!.trakt_id 
+                  ? dbShow!.trakt_id * 100000000 + episode.seasonNumber * 10000 + episode.episodeNumber
+                  : Math.floor(Math.random() * 1000000000); // Fallback to random for safety
+                
+                const dbEpisode = await saveEpisode(
+                  dbShow!.id,
+                  dbShow!.tvmaze_id,
+                  {
+                    ids: {
+                      trakt: uniqueEpisodeId,
+                      tvdb: null,
+                      imdb: null,
+                      tmdb: null,
+                    },
+                    season: episode.seasonNumber,
+                    number: episode.episodeNumber,
+                    title: episode.title,
+                    overview: episode.description || '',
+                    rating: episode.rating || 0,
+                  }
+                );
+                return dbEpisode;
+              }
             })
           );
 
