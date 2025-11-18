@@ -977,6 +977,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const showsMap = new Map();
         (showsResult.data || []).forEach((show: any) => {
+          console.log('📺 Show from DB:', { id: show.id, title: show.title, trakt_id: show.trakt_id, color_scheme: show.color_scheme });
           showsMap.set(show.id, show);
         });
 
@@ -1028,6 +1029,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
           const showData = showsMap.get(dbPost.show_id);
           
+          if (!showData) {
+            console.log('⚠️ Post missing show data:', { postId: dbPost.id, showId: dbPost.show_id, showTitle: dbPost.show_title });
+          } else if (!showData.trakt_id) {
+            console.log('⚠️ Show missing trakt_id:', { showId: showData.id, showTitle: showData.title, hasColorScheme: !!showData.color_scheme });
+          }
+          
           // Map episode IDs to episodes in original order
           const episodes = (dbPost.episode_ids || [])
             .map((id: string) => episodesMap.get(id))
@@ -1046,6 +1053,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
               totalSeasons: showData?.total_seasons || 0,
               totalEpisodes: showData?.total_episodes || 0,
               friendsWatching: 0,
+              traktId: showData?.trakt_id,
+              colorScheme: showData?.color_scheme || null,
             },
             episodes: episodes.length > 0 ? episodes : undefined,
             episode: episodes.length > 0 ? episodes[0] : undefined,
