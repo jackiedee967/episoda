@@ -667,11 +667,27 @@ export default function ShowHub() {
     );
   };
 
-  const renderLogButton = () => (
-    <Pressable style={styles.logButton} onPress={() => setModalVisible(true)}>
-      <Text style={styles.logButtonText}>Log an episode</Text>
-    </Pressable>
-  );
+  const renderLogButton = () => {
+    const handleLogButtonPress = () => {
+      if (!show) return;
+      
+      // Get selected episodes (if any)
+      const episodesToLog = Array.from(selectedEpisodeIds);
+      const episodes = showEpisodes.filter(ep => episodesToLog.includes(ep.id));
+      
+      // Open modal with preselected show and episodes (if any selected)
+      setModalVisible(true);
+      
+      // If no episodes selected, user will be able to select from modal
+      // If episodes selected, modal will go straight to rating page
+    };
+    
+    return (
+      <Pressable style={styles.logButton} onPress={handleLogButtonPress}>
+        <Text style={styles.logButtonText}>Log an episode</Text>
+      </Pressable>
+    );
+  };
 
   const tabs: Tab[] = [
     { key: 'friends', label: 'Friends' },

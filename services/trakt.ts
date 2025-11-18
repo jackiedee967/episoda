@@ -64,7 +64,7 @@ export interface TraktEpisode {
   number: number;
   title: string;
   ids: {
-    trakt: number;
+    trakt: number | null;
     tvdb: number | null;
     imdb: string | null;
     tmdb: number | null;

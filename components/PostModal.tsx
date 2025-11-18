@@ -1249,31 +1249,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               // Episode not in database - save it using ShowHub data
               console.log('💾 Saving new episode from ShowHub data');
               
-              // Generate collision-free episode ID using trakt_id OR show UUID
-              let uniqueEpisodeId: number;
-              if (currentDbShow.trakt_id) {
-                // Use trakt_id-based formula: showTraktId * 100000000 + season * 10000 + episode
-                uniqueEpisodeId = currentDbShow.trakt_id * 100000000 + episode.seasonNumber * 10000 + episode.episodeNumber;
-              } else {
-                // Fallback: Hash show UUID + season + episode to generate unique ID
-                const showUuid = currentDbShow.id;
-                const episodeKey = `${showUuid}-S${episode.seasonNumber}E${episode.episodeNumber}`;
-                // Simple hash function to convert string to number
-                let hash = 0;
-                for (let i = 0; i < episodeKey.length; i++) {
-                  const char = episodeKey.charCodeAt(i);
-                  hash = ((hash << 5) - hash) + char;
-                  hash = hash & hash; // Convert to 32bit integer
-                }
-                uniqueEpisodeId = Math.abs(hash);
-              }
-              
               const dbEpisode = await saveEpisode(
                 currentDbShow.id,
                 currentDbShow.tvmaze_id,
                 {
                   ids: {
-                    trakt: uniqueEpisodeId,
+                    trakt: null,
                     tvdb: null,
                     imdb: null,
                     tmdb: null,
