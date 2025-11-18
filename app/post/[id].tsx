@@ -84,21 +84,24 @@ export default function PostDetail() {
           return;
         }
 
-        if (commentsData) {
+        setRawComments(commentsData || []);
+        
+        if (commentsData && commentsData.length > 0) {
           console.log('📝 Fetched', commentsData.length, 'comments and replies from Supabase for post:', id);
-          setRawComments(commentsData);
           
-          // Fetch comment likes for all comments
+          // Fetch comment likes in parallel (both total likes and user's likes)
           const commentIds = commentsData.map((c: any) => c.id);
-          if (commentIds.length > 0) {
-            const [likesResult, userLikesResult] = await Promise.all([
-              supabase.from('comment_likes').select('comment_id').in('comment_id', commentIds),
-              supabase.from('comment_likes').select('comment_id').eq('user_id', currentUser.id).in('comment_id', commentIds),
-            ]);
-            
-            setCommentLikesData(likesResult.data || []);
-            setUserCommentLikes(new Set((userLikesResult.data || []).map((like: any) => like.comment_id)));
-          }
+          const [likesResult, userLikesResult] = await Promise.all([
+            supabase.from('comment_likes').select('comment_id').in('comment_id', commentIds),
+            supabase.from('comment_likes').select('comment_id').eq('user_id', currentUser.id).in('comment_id', commentIds),
+          ]);
+          
+          setCommentLikesData(likesResult.data || []);
+          setUserCommentLikes(new Set((userLikesResult.data || []).map((like: any) => like.comment_id)));
+        } else {
+          console.log('📝 No comments yet for post:', id);
+          setCommentLikesData([]);
+          setUserCommentLikes(new Set());
         }
       } catch (error: any) {
         console.error('❌ Error loading comments:', error);
@@ -273,6 +276,23 @@ export default function PostDetail() {
         replies: [...(comment.replies || []), newReply],
       })));
       
+      // Update rawComments for accurate count
+      const newRawComment = {
+        id: tempId,
+        post_id: post.id,
+        user_id: currentUser.id,
+        comment_text: commentText,
+        parent_comment_id: replyingTo.commentId,
+        image_url: commentImage || null,
+        created_at: new Date().toISOString(),
+      };
+      let newTotalCount = 0;
+      setRawComments(prev => {
+        const updated = [...prev, newRawComment];
+        newTotalCount = updated.length;
+        return updated;
+      });
+      
       // Save reply to Supabase
       try {
         const { data, error } = await supabase
@@ -289,11 +309,12 @@ export default function PostDetail() {
 
         if (error) {
           console.error('❌ FAILED TO SAVE REPLY TO SUPABASE:', error);
-          // Revert optimistic update
+          // Revert optimistic updates
           setComments(prev => findAndUpdateComment(prev, replyingTo.commentId, (comment) => ({
             ...comment,
             replies: (comment.replies || []).filter(r => r.id !== tempId),
           })));
+          setRawComments(prev => prev.filter(c => c.id !== tempId));
         } else if (data) {
           console.log('✅ Reply saved to Supabase:', data.id);
           // Update reply with real ID from Supabase
@@ -303,9 +324,12 @@ export default function PostDetail() {
               r.id === tempId ? { ...r, id: data.id } : r
             ),
           })));
+          setRawComments(prev => prev.map(c => 
+            c.id === tempId ? { ...c, id: data.id } : c
+          ));
           
           // Update post comment count (replies count as comments)
-          updateCommentCount(post.id, comments.length + 1);
+          updateCommentCount(post.id, newTotalCount);
         }
       } catch (error) {
         console.error('Error saving reply:', error);
@@ -329,6 +353,23 @@ export default function PostDetail() {
 
       // Optimistically update UI
       setComments([...comments, newComment]);
+      
+      // Update rawComments for accurate count
+      const newRawComment = {
+        id: tempId,
+        post_id: post.id,
+        user_id: currentUser.id,
+        comment_text: commentText,
+        parent_comment_id: null,
+        image_url: commentImage || null,
+        created_at: new Date().toISOString(),
+      };
+      let newTotalCount = 0;
+      setRawComments(prev => {
+        const updated = [...prev, newRawComment];
+        newTotalCount = updated.length;
+        return updated;
+      });
 
       // Save to Supabase
       try {
@@ -345,16 +386,21 @@ export default function PostDetail() {
 
         if (error) {
           console.error('❌ FAILED TO SAVE COMMENT TO SUPABASE:', error);
-          // TODO: Show error to user and remove optimistic comment
+          // Revert optimistic updates
+          setComments(prev => prev.filter(c => c.id !== tempId));
+          setRawComments(prev => prev.filter(c => c.id !== tempId));
         } else if (data) {
           console.log('✅ Comment saved to Supabase:', data.id);
           // Update comment with real ID from Supabase
           setComments(prev => prev.map(c => 
             c.id === tempId ? { ...c, id: data.id } : c
           ));
+          setRawComments(prev => prev.map(c => 
+            c.id === tempId ? { ...c, id: data.id } : c
+          ));
           
           // Update post comment count
-          updateCommentCount(post.id, comments.length + 1);
+          updateCommentCount(post.id, newTotalCount);
         }
       } catch (error) {
         console.error('Error saving comment:', error);
@@ -657,7 +703,7 @@ export default function PostDetail() {
 
                 <View style={styles.engagementButton}>
                   <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
-                  <Text style={styles.engagementText}>{comments.length}</Text>
+                  <Text style={styles.engagementText}>{rawComments.length}</Text>
                 </View>
 
                 <Pressable onPress={handleRepost} style={styles.engagementButton}>
@@ -672,7 +718,7 @@ export default function PostDetail() {
             </View>
 
             {/* Comments Title */}
-            <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
+            <Text style={styles.commentsTitle}>Comments ({rawComments.length})</Text>
 
             {/* Comments - No background */}
             <View style={styles.commentsContainer}>
