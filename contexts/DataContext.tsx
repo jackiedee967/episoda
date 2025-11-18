@@ -262,8 +262,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const lastRecommendationFetchRef = useRef<number | null>(null);
   const [lastRecommendationFetch, setLastRecommendationFetch] = useState<number | null>(null);
   const hasPreloadedForUserRef = useRef<string | null>(null);
+  const currentAuthUserIdRef = useRef<string | null>(null); // Ref for cross-user contamination check
 
-  const loadRecommendations = useCallback(async (options: { force?: boolean } = {}) => {
+  const loadRecommendations = useCallback(async (options: { force?: boolean; userId?: string } = {}) => {
     // Skip if we already have a fresh fetch (regardless of result count) - unless forced
     if (!options.force && lastRecommendationFetchRef.current) {
       const age = Date.now() - lastRecommendationFetchRef.current;
@@ -279,8 +280,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return loadRecommendationsRef.current;
     }
 
-    // Capture requesting user ID to prevent cross-user contamination
-    const requestUserId = authUserId;
+    // Use provided userId or fall back to authUserId
+    const requestUserId = options.userId || authUserId;
 
     const loadPromise = (async () => {
       try {
@@ -294,10 +295,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (!requestUserId) {
           console.warn('Cannot load recommendations: no authenticated user');
-          // Set timestamp to prevent retry spam
-          const timestamp = Date.now();
-          setLastRecommendationFetch(timestamp);
-          lastRecommendationFetchRef.current = timestamp;
+          // DON'T set timestamp when userId is missing - this would prevent future loads
           return;
         }
 
@@ -363,9 +361,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         const validShows = convertedShows.filter(s => s !== null);
         
-        // Guard: only commit state if requester is still the current user (prevent cross-user contamination)
-        if (authUserId !== requestUserId) {
-          console.warn('⚠️ User changed during recommendation fetch (was:', requestUserId, 'now:', authUserId, '), discarding results');
+        // CRITICAL SECURITY: Prevent cross-user contamination - only commit if requester is still the current user
+        if (currentAuthUserIdRef.current !== requestUserId) {
+          console.warn('⚠️ User changed during recommendation fetch (was:', requestUserId, 'now:', currentAuthUserIdRef.current, '), discarding results');
           return;
         }
         
@@ -384,8 +382,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('❌ Failed to load recommendations:', error);
-        // Only commit error state if requester is still the current user
-        if (authUserId === requestUserId) {
+        // Only reset cache on error if requester is still the current user
+        if (currentAuthUserIdRef.current === requestUserId) {
           setCachedRecommendations([]);
           setLastRecommendationFetch(null);
           lastRecommendationFetchRef.current = null;
@@ -476,12 +474,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (user) {
       console.log('✅ User authenticated - loading real profile data:', user.id);
       setAuthUserId(user.id);
+      currentAuthUserIdRef.current = user.id; // Update ref immediately for contamination check
       loadCurrentUserProfile(user.id);
       loadFollowDataFromSupabase(user.id);
-      loadRecommendations(); // Preload recommendations in background
+      loadRecommendations({ userId: user.id }); // Pass user.id directly to avoid race condition
     } else {
       console.log('⚠️ User signed out - clearing all data');
       setAuthUserId(null);
+      currentAuthUserIdRef.current = null; // Clear ref immediately
       setCurrentUserData(EMPTY_USER);
       setUserData({
         following: [],

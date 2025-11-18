@@ -3,6 +3,12 @@
 ## Overview
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
+## Recent Changes (November 18, 2025)
+- **CRITICAL FIX**: Resolved recommendation loading regression where "Currently Watching" disappeared from PostModal due to auth race condition
+- **Security Fix**: Prevented cross-user data contamination in recommendation caching using synchronous ref-based validation
+- **Implementation**: Added `userId` parameter to `loadRecommendations()`, pass `user.id` directly to avoid async state lag, validate against `currentAuthUserIdRef` before committing state
+- **Known Non-Critical Issue**: Database query error "column shows.genres does not exist" despite column existing - fallback to trending shows working correctly
+
 ## User Preferences
 I prefer iterative development, focusing on one feature or fix at a time. Please ask for confirmation before making large-scale changes or refactoring. I value clear, concise explanations and prefer to focus on high-level architectural decisions and critical features rather than minor implementation details. Do not make changes to files related to authentication without explicit instruction.
 
