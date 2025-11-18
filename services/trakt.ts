@@ -110,7 +110,10 @@ export async function searchShows(
     );
 
     if (!response.ok) {
-      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
     }
 
     const data: TraktSearchResult[] = await response.json();
@@ -126,8 +129,9 @@ export async function searchShows(
     
     return { results: data, pagination };
   } catch (error) {
-    console.error('❌ Error searching shows on Trakt:', error);
-    throw error;
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error searching shows';
+    console.error('❌ Error searching shows on Trakt:', errorMsg);
+    throw new Error(errorMsg);
   }
 }
 
@@ -143,14 +147,18 @@ export async function getShowDetails(traktId: number | string): Promise<TraktSho
     );
 
     if (!response.ok) {
-      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
     }
 
     const data: TraktShow = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching show details from Trakt:', error);
-    throw error;
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching show details';
+    console.error('❌ Error fetching show details from Trakt:', errorMsg);
+    throw new Error(errorMsg);
   }
 }
 
@@ -168,7 +176,8 @@ export async function getShowSeasons(traktId: number | string): Promise<TraktSea
     );
 
     if (!response.ok) {
-      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}`;
+      const errorText = await response.text();
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
       console.error('❌', errorMsg);
       throw new Error(errorMsg);
     }
@@ -178,7 +187,7 @@ export async function getShowSeasons(traktId: number | string): Promise<TraktSea
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching seasons';
     console.error('❌ Error fetching show seasons from Trakt:', errorMsg);
-    throw error;
+    throw new Error(errorMsg);
   }
 }
 
@@ -199,7 +208,8 @@ export async function getSeasonEpisodes(
     );
 
     if (!response.ok) {
-      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}`;
+      const errorText = await response.text();
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
       console.error('❌', errorMsg);
       throw new Error(errorMsg);
     }
@@ -209,7 +219,7 @@ export async function getSeasonEpisodes(
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching episodes';
     console.error('❌ Error fetching season episodes from Trakt:', errorMsg);
-    throw error;
+    throw new Error(errorMsg);
   }
 }
 
