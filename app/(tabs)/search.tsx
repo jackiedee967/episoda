@@ -164,7 +164,43 @@ export default function SearchScreen() {
 
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const response = await searchShows(trimmedQuery, { page: 1, limit: 20 });
+        console.log(`🔍 Searching Trakt for: "${trimmedQuery}" (page 1, limit 20)`);
+        let response;
+        
+        // Try Trakt API first
+        try {
+          response = await searchShows(trimmedQuery, { page: 1, limit: 20 });
+        } catch (traktError) {
+          // FALLBACK: Search database if Trakt fails
+          console.warn('⚠️ Trakt search failed in Search tab, falling back to database', traktError);
+          const { data: dbShows, error: dbError } = await supabase
+            .from('shows')
+            .select('*')
+            .ilike('title', `%${trimmedQuery}%`)
+            .limit(20);
+          
+          if (dbError || !dbShows || dbShows.length === 0) {
+            setShowSearchError('Search unavailable. Trakt API is currently down.');
+            setIsSearchingShows(false);
+            setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: [] });
+            return;
+          }
+          
+          console.log(`📦 Found ${dbShows.length} shows from database fallback`);
+          const { mapDatabaseShowToShow } = await import('@/services/showMappers');
+          const mappedShows = dbShows.map(dbShow => ({
+            show: mapDatabaseShowToShow(dbShow),
+            traktShow: null // No Trakt data available
+          }));
+          
+          setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
+          setCurrentPage(1);
+          setTotalPages(1);
+          setHasMore(false);
+          setIsSearchingShows(false);
+          addSearchToHistory(trimmedQuery);
+          return;
+        }
         
         if (searchRequestTokenRef.current !== requestToken) {
           return;

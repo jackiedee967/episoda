@@ -294,6 +294,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (!requestUserId) {
           console.warn('Cannot load recommendations: no authenticated user');
+          // Set timestamp to prevent retry spam
+          const timestamp = Date.now();
+          setLastRecommendationFetch(timestamp);
+          lastRecommendationFetchRef.current = timestamp;
           return;
         }
 

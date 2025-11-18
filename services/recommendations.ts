@@ -75,11 +75,12 @@ export async function getRecentlyLoggedShows(
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('❌ Error fetching posts:', error);
+      console.warn('⚠️ Database error fetching posts (non-critical):', error.message || error);
       return [];
     }
 
     if (!posts || posts.length === 0) {
+      console.log('ℹ️ No posts found for user');
       return [];
     }
 
@@ -109,11 +110,12 @@ export async function getRecentlyLoggedShows(
       .in('id', showIds);
 
     if (showsError) {
-      console.error('❌ Error fetching shows:', showsError);
+      console.warn('⚠️ Database error fetching shows (non-critical):', showsError.message || showsError);
       return [];
     }
 
     if (!shows || shows.length === 0) {
+      console.log('ℹ️ No shows found in database');
       return [];
     }
 
@@ -133,8 +135,8 @@ export async function getRecentlyLoggedShows(
     console.log(`✅ Found ${recentShows.length} recently logged shows`);
     return recentShows;
   } catch (error) {
-    console.error('❌ Error in getRecentlyLoggedShows:', error);
-    return [];
+    console.warn('⚠️ Unexpected error in getRecentlyLoggedShows (non-critical):', error instanceof Error ? error.message : String(error));
+    return []; // Always return empty array, never throw
   }
 }
 
@@ -251,14 +253,16 @@ export async function getGenreBasedRecommendations(
  * Get combined show recommendations for a user
  * Returns recently logged shows first, then interest-based recommendations
  * Up to maxShows total (default 12)
+ * CRITICAL: Always returns recently logged shows even if Trakt API fails
  */
 export async function getCombinedRecommendations(
   userId: string,
   maxShows: number = 12
 ): Promise<RecommendedShow[]> {
   try {
-    // 1. Get recently logged shows (already DatabaseShow[])
+    // 1. Get recently logged shows (already DatabaseShow[]) - ALWAYS fetch this
     const recentlyLogged = await getRecentlyLoggedShows(userId, maxShows);
+    console.log(`✅ Fetched ${recentlyLogged.length} recently logged shows for recommendations`);
     
     // 2. If we have enough recent shows, normalize and return them
     if (recentlyLogged.length >= maxShows) {
@@ -267,23 +271,35 @@ export async function getCombinedRecommendations(
         .map(databaseShowToRecommendedShow);
     }
 
-    // 3. Get user's genre interests
-    const genres = await getUserGenreInterests(userId);
+    // 3. Try to get user's genre interests (may fail)
+    let genres: string[] = [];
+    try {
+      genres = await getUserGenreInterests(userId);
+    } catch (error) {
+      console.warn('⚠️ Failed to get genre interests, will use trending shows', error);
+    }
 
-    // 4. Get genre-based recommendations to fill remaining slots
+    // 4. Try to get genre-based or trending recommendations to fill remaining slots
     const remainingSlots = maxShows - recentlyLogged.length;
     
     let traktRecommendations: TraktShow[] = [];
-    if (genres.length > 0) {
-      traktRecommendations = await getGenreBasedRecommendations(genres, remainingSlots * 2);
-    } else {
-      // Fallback to trending shows if no genre interests
-      console.log('ℹ️ No genre interests, using trending shows as fallback');
-      traktRecommendations = await getTrendingShows(remainingSlots * 2);
+    try {
+      if (genres.length > 0) {
+        traktRecommendations = await getGenreBasedRecommendations(genres, remainingSlots * 2);
+      } else {
+        // Fallback to trending shows if no genre interests
+        console.log('ℹ️ No genre interests, using trending shows as fallback');
+        traktRecommendations = await getTrendingShows(remainingSlots * 2);
+      }
+    } catch (error) {
+      // CRITICAL: If Trakt fails, we still return recently logged shows
+      console.warn('⚠️ Trakt API failed, returning recently logged shows only', error);
+      const normalizedRecent = recentlyLogged.map(databaseShowToRecommendedShow);
+      console.log(`✅ Fetched ${normalizedRecent.length} raw recommendations for caching (database only - API unavailable)`);
+      return normalizedRecent;
     }
 
     // 5. Filter out shows the user has already logged (dedupe by trakt_id)
-    // Both sides use numeric Trakt IDs, so Set.has() works correctly
     const loggedTraktIds = new Set(recentlyLogged.map(show => show.trakt_id));
     const filteredRecommendations = traktRecommendations
       .filter(traktShow => !loggedTraktIds.has(traktShow.ids.trakt))
@@ -298,10 +314,19 @@ export async function getCombinedRecommendations(
       ...normalizedRecommendations
     ];
     
-    console.log(`✅ Combined recommendations: ${normalizedRecent.length} recent + ${normalizedRecommendations.length} interest-based`);
+    console.log(`✅ Fetched ${combined.length} raw recommendations for caching (${normalizedRecent.length} recent + ${normalizedRecommendations.length} from API)`);
     return combined;
   } catch (error) {
-    console.error('❌ Error in getCombinedRecommendations:', error);
-    return [];
+    console.error('❌ Critical error in getCombinedRecommendations:', error);
+    // Last resort: try to return recently logged shows only
+    try {
+      const recentlyLogged = await getRecentlyLoggedShows(userId, maxShows);
+      const normalized = recentlyLogged.map(databaseShowToRecommendedShow);
+      console.log(`⚠️ Returning ${normalized.length} recently logged shows as emergency fallback`);
+      return normalized;
+    } catch (fallbackError) {
+      console.error('❌ Even fallback failed:', fallbackError);
+      return [];
+    }
   }
 }

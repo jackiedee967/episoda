@@ -475,12 +475,46 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         console.log(`🔍 Searching for: "${searchQuery}"`);
-        const searchResponse = await searchShows(searchQuery);
-        const traktShows = searchResponse.results.map(r => r.show);
         
-        console.log(`✅ Found ${traktShows.length} shows from Trakt`);
+        // Try Trakt API first
+        let traktShows: any[] = [];
+        try {
+          const searchResponse = await searchShows(searchQuery);
+          traktShows = searchResponse.results.map(r => r.show);
+          console.log(`✅ Found ${traktShows.length} shows from Trakt`);
+        } catch (traktError) {
+          // FALLBACK: Search database if Trakt fails
+          console.warn('⚠️ Trakt search failed, falling back to database search', traktError);
+          const { data: dbShows, error: dbError } = await supabase
+            .from('shows')
+            .select('*')
+            .ilike('title', `%${searchQuery}%`)
+            .limit(20);
+          
+          if (dbError) {
+            throw new Error('Both Trakt and database search failed');
+          }
+          
+          if (dbShows && dbShows.length > 0) {
+            console.log(`📦 Found ${dbShows.length} shows from database fallback`);
+            const { mapDatabaseShowToShow } = await import('@/services/showMappers');
+            const mappedShows = dbShows.map(dbShow => ({
+              show: mapDatabaseShowToShow(dbShow),
+              traktShow: null // No Trakt data available
+            }));
+            setShowSearchResults(mappedShows);
+            setIsSearching(false);
+            return;
+          } else {
+            // No results from database either
+            setShowSearchResults([]);
+            setIsSearching(false);
+            setSearchError('No shows found. Trakt API is currently unavailable.');
+            return;
+          }
+        }
         
-        // Handle empty results early
+        // Handle empty Trakt results
         if (traktShows.length === 0) {
           setShowSearchResults([]);
           setIsSearching(false);
