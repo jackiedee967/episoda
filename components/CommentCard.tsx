@@ -80,33 +80,42 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart, 
     onReplyStart?.(comment.id, comment.user.displayName, textPreview, depth, comment.parentId || null);
   };
 
-  const handleDeletePress = () => {
+  const handleDeletePress = async () => {
     if (isDeleting) return;
 
-    Alert.alert(
-      'Delete Comment',
-      'Are you sure you want to delete this comment? It will be replaced with a placeholder.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsDeleting(true);
-              await deleteComment(comment.id);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              onRefresh?.();
-            } catch (error) {
-              console.error('Failed to delete comment:', error);
-              Alert.alert('Error', 'Failed to delete comment. Please try again.');
-            } finally {
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+    const confirmDelete = Platform.OS === 'web' 
+      ? window.confirm('Are you sure you want to delete this comment? It will be replaced with a placeholder.')
+      : await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Delete Comment',
+            'Are you sure you want to delete this comment? It will be replaced with a placeholder.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Delete', style: 'destructive', onPress: () => resolve(true) },
+            ],
+            { cancelable: true, onDismiss: () => resolve(false) }
+          );
+        });
+
+    if (!confirmDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteComment(comment.id);
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      onRefresh?.();
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Failed to delete comment. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to delete comment. Please try again.');
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (!comment) {
