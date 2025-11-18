@@ -118,12 +118,12 @@ export async function saveShow(
 
   if (error) {
     console.error('❌ Upsert error:', error);
-    if (error.message?.includes('genres')) {
-      console.warn('⚠️ Genres column cache issue - retrying without genres...');
-      const { genres, ...showDataWithoutGenres } = showData;
+    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.code === 'PGRST204') {
+      console.warn('⚠️ Schema cache issue detected - retrying without problematic columns...');
+      const { genres, color_scheme, ...minimalShowData } = showData;
       const { data: retryData, error: retryError } = await supabase
         .from('shows')
-        .upsert(showDataWithoutGenres, {
+        .upsert(minimalShowData, {
           onConflict: 'trakt_id',
           ignoreDuplicates: false
         })
@@ -134,7 +134,7 @@ export async function saveShow(
         console.error('❌ Retry failed:', retryError);
         throw retryError;
       }
-      console.log('✅ saveShow COMPLETE (without genres), ID:', retryData.id);
+      console.log('✅ saveShow COMPLETE (without cache-problematic columns), ID:', retryData.id);
       return retryData as DatabaseShow;
     }
     throw error;
@@ -193,6 +193,25 @@ export async function upsertShowFromAppModel(show: {
 
   if (error) {
     console.error('❌ Upsert error:', error);
+    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.code === 'PGRST204') {
+      console.warn('⚠️ Schema cache issue detected - retrying without problematic columns...');
+      const { genres, color_scheme, ...minimalShowData } = showData;
+      const { data: retryData, error: retryError } = await supabase
+        .from('shows')
+        .upsert(minimalShowData, {
+          onConflict: 'trakt_id',
+          ignoreDuplicates: false
+        })
+        .select()
+        .single();
+      
+      if (retryError) {
+        console.error('❌ Retry failed:', retryError);
+        throw retryError;
+      }
+      console.log('✅ upsertShowFromAppModel COMPLETE (without cache-problematic columns), ID:', retryData.id);
+      return retryData as DatabaseShow;
+    }
     throw error;
   }
 
