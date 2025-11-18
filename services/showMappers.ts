@@ -82,7 +82,6 @@ export function mapDatabaseShowToTraktShow(dbShow: DatabaseShow): TraktShow {
     },
     overview: dbShow.description || undefined,
     first_aired: undefined,
-    airs: undefined,
     runtime: undefined,
     certification: undefined,
     network: undefined,
