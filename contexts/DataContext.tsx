@@ -907,8 +907,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('post_reposts').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
           supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
-          // Fetch comments ONLY for these posts (exclude deleted comments)
-          supabase.from('comments').select('post_id').in('post_id', postIds).eq('is_deleted', false),
+          // Fetch comments ONLY for these posts
+          supabase.from('comments').select('post_id').in('post_id', postIds),
         ]);
 
         // Step 4: Build lookup maps
