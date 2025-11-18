@@ -292,11 +292,41 @@ export async function getCombinedRecommendations(
         traktRecommendations = await getTrendingShows(remainingSlots * 2);
       }
     } catch (error) {
-      // CRITICAL: If Trakt fails, we still return recently logged shows
-      console.warn('⚠️ Trakt API failed, returning recently logged shows only', error);
+      // CRITICAL: If Trakt fails, try to get database trending shows as fallback
+      console.warn('⚠️ Trakt API failed, trying database trending shows fallback', error);
+      
+      const remainingSlots = maxShows - recentlyLogged.length;
+      let databaseTrendingShows: DatabaseShow[] = [];
+      
+      if (remainingSlots > 0) {
+        try {
+          // Get trending shows from database (by rating and post count)
+          const { data: trendingShows, error: dbError } = await supabase
+            .from('shows')
+            .select('*')
+            .order('rating', { ascending: false })
+            .limit(remainingSlots * 2);
+          
+          if (!dbError && trendingShows && trendingShows.length > 0) {
+            // Filter out shows user already logged
+            const loggedTraktIds = new Set(recentlyLogged.map(show => show.trakt_id));
+            databaseTrendingShows = trendingShows
+              .filter(show => !loggedTraktIds.has(show.trakt_id))
+              .slice(0, remainingSlots);
+            
+            console.log(`✅ Fetched ${databaseTrendingShows.length} trending shows from database`);
+          }
+        } catch (dbError) {
+          console.warn('⚠️ Database trending shows query failed', dbError);
+        }
+      }
+      
       const normalizedRecent = recentlyLogged.map(databaseShowToRecommendedShow);
-      console.log(`✅ Fetched ${normalizedRecent.length} raw recommendations for caching (database only - API unavailable)`);
-      return normalizedRecent;
+      const normalizedTrending = databaseTrendingShows.map(databaseShowToRecommendedShow);
+      const combined = [...normalizedRecent, ...normalizedTrending];
+      
+      console.log(`✅ Fetched ${combined.length} raw recommendations for caching (${normalizedRecent.length} recent + ${normalizedTrending.length} trending from database - API unavailable)`);
+      return combined;
     }
 
     // 5. Filter out shows the user has already logged (dedupe by trakt_id)

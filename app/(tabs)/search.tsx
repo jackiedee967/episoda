@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { X } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
 import { searchShows, TraktShow } from '@/services/trakt';
-import { mapTraktShowToShow, mapDatabaseShowToShow } from '@/services/showMappers';
+import { mapTraktShowToShow, mapDatabaseShowToShow, mapDatabaseShowToTraktShow } from '@/services/showMappers';
 import { showEnrichmentManager } from '@/services/showEnrichment';
 import { saveShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
@@ -189,7 +189,7 @@ export default function SearchScreen() {
           console.log(`📦 Found ${dbShows.length} shows from database (Trakt unavailable)`);
           const mappedShows = dbShows.map(dbShow => ({
             show: mapDatabaseShowToShow(dbShow),
-            traktShow: null
+            traktShow: mapDatabaseShowToTraktShow(dbShow)
           }));
           
           setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
@@ -224,7 +224,7 @@ export default function SearchScreen() {
           console.log(`📦 Found ${dbShows.length} shows from database fallback`);
           const mappedShows = dbShows.map(dbShow => ({
             show: mapDatabaseShowToShow(dbShow),
-            traktShow: null
+            traktShow: mapDatabaseShowToTraktShow(dbShow)
           }));
           
           setTraktShowResults({ query: trimmedQuery.toLowerCase(), results: mappedShows });
