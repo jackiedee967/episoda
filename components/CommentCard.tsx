@@ -223,9 +223,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
   },
   avatarPlaceholder: {
     backgroundColor: colors.purple,
@@ -344,9 +344,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   replyAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 8,
   },
   replyAvatarPlaceholderText: {
     color: tokens.colors.pureWhite,

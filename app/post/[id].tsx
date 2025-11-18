@@ -884,7 +884,7 @@ const styles = StyleSheet.create({
   headerUserAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 12,
   },
   menuOverlay: {
     position: 'absolute',
