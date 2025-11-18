@@ -292,11 +292,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { mapDatabaseShowToShow, mapTraktShowToShow } = await import('@/services/showMappers');
         const { getShowDetails } = await import('@/services/trakt');
         const { getShowById } = await import('@/services/showDatabase');
+        const { isTraktHealthy } = await import('@/services/traktHealth');
 
         if (!requestUserId) {
           console.warn('Cannot load recommendations: no authenticated user');
           // DON'T set timestamp when userId is missing - this would prevent future loads
           return;
+        }
+
+        // Check Trakt API health before attempting enrichment
+        const traktHealthy = await isTraktHealthy();
+        if (!traktHealthy) {
+          console.log('⚠️ Trakt API unavailable - using database-only recommendations');
         }
 
         const recommendations = await getCombinedRecommendations(requestUserId, 12);
@@ -309,14 +316,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
               const dbShow = await getShowById(rec.id);
               if (!dbShow) return null;
 
+              // Use database data directly if Trakt is down
+              if (!traktHealthy) {
+                return {
+                  show: mapDatabaseShowToShow(dbShow),
+                  traktShow: null,
+                  traktId: dbShow.trakt_id,
+                  isDatabaseBacked: true
+                };
+              }
+
+              // Try to enrich with Trakt if available
               let traktShow: any;
               try {
                 traktShow = await getShowDetails(dbShow.trakt_id);
               } catch (error) {
-                console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}`);
+                console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}, using database only`);
               }
 
-              // Enrich poster if missing
+              // Enrich poster if missing and Trakt worked
               let posterUrl = dbShow.poster_url;
               if (!posterUrl && traktShow) {
                 try {
@@ -334,6 +352,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 traktId: dbShow.trakt_id,
                 isDatabaseBacked: true
               };
+            } else if (!traktHealthy) {
+              // Skip Trakt-only recommendations when API is down
+              console.warn(`Skipping Trakt-only recommendation ${rec.trakt_id} - API unavailable`);
+              return null;
             } else {
               // Trakt-only show with enrichment
               try {
@@ -408,6 +430,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authUserId && authUserId !== hasPreloadedForUserRef.current) {
       console.log('📊 New user authenticated, preloading recommendations...');
+      // Only clear cache if switching to a DIFFERENT user (prevent race condition)
+      if (hasPreloadedForUserRef.current !== null && hasPreloadedForUserRef.current !== authUserId) {
+        console.log('📊 Different user - clearing previous recommendations');
+        setCachedRecommendations([]);
+        setLastRecommendationFetch(null);
+        lastRecommendationFetchRef.current = null;
+      }
       hasPreloadedForUserRef.current = authUserId;
       loadRecommendations({ force: false });
     } else if (!authUserId) {
