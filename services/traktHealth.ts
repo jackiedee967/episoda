@@ -1,6 +1,6 @@
-import Constants from 'expo-constants';
+import { ENV } from '@/config/env';
 
-const TRAKT_CLIENT_ID = Constants.expoConfig?.extra?.traktClientId;
+const TRAKT_CLIENT_ID = ENV.TRAKT_CLIENT_ID;
 const TRAKT_BASE_URL = 'https://api.trakt.tv';
 const HEALTH_CHECK_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
