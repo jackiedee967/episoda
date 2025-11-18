@@ -1644,22 +1644,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Use database function to bypass PostgREST schema cache
-      const { data, error } = await supabase.rpc('soft_delete_comment', {
-        comment_id: commentId,
-        requesting_user_id: authUserId
-      });
+      // Hard delete - remove the comment completely
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', authUserId); // Security: Only allow users to delete their own comments
 
       if (error) {
         console.error('❌ Error deleting comment:', error);
         throw error;
       }
 
-      if (!data) {
-        throw new Error('Comment not found or you do not have permission to delete it');
-      }
-
-      console.log('✅ Comment soft-deleted successfully');
+      console.log('✅ Comment deleted successfully');
     } catch (error) {
       console.error('❌ Failed to delete comment:', error);
       throw error;
