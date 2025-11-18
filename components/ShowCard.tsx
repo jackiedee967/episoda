@@ -20,9 +20,35 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const [playlistModalVisible, setPlaylistModalVisible] = React.useState(false);
   const [isInPlaylist, setIsInPlaylist] = React.useState(false);
 
-  const handlePress = () => {
-    if (show?.id) {
+  const handlePress = async () => {
+    if (!show) return;
+    
+    // If show already has database ID, navigate directly
+    if (show.id) {
       router.push(`/show/${show.id}`);
+      return;
+    }
+    
+    // If show has traktId but no database ID (e.g., from search), upsert first
+    if (show.traktId) {
+      try {
+        const { upsertShowFromAppModel } = await import('@/services/showDatabase');
+        const dbShow = await upsertShowFromAppModel({
+          traktId: show.traktId,
+          title: show.title,
+          description: show.description,
+          posterUrl: show.poster,
+          rating: show.rating,
+          totalSeasons: show.totalSeasons,
+          totalEpisodes: show.totalEpisodes,
+        });
+        
+        if (dbShow?.id) {
+          router.push(`/show/${dbShow.id}`);
+        }
+      } catch (error) {
+        console.error('Failed to save show before navigation:', error);
+      }
     }
   };
 
