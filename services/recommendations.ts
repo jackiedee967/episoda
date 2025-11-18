@@ -49,7 +49,7 @@ function databaseShowToRecommendedShow(dbShow: DatabaseShow): RecommendedShow {
     description: dbShow.description,
     poster_url: dbShow.poster_url,
     rating: dbShow.rating,
-    genres: dbShow.genres,
+    genres: dbShow.genres || null,
     total_seasons: dbShow.total_seasons,
     total_episodes: dbShow.total_episodes,
     isFromDatabase: true
@@ -162,37 +162,10 @@ export async function getUserGenreInterests(userId: string): Promise<string[]> {
     // Get unique show IDs
     const showIds = [...new Set(posts.map(p => p.show_id))];
 
-    // Fetch show details to get genres
-    const { data: shows, error: showsError } = await supabase
-      .from('shows')
-      .select('genres')
-      .in('id', showIds);
-
-    if (showsError || !shows) {
-      console.error('❌ Error fetching shows for genre interests:', showsError);
-      return [];
-    }
-
-    // Count genre frequency
-    const genreCount = new Map<string, number>();
-    
-    for (const show of shows) {
-      if (show.genres && Array.isArray(show.genres)) {
-        for (const genre of show.genres) {
-          if (typeof genre === 'string') {
-            genreCount.set(genre, (genreCount.get(genre) || 0) + 1);
-          }
-        }
-      }
-    }
-
-    // Sort by frequency and return top genres
-    const sortedGenres = Array.from(genreCount.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([genre]) => genre);
-
-    console.log(`✅ User genre interests:`, sortedGenres);
-    return sortedGenres;
+    // Note: genres column doesn't exist in database yet
+    // Skip genre-based recommendations for now
+    console.log('ℹ️ Genre analysis not available - genres column missing from database');
+    return [];
   } catch (error) {
     console.error('❌ Error in getUserGenreInterests:', error);
     return [];

@@ -16,7 +16,7 @@ export interface DatabaseShow {
   rating: number | null;
   total_seasons: number | null;
   total_episodes: number | null;
-  genres: string[] | null;
+  genres?: string[] | null;
   created_at: string;
   updated_at: string;
 }
