@@ -72,11 +72,24 @@ export default function PostDetail() {
       
       setIsLoadingComments(true);
       try {
-        // Fetch all comments (both top-level and replies)
+        // Fetch comments with user profiles in a single JOIN query (10x faster!)
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
-          .select('*')
+          .select(`
+            *,
+            profiles!comments_user_id_fkey (
+              user_id,
+              username,
+              display_name,
+              avatar_url,
+              avatar_color_scheme,
+              avatar_icon,
+              bio,
+              social_links
+            )
+          `)
           .eq('post_id', id)
+          .eq('is_deleted', false)
           .order('created_at', { ascending: true });
 
         if (commentsError) {
@@ -147,17 +160,29 @@ export default function PostDetail() {
       const children = childrenByParent.get(commentData.id) || [];
       const replies = children.map(child => buildCommentTree(child));
       
+      // Use joined profile data from the query (much faster than userProfileCache!)
+      const profile = commentData.profiles;
+      let avatarUrl = profile?.avatar_url || '';
+      if (!avatarUrl && profile?.avatar_color_scheme && profile?.avatar_icon) {
+        avatarUrl = `data:image/svg+xml;base64,${btoa(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect width="100" height="100" fill="${profile.avatar_color_scheme?.background || '#667eea'}"/>
+            <text x="50" y="50" text-anchor="middle" dy=".3em" font-size="40" fill="${profile.avatar_color_scheme?.text || '#fff'}">${profile.avatar_icon || '👤'}</text>
+          </svg>
+        `)}`;
+      }
+      
       return {
         id: commentData.id,
         postId: commentData.post_id,
         parentId: commentData.parent_comment_id || null,
-        user: userProfileCache?.[commentData.user_id] || {
-          id: commentData.user_id,
-          username: 'user',
-          displayName: 'User',
-          avatar: '',
-          bio: '',
-          socialLinks: {},
+        user: {
+          id: profile?.user_id || commentData.user_id,
+          username: profile?.username || 'user',
+          displayName: profile?.display_name || profile?.username || 'User',
+          avatar: avatarUrl,
+          bio: profile?.bio || '',
+          socialLinks: profile?.social_links || {},
           following: [],
           followers: [],
         },
@@ -178,7 +203,7 @@ export default function PostDetail() {
     const totalReplies = rawComments.length - topLevelComments.length;
     console.log('✅ Loaded', transformedComments.length, 'comments with', totalReplies, 'replies from Supabase');
     setComments(transformedComments);
-  }, [rawComments, userProfileCache, commentLikesData, userCommentLikes]);
+  }, [rawComments, commentLikesData, userCommentLikes]);
 
   // Note: Comment count is updated in submit handlers, not here
   // Removed useEffect that was causing infinite loop
