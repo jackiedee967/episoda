@@ -14,6 +14,7 @@ export function mapTraktShowToShow(
 ): Show {
   return {
     id: `trakt-${traktShow.ids.trakt}`,
+    traktId: traktShow.ids.trakt,
     title: traktShow.title,
     poster: overrides.posterUrl ?? null,
     description: traktShow.overview || '',
@@ -21,6 +22,7 @@ export function mapTraktShowToShow(
     totalSeasons: overrides.totalSeasons ?? 0,
     totalEpisodes: overrides.totalEpisodes ?? traktShow.aired_episodes ?? 0,
     friendsWatching: 0,
+    colorScheme: null,
   };
 }
 
@@ -45,6 +47,7 @@ export function mapTraktEpisodeToEpisode(
 export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
   return {
     id: dbShow.id,
+    traktId: dbShow.trakt_id,
     title: dbShow.title,
     poster: dbShow.poster_url ?? null,
     description: dbShow.description || '',
@@ -52,6 +55,7 @@ export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
     totalSeasons: dbShow.total_seasons || 0,
     totalEpisodes: dbShow.total_episodes || 0,
     friendsWatching: 0,
+    colorScheme: dbShow.color_scheme ?? null,
   };
 }
 

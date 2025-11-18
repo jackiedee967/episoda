@@ -26,6 +26,7 @@ import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 import { Star } from 'lucide-react-native';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
+import { getShowColorScheme } from '@/utils/showColors';
 
 type TabKey = 'friends' | 'all';
 
@@ -135,12 +136,19 @@ export default function EpisodeHub() {
               state="S_E_"
               text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
             />
-            <PostTags
-              prop="Large"
-              state="Show_Name"
-              text={show.title}
-              onPress={handleShowPress}
-            />
+            {(() => {
+              const showColors = getShowColorScheme(show.traktId, show.colorScheme);
+              return (
+                <PostTags
+                  prop="Large"
+                  state="Show_Name"
+                  text={show.title}
+                  onPress={handleShowPress}
+                  primaryColor={showColors.primary}
+                  lightColor={showColors.light}
+                />
+              );
+            })()}
           </View>
 
           {/* Episode Info Card */}

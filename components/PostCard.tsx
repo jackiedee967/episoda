@@ -12,6 +12,7 @@ import PostTags from '@/components/PostTags';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import FadeInImage from './FadeInImage';
+import { getShowColorScheme } from '@/utils/showColors';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -161,12 +162,19 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, i
                 <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> watched
               </Text>
               <View style={styles.tagsRow}>
-                <PostTags
-                  prop="Large"
-                  state="Show_Name"
-                  text={latestPost.show.title}
-                  onPress={handleShowPress}
-                />
+                {(() => {
+                  const showColors = getShowColorScheme(latestPost.show.traktId, latestPost.show.colorScheme);
+                  return (
+                    <PostTags
+                      prop="Large"
+                      state="Show_Name"
+                      text={latestPost.show.title}
+                      onPress={handleShowPress}
+                      primaryColor={showColors.primary}
+                      lightColor={showColors.light}
+                    />
+                  );
+                })()}
                 {latestPost.episodes && latestPost.episodes.length > 0 && latestPost.episodes.map((episode, index) => (
                   <PostTags
                     key={episode.id || index}

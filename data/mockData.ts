@@ -55,6 +55,7 @@ export const mockUsers: User[] = [
 export const mockShows: Show[] = [
   {
     id: 'show-1',
+    traktId: 123456,
     title: 'Love Island USA',
     poster: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=300&h=450&fit=crop',
     description: 'Single people arrive at a tropical island resort where they must couple up to survive.',
@@ -62,9 +63,11 @@ export const mockShows: Show[] = [
     totalSeasons: 6,
     totalEpisodes: 120,
     friendsWatching: 5,
+    colorScheme: null,
   },
   {
     id: 'show-2',
+    traktId: 234567,
     title: 'The Summer I Turned Pretty',
     poster: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&h=450&fit=crop',
     description: 'A love triangle between one girl and two brothers unfolds during a summer vacation.',
@@ -72,9 +75,11 @@ export const mockShows: Show[] = [
     totalSeasons: 2,
     totalEpisodes: 15,
     friendsWatching: 8,
+    colorScheme: null,
   },
   {
     id: 'show-3',
+    traktId: 345678,
     title: 'The Golden Bachelor',
     poster: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=300&h=450&fit=crop',
     description: 'A senior bachelor searches for love among a group of eligible women.',
@@ -82,9 +87,11 @@ export const mockShows: Show[] = [
     totalSeasons: 1,
     totalEpisodes: 10,
     friendsWatching: 6,
+    colorScheme: null,
   },
   {
     id: 'show-4',
+    traktId: 456789,
     title: 'Euphoria',
     poster: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=450&fit=crop',
     description: 'A group of high school students navigate love, drugs, sex, and trauma.',
@@ -92,9 +99,11 @@ export const mockShows: Show[] = [
     totalSeasons: 2,
     totalEpisodes: 16,
     friendsWatching: 12,
+    colorScheme: null,
   },
   {
     id: 'show-5',
+    traktId: 567890,
     title: 'Severance',
     poster: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&h=450&fit=crop',
     description: 'Employees undergo a procedure that surgically divides their work and personal memories.',
@@ -102,9 +111,11 @@ export const mockShows: Show[] = [
     totalSeasons: 1,
     totalEpisodes: 9,
     friendsWatching: 9,
+    colorScheme: null,
   },
   {
     id: 'show-6',
+    traktId: 678901,
     title: 'Shrinking',
     poster: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=300&h=450&fit=crop',
     description: 'A grieving therapist starts to break the rules by telling his clients exactly what he thinks.',
@@ -112,6 +123,7 @@ export const mockShows: Show[] = [
     totalSeasons: 2,
     totalEpisodes: 20,
     friendsWatching: 7,
+    colorScheme: null,
   },
 ];
 

@@ -103,6 +103,7 @@ export type Database = {
           rating: number | null
           total_seasons: number | null
           total_episodes: number | null
+          color_scheme: string | null
           created_at: string
           updated_at: string
         }
@@ -120,6 +121,7 @@ export type Database = {
           rating?: number | null
           total_seasons?: number | null
           total_episodes?: number | null
+          color_scheme?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -137,6 +139,7 @@ export type Database = {
           rating?: number | null
           total_seasons?: number | null
           total_episodes?: number | null
+          color_scheme?: string | null
           created_at?: string
           updated_at?: string
         }

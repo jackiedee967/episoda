@@ -21,6 +21,7 @@ export interface SocialLink {
 
 export interface Show {
   id: string;
+  traktId: number;
   title: string;
   poster: string | null;
   backdrop?: string | null;
@@ -29,6 +30,7 @@ export interface Show {
   totalSeasons: number;
   totalEpisodes: number;
   friendsWatching: number;
+  colorScheme?: string | null;
 }
 
 export interface Episode {

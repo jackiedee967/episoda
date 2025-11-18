@@ -28,6 +28,7 @@ import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import { getShowColorScheme } from '@/utils/showColors';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -628,12 +629,19 @@ export default function PostDetail() {
                 
                 {/* Show and Episode Tags */}
                 <View style={styles.tagsRow}>
-                  <PostTags
-                    prop="Large"
-                    state="Show_Name"
-                    text={post.show.title}
-                    onPress={handleShowPress}
-                  />
+                  {(() => {
+                    const showColors = getShowColorScheme(post.show.traktId, post.show.colorScheme);
+                    return (
+                      <PostTags
+                        prop="Large"
+                        state="Show_Name"
+                        text={post.show.title}
+                        onPress={handleShowPress}
+                        primaryColor={showColors.primary}
+                        lightColor={showColors.light}
+                      />
+                    );
+                  })()}
                   {post.episodes && post.episodes.length > 0 && (
                     <PostTags
                       prop="Large"

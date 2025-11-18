@@ -14,6 +14,8 @@ interface PostTagsProps {
   testID?: string;
   style?: ViewStyle;
   onPress?: () => void;
+  primaryColor?: string;
+  lightColor?: string;
 }
 
 export default function PostTags({ 
@@ -22,7 +24,9 @@ export default function PostTags({
   text = 'S3 E3',
   testID,
   style,
-  onPress
+  onPress,
+  primaryColor,
+  lightColor
 }: PostTagsProps) {
   
   const handlePress = () => {
@@ -156,14 +160,23 @@ export default function PostTags({
   const TagWrapper = onPress ? Pressable : View;
   const icon = getIcon();
   
+  const customStyles = (state === 'Show_Name' && primaryColor && lightColor) ? {
+    borderColor: primaryColor,
+    backgroundColor: lightColor,
+  } : undefined;
+  
+  const customTextStyle = (state === 'Show_Name' && primaryColor) ? {
+    color: primaryColor,
+  } : undefined;
+  
   return (
     <TagWrapper 
       testID={testID} 
-      style={[...getTagStyle(), style]}
+      style={[getTagStyle(), customStyles, style]}
       {...(onPress ? { onPress: handlePress } : {})}
     >
       {icon}
-      <Text style={getTextStyle()}>{text}</Text>
+      <Text style={[getTextStyle(), customTextStyle]}>{text}</Text>
     </TagWrapper>
   );
 }

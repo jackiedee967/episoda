@@ -1,6 +1,7 @@
 import { supabase } from '@/app/integrations/supabase/client';
 import { TraktShow, TraktEpisode } from './trakt';
 import { getPosterUrl, getEpisodeThumbnail } from './tvmaze';
+import { assignColorToShow } from '@/utils/showColors';
 
 export interface DatabaseShow {
   id: string;
@@ -16,6 +17,7 @@ export interface DatabaseShow {
   rating: number | null;
   total_seasons: number | null;
   total_episodes: number | null;
+  color_scheme: string | null;
   genres?: string[] | null;
   created_at: string;
   updated_at: string;
@@ -82,6 +84,10 @@ export async function saveShow(
   }
 
   console.log('📦 Preparing show data...');
+  
+  const existingShow = await getShowByTraktId(traktShow.ids.trakt);
+  const colorScheme = existingShow?.color_scheme || assignColorToShow(traktShow.ids.trakt);
+  
   const showData = {
     trakt_id: traktShow.ids.trakt,
     imdb_id: options.enrichedImdbId || traktShow.ids.imdb,
@@ -95,6 +101,7 @@ export async function saveShow(
     rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : null,
     total_seasons: options.enrichedSeasonCount ?? null,
     total_episodes: traktShow.aired_episodes || null,
+    color_scheme: colorScheme,
     genres: traktShow.genres || [],
     updated_at: new Date().toISOString(),
   };
@@ -153,6 +160,9 @@ export async function upsertShowFromAppModel(show: {
 }): Promise<DatabaseShow> {
   console.log('🔍 upsertShowFromAppModel START:', show.title);
   
+  const existingShow = await getShowByTraktId(show.traktId);
+  const colorScheme = existingShow?.color_scheme || assignColorToShow(show.traktId);
+  
   const showData = {
     trakt_id: show.traktId,
     imdb_id: show.imdbId || null,
@@ -166,6 +176,7 @@ export async function upsertShowFromAppModel(show: {
     rating: show.rating ? Number(show.rating.toFixed(1)) : null,
     total_seasons: show.totalSeasons ?? null,
     total_episodes: show.totalEpisodes ?? null,
+    color_scheme: colorScheme,
     genres: [],
     updated_at: new Date().toISOString(),
   };
