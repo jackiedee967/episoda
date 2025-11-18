@@ -221,11 +221,15 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     
     // Smart step selection based on what's preselected
     if (preselectedShow && (preselectedEpisodes || preselectedEpisode)) {
-      // Flow 2: Show and episodes already selected → load Trakt data and skip to review
-      console.log('🎬 Loading Trakt data for preselected show and episodes');
-      setIsFetchingEpisodes(true);
-      setStep('postDetails'); // Set immediately to prevent show selection UI flash
-      loadTraktDataForPreselectedShow(preselectedShow, true);
+      // Flow 2: Show and episodes already selected from ShowHub → skip straight to rating page
+      console.log('✅ Episodes preselected from ShowHub - skipping to rating page');
+      setIsFetchingEpisodes(false);
+      setStep('postDetails');
+      // Load Trakt data in background (non-blocking) for post creation, but don't wait for it
+      loadTraktDataForPreselectedShow(preselectedShow, true).catch(err => {
+        console.warn('⚠️ Trakt data fetch failed (non-blocking):', err);
+        // Failure is OK - we'll use episode data from ShowHub if needed
+      });
     } else if (preselectedShow) {
       // Flow 1: Show selected but no episodes → fetch episodes and Trakt data, then skip to picker
       console.log('🎬 Loading episodes for preselected show');
@@ -258,7 +262,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       if (!dbShow || !dbShow.trakt_id) {
         console.error('No Trakt ID found for show:', show.id);
         setIsFetchingEpisodes(false);
-        setStep('selectShow');
+        // Only reset step if this is blocking (not skipToReview mode)
+        if (!skipToReview) {
+          setStep('selectShow');
+        }
         return;
       }
       
@@ -385,7 +392,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     } catch (error) {
       console.error('Error loading data for preselected show:', error);
       setIsFetchingEpisodes(false);
-      setStep('selectShow'); // Fall back to show selection
+      // Only fall back to show selection if this is blocking mode
+      if (!skipToReview) {
+        setStep('selectShow');
+      }
     }
   };
 
