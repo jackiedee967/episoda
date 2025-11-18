@@ -1644,19 +1644,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Hard delete - remove the comment completely
-      const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', authUserId); // Security: Only allow users to delete their own comments
+      // Call Edge Function to bypass PostgREST cache
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/soft-delete-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          commentId,
+          userId: authUserId,
+        }),
+      });
 
-      if (error) {
-        console.error('❌ Error deleting comment:', error);
-        throw error;
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || 'Failed to delete comment');
       }
 
-      console.log('✅ Comment deleted successfully');
+      console.log('✅ Comment soft-deleted successfully');
     } catch (error) {
       console.error('❌ Failed to delete comment:', error);
       throw error;
