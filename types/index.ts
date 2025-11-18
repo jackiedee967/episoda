@@ -46,24 +46,15 @@ export interface Episode {
 export interface Comment {
   id: string;
   postId: string;
+  parentId?: string | null;
   user: User;
   text: string;
   image?: string;
   likes: number;
   isLiked: boolean;
   timestamp: Date;
-  replies: Reply[];
-}
-
-export interface Reply {
-  id: string;
-  commentId: string;
-  user: User;
-  text: string;
-  image?: string;
-  likes: number;
-  isLiked: boolean;
-  timestamp: Date;
+  replies: Comment[];
+  depth?: number;
 }
 
 export interface Post {

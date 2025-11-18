@@ -112,7 +112,7 @@ export default function PostDetail() {
     loadComments();
   }, [id, currentUser.id]);
 
-  // Transform raw comments when userProfileCache updates
+  // Transform raw comments into recursive tree structure
   useEffect(() => {
     if (rawComments.length === 0) return;
     
@@ -122,45 +122,33 @@ export default function PostDetail() {
       likesCount.set(like.comment_id, (likesCount.get(like.comment_id) || 0) + 1);
     });
     
-    // Separate top-level comments from replies
-    const topLevelComments = rawComments.filter((c: any) => !c.parent_comment_id);
-    const repliesByParent = new Map<string, any[]>();
-    
-    rawComments.filter((c: any) => c.parent_comment_id).forEach((reply: any) => {
-      const parentId = reply.parent_comment_id;
-      if (!repliesByParent.has(parentId)) {
-        repliesByParent.set(parentId, []);
-      }
-      repliesByParent.get(parentId)!.push(reply);
+    // Build a map of all comments by ID
+    const commentsById = new Map<string, any>();
+    rawComments.forEach((c: any) => {
+      commentsById.set(c.id, c);
     });
     
-    // Transform comments with nested replies
-    const transformedComments: Comment[] = topLevelComments.map((c: any) => {
-      const replies = (repliesByParent.get(c.id) || []).map((r: any) => ({
-        id: r.id,
-        commentId: c.id,
-        user: userProfileCache?.[r.user_id] || {
-          id: r.user_id,
-          username: 'user',
-          displayName: 'User',
-          avatar: '',
-          bio: '',
-          socialLinks: {},
-          following: [],
-          followers: [],
-        },
-        text: r.comment_text,
-        image: r.image_url || undefined,
-        likes: likesCount.get(r.id) || 0,
-        isLiked: userCommentLikes.has(r.id),
-        timestamp: new Date(r.created_at),
-      }));
+    // Group comments by parent ID
+    const childrenByParent = new Map<string, any[]>();
+    rawComments.forEach((c: any) => {
+      const parentId = c.parent_comment_id || 'root';
+      if (!childrenByParent.has(parentId)) {
+        childrenByParent.set(parentId, []);
+      }
+      childrenByParent.get(parentId)!.push(c);
+    });
+    
+    // Recursive function to build comment tree
+    const buildCommentTree = (commentData: any): Comment => {
+      const children = childrenByParent.get(commentData.id) || [];
+      const replies = children.map(child => buildCommentTree(child));
       
       return {
-        id: c.id,
-        postId: c.post_id,
-        user: userProfileCache?.[c.user_id] || {
-          id: c.user_id,
+        id: commentData.id,
+        postId: commentData.post_id,
+        parentId: commentData.parent_comment_id || null,
+        user: userProfileCache?.[commentData.user_id] || {
+          id: commentData.user_id,
           username: 'user',
           displayName: 'User',
           avatar: '',
@@ -169,16 +157,21 @@ export default function PostDetail() {
           following: [],
           followers: [],
         },
-        text: c.comment_text,
-        image: c.image_url || undefined,
-        likes: likesCount.get(c.id) || 0,
-        isLiked: userCommentLikes.has(c.id),
-        timestamp: new Date(c.created_at),
-        replies,
+        text: commentData.comment_text,
+        image: commentData.image_url || undefined,
+        likes: likesCount.get(commentData.id) || 0,
+        isLiked: userCommentLikes.has(commentData.id),
+        timestamp: new Date(commentData.created_at),
+        replies: replies,
       };
-    });
+    };
     
-    console.log('✅ Loaded', transformedComments.length, 'comments with', rawComments.length - topLevelComments.length, 'replies from Supabase');
+    // Build tree starting from root-level comments
+    const topLevelComments = childrenByParent.get('root') || [];
+    const transformedComments: Comment[] = topLevelComments.map(c => buildCommentTree(c));
+    
+    const totalReplies = rawComments.length - topLevelComments.length;
+    console.log('✅ Loaded', transformedComments.length, 'comments with', totalReplies, 'replies from Supabase');
     setComments(transformedComments);
   }, [rawComments, userProfileCache, commentLikesData, userCommentLikes]);
 
@@ -261,23 +254,24 @@ export default function PostDetail() {
     if (replyingTo) {
       // Submit as a reply with Supabase persistence
       const tempId = `reply_${Date.now()}`;
-      const newReply = {
+      const newReply: Comment = {
         id: tempId,
-        commentId: replyingTo.commentId,
+        postId: post.id,
+        parentId: replyingTo.commentId,
         user: currentUser,
         text: commentText,
         image: commentImage || undefined,
         likes: 0,
         isLiked: false,
         timestamp: new Date(),
+        replies: [],
       };
 
-      // Optimistically update UI
-      setComments(comments.map(comment =>
-        comment.id === replyingTo.commentId
-          ? { ...comment, replies: [...comment.replies, newReply] }
-          : comment
-      ));
+      // Optimistically update UI using recursive helper
+      setComments(prev => findAndUpdateComment(prev, replyingTo.commentId, (comment) => ({
+        ...comment,
+        replies: [...(comment.replies || []), newReply],
+      })));
       
       // Save reply to Supabase
       try {
@@ -296,24 +290,19 @@ export default function PostDetail() {
         if (error) {
           console.error('❌ FAILED TO SAVE REPLY TO SUPABASE:', error);
           // Revert optimistic update
-          setComments(prev => prev.map(comment =>
-            comment.id === replyingTo.commentId
-              ? { ...comment, replies: comment.replies.filter(r => r.id !== tempId) }
-              : comment
-          ));
+          setComments(prev => findAndUpdateComment(prev, replyingTo.commentId, (comment) => ({
+            ...comment,
+            replies: (comment.replies || []).filter(r => r.id !== tempId),
+          })));
         } else if (data) {
           console.log('✅ Reply saved to Supabase:', data.id);
           // Update reply with real ID from Supabase
-          setComments(prev => prev.map(comment =>
-            comment.id === replyingTo.commentId
-              ? { 
-                  ...comment, 
-                  replies: comment.replies.map(r => 
-                    r.id === tempId ? { ...r, id: data.id } : r
-                  )
-                }
-              : comment
-          ));
+          setComments(prev => findAndUpdateComment(prev, replyingTo.commentId, (comment) => ({
+            ...comment,
+            replies: (comment.replies || []).map(r => 
+              r.id === tempId ? { ...r, id: data.id } : r
+            ),
+          })));
           
           // Update post comment count (replies count as comments)
           updateCommentCount(post.id, comments.length + 1);
@@ -376,20 +365,52 @@ export default function PostDetail() {
     setCommentImage(null);
   };
 
+  // Recursive helper to find and update a comment in the tree
+  const findAndUpdateComment = (
+    comments: Comment[],
+    targetId: string,
+    updateFn: (comment: Comment) => Comment
+  ): Comment[] => {
+    return comments.map(comment => {
+      if (comment.id === targetId) {
+        return updateFn(comment);
+      }
+      if (comment.replies && comment.replies.length > 0) {
+        return {
+          ...comment,
+          replies: findAndUpdateComment(comment.replies, targetId, updateFn),
+        };
+      }
+      return comment;
+    });
+  };
+
+  // Recursive helper to find a comment by ID
+  const findCommentById = (comments: Comment[], targetId: string): Comment | null => {
+    for (const comment of comments) {
+      if (comment.id === targetId) return comment;
+      if (comment.replies && comment.replies.length > 0) {
+        const found = findCommentById(comment.replies, targetId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   const handleCommentLike = async (commentId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    const comment = comments.find(c => c.id === commentId);
+    const comment = findCommentById(comments, commentId);
     if (!comment) return;
     
     const isCurrentlyLiked = comment.isLiked;
     
     // Optimistic update
-    setComments(comments.map(c =>
-      c.id === commentId
-        ? { ...c, likes: isCurrentlyLiked ? c.likes - 1 : c.likes + 1, isLiked: !isCurrentlyLiked }
-        : c
-    ));
+    setComments(prev => findAndUpdateComment(prev, commentId, (c) => ({
+      ...c,
+      likes: isCurrentlyLiked ? c.likes - 1 : c.likes + 1,
+      isLiked: !isCurrentlyLiked,
+    })));
     
     try {
       if (isCurrentlyLiked) {
@@ -403,9 +424,11 @@ export default function PostDetail() {
         if (error) {
           console.error('❌ Failed to unlike comment:', error);
           // Revert optimistic update
-          setComments(prev => prev.map(c =>
-            c.id === commentId ? { ...c, likes: c.likes + 1, isLiked: true } : c
-          ));
+          setComments(prev => findAndUpdateComment(prev, commentId, (c) => ({
+            ...c,
+            likes: c.likes + 1,
+            isLiked: true,
+          })));
         } else {
           console.log('✅ Comment unliked');
         }
@@ -421,94 +444,17 @@ export default function PostDetail() {
         if (error) {
           console.error('❌ Failed to like comment:', error);
           // Revert optimistic update
-          setComments(prev => prev.map(c =>
-            c.id === commentId ? { ...c, likes: c.likes - 1, isLiked: false } : c
-          ));
+          setComments(prev => findAndUpdateComment(prev, commentId, (c) => ({
+            ...c,
+            likes: c.likes - 1,
+            isLiked: false,
+          })));
         } else {
           console.log('✅ Comment liked');
         }
       }
     } catch (error) {
       console.error('Error toggling comment like:', error);
-    }
-  };
-
-  const handleReplyLike = async (commentId: string, replyId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    const comment = comments.find(c => c.id === commentId);
-    const reply = comment?.replies.find(r => r.id === replyId);
-    if (!reply) return;
-    
-    const isCurrentlyLiked = reply.isLiked;
-    
-    // Optimistic update
-    setComments(comments.map(c =>
-      c.id === commentId
-        ? {
-            ...c,
-            replies: c.replies.map(r =>
-              r.id === replyId
-                ? { ...r, likes: isCurrentlyLiked ? r.likes - 1 : r.likes + 1, isLiked: !isCurrentlyLiked }
-                : r
-            ),
-          }
-        : c
-    ));
-    
-    try {
-      if (isCurrentlyLiked) {
-        // Unlike: delete from comment_likes
-        const { error } = await supabase
-          .from('comment_likes')
-          .delete()
-          .eq('comment_id', replyId)
-          .eq('user_id', currentUser.id);
-        
-        if (error) {
-          console.error('❌ Failed to unlike reply:', error);
-          // Revert optimistic update
-          setComments(prev => prev.map(c =>
-            c.id === commentId
-              ? {
-                  ...c,
-                  replies: c.replies.map(r =>
-                    r.id === replyId ? { ...r, likes: r.likes + 1, isLiked: true } : r
-                  ),
-                }
-              : c
-          ));
-        } else {
-          console.log('✅ Reply unliked');
-        }
-      } else {
-        // Like: insert into comment_likes
-        const { error } = await supabase
-          .from('comment_likes')
-          .insert({
-            comment_id: replyId,
-            user_id: currentUser.id,
-          });
-        
-        if (error) {
-          console.error('❌ Failed to like reply:', error);
-          // Revert optimistic update
-          setComments(prev => prev.map(c =>
-            c.id === commentId
-              ? {
-                  ...c,
-                  replies: c.replies.map(r =>
-                    r.id === replyId ? { ...r, likes: r.likes - 1, isLiked: false } : r
-                  ),
-                }
-              : c
-          ));
-        } else {
-          console.log('✅ Reply liked');
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling reply like:', error);
     }
   };
 
@@ -738,9 +684,8 @@ export default function PostDetail() {
                   <FadeInView key={comment.id} delay={index * 30}>
                     <CommentCard
                       comment={comment}
-                      onLike={() => handleCommentLike(comment.id)}
+                      onLike={handleCommentLike}
                       onReplyStart={handleReplyStart}
-                      onReplyLike={(replyId) => handleReplyLike(comment.id, replyId)}
                     />
                   </FadeInView>
                 ))

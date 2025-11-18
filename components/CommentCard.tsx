@@ -10,13 +10,38 @@ import { Heart, MessageCircle } from 'lucide-react-native';
 
 interface CommentCardProps {
   comment: Comment;
-  onLike?: () => void;
+  depth?: number;
+  onLike?: (commentId: string) => void;
   onReplyStart?: (commentId: string, username: string, textPreview: string) => void;
-  onReplyLike?: (replyId: string) => void;
 }
 
-export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike }: CommentCardProps) {
+const MAX_DEPTH = 3;
+
+const getAvatarSize = (depth: number) => {
+  switch (depth) {
+    case 0: return 30;
+    case 1: return 24;
+    case 2: return 20;
+    case 3: return 16;
+    default: return 16;
+  }
+};
+
+const getAvatarRadius = (depth: number) => {
+  switch (depth) {
+    case 0: return 10;
+    case 1: return 8;
+    case 2: return 6;
+    case 3: return 4;
+    default: return 4;
+  }
+};
+
+export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }: CommentCardProps) {
   const router = useRouter();
+  const avatarSize = getAvatarSize(depth);
+  const avatarRadius = getAvatarRadius(depth);
+  const leftIndent = depth > 0 ? depth * 8 : 0;
 
   const formatTimestamp = (date: Date) => {
     const now = new Date();
@@ -36,13 +61,9 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
     }
   };
 
-  const handleReplyUserPress = (userId: string) => {
-    router.push(`/user/${userId}`);
-  };
-
   const handleLikePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onLike?.();
+    onLike?.(comment.id);
   };
 
   const handleReplyPress = () => {
@@ -51,23 +72,24 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
     onReplyStart?.(comment.id, comment.user.displayName, textPreview);
   };
 
-  const handleReplyLikePress = (replyId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onReplyLike?.(replyId);
-  };
-
   if (!comment) {
     return null;
   }
 
+  const dynamicAvatarStyle = {
+    width: avatarSize,
+    height: avatarSize,
+    borderRadius: avatarRadius,
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, leftIndent > 0 && { marginLeft: leftIndent }]}>
       <Pressable onPress={handleUserPress} style={styles.avatarContainer}>
         {comment.user.avatar ? (
-          <Image source={{ uri: comment.user.avatar }} style={styles.avatar} />
+          <Image source={{ uri: comment.user.avatar }} style={[styles.avatar, dynamicAvatarStyle]} />
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Text style={styles.avatarPlaceholderText}>
+          <View style={[styles.avatar, styles.avatarPlaceholder, dynamicAvatarStyle]}>
+            <Text style={[styles.avatarPlaceholderText, { fontSize: avatarSize / 2 }]}>
               {comment.user.displayName?.charAt(0) || '?'}
             </Text>
           </View>
@@ -129,82 +151,17 @@ export default function CommentCard({ comment, onLike, onReplyStart, onReplyLike
           </Pressable>
         </View>
 
-        {/* Replies */}
-        {comment.replies && comment.replies.length > 0 && (
+        {/* Nested Replies - Recursive rendering up to MAX_DEPTH */}
+        {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH && (
           <View style={styles.repliesContainer}>
             {comment.replies.map((reply) => (
-              <View key={reply.id} style={styles.replyContainer}>
-                <Pressable onPress={() => handleReplyUserPress(reply.user.id)} style={styles.replyAvatarContainer}>
-                  {reply.user.avatar ? (
-                    <Image source={{ uri: reply.user.avatar }} style={styles.replyAvatar} />
-                  ) : (
-                    <View style={[styles.replyAvatar, styles.avatarPlaceholder]}>
-                      <Text style={styles.replyAvatarPlaceholderText}>
-                        {reply.user.displayName?.charAt(0) || '?'}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-
-                <View style={styles.replyContent}>
-                  <View style={styles.replyHeader}>
-                    <Pressable onPress={() => handleReplyUserPress(reply.user.id)}>
-                      <Text style={styles.replyDisplayName}>{reply.user.displayName}</Text>
-                    </Pressable>
-                    <Text style={styles.replyTimestamp}>{formatTimestamp(reply.timestamp)}</Text>
-                  </View>
-
-                  <Text style={styles.replyText}>{reply.text}</Text>
-
-                  {reply.image && (
-                    <View style={styles.replyImageContainer}>
-                      {Platform.OS === 'web' ? (
-                        <img 
-                          src={reply.image} 
-                          style={{
-                            maxHeight: 100,
-                            objectFit: 'contain',
-                            display: 'block',
-                            borderRadius: 8
-                          } as any}
-                          alt="Reply attachment"
-                        />
-                      ) : (
-                        <Image source={{ uri: reply.image }} style={styles.replyImage} resizeMode="contain" />
-                      )}
-                    </View>
-                  )}
-
-                  <View style={styles.replyActions}>
-                    <Pressable
-                      style={styles.replyLikeButton}
-                      onPress={() => handleReplyLikePress(reply.id)}
-                    >
-                      <Heart
-                        size={9}
-                        color={reply.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                        fill={reply.isLiked ? tokens.colors.greenHighlight : 'none'}
-                        strokeWidth={1.5}
-                      />
-                      <Text style={styles.replyLikeText}>{reply.likes}</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.replyCommentButton}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        const textPreview = reply.text.length > 50 ? reply.text.substring(0, 50) + '...' : reply.text;
-                        onReplyStart?.(comment.id, reply.user.displayName, textPreview);
-                      }}
-                    >
-                      <MessageCircle
-                        size={9}
-                        color={tokens.colors.grey1}
-                        strokeWidth={1.5}
-                      />
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
+              <CommentCard
+                key={reply.id}
+                comment={reply}
+                depth={depth + 1}
+                onLike={onLike}
+                onReplyStart={onReplyStart}
+              />
             ))}
           </View>
         )}
@@ -286,125 +243,8 @@ const styles = StyleSheet.create({
     fontFamily: 'FunnelDisplay_300Light',
     fontWeight: '300',
   },
-  replyInputContainer: {
-    marginTop: 12,
-    gap: 8,
-  },
-  replyImagePreview: {
-    position: 'relative',
-    width: 100,
-    height: 75,
-  },
-  replyImagePreviewImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    backgroundColor: tokens.colors.pureWhite,
-    borderRadius: 10,
-  },
-  replyInputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-    backgroundColor: colors.background,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  replyInput: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    maxHeight: 80,
-    fontFamily: 'System',
-  },
-  imageButton: {
-    padding: 4,
-  },
-  sendButton: {
-    padding: 4,
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
   repliesContainer: {
     marginTop: 12,
-    gap: 12,
-  },
-  replyContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  replyAvatarContainer: {
-    flexShrink: 0,
-  },
-  replyAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-  },
-  replyAvatarPlaceholderText: {
-    color: tokens.colors.pureWhite,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  replyContent: {
-    flex: 1,
-  },
-  replyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-    gap: 6,
-  },
-  replyDisplayName: {
-    ...tokens.typography.p3B,
-    color: tokens.colors.pureWhite,
-  },
-  replyTimestamp: {
-    ...tokens.typography.p4,
-    color: tokens.colors.grey1,
-  },
-  replyText: {
-    ...tokens.typography.p3R,
-    color: tokens.colors.pureWhite,
-    marginBottom: 6,
-  },
-  replyImageContainer: {
-    alignSelf: 'flex-start',
-    maxHeight: 100,
-    borderRadius: 8,
-    marginBottom: 6,
-    overflow: 'hidden',
-  },
-  replyImage: {
-    width: '100%',
-    height: '100%',
-  },
-  replyActions: {
-    flexDirection: 'row',
-    gap: 13,
-    marginTop: 4,
-  },
-  replyLikeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  replyCommentButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  replyLikeText: {
-    fontSize: 8,
-    color: tokens.colors.grey1,
-    fontFamily: 'FunnelDisplay_300Light',
-    fontWeight: '300',
+    gap: 0,
   },
 });
