@@ -1644,16 +1644,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Soft delete: Set is_deleted to true instead of actually deleting
-      const { error } = await supabase
-        .from('comments')
-        .update({ is_deleted: true })
-        .eq('id', commentId)
-        .eq('user_id', authUserId); // Security: Only allow users to delete their own comments
+      // Use database function to bypass PostgREST schema cache
+      const { data, error } = await supabase.rpc('soft_delete_comment', {
+        comment_id: commentId,
+        requesting_user_id: authUserId
+      });
 
       if (error) {
         console.error('❌ Error deleting comment:', error);
         throw error;
+      }
+
+      if (!data) {
+        throw new Error('Comment not found or you do not have permission to delete it');
       }
 
       console.log('✅ Comment soft-deleted successfully');
