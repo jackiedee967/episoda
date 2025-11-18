@@ -137,6 +137,58 @@ export async function saveShow(
   return data as DatabaseShow;
 }
 
+export async function upsertShowFromAppModel(show: { 
+  traktId: number; 
+  tvmazeId?: number | null;
+  tmdbId?: number | null;
+  imdbId?: string | null;
+  tvdbId?: number | null;
+  title: string; 
+  description?: string;
+  posterUrl?: string | null;
+  backdropUrl?: string | null;
+  rating?: number;
+  totalSeasons?: number;
+  totalEpisodes?: number;
+}): Promise<DatabaseShow> {
+  console.log('🔍 upsertShowFromAppModel START:', show.title);
+  
+  const showData = {
+    trakt_id: show.traktId,
+    imdb_id: show.imdbId || null,
+    tvdb_id: show.tvdbId || null,
+    tmdb_id: show.tmdbId || null,
+    tvmaze_id: show.tvmazeId || null,
+    title: show.title,
+    description: show.description || null,
+    poster_url: show.posterUrl || null,
+    backdrop_url: show.backdropUrl || null,
+    rating: show.rating ? Number(show.rating.toFixed(1)) : null,
+    total_seasons: show.totalSeasons ?? null,
+    total_episodes: show.totalEpisodes ?? null,
+    genres: [],
+    updated_at: new Date().toISOString(),
+  };
+
+  console.log('💾 Upserting show from app model...');
+  const { data, error } = await supabase
+    .from('shows')
+    .upsert(showData, {
+      onConflict: 'trakt_id',
+      ignoreDuplicates: false
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('❌ Upsert error:', error);
+    throw error;
+  }
+
+  console.log('✅ upsertShowFromAppModel COMPLETE, ID:', data.id);
+  return data as DatabaseShow;
+}
+
 export async function saveEpisode(
   showId: string,
   tvmazeShowId: number | null,

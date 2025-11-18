@@ -1016,6 +1016,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       let dbEpisodes: Episode[] = [];
 
       if (selectedTraktShow) {
+        // Full Trakt data available - use it
         dbShow = await saveShow(selectedTraktShow);
         const { mapDatabaseShowToShow, mapDatabaseEpisodeToEpisode } = await import('@/services/showMappers');
         const showForPost = mapDatabaseShowToShow(dbShow);
@@ -1167,8 +1168,177 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         
         // Navigate to the post page
         router.push(`/post/${newPost.id}`);
+      } else if (selectedShow && !selectedTraktShow) {
+        // Trakt API failed, but we have ShowHub data - use fallback
+        console.log('⚠️ No Trakt show data - using ShowHub fallback for:', selectedShow.title);
+        
+        const { mapDatabaseShowToShow, mapDatabaseEpisodeToEpisode } = await import('@/services/showMappers');
+        
+        // Extract Trakt ID from selectedShow.id (format: "trakt-{traktId}" or "{uuid}")
+        let traktId: number | null = null;
+        if (selectedShow.id.startsWith('trakt-')) {
+          traktId = parseInt(selectedShow.id.split('-')[1], 10);
+        }
+        
+        if (traktId) {
+          // Try to get show from database by Trakt ID
+          const show = await getShowByTraktId(traktId);
+          dbShow = show || undefined;
+        } else {
+          // Try to get show from database by UUID
+          const show = await getShowById(selectedShow.id);
+          dbShow = show || undefined;
+        }
+        
+        if (!dbShow) {
+          console.error('❌ Show not found in database:', selectedShow.id);
+          Alert.alert(
+            'Show Data Missing',
+            'Unable to find show information in database. Please try selecting the show again.',
+            [{ text: 'OK' }]
+          );
+          setIsPosting(false);
+          return;
+        }
+        
+        const showForPost = mapDatabaseShowToShow(dbShow);
+        
+        // Handle episodes using ShowHub data (reuse existing fallback logic)
+        if (selectedEpisodes.length > 0 && dbShow) {
+          const validationErrors: string[] = [];
+          
+          // Validate ShowHub episodes
+          for (const episode of selectedEpisodes) {
+            if (!episode.seasonNumber || !episode.episodeNumber || !episode.title) {
+              validationErrors.push(`Missing data for ${episode.title}`);
+            }
+          }
+
+          if (validationErrors.length > 0) {
+            console.error('❌ Episode validation failed:', validationErrors);
+            Alert.alert(
+              'Episode Data Incomplete',
+              `Cannot post due to missing episode information:\n${validationErrors.join('\n')}`,
+              [{ text: 'OK' }]
+            );
+            setIsPosting(false);
+            return;
+          }
+          
+          console.log("✅ Episode validation passed - using ShowHub data");
+
+          // Fetch all existing episodes ONCE (not per-iteration)
+          const { getEpisodesByShowId } = await import('@/services/showDatabase');
+          const existingDbEpisodes = await getEpisodesByShowId(dbShow.id);
+          
+          // Create local reference for TypeScript
+          const currentDbShow = dbShow;
+          
+          const savedEpisodes = await Promise.allSettled(
+            selectedEpisodes.map(async (episode) => {
+              // Check if episode already exists in database
+              const matchingEpisode = existingDbEpisodes.find(
+                ep => ep.season_number === episode.seasonNumber && ep.episode_number === episode.episodeNumber
+              );
+              
+              if (matchingEpisode) {
+                console.log('✅ Episode already in database, reusing');
+                return matchingEpisode;
+              }
+              
+              // Episode not in database - save it using ShowHub data
+              console.log('💾 Saving new episode from ShowHub data');
+              
+              // Generate collision-free episode ID using trakt_id OR show UUID
+              let uniqueEpisodeId: number;
+              if (currentDbShow.trakt_id) {
+                // Use trakt_id-based formula: showTraktId * 100000000 + season * 10000 + episode
+                uniqueEpisodeId = currentDbShow.trakt_id * 100000000 + episode.seasonNumber * 10000 + episode.episodeNumber;
+              } else {
+                // Fallback: Hash show UUID + season + episode to generate unique ID
+                const showUuid = currentDbShow.id;
+                const episodeKey = `${showUuid}-S${episode.seasonNumber}E${episode.episodeNumber}`;
+                // Simple hash function to convert string to number
+                let hash = 0;
+                for (let i = 0; i < episodeKey.length; i++) {
+                  const char = episodeKey.charCodeAt(i);
+                  hash = ((hash << 5) - hash) + char;
+                  hash = hash & hash; // Convert to 32bit integer
+                }
+                uniqueEpisodeId = Math.abs(hash);
+              }
+              
+              const dbEpisode = await saveEpisode(
+                currentDbShow.id,
+                currentDbShow.tvmaze_id,
+                {
+                  ids: {
+                    trakt: uniqueEpisodeId,
+                    tvdb: null,
+                    imdb: null,
+                    tmdb: null,
+                  },
+                  season: episode.seasonNumber,
+                  number: episode.episodeNumber,
+                  title: episode.title,
+                  overview: episode.description || '',
+                  rating: episode.rating || 0,
+                }
+              );
+              return dbEpisode;
+            })
+          );
+
+          const failedSaves = savedEpisodes.filter(result => result.status === 'rejected' || result.value === null);
+          if (failedSaves.length > 0) {
+            console.error('❌ Episode saves failed:', failedSaves);
+            Alert.alert(
+              'Episode Save Failed',
+              'Some episodes could not be saved to the database. Please try again.',
+              [{ text: 'OK' }]
+            );
+            setIsPosting(false);
+            return;
+          }
+
+          dbEpisodes = savedEpisodes
+            .filter(result => result.status === 'fulfilled' && result.value !== null)
+            .map(result => mapDatabaseEpisodeToEpisode((result as PromiseFulfilledResult<any>).value));
+        }
+
+        // Create post
+        console.log('📝 Creating post in Supabase...');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+        const newPost = await createPost({
+          user: currentUser,
+          show: showForPost,
+          episodes: dbEpisodes.length > 0 ? dbEpisodes : undefined,
+          title: postTitle.trim() || undefined,
+          body: postBody.trim(),
+          rating: rating > 0 ? rating : undefined,
+          tags: selectedTags,
+          isSpoiler: selectedTags.some(tag => tag.toLowerCase().includes('spoiler')),
+        });
+
+        console.log('Post created successfully with ShowHub fallback');
+        
+        // Update logged episodes set
+        dbEpisodes.forEach(episode => {
+          setLoggedEpisodeIds(prev => new Set(prev).add(getEpisodeKey(episode)));
+        });
+        
+        if (onPostSuccess) {
+          onPostSuccess(newPost.id, dbEpisodes);
+        }
+        
+        resetModal();
+        onClose();
+        
+        // Navigate to the post page
+        router.push(`/post/${newPost.id}`);
       } else {
-        console.error('No Trakt show data available');
+        console.error('No show data available (neither Trakt nor ShowHub)');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     } catch (error) {
