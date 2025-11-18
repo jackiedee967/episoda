@@ -1000,13 +1000,14 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       return;
     }
 
-      console.log("❌ BLOCKED: Rating is 0");
     if (rating === 0) {
+      console.log("❌ BLOCKED: Rating is 0");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert('Rating Required', 'Please select a star rating before posting.');
       return;
     }
-      console.log("✅ Initial validation passed - proceeding with show save");
+    
+    console.log("✅ Initial validation passed - proceeding with show save");
 
     setIsPosting(true);
     
