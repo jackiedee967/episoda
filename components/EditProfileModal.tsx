@@ -513,13 +513,13 @@ export default function EditProfileModal({
                 />
                 {isCheckingUsername && (
                   <View style={styles.usernameIndicator}>
-                    <ActivityIndicator size="small" color={colors.greenHighlight} />
+                    <ActivityIndicator size="small" color={colors.tabStroke3} />
                   </View>
                 )}
                 {!isCheckingUsername && username !== initialUsername && (
                   <View style={styles.usernameIndicator}>
                     {usernameAvailable ? (
-                      <IconSymbol name="checkmark.circle.fill" size={20} color={colors.greenHighlight} />
+                      <IconSymbol name="checkmark.circle.fill" size={20} color={colors.tabStroke3} />
                     ) : (
                       <IconSymbol name="xmark.circle.fill" size={20} color={colors.error} />
                     )}
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
   },
   inputSuccess: {
-    borderColor: colors.greenHighlight,
+    borderColor: colors.tabStroke3,
   },
   errorText: {
     ...typography.p3R,
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   },
   successText: {
     ...typography.p3R,
-    color: colors.greenHighlight,
+    color: colors.tabStroke3,
     marginTop: 4,
   },
   socialInputContainer: {
