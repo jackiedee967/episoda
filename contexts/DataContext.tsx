@@ -29,12 +29,13 @@ export interface WatchHistoryItem {
 interface DataContextType {
   playlists: Playlist[];
   createPlaylist: (name: string, showId?: string) => Promise<Playlist>;
-  addShowToPlaylist: (playlistId: string, showId: string) => Promise<void>;
+  addShowToPlaylist: (playlistId: string, showId: string, traktId?: number) => Promise<void>;
   removeShowFromPlaylist: (playlistId: string, showId: string) => Promise<void>;
   deletePlaylist: (playlistId: string) => Promise<void>;
   isShowInPlaylist: (playlistId: string, showId: string) => boolean;
   updatePlaylistPrivacy: (playlistId: string, isPublic: boolean) => Promise<void>;
   loadPlaylists: (userId?: string) => Promise<void>;
+  recordTraktIdMapping: (traktId: number, uuid: string) => void;
   posts: Post[];
   createPost: (post: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>) => Promise<Post>;
   deletePost: (postId: string) => Promise<void>;
@@ -73,6 +74,7 @@ const STORAGE_KEYS = {
   USER_DATA: '@natively_user_data',
   REPOSTS: '@natively_reposts',
   PLAYLISTS: '@natively_playlists',
+  TRAKT_ID_MAP: '@natively_trakt_id_map',
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -116,6 +118,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [cachedRecommendations, setCachedRecommendations] = useState<any[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [traktIdToUuidMap, setTraktIdToUuidMap] = useState<Map<number, string>>(new Map());
   
   // Memoize currentUser to prevent recreation on every render
   const currentUser = useMemo(() => ({
@@ -162,6 +165,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...p,
           createdAt: new Date(p.createdAt),
         })));
+      }
+      
+      // Load Trakt ID -> UUID mapping
+      const traktIdMapData = await AsyncStorage.getItem(STORAGE_KEYS.TRAKT_ID_MAP);
+      if (traktIdMapData) {
+        const mapObject = JSON.parse(traktIdMapData);
+        // Convert keys back to numbers (JSON stringifies number keys)
+        const newMap = new Map<number, string>();
+        Object.entries(mapObject).forEach(([key, value]) => {
+          newMap.set(parseInt(key), value as string);
+        });
+        setTraktIdToUuidMap(newMap);
+        console.log(`✅ Loaded ${newMap.size} Trakt ID -> UUID mappings from storage`);
       }
       
       // Mark as hydrated after initial load
@@ -646,7 +662,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [playlists, currentUser.id, authUserId]);
 
-  const addShowToPlaylist = useCallback(async (playlistId: string, showId: string) => {
+  const addShowToPlaylist = useCallback(async (playlistId: string, showId: string, traktId?: number) => {
     try {
       console.log('📝 Adding show to playlist:', playlistId, showId);
 
@@ -657,6 +673,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           `Please use ensureShowUuid() to convert to database UUID before calling addShowToPlaylist.`;
         console.error('❌', errorMsg);
         throw new Error(errorMsg);
+      }
+
+      // Record Trakt ID -> UUID mapping BEFORE optimistic update for immediate bookmark state
+      if (traktId) {
+        recordTraktIdMapping(traktId, showId);
       }
 
       // OPTIMISTIC UPDATE FIRST - Update UI immediately for instant feedback
@@ -835,10 +856,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [authUserId]);
 
+  const recordTraktIdMapping = useCallback((traktId: number, uuid: string) => {
+    setTraktIdToUuidMap(prev => {
+      const newMap = new Map(prev);
+      newMap.set(traktId, uuid);
+      console.log(`🔗 Recorded Trakt ID ${traktId} -> UUID ${uuid}`);
+      
+      // Persist to AsyncStorage
+      const mapObject = Object.fromEntries(newMap);
+      AsyncStorage.setItem(STORAGE_KEYS.TRAKT_ID_MAP, JSON.stringify(mapObject))
+        .catch(error => console.error('❌ Error saving Trakt ID map to AsyncStorage:', error));
+      
+      return newMap;
+    });
+  }, []);
+
   const isShowInPlaylist = useCallback((playlistId: string, showId: string): boolean => {
     const playlist = playlists.find(p => p.id === playlistId);
-    return playlist ? (playlist.shows || []).includes(showId) : false;
-  }, [playlists]);
+    if (!playlist) return false;
+    
+    // Check by UUID directly
+    if ((playlist.shows || []).includes(showId)) {
+      return true;
+    }
+    
+    // If showId is in "trakt-{id}" format, resolve to UUID and check again
+    if (showId.startsWith('trakt-')) {
+      const traktId = parseInt(showId.substring(6));
+      const uuid = traktIdToUuidMap.get(traktId);
+      if (uuid && (playlist.shows || []).includes(uuid)) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, [playlists, traktIdToUuidMap]);
 
   const loadPlaylists = useCallback(async (userId?: string) => {
     try {
@@ -880,6 +932,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
           console.log('✅ Loaded', loadedPlaylists.length, 'playlists from Supabase');
           setPlaylists(loadedPlaylists);
           await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(loadedPlaylists));
+          
+          // Populate traktId -> UUID mapping from playlist shows
+          const allShowIds = new Set<string>();
+          for (const playlist of loadedPlaylists) {
+            for (const showId of playlist.shows || []) {
+              allShowIds.add(showId);
+            }
+          }
+          
+          if (allShowIds.size > 0) {
+            const { data: shows } = await supabase
+              .from('shows')
+              .select('id, trakt_id')
+              .in('id', Array.from(allShowIds));
+            
+            if (shows) {
+              // Merge with existing map to preserve locally cached entries
+              setTraktIdToUuidMap(prev => {
+                const mergedMap = new Map(prev);
+                for (const show of shows) {
+                  if (show.trakt_id) {
+                    mergedMap.set(show.trakt_id, show.id);
+                  }
+                }
+                console.log(`✅ Merged ${shows.length} Trakt ID -> UUID mappings (total: ${mergedMap.size})`);
+                
+                // Persist merged map to AsyncStorage
+                const mapObject = Object.fromEntries(mergedMap);
+                AsyncStorage.setItem(STORAGE_KEYS.TRAKT_ID_MAP, JSON.stringify(mapObject))
+                  .catch(error => console.error('❌ Error saving Trakt ID map to AsyncStorage:', error));
+                
+                return mergedMap;
+              });
+            }
+          }
+          
           return;
         }
       }
@@ -2257,6 +2345,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     deletePlaylist,
     updatePlaylistPrivacy,
     loadPlaylists,
+    recordTraktIdMapping,
     createPost,
     deletePost,
     likePost,
@@ -2283,7 +2372,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ...selectors,
     // Spread actions
     ...actions,
-  }), [state, selectors, actions]);
+    // Exposed helpers
+    recordTraktIdMapping,
+  }), [state, selectors, actions, recordTraktIdMapping]);
 
   return (
     <DataContext.Provider value={contextValue}>

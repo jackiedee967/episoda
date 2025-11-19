@@ -7,7 +7,7 @@ import PlaylistModal from '@/components/PlaylistModal';
 import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight, Bookmark } from 'lucide-react-native';
@@ -42,9 +42,9 @@ export default function HomeScreen() {
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const isShowSaved = (showId: string) => {
+  const isShowSaved = useCallback((showId: string, traktId?: number) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
-  };
+  }, [playlists, isShowInPlaylist]);
 
   useEffect(() => {
     Animated.loop(
@@ -399,7 +399,7 @@ export default function HomeScreen() {
                   }}
                 >
                   <IconSymbol 
-                    name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                    name={isShowSaved(show.id, show.traktId) ? "bookmark.fill" : "bookmark"} 
                     size={18} 
                     color={tokens.colors.pureWhite} 
                   />
@@ -497,7 +497,7 @@ export default function HomeScreen() {
                     }}
                   >
                     <IconSymbol 
-                      name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                      name={isShowSaved(show.id, show.traktId) ? "bookmark.fill" : "bookmark"} 
                       size={18} 
                       color={tokens.colors.pureWhite} 
                     />

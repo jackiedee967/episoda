@@ -31,7 +31,7 @@ interface PlaylistModalProps {
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PlaylistModal({ visible, onClose, show, traktShow, onAddToPlaylist }: PlaylistModalProps) {
-  const { playlists, createPlaylist, addShowToPlaylist, removeShowFromPlaylist, isShowInPlaylist } = useData();
+  const { playlists, createPlaylist, addShowToPlaylist, removeShowFromPlaylist, isShowInPlaylist, recordTraktIdMapping } = useData();
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -56,6 +56,11 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
           if (requestTokenRef.current === currentToken) {
             setEnsuredShowUuid(uuid);
             console.log('✅ Pre-fetched show UUID for UI state:', uuid);
+            // Record the Trakt ID -> UUID mapping for bookmark state
+            if (show.traktId || traktShow?.ids?.trakt) {
+              const traktId = show.traktId || traktShow!.ids.trakt;
+              recordTraktIdMapping(traktId, uuid);
+            }
           } else {
             console.log('⚠️ Discarding stale UUID fetch (request token mismatch)');
           }
@@ -199,7 +204,8 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
         // Add to playlist
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
-        await addShowToPlaylist(playlistId, showIdToUse);
+        const traktId = show.traktId || traktShow?.ids?.trakt;
+        await addShowToPlaylist(playlistId, showIdToUse, traktId);
         console.log(`Added ${show.title} to ${playlist?.name}`);
         
         // Call the callback if provided
