@@ -291,90 +291,99 @@ export default function EditProfileModal({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('Error getting user:', authError);
+        throw new Error('Authentication failed. Please sign in again.');
+      }
+      
       let avatarUrl: string | null = null;
       
-      if (user) {
-        if (avatarUri) {
-          setIsUploadingAvatar(true);
-          avatarUrl = await uploadAvatar(avatarUri);
-          setIsUploadingAvatar(false);
-          
-          if (!avatarUrl) {
-            if (typeof window !== 'undefined') {
-              window.alert('Failed to upload profile picture. Please try again.');
-            }
-            setIsSaving(false);
-            return;
-          }
-        }
+      if (avatarUri) {
+        setIsUploadingAvatar(true);
+        avatarUrl = await uploadAvatar(avatarUri);
+        setIsUploadingAvatar(false);
         
-        const { data: existingProfile } = await supabase
+        if (!avatarUrl) {
+          if (typeof window !== 'undefined') {
+            window.alert('Failed to upload profile picture. Please try again.');
+          }
+          setIsSaving(false);
+          return;
+        }
+      }
+      
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles' as any)
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error checking existing profile:', profileError);
+        throw profileError;
+      }
+
+      const updateData: any = {
+        display_name: displayName.trim(),
+        username: username.toLowerCase().trim(),
+        bio: bio.trim(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (avatarUrl) {
+        updateData.avatar_url = avatarUrl;
+      }
+
+      if (existingProfile) {
+        const { error: updateError } = await supabase
           .from('profiles' as any)
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-        const updateData: any = {
-          display_name: displayName.trim(),
-          username: username.toLowerCase().trim(),
-          bio: bio.trim(),
-          updated_at: new Date().toISOString(),
-        };
-
-        if (avatarUrl) {
-          updateData.avatar_url = avatarUrl;
-        }
-
-        if (existingProfile) {
-          const { error: updateError } = await supabase
-            .from('profiles' as any)
-            .update(updateData)
-            .eq('user_id', user.id);
-          
-          if (updateError) {
-            console.error('Error updating profile:', updateError);
-            throw updateError;
-          }
-        } else {
-          const { error: insertError } = await supabase
-            .from('profiles' as any)
-            .insert({
-              user_id: user.id,
-              ...updateData,
-            });
-          
-          if (insertError) {
-            console.error('Error inserting profile:', insertError);
-            throw insertError;
-          }
-        }
-
-        const { error: deleteError } = await supabase
-          .from('social_links' as any)
-          .delete()
+          .update(updateData)
           .eq('user_id', user.id);
         
-        if (deleteError) {
-          console.error('Error deleting social links:', deleteError);
-          throw deleteError;
+        if (updateError) {
+          console.error('Error updating profile:', updateError);
+          throw updateError;
         }
-
-        if (updatedSocialLinks.length > 0) {
-          const socialLinksToInsert = updatedSocialLinks.map(link => ({
+      } else {
+        const { error: insertError } = await supabase
+          .from('profiles' as any)
+          .insert({
             user_id: user.id,
-            platform: link.platform,
-            url: link.url,
-          }));
+            ...updateData,
+          });
+        
+        if (insertError) {
+          console.error('Error inserting profile:', insertError);
+          throw insertError;
+        }
+      }
 
-          const { error: insertLinksError } = await supabase
-            .from('social_links' as any)
-            .insert(socialLinksToInsert as any);
-          
-          if (insertLinksError) {
-            console.error('Error inserting social links:', insertLinksError);
-            throw insertLinksError;
-          }
+      const { error: deleteError } = await supabase
+        .from('social_links' as any)
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (deleteError) {
+        console.error('Error deleting social links:', deleteError);
+        throw deleteError;
+      }
+
+      if (updatedSocialLinks.length > 0) {
+        const socialLinksToInsert = updatedSocialLinks.map(link => ({
+          user_id: user.id,
+          platform: link.platform,
+          url: link.url,
+        }));
+
+        const { error: insertLinksError } = await supabase
+          .from('social_links' as any)
+          .insert(socialLinksToInsert as any);
+        
+        if (insertLinksError) {
+          console.error('Error inserting social links:', insertLinksError);
+          throw insertLinksError;
         }
       }
 
