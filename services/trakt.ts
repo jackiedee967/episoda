@@ -268,3 +268,74 @@ export async function getTrendingShows(limit: number = 12): Promise<TraktShow[]>
     throw error;
   }
 }
+
+export async function getRecentlyReleasedShows(limit: number = 12): Promise<TraktShow[]> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured');
+  }
+
+  try {
+    console.log(`📅 Fetching ${limit} recently released shows from Trakt`);
+    
+    // Get recently aired shows from Trakt
+    const response = await fetch(
+      `${TRAKT_BASE_URL}/calendars/all/shows/new/-30/${limit}?extended=full`,
+      { headers: TRAKT_HEADERS }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data: { first_aired: string; show: TraktShow }[] = await response.json();
+    
+    // Sort by first_aired date (most recent first) and extract shows
+    const shows = data
+      .sort((a, b) => new Date(b.first_aired).getTime() - new Date(a.first_aired).getTime())
+      .map(item => item.show)
+      .slice(0, limit);
+    
+    console.log(`✅ Fetched ${shows.length} recently released shows`);
+    return shows;
+  } catch (error) {
+    console.error('Error fetching recently released shows from Trakt:', error);
+    throw error;
+  }
+}
+
+export async function getPopularShowsByGenre(genre: string, limit: number = 12): Promise<TraktShow[]> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured');
+  }
+
+  try {
+    console.log(`📺 Fetching ${limit} popular shows for genre: ${genre}`);
+    
+    // Get popular shows from Trakt
+    const response = await fetch(
+      `${TRAKT_BASE_URL}/shows/popular?extended=full&limit=${limit * 3}`,
+      { headers: TRAKT_HEADERS }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+    }
+
+    const allShows: TraktShow[] = await response.json();
+    
+    // Filter by genre (case-insensitive)
+    const genreLower = genre.toLowerCase();
+    const filteredShows = allShows.filter(show => 
+      show.genres && show.genres.some(g => g.toLowerCase() === genreLower)
+    );
+    
+    const shows = filteredShows.slice(0, limit);
+    console.log(`✅ Fetched ${shows.length} popular ${genre} shows`);
+    return shows;
+  } catch (error) {
+    console.error(`Error fetching popular shows for genre ${genre} from Trakt:`, error);
+    throw error;
+  }
+}

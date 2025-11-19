@@ -26,13 +26,17 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { supabase } from '@/app/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
+import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre } from '@/services/trakt';
+import { getUserInterests, getAllGenres } from '@/services/userInterests';
+import ExploreShowSection from '@/components/ExploreShowSection';
+import { ScrollView as RNScrollView } from 'react-native';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing, currentUser } = useData();
+  const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing, currentUser, ensureShowUuid } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const initialTab = (params.tab as SearchCategory) || 'shows';
@@ -60,6 +64,15 @@ export default function SearchScreen() {
     comments: string[];
     users: string[];
   }>({ shows: [], posts: [], comments: [], users: [] });
+
+  // Curated content state
+  const [friendActivityShows, setFriendActivityShows] = useState<any[]>([]);
+  const [forYouShows, setForYouShows] = useState<any[]>([]);
+  const [trendingShows, setTrendingShows] = useState<any[]>([]);
+  const [recentlyReleasedShows, setRecentlyReleasedShows] = useState<any[]>([]);
+  const [genreSections, setGenreSections] = useState<Array<{ genre: string; shows: any[] }>>([]);
+  const [userGenres, setUserGenres] = useState<string[]>([]);
+  const [isLoadingCurated, setIsLoadingCurated] = useState(false);
 
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
@@ -137,6 +150,140 @@ export default function SearchScreen() {
     
     addSearchToHistory(trimmedQuery);
   };
+
+  // Load curated content when search is empty
+  useEffect(() => {
+    if (searchQuery.trim().length > 0 || !currentUser?.id) return;
+    
+    const loadCuratedContent = async () => {
+      setIsLoadingCurated(true);
+      
+      try {
+        // 1. Friend Activity - get shows friends have watched
+        const followingIds = currentUser.following || [];
+        const friendsPosts = posts.filter(post => 
+          followingIds.includes(post.user.id) && post.show
+        );
+        
+        const showFriendCounts = new Map();
+        friendsPosts.forEach(post => {
+          const traktId = post.show.traktId;
+          if (!traktId) return;
+          
+          const existing = showFriendCounts.get(traktId);
+          if (existing) {
+            existing.friendIds.add(post.user.id);
+            existing.friendCount = existing.friendIds.size;
+          } else {
+            showFriendCounts.set(traktId, {
+              show: post.show,
+              friendCount: 1,
+              friendIds: new Set([post.user.id])
+            });
+          }
+        });
+        
+        const friendShows = Array.from(showFriendCounts.values())
+          .sort((a, b) => b.friendCount - a.friendCount)
+          .map(item => ({
+            ...item.show,
+            id: item.show.id || `trakt-${item.show.traktId}`
+          }))
+          .slice(0, 12);
+        
+        setFriendActivityShows(friendShows);
+        
+        // 2. Get user interests
+        const interests = await getUserInterests(currentUser.id);
+        setUserGenres(interests.genres);
+        
+        // 3. For You - popular shows in user's interests
+        if (interests.genres.length > 0) {
+          const forYouPromises = interests.genres.slice(0, 3).map(genre => 
+            getPopularShowsByGenre(genre, 5)
+          );
+          const forYouResults = await Promise.all(forYouPromises);
+          const forYouShowsList = forYouResults.flat()
+            .slice(0, 12)
+            .map(traktShow => {
+              const show = mapTraktShowToShow(traktShow);
+              return {
+                ...show,
+                id: show.id || `trakt-${traktShow.ids.trakt}`,
+                traktId: traktShow.ids.trakt,
+                traktShow
+              };
+            });
+          setForYouShows(forYouShowsList);
+        }
+        
+        // 4. Trending
+        const trending = await getTrendingShows(12);
+        const trendingMapped = trending.map(traktShow => {
+          const show = mapTraktShowToShow(traktShow);
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            traktShow
+          };
+        });
+        setTrendingShows(trendingMapped);
+        
+        // 5. Recently Released
+        const recent = await getRecentlyReleasedShows(12);
+        const recentMapped = recent.map(traktShow => {
+          const show = mapTraktShowToShow(traktShow);
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            traktShow
+          };
+        });
+        setRecentlyReleasedShows(recentMapped);
+        
+        // 6. Genre Sections
+        const allGenres = getAllGenres();
+        const userGenreSet = new Set(interests.genres.map(g => g.toLowerCase()));
+        const orderedGenres = [
+          ...interests.genres.slice(0, 5),
+          ...allGenres.filter(g => !userGenreSet.has(g.toLowerCase()))
+        ];
+        
+        const genrePromises = orderedGenres.slice(0, 10).map(async (genre) => {
+          try {
+            const shows = await getPopularShowsByGenre(genre, 12);
+            return {
+              genre,
+              shows: shows.map(traktShow => {
+                const show = mapTraktShowToShow(traktShow);
+                return {
+                  ...show,
+                  id: show.id || `trakt-${traktShow.ids.trakt}`,
+                  traktId: traktShow.ids.trakt,
+                  traktShow
+                };
+              })
+            };
+          } catch (error) {
+            console.error(`Error fetching genre ${genre}:`, error);
+            return { genre, shows: [] };
+          }
+        });
+        
+        const genres = await Promise.all(genrePromises);
+        setGenreSections(genres.filter(g => g.shows.length > 0));
+        
+      } catch (error) {
+        console.error('Error loading curated content:', error);
+      } finally {
+        setIsLoadingCurated(false);
+      }
+    };
+    
+    loadCuratedContent();
+  }, [searchQuery, currentUser, posts]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -953,32 +1100,126 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        <View style={styles.tabSelectorWrapper}>
-          <TabSelector
-            tabs={tabs}
-            activeTab={activeCategory}
-            onTabChange={handleTabChange}
-            variant="default"
-          />
-        </View>
+        {/* Show TabSelector only when searching */}
+        {searchQuery.trim().length > 0 && (
+          <View style={styles.tabSelectorWrapper}>
+            <TabSelector
+              tabs={tabs}
+              activeTab={activeCategory}
+              onTabChange={handleTabChange}
+              variant="default"
+            />
+          </View>
+        )}
 
         {renderShowFilter()}
 
-        <FlatList
-          data={filteredResults}
-          renderItem={renderItem}
-          keyExtractor={getKeyExtractor}
-          style={styles.scrollView}
-          contentContainerStyle={styles.resultsContainer}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-          ListFooterComponent={renderFooter}
-          onEndReached={activeCategory === 'shows' ? handleEndReached : undefined}
-          onEndReachedThreshold={Platform.OS === 'web' ? 2.0 : 0.5}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-        />
+        {/* Curated Content (when not searching) */}
+        {searchQuery.trim().length === 0 ? (
+          <RNScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.curatedContainer}
+          >
+            {friendActivityShows.length > 0 && (
+              <ExploreShowSection
+                title="Friend Activity"
+                shows={friendActivityShows}
+                onShowPress={async (show) => {
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
+                onBookmarkPress={(show) => {
+                  setSelectedShow(show as Show);
+                  setPlaylistModalVisible(true);
+                }}
+                isShowSaved={isShowSaved}
+              />
+            )}
+
+            {forYouShows.length > 0 && (
+              <ExploreShowSection
+                title="For You"
+                shows={forYouShows}
+                onShowPress={async (show) => {
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
+                onBookmarkPress={(show) => {
+                  setSelectedShow(show as Show);
+                  setPlaylistModalVisible(true);
+                }}
+                isShowSaved={isShowSaved}
+              />
+            )}
+
+            {trendingShows.length > 0 && (
+              <ExploreShowSection
+                title="Trending"
+                shows={trendingShows}
+                onShowPress={async (show) => {
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
+                onBookmarkPress={(show) => {
+                  setSelectedShow(show as Show);
+                  setPlaylistModalVisible(true);
+                }}
+                isShowSaved={isShowSaved}
+              />
+            )}
+
+            {recentlyReleasedShows.length > 0 && (
+              <ExploreShowSection
+                title="Recently Released"
+                shows={recentlyReleasedShows}
+                onShowPress={async (show) => {
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
+                onBookmarkPress={(show) => {
+                  setSelectedShow(show as Show);
+                  setPlaylistModalVisible(true);
+                }}
+                isShowSaved={isShowSaved}
+              />
+            )}
+
+            {genreSections.map((section) => (
+              <ExploreShowSection
+                key={section.genre}
+                title={section.genre.charAt(0).toUpperCase() + section.genre.slice(1)}
+                shows={section.shows}
+                isGenreSection
+                onShowPress={async (show) => {
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
+                onBookmarkPress={(show) => {
+                  setSelectedShow(show as Show);
+                  setPlaylistModalVisible(true);
+                }}
+                isShowSaved={isShowSaved}
+              />
+            ))}
+          </RNScrollView>
+        ) : (
+          <FlatList
+            data={filteredResults}
+            renderItem={renderItem}
+            keyExtractor={getKeyExtractor}
+            style={styles.scrollView}
+            contentContainerStyle={styles.resultsContainer}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyState}
+            ListFooterComponent={renderFooter}
+            onEndReached={activeCategory === 'shows' ? handleEndReached : undefined}
+            onEndReachedThreshold={Platform.OS === 'web' ? 2.0 : 0.5}
+            initialNumToRender={10}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+          />
+        )}
 
       {selectedShow && (
         <PlaylistModal
@@ -1086,6 +1327,10 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 100,
     gap: 10,
+  },
+  curatedContainer: {
+    paddingTop: 18,
+    paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',

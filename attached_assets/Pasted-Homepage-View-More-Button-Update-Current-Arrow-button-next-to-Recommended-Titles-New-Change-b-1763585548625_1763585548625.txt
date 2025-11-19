@@ -1,0 +1,86 @@
+Homepage "View More" Button Update
+Current: Arrow button next to "Recommended Titles"
+New:
+
+Change button text to "View more >"
+Make it more visually prominent (ensure it's clearly clickable)
+Link to the Explore page
+
+
+Explore Page Redesign
+Goal: Transform the Explore page into a one-stop shop for TV recommendations that combines search functionality with curated content discovery.
+
+Search Functionality:
+Default State (before user types):
+
+Show search input box at top
+Hide the toggle buttons (Shows, Posts, Comments, Users)
+Display curated content sections below (detailed below)
+
+Active State (when user starts typing):
+
+Fade in the toggle buttons (Shows, Posts, Comments, Users)
+Display search results as normal
+Hide the curated content sections
+
+
+Curated Content Sections (Default State):
+Display content in horizontal scrolling rows, similar to the homepage layout.
+Show Display:
+
+Show 2.5 shows visible before scrolling (instead of 1.5 on homepage)
+Horizontal scroll for each row
+
+
+Section Order & Logic:
+1. Friend Activity
+
+Shows that user's friends have watched, sorted by number of friends who have watched
+Same logic as homepage Friend Activity section
+Pull real data from friends' watch activity
+
+2. For You
+
+Most popular shows within user's [Interests] (preferred genres)
+Same logic as homepage "Recommended Titles"
+API call: Get popular shows filtered by user's interest genres
+Sort by popularity within those genres
+
+3. Trending
+
+Shows trending across all genres (not filtered by user interests)
+API call: Get trending shows (no genre filter)
+Question for API: How does the API determine "trending"? Is it based on recent popularity spike, total views over X days, or another metric? Use whatever the API provides as "trending."
+
+4. Recently Released
+
+Newest popular releases across all genres (not filtered by user interests)
+API call: Get recently released shows
+Sort by release date
+Optionally apply secondary filter for popularity (to avoid showing extremely obscure new releases)
+
+5. Genre Sections (multiple rows, clickable tags)
+
+Display individual genre rows
+Clickable genre tags as row titles (use existing genre tag styling)
+Order: Show genres from user's [Interests] first at the top, then display all other genres below
+Each row shows popular shows within that genre
+
+
+[Interests] Definition Reminder:
+User's [Interests] = Genres from:
+
+Shows selected during signup
+Shows they have logged/rated
+
+Use this interest profile to personalize "For You" section.
+
+Visual Layout:
+Each section should have:
+
+Section title (e.g., "Friend Activity", "For You", "Trending", genre name)
+Genre sections should have clickable genre tags as titles
+Horizontal scrolling row of show posters
+2.5 shows visible before scroll
+
+

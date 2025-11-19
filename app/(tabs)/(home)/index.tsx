@@ -482,13 +482,15 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.recommendedSection}>
-        <Pressable 
-          style={styles.sectionHeader}
-          onPress={() => router.push('/recommended-titles')}
-        >
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recommended Titles</Text>
-          <ChevronRight size={10} color={tokens.colors.pureWhite} strokeWidth={1} />
-        </Pressable>
+          <Pressable 
+            style={styles.viewMoreButton}
+            onPress={() => router.push('/(tabs)/search')}
+          >
+            <Text style={styles.viewMoreText}>View more ›</Text>
+          </Pressable>
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -786,6 +788,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...tokens.typography.p1,
     color: tokens.colors.almostWhite,
+  },
+  viewMoreButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: tokens.colors.greenHighlight,
+    borderRadius: 8,
+  },
+  viewMoreText: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.black,
+    fontSize: 14,
+    fontWeight: '600',
   },
   showsScrollView: {
     marginLeft: -20,
