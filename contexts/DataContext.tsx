@@ -308,7 +308,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           console.log('⚠️ Trakt API unavailable - using database-only recommendations');
         }
 
-        const recommendations = await getCombinedRecommendations(requestUserId, 12);
+        const recommendations = await getCombinedRecommendations(requestUserId, 25);
         console.log(`✅ Fetched ${recommendations.length} raw recommendations for caching`);
 
         // Convert to display-ready format (same as PostModal)
