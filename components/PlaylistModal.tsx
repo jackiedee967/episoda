@@ -291,7 +291,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
                 ref={inputRef}
                 style={styles.input}
                 placeholder="Create new playlist"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={tokens.colors.grey1}
                 value={newPlaylistName}
                 onChangeText={setNewPlaylistName}
                 returnKeyType="done"
@@ -307,7 +307,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
                 onPress={handleCreatePlaylist}
                 disabled={!newPlaylistName.trim()}
               >
-                <IconSymbol name="plus" size={20} color={colors.text} />
+                <IconSymbol name="plus" size={20} color={tokens.colors.black} />
               </Pressable>
             </View>
 
@@ -338,7 +338,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
                     <IconSymbol 
                       name={isShowInList ? "checkmark.circle.fill" : "plus"} 
                       size={20} 
-                      color={isShowInList ? colors.secondary : colors.textSecondary} 
+                      color={isShowInList ? tokens.colors.tabStroke3 : tokens.colors.grey1} 
                     />
                   </Pressable>
                 );
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalContainer: {
-    backgroundColor: colors.background,
+    backgroundColor: tokens.colors.pureWhite,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.7,
@@ -393,24 +393,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: tokens.colors.grey2,
   },
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: colors.border,
+    backgroundColor: tokens.colors.grey2,
     borderRadius: 2,
     marginBottom: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
+    ...tokens.typography.titleL,
+    color: tokens.colors.black,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
   },
   content: {
     flex: 1,
@@ -424,16 +423,16 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: tokens.colors.inputBackground,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: colors.text,
+    color: tokens.colors.black,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: tokens.colors.inputStroke,
   },
   createButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: tokens.colors.tabStroke3,
     borderRadius: 12,
     width: 52,
     height: 52,
@@ -454,18 +453,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.card,
+    backgroundColor: tokens.colors.inputBackground,
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
   },
   playlistItemPressed: {
     opacity: 0.8,
     transform: [{ scale: 0.98 }],
   },
   playlistItemAdded: {
-    backgroundColor: colors.purpleLight,
+    backgroundColor: tokens.colors.tabBack2,
     borderWidth: 1,
-    borderColor: colors.purple,
+    borderColor: tokens.colors.tabStroke2,
   },
   playlistItemDisabled: {
     opacity: 0.5,
@@ -474,13 +475,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   playlistName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    ...tokens.typography.subtitle,
+    color: tokens.colors.black,
     marginBottom: 4,
   },
   playlistCount: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
   },
 });
