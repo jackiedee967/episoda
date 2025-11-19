@@ -8,6 +8,8 @@ EPISODA is a social media application for TV show enthusiasts, built with Expo a
   - **Friends' Shows Priority**: First displays shows being watched by friends, ranked by unique friend count (e.g., show watched by 5 friends appears before one watched by 2)
   - **Interest-Based Recommendations**: Fills remaining slots using existing `getCombinedRecommendations` service that analyzes user's genre preferences from logged shows
   - **Smart Deduplication**: Uses `traktId` as consistent identifier to prevent duplicates when same show appears in both friends' and interest-based lists
+  - **Currently Watching Filter**: Excludes shows from Currently Watching section to prevent duplication - users only see fresh recommendations
+  - **Display Limit**: Shows up to 10 recommended titles (increased from 6) with increased fetch limit to 20 to account for filtering
   - **Data Normalization**: All shows normalized to consistent format (id, traktId, title, poster) with poster fallback chain (poster → posterUrl → null)
   - **Performance Optimization**: Single-pass friend data caching eliminates O(n*m) repeated array scans, improving render performance with large post feeds
   - **Friend Activity Display**: Shows avatars of up to 3 friends watching each show with accurate friend count, using cached data for instant rendering

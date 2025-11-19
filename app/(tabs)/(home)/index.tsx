@@ -175,6 +175,13 @@ export default function HomeScreen() {
       if (!currentUser?.id) return;
 
       try {
+        // Get traktIds from Currently Watching to exclude them
+        const currentlyWatchingTraktIds = new Set(
+          currentlyWatchingShows
+            .map(show => show.traktId)
+            .filter(Boolean)
+        );
+
         const followingIds = currentUser.following || [];
         
         // 1. Get shows from friends' posts and count unique friends per show
@@ -188,6 +195,9 @@ export default function HomeScreen() {
         for (const post of friendsPosts) {
           const traktId = post.show.traktId;
           if (!traktId) continue;
+          
+          // Skip if in Currently Watching
+          if (currentlyWatchingTraktIds.has(traktId)) continue;
           
           const existing = showFriendCounts.get(traktId);
           if (existing) {
@@ -206,8 +216,8 @@ export default function HomeScreen() {
         const friendsShows = Array.from(showFriendCounts.values())
           .sort((a, b) => b.friendCount - a.friendCount);
 
-        // 2. Get interest-based recommendations
-        const recommendations = await getCombinedRecommendations(currentUser.id, 12);
+        // 2. Get interest-based recommendations (fetch 20 to account for filtering)
+        const recommendations = await getCombinedRecommendations(currentUser.id, 20);
         
         // 3. Normalize all shows to consistent format using traktId as key
         const normalizedFriendsShows = friendsShows.map(item => ({
@@ -218,7 +228,7 @@ export default function HomeScreen() {
         }));
 
         const normalizedInterestShows = recommendations
-          .filter(rec => rec.poster_url)
+          .filter(rec => rec.poster_url && !currentlyWatchingTraktIds.has(rec.trakt_id))
           .map(rec => ({
             id: rec.id || `trakt-${rec.trakt_id}`,
             traktId: rec.trakt_id,
@@ -247,15 +257,15 @@ export default function HomeScreen() {
           }
         }
 
-        // NOW slice to 6
-        setRecommendedShows(combined.slice(0, 6));
+        // NOW slice to 10
+        setRecommendedShows(combined.slice(0, 10));
       } catch (error) {
         console.error('Error fetching recommended shows:', error);
       }
     };
 
     fetchRecommendedShows();
-  }, [currentUser?.id, currentUser?.following, posts]);
+  }, [currentUser?.id, currentUser?.following, posts, currentlyWatchingShows]);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
