@@ -232,13 +232,8 @@ export default function EpisodeHub() {
             </View>
           </View>
 
-          {/* Episode and Show Tags */}
+          {/* Show and Episode Tags */}
           <View style={styles.tagsRow}>
-            <PostTags
-              prop="Large"
-              state="S_E_"
-              text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
-            />
             {(() => {
               const showColors = getShowColorScheme(show.traktId, show.colorScheme);
               return (
@@ -252,6 +247,11 @@ export default function EpisodeHub() {
                 />
               );
             })()}
+            <PostTags
+              prop="Large"
+              state="S_E_"
+              text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+            />
           </View>
 
           {/* Episode Info Card */}
