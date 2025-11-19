@@ -19,6 +19,8 @@ export function Friends(props: BaseFriendsProps) {
   const isSmall = prop === 'Small';
   const displayCount = isSmall ? 3 : 5;
   const displayedFriends = friends.slice(0, displayCount);
+  const remainingCount = friends.length - displayCount;
+  const showCountBadge = remainingCount > 0;
 
   return (
     <View testID={testID} style={[styles.container, isSmall && styles.containerSmall]}>
@@ -49,6 +51,19 @@ export function Friends(props: BaseFriendsProps) {
           </View>
         )
       ))}
+      {showCountBadge && (
+        <View
+          style={[
+            styles.countBadge,
+            isSmall && styles.countBadgeSmall,
+            displayedFriends.length > 0 && { marginLeft: isSmall ? -6 : -8 }
+          ]}
+        >
+          <Text style={[styles.countText, isSmall && styles.countTextSmall]}>
+            +{remainingCount}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -87,5 +102,30 @@ const styles = StyleSheet.create({
   },
   avatarTextSmall: {
     fontSize: 8,
+  },
+  countBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.pureWhite,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.cardBackground,
+  },
+  countBadgeSmall: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  countText: {
+    fontFamily: 'Funnel Display',
+    fontSize: 8,
+    fontWeight: '600',
+    color: colors.pageBackground,
+  },
+  countTextSmall: {
+    fontSize: 7,
   },
 });
