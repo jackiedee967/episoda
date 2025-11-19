@@ -1,62 +1,7 @@
 # EPISODA - TV Show Social Media App
 
 ## Overview
-EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
-
-## Recent Changes (November 19, 2025)
-- **Recommended Titles Real Data - Production-Ready**: Replaced mock data with two-tier recommendation system using real user data
-  - **Friends' Shows Priority**: First displays shows being watched by friends, ranked by unique friend count (e.g., show watched by 5 friends appears before one watched by 2)
-  - **Interest-Based Recommendations**: Fills remaining slots using existing `getCombinedRecommendations` service that analyzes user's genre preferences from logged shows
-  - **Smart Deduplication**: Uses `traktId` as consistent identifier to prevent duplicates when same show appears in both friends' and interest-based lists
-  - **Currently Watching Filter**: Excludes shows from Currently Watching section to prevent duplication - users only see fresh recommendations
-  - **Display Limit**: Shows up to 10 recommended titles (increased from 6) with increased fetch limit to 20 to account for filtering
-  - **Data Normalization**: All shows normalized to consistent format (id, traktId, title, poster) with poster fallback chain (poster → posterUrl → null)
-  - **Performance Optimization**: Single-pass friend data caching eliminates O(n*m) repeated array scans, improving render performance with large post feeds
-  - **Friend Activity Display**: Shows avatars of up to 3 friends watching each show with accurate friend count, using cached data for instant rendering
-  - **Architect Validated**: All critical issues resolved - correct ranking, no duplicates, consistent data structure, optimized performance
-- **Currently Watching Section**: New homepage section showing last 6 unique shows user has logged, positioned above Recommended Titles
-  - **Smart Show Tracking**: Automatically extracts unique shows from user's post history, displays most recent first
-  - **Quick Logging**: Each show poster includes green "Log episode" button (with #8bfc76 background) that opens PostModal with show pre-selected
-  - **User Experience**: Users can quickly re-log shows they're actively watching without searching again
-  - **Consistent UI**: Follows same design pattern as Recommended Titles with card background, stroke, and bookmark functionality
-- **You May Know Real Data Implementation**: Replaced hardcoded mockUsers in "You May Know" section with real suggested users from database
-  - **Smart User Suggestions**: Fetches users not being followed by current user, calculates actual mutual friends for each candidate
-  - **Mutual Friends Display**: Shows up to 3 mutual friend avatars with "+X" badge for additional mutual connections using reusable BaseFriends component
-  - **Smart Filtering**: Only suggests users with at least 1 mutual friend for better relevance
-  - **Performance Note**: Current implementation uses N+1 query pattern (one query per user) - acceptable for 5-user limit but can be optimized with single SQL join query for production scale
-  - **User Experience**: Clicking suggested user cards navigates to their profile, section header links to search tab for discovering more users
-- **Edit Profile Error Handling - Production-Ready**: Added comprehensive error handling to EditProfileModal to identify and surface database operation failures
-  - **Root Cause**: Supabase operations were not checking for errors, causing silent failures when RLS policies or other database issues occurred
-  - **Authentication Validation**: Added error checking to `supabase.auth.getUser()` with fallback to catch auth failures early
-  - **Profile Lookup Error Handling**: Now properly handles errors from `profiles.select().single()` except for expected "no row found" case (PGRST116)
-  - **Database Operation Checks**: All update/insert/delete operations on `profiles` and `social_links` tables now check for errors and throw with specific messages
-  - **Improved User Feedback**: Error messages now show specific failure reasons instead of generic "Failed to save profile" message
-  - **Console Logging**: All errors logged to console for debugging, making it easy to identify RLS policy issues or other database problems
-  - **Architect Approved**: Error handling pattern validated as production-ready, catching all failure scenarios
-- **Watchlist Progress Bar Fix**: Changed totalCount calculation to use `item.show.totalEpisodes ?? item.episodes.size` for accurate progress tracking with safe fallback
-- **Playlist UUID Fix - Production-Ready**: Completely resolved "shows missing from playlist" issue with race-condition-free implementation
-  - **Root Cause**: Shows were being saved with Trakt IDs instead of database UUIDs, causing silent insertion failures in `playlist_shows` table
-  - **Solution**: New `ensureShowUuid()` helper in `services/showDatabase.ts` validates/fetches/saves shows to guarantee proper UUID usage
-  - **PlaylistModal Refactor**: Pre-fetches database UUID before enabling playlist interactions, with request token system to prevent stale promise resolutions
-  - **Race Condition Guards**: Incrementing token invalidates in-flight requests, cleanup function handles unmount/deps changes, state cleared before each fetch
-  - **Defensive Validation**: DataContext UUID validation prevents corrupted IDs from reaching database operations
-  - **Loading States**: Playlist interactions disabled until correct UUID confirmed, preventing incorrect add/remove operations
-  - **Zero Regressions**: Surgical fix scoped only to playlist flows, no impact on show pages, posts, search, or recommendations
-- **Followers/Following Modal UI Update**: Redesigned to match light mode design system with pure white background, proper typography tokens (titleL, subtitle, p1, p3R), and consistent color scheme
-- **Smart User Sorting**: Current user now appears first in followers/following lists when viewing other profiles, improving UX for finding yourself in lists
-- **Follow/Unfollow Functionality Fixed**: Fixed two critical issues preventing follow/unfollow from working
-  - **Database RLS Policies**: Added Row Level Security policy "Allow all operations on follows" to enable insert/delete operations on the follows table
-  - **React Hooks Rule Violation**: Moved `handleFollowToggle` function before early return in `app/user/[id].tsx` to prevent component structure changes between renders
-  - Follow/unfollow now works across entire app: user profiles, search tab, followers modal, and following modal
-- **Episode Page Completed**: New `/episode/[id]` route with show/episode tags, thumbnail, rating (10+ posts = average, else API), Friends/Everyone filtering, and PostModal integration with pre-selected episode
-
-## Previous Changes (November 18, 2025)
-- **100% API Reliability Achieved**: Implemented comprehensive Trakt API health check and database fallback system for zero-downtime operation
-- **Trakt Health Check Service** (`services/traktHealth.ts`): Lightweight GET request with 5-minute cache to detect API availability, prevents slow network timeouts
-- **Database-Only Recommendations**: Fixed cache clearing race condition - cache now persists through auth transitions, only cleared when switching users
-- **Database-Only Search**: Checks Trakt health first, instantly uses database when API down (no timeout delays), graceful fallback when API fails
-- **Security Fix**: Prevented cross-user data contamination using ref-based validation in `loadRecommendations()`
-- **Known Non-Critical Issue**: Database query error "column shows.genres does not exist" despite column existing - fallback to trending shows working correctly
+EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata. The business vision is to become the leading social platform for TV show fans, offering a unique blend of community interaction and personalized content discovery.
 
 ## User Preferences
 I prefer iterative development, focusing on one feature or fix at a time. Please ask for confirmation before making large-scale changes or refactoring. I value clear, concise explanations and prefer to focus on high-level architectural decisions and critical features rather than minor implementation details. Do not make changes to files related to authentication without explicit instruction.
@@ -64,7 +9,7 @@ I prefer iterative development, focusing on one feature or fix at a time. Please
 ## System Architecture
 
 ### UI/UX Decisions
-The application features a pixel-perfect UI overhaul aligned with Figma specifications, utilizing a comprehensive design token system for consistent styling. Gradient backgrounds are used for visual consistency. A professional skeleton loader system with shimmer animation provides seamless loading states. A smooth crossfade transition system eliminates loading jumpiness throughout the app using `FadeInView` for content and `FadeInImage` for images.
+The application features a pixel-perfect UI aligned with Figma specifications, utilizing a comprehensive design token system for consistent styling. Gradient backgrounds are used for visual consistency. A professional skeleton loader system with shimmer animation provides seamless loading states, and a smooth crossfade transition system eliminates loading jumpiness.
 
 ### Technical Implementations
 - **Framework**: Expo Router v6 (React Native 0.81.4, React 19.1.0)
@@ -76,40 +21,25 @@ The application features a pixel-perfect UI overhaul aligned with Figma specific
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
 
 ### Feature Specifications
-- **Social Features**: Posting, liking, commenting (with 4-tier recursive nesting), reposting, following, friend activity feed, user profiles.
-- **TV Show Management**: Show/episode pages, playlists, watch history, recommended titles, dynamic episode progress bar. Includes a production-grade rating conversion system (10-point to 5-star with half-star support) and a robust poster fallback chain (TMDB → OMDB → TVMaze).
+- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed, user profiles, "You May Know" suggestions with mutual friends.
+- **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommended titles, dynamic episode progress bar, and "Currently Watching" section for quick logging. Includes a production-grade rating conversion system and a robust poster fallback chain.
 - **Authentication Flow**: Robust 7-screen onboarding with progressive data collection and authentication guards.
 - **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, custom profile tab display.
 - **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, and Show Hub are fully redesigned.
 - **Modular & Component-Based**: Organized into logical directories with reusable UI components.
 - **PostModal Flow**: Guides users through selecting a show, fetching/validating episodes, saving to DB, creating a post, and redirecting. Supports custom tags and a half-star rating system with tap and drag gestures.
+- **Account Management**: Account deletion and phone number change features.
 
 ### System Design Choices
 - **Development vs Production**: Separate Supabase instances.
 - **Data Management**: All mock data removed, users interact only with real Supabase data. Supabase-backed user profile cache.
-- **TV Show Data Integration**: Utilizes Trakt API for metadata, TMDB API for primary posters, OMDB API for fallback posters and IMDb ID enrichment, and TVMaze API for tertiary posters and episode thumbnails, including a robust fallback system for episode loading.
+- **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system for metadata, posters, and episode thumbnails.
 - **Search Enrichment System**: Background worker enhances search results with complete metadata using throttled parallel fetching, progressive enhancement, and smart caching.
-- **Database Persistence**: Shows and episodes saved to Supabase before post creation.
-- **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, background loading for remaining seasons, and smart season logic.
-- **Smart Show Recommendations**: Production-grade personalized recommendation system using user posts, genre interests, and trending shows with an instant-loading caching system.
-- **Account Management**: Account deletion via Supabase Edge Functions and phone number change feature.
-- **Robust Authentication**: Addressed OTP verification race conditions and username persistence bugs.
-
-### Database Schema
-**CRITICAL: Always verify table names before writing queries. Use `execute_sql_tool` to check schema if unsure.**
-- `profiles`
-- `posts`
-- `shows`
-- `episodes`
-- `playlists`
-- `playlist_shows`
-- `likes`
-- `reposts`
-- `comments`
-- `follows`
-- `post_episodes`
-- `social_links`
-- `help_desk_posts`
+- **Database Persistence**: Shows and episodes saved to Supabase before post creation, with robust UUID management for playlist integrity.
+- **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, background loading for remaining seasons, smart season logic, and optimized queries for community and friend feeds.
+- **Smart Show Recommendations**: Personalized recommendation system using user posts, genre interests, and trending shows with an instant-loading caching system, including friend-based recommendations.
+- **API Reliability**: Comprehensive Trakt API health check and database fallback system for zero-downtime operation.
+- **Database Schema**: `profiles`, `posts`, `shows`, `episodes`, `playlists`, `playlist_shows`, `likes`, `reposts`, `comments`, `follows`, `post_episodes`, `social_links`, `help_desk_posts`.
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.

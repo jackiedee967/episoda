@@ -16,8 +16,9 @@ import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
 import { supabase } from '@/app/integrations/supabase/client';
-import { User } from '@/types';
+import { User, Post } from '@/types';
 import { getCombinedRecommendations } from '@/services/recommendations';
+import { getCommunityPosts } from '@/services/communityPosts';
 
 type SuggestedUser = User & {
   mutualFriends: Array<{
@@ -38,6 +39,7 @@ export default function HomeScreen() {
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
   const [recommendedShows, setRecommendedShows] = useState<any[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<any[]>([]);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -266,6 +268,32 @@ export default function HomeScreen() {
 
     fetchRecommendedShows();
   }, [currentUser?.id, currentUser?.following, posts, currentlyWatchingShows]);
+
+  useEffect(() => {
+    const fetchCommunityPosts = async () => {
+      if (!currentUser?.id || isLoadingFeed) return;
+
+      const homeFeed = getHomeFeed();
+      const friendPosts = homeFeed.filter(item => currentUser.following?.includes(item.post.user.id));
+      
+      if (friendPosts.length < 5) {
+        const friendPostIds = friendPosts.map(item => item.post.id);
+        const needed = 5 - friendPosts.length;
+        
+        const rawCommunityPosts = await getCommunityPosts({
+          userId: currentUser.id,
+          excludedPostIds: friendPostIds,
+          limit: needed,
+        });
+        
+        setCommunityPosts(rawCommunityPosts);
+      } else {
+        setCommunityPosts([]);
+      }
+    };
+
+    fetchCommunityPosts();
+  }, [currentUser?.id, currentUser?.following, posts, isLoadingFeed, getHomeFeed]);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -550,7 +578,16 @@ export default function HomeScreen() {
   }, [getHomeFeed, currentUser.following]);
 
   const renderFriendActivity = () => {
-    const allActivity = friendActivityData;
+    const friendPosts = friendActivityData.slice(0, 5);
+    const communityPostsToShow = communityPosts.slice(0, Math.max(0, 5 - friendPosts.length));
+    
+    const blendedActivity = [
+      ...friendPosts,
+      ...communityPostsToShow.map(post => ({
+        post,
+        sortTimestamp: post.timestamp,
+      }))
+    ];
 
     return (
       <View style={styles.friendActivitySection}>
@@ -563,8 +600,8 @@ export default function HomeScreen() {
             <PostCardSkeleton />
             <PostCardSkeleton />
           </>
-        ) : allActivity.length > 0 ? (
-          allActivity.slice(0, 5).map((item, index) => (
+        ) : blendedActivity.length > 0 ? (
+          blendedActivity.map((item, index) => (
             <FadeInView key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} delay={index * 50}>
               <PostCard
                 post={item.post}
@@ -577,8 +614,8 @@ export default function HomeScreen() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No friend activity yet</Text>
-            <Text style={styles.emptyText}>Follow friends to see what they're watching</Text>
+            <Text style={styles.emptyTitle}>No activity yet</Text>
+            <Text style={styles.emptyText}>Follow friends or explore shows to see activity</Text>
           </View>
         )}
       </View>
