@@ -795,7 +795,7 @@ const styles = StyleSheet.create({
   },
   viewMoreText: {
     ...tokens.typography.p3R,
-    color: tokens.colors.white,
+    color: tokens.colors.almostWhite,
   },
   showsScrollView: {
     marginLeft: -20,
