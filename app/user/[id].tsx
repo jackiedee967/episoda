@@ -211,8 +211,8 @@ export default function UserProfile() {
   // Calculate tabs - MUST be before early return to maintain hook order
   const tabs: TabSelectorTab[] = useMemo(() => {
     const baseTabs = [
-      { key: 'posts', label: 'Posts' },
-      { key: 'shows', label: 'Shows' },
+      { key: 'posts', label: 'Logs' },
+      { key: 'shows', label: 'Watch History' },
     ];
     
     // Only show playlists tab if user has playlists OR if viewing own profile
