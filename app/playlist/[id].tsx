@@ -20,6 +20,7 @@ import { Trash2 } from 'lucide-react-native';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/app/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { typography } from '@/styles/tokens';
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -158,9 +159,10 @@ export default function PlaylistDetailScreen() {
       <>
         <Stack.Screen
           options={{
-            title: 'Playlist',
+            title: '',
             headerStyle: { backgroundColor: colors.background },
             headerTintColor: colors.text,
+            headerShown: true,
           }}
         />
         <View style={[commonStyles.container, styles.emptyContainer]}>
@@ -174,9 +176,10 @@ export default function PlaylistDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: playlist.name,
+          title: '',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text,
+          headerShown: true,
         }}
       />
       <View style={commonStyles.container}>
@@ -279,13 +282,9 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    backgroundColor: colors.card,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   playlistName: {
-    fontSize: 28,
-    fontWeight: '700',
+    ...typography.titleL,
     color: colors.text,
     marginBottom: 8,
   },
