@@ -21,6 +21,11 @@ export interface RecommendedShow {
   isFromDatabase: boolean;
 }
 
+export interface RecommendationWithTraktData {
+  recommendedShow: RecommendedShow;
+  traktShow: TraktShow | null;
+}
+
 /**
  * Convert a TraktShow to a RecommendedShow
  */
@@ -231,17 +236,20 @@ export async function getGenreBasedRecommendations(
 export async function getCombinedRecommendations(
   userId: string,
   maxShows: number = 12
-): Promise<RecommendedShow[]> {
+): Promise<RecommendationWithTraktData[]> {
   try {
     // 1. Get recently logged shows (already DatabaseShow[]) - ALWAYS fetch this
     const recentlyLogged = await getRecentlyLoggedShows(userId, maxShows);
     console.log(`✅ Fetched ${recentlyLogged.length} recently logged shows for recommendations`);
     
-    // 2. If we have enough recent shows, normalize and return them
+    // 2. If we have enough recent shows, normalize and return them (no Trakt data for DB shows)
     if (recentlyLogged.length >= maxShows) {
       return recentlyLogged
         .slice(0, maxShows)
-        .map(databaseShowToRecommendedShow);
+        .map(show => ({
+          recommendedShow: databaseShowToRecommendedShow(show),
+          traktShow: null
+        }));
     }
 
     // 3. Try to get user's genre interests (may fail)
@@ -294,8 +302,14 @@ export async function getCombinedRecommendations(
         }
       }
       
-      const normalizedRecent = recentlyLogged.map(databaseShowToRecommendedShow);
-      const normalizedTrending = databaseTrendingShows.map(databaseShowToRecommendedShow);
+      const normalizedRecent = recentlyLogged.map(show => ({
+        recommendedShow: databaseShowToRecommendedShow(show),
+        traktShow: null
+      }));
+      const normalizedTrending = databaseTrendingShows.map(show => ({
+        recommendedShow: databaseShowToRecommendedShow(show),
+        traktShow: null
+      }));
       const combined = [...normalizedRecent, ...normalizedTrending];
       
       console.log(`✅ Fetched ${combined.length} raw recommendations for caching (${normalizedRecent.length} recent + ${normalizedTrending.length} trending from database - API unavailable)`);
@@ -308,9 +322,15 @@ export async function getCombinedRecommendations(
       .filter(traktShow => !loggedTraktIds.has(traktShow.ids.trakt))
       .slice(0, remainingSlots);
 
-    // 6. Normalize both types to RecommendedShow and combine
-    const normalizedRecent = recentlyLogged.map(databaseShowToRecommendedShow);
-    const normalizedRecommendations = filteredRecommendations.map(traktShowToRecommendedShow);
+    // 6. Normalize both types to RecommendationWithTraktData and combine
+    const normalizedRecent = recentlyLogged.map(show => ({
+      recommendedShow: databaseShowToRecommendedShow(show),
+      traktShow: null
+    }));
+    const normalizedRecommendations = filteredRecommendations.map(traktShow => ({
+      recommendedShow: traktShowToRecommendedShow(traktShow),
+      traktShow: traktShow  // Include raw Trakt data for new shows
+    }));
     
     const combined = [
       ...normalizedRecent,
@@ -324,7 +344,10 @@ export async function getCombinedRecommendations(
     // Last resort: try to return recently logged shows only
     try {
       const recentlyLogged = await getRecentlyLoggedShows(userId, maxShows);
-      const normalized = recentlyLogged.map(databaseShowToRecommendedShow);
+      const normalized = recentlyLogged.map(show => ({
+        recommendedShow: databaseShowToRecommendedShow(show),
+        traktShow: null
+      }));
       console.log(`⚠️ Returning ${normalized.length} recently logged shows as emergency fallback`);
       return normalized;
     } catch (fallbackError) {
