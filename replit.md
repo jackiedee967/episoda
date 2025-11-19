@@ -21,7 +21,8 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
 
 ### Feature Specifications
-- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed, user profiles, "You May Know" suggestions with mutual friends.
+- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed with infinite scroll, user profiles, "You May Know" suggestions with mutual friends.
+- **Infinite Scroll**: Homepage activity feed uses FlatList virtualization with automatic pagination. Loads 10 posts initially, fetches more community posts when scrolling near bottom (onEndReached), displays loading states and "end of feed" message. Posts are chronologically sorted with timestamp sanitization for robust rendering.
 - **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommended titles, dynamic episode progress bar, and "Currently Watching" section for quick logging. Includes a production-grade rating conversion system and a robust poster fallback chain.
 - **Explore Page**: Redesigned search/explore page featuring curated content sections (Friend Activity, For You based on user interests, Trending, Recently Released, genre-specific rows). Includes horizontal scrolling ExploreShowSection component displaying 2.5 shows, conditional TabSelector (hidden when not searching), robust UUID normalization for Trakt-only shows, and seamless integration with user interests service.
 - **Authentication Flow**: Robust 7-screen onboarding with progressive data collection and authentication guards.
