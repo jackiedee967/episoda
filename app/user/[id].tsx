@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   Pressable,
   Alert,
   Platform,
@@ -619,7 +618,11 @@ export default function UserProfile() {
         ))
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="bubble.left" size={48} color={colors.grey1} />
+          <FadeInImage 
+            source={require('@/assets/images/empty-states/logs-empty.png')} 
+            style={styles.emptyStateImage}
+            contentFit="contain"
+          />
           <Text style={styles.emptyStateTitle}>No posts yet</Text>
           <Text style={styles.emptyStateText}>
             {isCurrentUser 
@@ -653,7 +656,11 @@ export default function UserProfile() {
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="tv" size={48} color={colors.grey1} />
+          <FadeInImage 
+            source={require('@/assets/images/empty-states/watch-history-empty.png')} 
+            style={styles.emptyStateImage}
+            contentFit="contain"
+          />
           <Text style={styles.emptyStateTitle}>No shows yet</Text>
           <Text style={styles.emptyStateText}>
             {isCurrentUser 
@@ -715,7 +722,11 @@ export default function UserProfile() {
         </>
       ) : (
         <View style={styles.emptyState}>
-          <IconSymbol name="list.bullet" size={48} color={colors.grey1} />
+          <FadeInImage 
+            source={require('@/assets/images/empty-states/playlists-empty.png')} 
+            style={styles.emptyStateImage}
+            contentFit="contain"
+          />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
           {isCurrentUser && (
             <Text style={styles.emptyStateText}>
@@ -1176,6 +1187,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
+  },
+  emptyStateImage: {
+    width: 280,
+    height: 180,
+    marginBottom: 8,
   },
   emptyStateTitle: {
     ...typography.subtitle,
