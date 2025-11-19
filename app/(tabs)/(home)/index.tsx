@@ -17,7 +17,6 @@ import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
 import { supabase } from '@/app/integrations/supabase/client';
 import { User, Post } from '@/types';
-import { getCombinedRecommendations } from '@/services/recommendations';
 import { getCommunityPosts } from '@/services/communityPosts';
 
 type SuggestedUser = User & {
@@ -31,7 +30,7 @@ type SuggestedUser = User & {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, cachedRecommendations } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
@@ -171,103 +170,99 @@ export default function HomeScreen() {
     setCurrentlyWatchingShows(Array.from(uniqueShows.values()));
   }, [currentUser?.id, posts]);
 
-  // Fetch recommended shows (friends' shows + interest-based recommendations)
+  // Fetch recommended shows (friends' shows + cached interest-based recommendations)
   useEffect(() => {
-    const fetchRecommendedShows = async () => {
-      if (!currentUser?.id) return;
+    if (!currentUser?.id) return;
 
-      try {
-        // Get traktIds from Currently Watching to exclude them
-        const currentlyWatchingTraktIds = new Set(
-          currentlyWatchingShows
-            .map(show => show.traktId)
-            .filter(Boolean)
-        );
+    try {
+      // Get traktIds from Currently Watching to exclude them
+      const currentlyWatchingTraktIds = new Set(
+        currentlyWatchingShows
+          .map(show => show.traktId)
+          .filter(Boolean)
+      );
 
-        const followingIds = currentUser.following || [];
+      const followingIds = currentUser.following || [];
+      
+      // 1. Get shows from friends' posts and count unique friends per show
+      const friendsPosts = posts.filter(post => 
+        followingIds.includes(post.user.id) && post.show
+      );
+
+      // Use traktId as consistent identifier, count unique friends
+      const showFriendCounts = new Map<number, { show: any; friendCount: number; friendIds: Set<string> }>();
+      
+      for (const post of friendsPosts) {
+        const traktId = post.show.traktId;
+        if (!traktId) continue;
         
-        // 1. Get shows from friends' posts and count unique friends per show
-        const friendsPosts = posts.filter(post => 
-          followingIds.includes(post.user.id) && post.show
-        );
-
-        // Use traktId as consistent identifier, count unique friends
-        const showFriendCounts = new Map<number, { show: any; friendCount: number; friendIds: Set<string> }>();
+        // Skip if in Currently Watching
+        if (currentlyWatchingTraktIds.has(traktId)) continue;
         
-        for (const post of friendsPosts) {
-          const traktId = post.show.traktId;
-          if (!traktId) continue;
-          
-          // Skip if in Currently Watching
-          if (currentlyWatchingTraktIds.has(traktId)) continue;
-          
-          const existing = showFriendCounts.get(traktId);
-          if (existing) {
-            existing.friendIds.add(post.user.id);
-            existing.friendCount = existing.friendIds.size;
-          } else {
-            showFriendCounts.set(traktId, {
-              show: post.show,
-              friendCount: 1,
-              friendIds: new Set([post.user.id])
-            });
-          }
+        const existing = showFriendCounts.get(traktId);
+        if (existing) {
+          existing.friendIds.add(post.user.id);
+          existing.friendCount = existing.friendIds.size;
+        } else {
+          showFriendCounts.set(traktId, {
+            show: post.show,
+            friendCount: 1,
+            friendIds: new Set([post.user.id])
+          });
         }
+      }
 
-        // Sort by friend count (descending) - DON'T slice yet
-        const friendsShows = Array.from(showFriendCounts.values())
-          .sort((a, b) => b.friendCount - a.friendCount);
+      // Sort by friend count (descending) - DON'T slice yet
+      const friendsShows = Array.from(showFriendCounts.values())
+        .sort((a, b) => b.friendCount - a.friendCount);
 
-        // 2. Get interest-based recommendations (fetch 20 to account for filtering)
-        const recommendations = await getCombinedRecommendations(currentUser.id, 20);
-        
-        // 3. Normalize all shows to consistent format using traktId as key
-        const normalizedFriendsShows = friendsShows.map(item => ({
-          id: item.show.id,
-          traktId: item.show.traktId,
-          title: item.show.title,
-          poster: item.show.poster || item.show.posterUrl || null
+      // 2. Use cached recommendations from DataContext (already fetched and enriched)
+      const recommendations = cachedRecommendations || [];
+      
+      // 3. Normalize all shows to consistent format using traktId as key
+      const normalizedFriendsShows = friendsShows.map(item => ({
+        id: item.show.id,
+        traktId: item.show.traktId,
+        title: item.show.title,
+        poster: item.show.poster || item.show.posterUrl || null
+      }));
+
+      const normalizedInterestShows = recommendations
+        .filter(rec => rec.poster && !currentlyWatchingTraktIds.has(rec.traktId))
+        .map(rec => ({
+          id: rec.id || `trakt-${rec.traktId}`,
+          traktId: rec.traktId,
+          title: rec.title,
+          poster: rec.poster
         }));
 
-        const normalizedInterestShows = recommendations
-          .filter(rec => rec.poster_url && !currentlyWatchingTraktIds.has(rec.trakt_id))
-          .map(rec => ({
-            id: rec.id || `trakt-${rec.trakt_id}`,
-            traktId: rec.trakt_id,
-            title: rec.title,
-            poster: rec.poster_url
-          }));
+      // 4. Merge: friends' shows first (by friend count), then interest-based
+      // Remove duplicates by traktId (keep first occurrence = friend show)
+      const seenTraktIds = new Set<number>();
+      const combined = [];
 
-        // 4. Merge: friends' shows first (by friend count), then interest-based
-        // Remove duplicates by traktId (keep first occurrence = friend show)
-        const seenTraktIds = new Set<number>();
-        const combined = [];
-
-        // Add friends' shows first (already sorted by friend count)
-        for (const show of normalizedFriendsShows) {
-          if (!seenTraktIds.has(show.traktId)) {
-            seenTraktIds.add(show.traktId);
-            combined.push(show);
-          }
+      // Add friends' shows first (already sorted by friend count)
+      for (const show of normalizedFriendsShows) {
+        if (!seenTraktIds.has(show.traktId)) {
+          seenTraktIds.add(show.traktId);
+          combined.push(show);
         }
-
-        // Add interest-based shows (only if not already added)
-        for (const show of normalizedInterestShows) {
-          if (!seenTraktIds.has(show.traktId)) {
-            seenTraktIds.add(show.traktId);
-            combined.push(show);
-          }
-        }
-
-        // NOW slice to 10
-        setRecommendedShows(combined.slice(0, 10));
-      } catch (error) {
-        console.error('Error fetching recommended shows:', error);
       }
-    };
 
-    fetchRecommendedShows();
-  }, [currentUser?.id, currentUser?.following, posts, currentlyWatchingShows]);
+      // Add interest-based shows (only if not already added)
+      for (const show of normalizedInterestShows) {
+        if (!seenTraktIds.has(show.traktId)) {
+          seenTraktIds.add(show.traktId);
+          combined.push(show);
+        }
+      }
+
+      // NOW slice to 10
+      setRecommendedShows(combined.slice(0, 10));
+    } catch (error) {
+      console.error('Error fetching recommended shows:', error);
+    }
+  }, [currentUser?.id, currentUser?.following, posts, currentlyWatchingShows, cachedRecommendations]);
 
   useEffect(() => {
     const fetchCommunityPosts = async () => {
