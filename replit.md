@@ -4,6 +4,14 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
 ## Recent Changes (November 19, 2025)
+- **Playlist UUID Fix - Production-Ready**: Completely resolved "shows missing from playlist" issue with race-condition-free implementation
+  - **Root Cause**: Shows were being saved with Trakt IDs instead of database UUIDs, causing silent insertion failures in `playlist_shows` table
+  - **Solution**: New `ensureShowUuid()` helper in `services/showDatabase.ts` validates/fetches/saves shows to guarantee proper UUID usage
+  - **PlaylistModal Refactor**: Pre-fetches database UUID before enabling playlist interactions, with request token system to prevent stale promise resolutions
+  - **Race Condition Guards**: Incrementing token invalidates in-flight requests, cleanup function handles unmount/deps changes, state cleared before each fetch
+  - **Defensive Validation**: DataContext UUID validation prevents corrupted IDs from reaching database operations
+  - **Loading States**: Playlist interactions disabled until correct UUID confirmed, preventing incorrect add/remove operations
+  - **Zero Regressions**: Surgical fix scoped only to playlist flows, no impact on show pages, posts, search, or recommendations
 - **Followers/Following Modal UI Update**: Redesigned to match light mode design system with pure white background, proper typography tokens (titleL, subtitle, p1, p3R), and consistent color scheme
 - **Smart User Sorting**: Current user now appears first in followers/following lists when viewing other profiles, improving UX for finding yourself in lists
 - **Follow/Unfollow Functionality Fixed**: Fixed two critical issues preventing follow/unfollow from working

@@ -62,7 +62,9 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
         })
         .catch(error => {
           if (requestTokenRef.current === currentToken) {
-            console.error('⚠️ Could not pre-fetch show UUID:', error);
+            console.error('⚠️ Could not pre-fetch show UUID, interactions disabled:', error);
+            // Keep ensuredShowUuid as null to maintain disabled state
+            // This ensures we never use incorrect IDs for playlist operations
             setEnsuredShowUuid(null);
           }
         });
