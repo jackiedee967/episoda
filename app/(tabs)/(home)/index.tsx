@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   },
   logEpisodeButtonText: {
     ...tokens.typography.p3M,
-    color: tokens.colors.almostWhite,
+    color: tokens.colors.greenHighlight,
   },
   friendsBar: {
     position: 'absolute',
