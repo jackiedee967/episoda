@@ -650,12 +650,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: tokens.colors.cardStroke,
-    backgroundColor: tokens.colors.cardBackground,
+    borderColor: tokens.colors.greenHighlight,
+    backgroundColor: tokens.colors.greenHighlight,
   },
   logEpisodeButtonText: {
     ...tokens.typography.p3M,
-    color: tokens.colors.greenHighlight,
+    color: tokens.colors.black,
   },
   friendsBar: {
     position: 'absolute',
