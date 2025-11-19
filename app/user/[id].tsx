@@ -823,7 +823,18 @@ export default function UserProfile() {
             setShowFollowersModal(false);
             setShowFollowingModal(false);
           }}
-          users={followersType === 'followers' ? followers : following}
+          users={(() => {
+            const usersList = followersType === 'followers' ? followers : following;
+            const currentUserId = contextCurrentUser?.id;
+            if (!currentUserId) return usersList;
+            
+            const currentUserIndex = usersList.findIndex(u => u.id === currentUserId);
+            if (currentUserIndex === -1) return usersList;
+            
+            const sortedUsers = [...usersList];
+            const [currentUser] = sortedUsers.splice(currentUserIndex, 1);
+            return [currentUser, ...sortedUsers];
+          })()}
           title={followersType === 'followers' ? 'Followers' : 'Following'}
           currentUserId={contextCurrentUser?.id || ''}
           followingIds={following.map(u => u.id)}

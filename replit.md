@@ -4,6 +4,8 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
 ## Recent Changes (November 19, 2025)
+- **Followers/Following Modal UI Update**: Redesigned to match light mode design system with pure white background, proper typography tokens (titleL, subtitle, p1, p3R), and consistent color scheme
+- **Smart User Sorting**: Current user now appears first in followers/following lists when viewing other profiles, improving UX for finding yourself in lists
 - **Follow/Unfollow Functionality Fixed**: Fixed two critical issues preventing follow/unfollow from working
   - **Database RLS Policies**: Added Row Level Security policy "Allow all operations on follows" to enable insert/delete operations on the follows table
   - **React Hooks Rule Violation**: Moved `handleFollowToggle` function before early return in `app/user/[id].tsx` to prevent component structure changes between renders
