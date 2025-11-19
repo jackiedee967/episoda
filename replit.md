@@ -17,7 +17,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Navigation**: Expo Router (file-based routing)
 - **State Management**: React Context API
 - **Styling**: StyleSheet API with a centralized design token system (`styles/tokens.ts`)
-- **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow.
+- **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow. Fixed critical session initialization race condition by initializing user state to `undefined` instead of `null`, preventing premature data clearing during app startup.
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
 
 ### Feature Specifications

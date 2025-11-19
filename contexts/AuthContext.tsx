@@ -9,7 +9,7 @@ type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'dis
 
 interface AuthContextType {
   session: Session | null;
-  user: User | null;
+  user: User | null | undefined;
   isLoading: boolean;
   onboardingStatus: OnboardingStatus;
   profileRefreshKey: number;
@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>('not_started');
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
