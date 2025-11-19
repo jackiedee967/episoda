@@ -29,6 +29,7 @@ import { Star } from 'lucide-react-native';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getShowColorScheme } from '@/utils/showColors';
 import FadeInImage from '@/components/FadeInImage';
+import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
 
 type TabKey = 'friends' | 'all';
 
@@ -81,21 +82,6 @@ export default function EpisodeHub() {
           return;
         }
 
-        // Transform episode data
-        const episodeObj: Episode = {
-          id: episodeData.id,
-          showId: episodeData.show_id,
-          seasonNumber: episodeData.season_number,
-          episodeNumber: episodeData.episode_number,
-          title: episodeData.title,
-          description: episodeData.description || '',
-          rating: episodeData.rating || 0,
-          postCount: 0,
-          thumbnail: episodeData.thumbnail_url || undefined,
-        };
-
-        setEpisode(episodeObj);
-
         // Fetch show data
         const { data: showData, error: showError } = await supabase
           .from('shows')
@@ -108,6 +94,46 @@ export default function EpisodeHub() {
           setIsLoading(false);
           return;
         }
+
+        // If thumbnail is missing and we have TVMaze ID, try to fetch it
+        let thumbnailUrl = episodeData.thumbnail_url;
+        if (!thumbnailUrl && showData.tvmaze_id) {
+          console.log('🖼️ Fetching missing thumbnail from TVMaze...');
+          try {
+            const tvmazeEpisode = await getTVMazeEpisode(
+              showData.tvmaze_id, 
+              episodeData.season_number, 
+              episodeData.episode_number
+            );
+            thumbnailUrl = tvmazeEpisode?.image?.original || null;
+            
+            // Update database with fetched thumbnail
+            if (thumbnailUrl) {
+              console.log('✅ Updating episode with thumbnail:', thumbnailUrl);
+              await supabase
+                .from('episodes')
+                .update({ thumbnail_url: thumbnailUrl })
+                .eq('id', episodeData.id);
+            }
+          } catch (err) {
+            console.error('Failed to fetch thumbnail from TVMaze:', err);
+          }
+        }
+
+        // Transform episode data
+        const episodeObj: Episode = {
+          id: episodeData.id,
+          showId: episodeData.show_id,
+          seasonNumber: episodeData.season_number,
+          episodeNumber: episodeData.episode_number,
+          title: episodeData.title,
+          description: episodeData.description || '',
+          rating: episodeData.rating || 0,
+          postCount: 0,
+          thumbnail: thumbnailUrl || undefined,
+        };
+
+        setEpisode(episodeObj);
 
         const showObj: Show = {
           id: showData.id,
@@ -223,13 +249,13 @@ export default function EpisodeHub() {
               <IconSymbol name="chevron.left" size={16} color={tokens.colors.pureWhite} />
               <Text style={styles.backText}>Back</Text>
             </Pressable>
-            <View style={styles.searchContainer}>
+            <Pressable style={styles.searchContainer} onPress={handleSearch}>
               <View style={styles.searchInner}>
                 <View style={styles.searchIconWrapper}>
                   <SearchDuotoneLine />
                 </View>
               </View>
-            </View>
+            </Pressable>
           </View>
 
           {/* Show and Episode Tags */}
