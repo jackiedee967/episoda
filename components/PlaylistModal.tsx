@@ -148,21 +148,24 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       try {
-        // Ensure we have a valid database UUID for the show
-        const showIdToUse = await ensureShowUuid(show, traktShow);
-        console.log('✅ Ensured show has database UUID:', showIdToUse);
+        // Create empty playlist first
+        const newPlaylist = await createPlaylist(newPlaylistName);
+        console.log(`Created new playlist "${newPlaylist.name}"`);
         
-        // Create playlist with the show automatically added
-        const newPlaylist = await createPlaylist(newPlaylistName, showIdToUse);
-        console.log(`Created new playlist "${newPlaylist.name}" and added ${show.title}`);
-        
-        // Call the callback if provided
-        if (onAddToPlaylist) {
-          onAddToPlaylist(newPlaylist.id, showIdToUse);
+        // Then try to add the show if we have a valid UUID
+        if (ensuredShowUuid) {
+          const traktId = show.traktId || traktShow?.ids?.trakt;
+          await addShowToPlaylist(newPlaylist.id, ensuredShowUuid, traktId);
+          console.log(`Added ${show.title} to ${newPlaylist.name}`);
+          
+          // Call the callback if provided
+          if (onAddToPlaylist) {
+            onAddToPlaylist(newPlaylist.id, ensuredShowUuid);
+          }
         }
         
         // Show success animation
-        showSuccessAnimation('Added to playlist!');
+        showSuccessAnimation(ensuredShowUuid ? 'Added to playlist!' : 'Playlist created!');
         
         // Reset the input and close the modal after a brief delay
         setNewPlaylistName('');
