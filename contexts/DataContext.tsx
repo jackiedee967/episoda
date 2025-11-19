@@ -688,7 +688,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         console.log('✅ Show added to playlist in Supabase');
       }
 
-      // Update local state
+      // Update local state optimistically for immediate UI update
       setPlaylists(prev => prev.map(p => 
         p.id === playlistId 
           ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }

@@ -48,13 +48,28 @@ export default function PlaylistDetailScreen() {
       // Reset shows to avoid stale state
       setPlaylistShows([]);
       
-      // Load actual shows from Supabase database
+      // Load actual shows from Supabase database with added_at timestamps
       if (foundPlaylist.shows && foundPlaylist.shows.length > 0) {
         // Filter out invalid UUIDs (corrupted data like "trakt-191758")
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const validShowIds = foundPlaylist.shows.filter(showId => uuidRegex.test(showId));
         
         if (validShowIds.length > 0) {
+          // Fetch playlist_shows with added_at timestamps
+          const { data: playlistShowsData, error: playlistShowsError } = await supabase
+            .from('playlist_shows')
+            .select('show_id, added_at')
+            .eq('playlist_id', id)
+            .in('show_id', validShowIds)
+            .order('added_at', { ascending: false });
+          
+          if (playlistShowsError) {
+            console.error('❌ Error loading playlist_shows:', playlistShowsError);
+            setPlaylistShows([]);
+            return;
+          }
+          
+          // Fetch show details
           const { data: shows, error } = await supabase
             .from('shows')
             .select('*')
@@ -63,7 +78,12 @@ export default function PlaylistDetailScreen() {
           if (error) {
             console.error('❌ Error loading playlist shows:', error);
             setPlaylistShows([]);
-          } else if (shows) {
+          } else if (shows && playlistShowsData) {
+            // Create a map of show_id to added_at for ordering
+            const addedAtMap = new Map(
+              playlistShowsData.map(ps => [ps.show_id, ps.added_at])
+            );
+            
             // Normalize snake_case columns to camelCase properties
             const normalizedShows = shows.map((show: any) => ({
               id: show.id,
@@ -80,7 +100,15 @@ export default function PlaylistDetailScreen() {
               genres: show.genres,
               totalEpisodes: show.total_episodes,
             }));
-            setPlaylistShows(normalizedShows as Show[]);
+            
+            // Sort shows by added_at timestamp (most recent first)
+            const sortedShows = normalizedShows.sort((a, b) => {
+              const aAddedAt = addedAtMap.get(a.id) || '';
+              const bAddedAt = addedAtMap.get(b.id) || '';
+              return bAddedAt.localeCompare(aAddedAt);
+            });
+            
+            setPlaylistShows(sortedShows as Show[]);
           }
         } else {
           console.log('⚠️ No valid show IDs in playlist');
