@@ -792,14 +792,10 @@ const styles = StyleSheet.create({
   viewMoreButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: tokens.colors.greenHighlight,
-    borderRadius: 8,
   },
   viewMoreText: {
-    ...tokens.typography.p3M,
-    color: tokens.colors.black,
-    fontSize: 14,
-    fontWeight: '600',
+    ...tokens.typography.p3R,
+    color: tokens.colors.white,
   },
   showsScrollView: {
     marginLeft: -20,
