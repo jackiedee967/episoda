@@ -4,6 +4,15 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
 ## Recent Changes (November 19, 2025)
+- **Edit Profile Error Handling - Production-Ready**: Added comprehensive error handling to EditProfileModal to identify and surface database operation failures
+  - **Root Cause**: Supabase operations were not checking for errors, causing silent failures when RLS policies or other database issues occurred
+  - **Authentication Validation**: Added error checking to `supabase.auth.getUser()` with fallback to catch auth failures early
+  - **Profile Lookup Error Handling**: Now properly handles errors from `profiles.select().single()` except for expected "no row found" case (PGRST116)
+  - **Database Operation Checks**: All update/insert/delete operations on `profiles` and `social_links` tables now check for errors and throw with specific messages
+  - **Improved User Feedback**: Error messages now show specific failure reasons instead of generic "Failed to save profile" message
+  - **Console Logging**: All errors logged to console for debugging, making it easy to identify RLS policy issues or other database problems
+  - **Architect Approved**: Error handling pattern validated as production-ready, catching all failure scenarios
+- **Watchlist Progress Bar Fix**: Changed totalCount calculation to use `item.show.totalEpisodes ?? item.episodes.size` for accurate progress tracking with safe fallback
 - **Playlist UUID Fix - Production-Ready**: Completely resolved "shows missing from playlist" issue with race-condition-free implementation
   - **Root Cause**: Shows were being saved with Trakt IDs instead of database UUIDs, causing silent insertion failures in `playlist_shows` table
   - **Solution**: New `ensureShowUuid()` helper in `services/showDatabase.ts` validates/fetches/saves shows to guarantee proper UUID usage
