@@ -4,6 +4,11 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
 ## Recent Changes (November 19, 2025)
+- **Currently Watching Section**: New homepage section showing last 6 unique shows user has logged, positioned above Recommended Titles
+  - **Smart Show Tracking**: Automatically extracts unique shows from user's post history, displays most recent first
+  - **Quick Logging**: Each show poster includes a "Log episode" button that opens PostModal with show pre-selected
+  - **User Experience**: Users can quickly re-log shows they're actively watching without searching again
+  - **Consistent UI**: Follows same design pattern as Recommended Titles with card background, stroke, and bookmark functionality
 - **You May Know Real Data Implementation**: Replaced hardcoded mockUsers in "You May Know" section with real suggested users from database
   - **Smart User Suggestions**: Fetches users not being followed by current user, calculates actual mutual friends for each candidate
   - **Mutual Friends Display**: Shows up to 3 mutual friend avatars with "+X" badge for additional mutual connections using reusable BaseFriends component
