@@ -14,7 +14,7 @@ import Button from '@/components/Button';
 import WatchHistoryCard from '@/components/WatchHistoryCard';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { Eye, EyeOff, Instagram, Music, Globe } from 'lucide-react-native';
+import { Instagram, Music, Globe } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
@@ -36,7 +36,6 @@ export default function ProfileScreen() {
     allReposts, 
     playlists, 
     loadPlaylists, 
-    updatePlaylistPrivacy, 
     getFollowers,
     getFollowing,
     getTopFollowers,
@@ -250,15 +249,6 @@ export default function ProfileScreen() {
   const handleSocialLinkPress = (url: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Linking.openURL(url).catch(err => console.error('Error opening URL:', err));
-  };
-
-  const handlePlaylistToggle = async (playlistId: string, isPublic: boolean) => {
-    try {
-      await updatePlaylistPrivacy(playlistId, isPublic);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (error) {
-      console.error('Error updating playlist privacy:', error);
-    }
   };
 
   const handleSharePlaylist = (playlistId: string) => {
@@ -605,21 +595,6 @@ export default function ProfileScreen() {
                   <Text style={styles.playlistCount}>
                     {showCount} {showCount === 1 ? 'show' : 'shows'}
                   </Text>
-                </View>
-                <View style={styles.playlistActions}>
-                  <Pressable
-                    style={styles.iconButton}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handlePlaylistToggle(playlist.id, !playlist.isPublic);
-                    }}
-                  >
-                    {playlist.isPublic ? (
-                      <Eye size={20} color={colors.almostWhite} />
-                    ) : (
-                      <EyeOff size={20} color={colors.grey1} />
-                    )}
-                  </Pressable>
                 </View>
               </Pressable>
             );

@@ -14,20 +14,21 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { colors, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
-import { mockShows, currentUser } from '@/data/mockData';
 import { Show, Playlist } from '@/types';
 import * as Haptics from 'expo-haptics';
-import { Eye, EyeOff, Trash2 } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import { supabase } from '@/app/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PlaylistDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { userId } = useAuth();
   const { 
     playlists, 
     removeShowFromPlaylist, 
-    deletePlaylist, 
-    updatePlaylistPrivacy,
+    deletePlaylist,
     loadPlaylists 
   } = useData();
   
@@ -38,20 +39,35 @@ export default function PlaylistDetailScreen() {
     loadPlaylistData();
   }, [id, playlists]);
 
-  const loadPlaylistData = () => {
+  const loadPlaylistData = async () => {
     const foundPlaylist = playlists.find(p => p.id === id);
     if (foundPlaylist) {
       setPlaylist(foundPlaylist);
       
-      // Get shows from mockShows that are in this playlist
-      const shows = mockShows.filter(show => 
-        foundPlaylist.shows?.includes(show.id)
-      );
-      setPlaylistShows(shows);
+      // Reset shows to avoid stale state
+      setPlaylistShows([]);
+      
+      // Load actual shows from Supabase database
+      if (foundPlaylist.shows && foundPlaylist.shows.length > 0) {
+        const { data: shows, error } = await supabase
+          .from('shows')
+          .select('*')
+          .in('id', foundPlaylist.shows);
+        
+        if (error) {
+          console.error('❌ Error loading playlist shows:', error);
+          setPlaylistShows([]);
+        } else if (shows) {
+          setPlaylistShows(shows as Show[]);
+        }
+      }
+    } else {
+      setPlaylist(null);
+      setPlaylistShows([]);
     }
   };
 
-  const isOwnPlaylist = playlist?.userId === currentUser.id;
+  const isOwnPlaylist = playlist?.userId === userId;
 
   const handleRemoveShow = async (showId: string) => {
     if (!playlist) return;
@@ -106,21 +122,6 @@ export default function PlaylistDetailScreen() {
         },
       ]
     );
-  };
-
-  const handleTogglePrivacy = async () => {
-    if (!playlist) return;
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    try {
-      await updatePlaylistPrivacy(playlist.id, !playlist.isPublic);
-      await loadPlaylists();
-      loadPlaylistData();
-    } catch (error) {
-      console.error('Error updating privacy:', error);
-      Alert.alert('Error', 'Failed to update playlist privacy');
-    }
   };
 
   const handleSharePlaylist = async () => {
@@ -181,20 +182,6 @@ export default function PlaylistDetailScreen() {
             {/* Action Buttons (only for own playlists) */}
             {isOwnPlaylist && (
               <View style={styles.actionButtons}>
-                <Pressable
-                  style={styles.actionButton}
-                  onPress={handleTogglePrivacy}
-                >
-                  {playlist.isPublic ? (
-                    <Eye size={20} color={colors.text} />
-                  ) : (
-                    <EyeOff size={20} color={colors.text} />
-                  )}
-                  <Text style={styles.actionButtonText}>
-                    {playlist.isPublic ? 'Public' : 'Private'}
-                  </Text>
-                </Pressable>
-
                 <Pressable
                   style={styles.actionButton}
                   onPress={handleSharePlaylist}
