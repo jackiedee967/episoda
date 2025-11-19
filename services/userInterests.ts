@@ -20,21 +20,7 @@ export async function getUserInterests(userId: string): Promise<UserInterests> {
   try {
     console.log('📊 Fetching user interests for:', userId);
     
-    // 1. Get signup shows from profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('signup_shows')
-      .eq('id', userId)
-      .single();
-    
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Error fetching profile:', profileError);
-    }
-    
-    const signupShowIds = profile?.signup_shows || [];
-    console.log(`  Found ${signupShowIds.length} signup shows`);
-    
-    // 2. Get all shows the user has posted about
+    // Get all shows the user has posted about
     const { data: posts, error: postsError } = await supabase
       .from('posts')
       .select('show_id')
@@ -42,25 +28,22 @@ export async function getUserInterests(userId: string): Promise<UserInterests> {
     
     if (postsError) {
       console.error('Error fetching user posts:', postsError);
+      return { genres: [], shows: [] };
     }
     
     const postedShowIds = posts?.map(p => p.show_id).filter(Boolean) || [];
     console.log(`  Found ${postedShowIds.length} posted shows`);
     
-    // 3. Combine and deduplicate show IDs
-    const allShowIds = Array.from(new Set([...signupShowIds, ...postedShowIds]));
-    console.log(`  Total unique shows: ${allShowIds.length}`);
-    
-    if (allShowIds.length === 0) {
+    if (postedShowIds.length === 0) {
       console.log('  No shows found - returning empty interests');
       return { genres: [], shows: [] };
     }
     
-    // 4. Fetch show details from database
+    // Fetch show details from database
     const { data: shows, error: showsError } = await supabase
       .from('shows')
-      .select('id, title, trakt_id, genres')
-      .in('id', allShowIds);
+      .select('id, title, trakt_id')
+      .in('id', postedShowIds);
     
     if (showsError) {
       console.error('Error fetching shows:', showsError);
@@ -71,27 +54,14 @@ export async function getUserInterests(userId: string): Promise<UserInterests> {
       id: show.id,
       title: show.title,
       traktId: show.trakt_id,
-      genres: show.genres || []
+      genres: []
     }));
     
-    // 5. Extract and count genres
-    const genreCounts = new Map<string, number>();
-    userShows.forEach(show => {
-      show.genres?.forEach(genre => {
-        genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
-      });
-    });
-    
-    // 6. Sort genres by frequency (most common first)
-    const sortedGenres = Array.from(genreCounts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([genre]) => genre);
-    
-    console.log(`✅ User interests: ${sortedGenres.length} genres from ${userShows.length} shows`);
-    console.log(`  Top genres: ${sortedGenres.slice(0, 5).join(', ')}`);
+    console.log(`✅ User interests: ${userShows.length} shows found (genre data not available)`);
+    console.log('  ℹ️ No genre interests, using trending shows as fallback');
     
     return {
-      genres: sortedGenres,
+      genres: [],
       shows: userShows
     };
   } catch (error) {

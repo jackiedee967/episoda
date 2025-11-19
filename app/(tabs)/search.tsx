@@ -203,45 +203,63 @@ export default function SearchScreen() {
             getPopularShowsByGenre(genre, 5)
           );
           const forYouResults = await Promise.all(forYouPromises);
-          const forYouShowsList = forYouResults.flat()
-            .slice(0, 12)
-            .map(traktShow => {
-              const show = mapTraktShowToShow(traktShow);
+          const forYouList = forYouResults.flat().slice(0, 12);
+          
+          const enrichedForYou = await Promise.all(
+            forYouList.map(async (traktShow) => {
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              const show = mapTraktShowToShow(traktShow, {
+                posterUrl: enrichedData.posterUrl,
+                totalSeasons: enrichedData.totalSeasons,
+              });
               return {
                 ...show,
                 id: show.id || `trakt-${traktShow.ids.trakt}`,
                 traktId: traktShow.ids.trakt,
                 traktShow
               };
-            });
-          setForYouShows(forYouShowsList);
+            })
+          );
+          setForYouShows(enrichedForYou);
         }
         
         // 4. Trending
         const trending = await getTrendingShows(12);
-        const trendingMapped = trending.map(traktShow => {
-          const show = mapTraktShowToShow(traktShow);
-          return {
-            ...show,
-            id: show.id || `trakt-${traktShow.ids.trakt}`,
-            traktId: traktShow.ids.trakt,
-            traktShow
-          };
-        });
-        setTrendingShows(trendingMapped);
+        const enrichedTrending = await Promise.all(
+          trending.map(async (traktShow) => {
+            const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+            const show = mapTraktShowToShow(traktShow, {
+              posterUrl: enrichedData.posterUrl,
+              totalSeasons: enrichedData.totalSeasons,
+            });
+            return {
+              ...show,
+              id: show.id || `trakt-${traktShow.ids.trakt}`,
+              traktId: traktShow.ids.trakt,
+              traktShow
+            };
+          })
+        );
+        setTrendingShows(enrichedTrending);
         
         // 5. Recently Released
         const recent = await getRecentlyReleasedShows(12);
-        const recentMapped = recent.map(traktShow => {
-          const show = mapTraktShowToShow(traktShow);
-          return {
-            ...show,
-            id: show.id || `trakt-${traktShow.ids.trakt}`,
-            traktId: traktShow.ids.trakt,
-            traktShow
-          };
-        });
-        setRecentlyReleasedShows(recentMapped);
+        const enrichedRecent = await Promise.all(
+          recent.map(async (traktShow) => {
+            const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+            const show = mapTraktShowToShow(traktShow, {
+              posterUrl: enrichedData.posterUrl,
+              totalSeasons: enrichedData.totalSeasons,
+            });
+            return {
+              ...show,
+              id: show.id || `trakt-${traktShow.ids.trakt}`,
+              traktId: traktShow.ids.trakt,
+              traktShow
+            };
+          })
+        );
+        setRecentlyReleasedShows(enrichedRecent);
         
         // 6. Genre Sections
         const allGenres = getAllGenres();
@@ -254,10 +272,13 @@ export default function SearchScreen() {
         const genrePromises = orderedGenres.slice(0, 10).map(async (genre) => {
           try {
             const shows = await getPopularShowsByGenre(genre, 12);
-            return {
-              genre,
-              shows: shows.map(traktShow => {
-                const show = mapTraktShowToShow(traktShow);
+            const enrichedShows = await Promise.all(
+              shows.map(async (traktShow) => {
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                const show = mapTraktShowToShow(traktShow, {
+                  posterUrl: enrichedData.posterUrl,
+                  totalSeasons: enrichedData.totalSeasons,
+                });
                 return {
                   ...show,
                   id: show.id || `trakt-${traktShow.ids.trakt}`,
@@ -265,6 +286,10 @@ export default function SearchScreen() {
                   traktShow
                 };
               })
+            );
+            return {
+              genre,
+              shows: enrichedShows
             };
           } catch (error) {
             console.error(`Error fetching genre ${genre}:`, error);
