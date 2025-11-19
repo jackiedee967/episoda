@@ -409,7 +409,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.currentlyWatchingSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Currently Watching</Text>
+          <Text style={styles.sectionTitle}>Friend Activity</Text>
         </View>
         <ScrollView
           horizontal
