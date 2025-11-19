@@ -3,7 +3,14 @@
 ## Overview
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
-## Recent Changes (November 18, 2025)
+## Recent Changes (November 19, 2025)
+- **Follow/Unfollow Functionality Fixed**: Fixed two critical issues preventing follow/unfollow from working
+  - **Database RLS Policies**: Added Row Level Security policy "Allow all operations on follows" to enable insert/delete operations on the follows table
+  - **React Hooks Rule Violation**: Moved `handleFollowToggle` function before early return in `app/user/[id].tsx` to prevent component structure changes between renders
+  - Follow/unfollow now works across entire app: user profiles, search tab, followers modal, and following modal
+- **Episode Page Completed**: New `/episode/[id]` route with show/episode tags, thumbnail, rating (10+ posts = average, else API), Friends/Everyone filtering, and PostModal integration with pre-selected episode
+
+## Previous Changes (November 18, 2025)
 - **100% API Reliability Achieved**: Implemented comprehensive Trakt API health check and database fallback system for zero-downtime operation
 - **Trakt Health Check Service** (`services/traktHealth.ts`): Lightweight GET request with 5-minute cache to detect API availability, prevents slow network timeouts
 - **Database-Only Recommendations**: Fixed cache clearing race condition - cache now persists through auth transitions, only cleared when switching users
