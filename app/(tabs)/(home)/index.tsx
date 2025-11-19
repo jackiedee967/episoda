@@ -790,8 +790,6 @@ const styles = StyleSheet.create({
     color: tokens.colors.almostWhite,
   },
   viewMoreButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
   },
   viewMoreText: {
     ...tokens.typography.p3R,
