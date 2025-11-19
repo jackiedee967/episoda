@@ -6,7 +6,7 @@ import {
   ScrollView,
   Platform,
   Pressable,
-  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -20,13 +20,15 @@ import SortDropdown, { SortOption } from '@/components/SortDropdown';
 import { Vector3Divider } from '@/components/Vector3Divider';
 import { SearchDuotoneLine } from '@/components/SearchDuotoneLine';
 import FloatingTabBar from '@/components/FloatingTabBar';
-import { mockEpisodes, mockShows } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
+import { Episode, Show } from '@/types';
+import { supabase } from '@/app/integrations/supabase/client';
 import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 import { Star } from 'lucide-react-native';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getShowColorScheme } from '@/utils/showColors';
+import FadeInImage from '@/components/FadeInImage';
 
 type TabKey = 'friends' | 'all';
 
@@ -43,6 +45,9 @@ export default function EpisodeHub() {
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [modalVisible, setModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
+  const [episode, setEpisode] = useState<Episode | null>(null);
+  const [show, setShow] = useState<Show | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
@@ -56,28 +61,126 @@ export default function EpisodeHub() {
     }
   }, [activeTab]);
 
-  const episode = mockEpisodes.find((e) => e.id === id);
-  const show = episode ? mockShows.find((s) => s.id === episode.showId) : undefined;
+  // Fetch episode and show data from Supabase
+  useEffect(() => {
+    const loadEpisodeData = async () => {
+      if (!id) return;
+      
+      setIsLoading(true);
+      try {
+        // Fetch episode
+        const { data: episodeData, error: episodeError } = await supabase
+          .from('episodes')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (episodeError || !episodeData) {
+          console.error('Error loading episode:', episodeError);
+          setIsLoading(false);
+          return;
+        }
+
+        // Transform episode data
+        const episodeObj: Episode = {
+          id: episodeData.id,
+          showId: episodeData.show_id,
+          seasonNumber: episodeData.season_number,
+          episodeNumber: episodeData.episode_number,
+          title: episodeData.title,
+          description: episodeData.description || '',
+          rating: episodeData.rating || 0,
+          postCount: 0,
+          thumbnail: episodeData.thumbnail_url || undefined,
+        };
+
+        setEpisode(episodeObj);
+
+        // Fetch show data
+        const { data: showData, error: showError } = await supabase
+          .from('shows')
+          .select('*')
+          .eq('id', episodeData.show_id)
+          .single();
+
+        if (showError || !showData) {
+          console.error('Error loading show:', showError);
+          setIsLoading(false);
+          return;
+        }
+
+        const showObj: Show = {
+          id: showData.id,
+          title: showData.title,
+          year: showData.year,
+          poster: showData.poster_url || '',
+          totalSeasons: showData.total_seasons || 0,
+          genre: showData.genre || '',
+          rating: showData.rating || 0,
+          traktId: showData.trakt_id,
+          colorScheme: showData.color_scheme,
+        };
+        setShow(showObj);
+      } catch (error) {
+        console.error('Error loading episode data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEpisodeData();
+  }, [id]);
   
-  const episodePosts = useMemo(() => {
-    let filtered = posts.filter((p) => 
+  // Get all posts for this episode (unfiltered for rating calculation)
+  const allEpisodePosts = useMemo(() => {
+    return posts.filter((p) => 
       p.episodes?.some((e) => e.id === id)
     );
+  }, [posts, id]);
+
+  // Calculate rating - 10+ posts with ratings = average, else use API rating
+  const displayRating = useMemo(() => {
+    // Filter to only posts with valid numeric ratings
+    const ratedPosts = allEpisodePosts.filter(post => typeof post.rating === 'number' && !isNaN(post.rating));
+    
+    if (ratedPosts.length >= 10) {
+      // Calculate average of user ratings
+      const totalRating = ratedPosts.reduce((sum, post) => sum + post.rating, 0);
+      return totalRating / ratedPosts.length;
+    }
+    return episode?.rating || 0;
+  }, [allEpisodePosts, episode]);
+
+  // Filter and sort posts based on active tab
+  const episodePosts = useMemo(() => {
+    let filtered = [...allEpisodePosts];
 
     if (activeTab === 'friends') {
       filtered = filtered.filter(post => post.user.id === currentUser.id || isFollowing(post.user.id));
     }
 
     if (sortBy === 'hot') {
-      return [...filtered].sort((a, b) => {
+      return filtered.sort((a, b) => {
         const engagementA = a.likes + a.comments;
         const engagementB = b.likes + b.comments;
         return engagementB - engagementA;
       });
     } else {
-      return [...filtered].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     }
-  }, [posts, id, activeTab, sortBy, currentUser.id, isFollowing]);
+  }, [allEpisodePosts, activeTab, sortBy, currentUser.id, isFollowing]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={tokens.colors.primary} />
+        </View>
+      </View>
+    );
+  }
 
   if (!episode || !show) {
     return (
@@ -157,11 +260,11 @@ export default function EpisodeHub() {
             <View style={styles.episodeCard}>
               <View style={styles.thumbnailWrapper}>
                 <View style={styles.thumbnailPlaceholder}>
-                  {show.posterUrl && (
-                    <Image
-                      source={{ uri: show.posterUrl }}
+                  {episode.thumbnail && (
+                    <FadeInImage
+                      source={{ uri: episode.thumbnail }}
                       style={styles.thumbnail}
-                      resizeMode="cover"
+                      contentFit="cover"
                     />
                   )}
                 </View>
@@ -193,9 +296,9 @@ export default function EpisodeHub() {
                       fill={tokens.colors.greenHighlight} 
                       color={tokens.colors.greenHighlight}
                     />
-                    <Text style={styles.ratingText}>{convertToFiveStarRating(episode.rating).toFixed(1)}</Text>
+                    <Text style={styles.ratingText}>{convertToFiveStarRating(displayRating).toFixed(1)}</Text>
                   </View>
-                  <Text style={styles.postCountText}>{episode.postCount} posts</Text>
+                  <Text style={styles.postCountText}>{allEpisodePosts.length} post{allEpisodePosts.length !== 1 ? 's' : ''}</Text>
                 </View>
               </View>
             </View>
@@ -250,7 +353,7 @@ export default function EpisodeHub() {
         visible={modalVisible} 
         onClose={handleCloseModal} 
         preselectedShow={show}
-        preselectedEpisodes={[episode]}
+        preselectedEpisode={episode}
       />
 
       {show && (
@@ -443,5 +546,10 @@ const styles = StyleSheet.create({
     color: tokens.colors.pureWhite,
     textAlign: 'center',
     paddingTop: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
