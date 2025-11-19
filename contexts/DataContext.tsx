@@ -659,6 +659,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw new Error(errorMsg);
       }
 
+      // OPTIMISTIC UPDATE FIRST - Update UI immediately for instant feedback
+      setPlaylists(prev => {
+        const updated = prev.map(p => 
+          p.id === playlistId 
+            ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
+            : p
+        );
+        
+        // Persist to AsyncStorage (fire-and-forget with error handling)
+        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updated))
+          .catch(error => console.error('❌ Error saving playlists to AsyncStorage:', error));
+        
+        return updated;
+      });
+
+      // THEN persist to database (if authenticated)
       if (authUserId) {
         const { error } = await supabase
           .from('playlist_shows')
@@ -669,6 +685,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error('❌ Error adding show to playlist in Supabase:', error);
+          // Rollback optimistic update on error
+          setPlaylists(prev => {
+            const reverted = prev.map(p => 
+              p.id === playlistId 
+                ? { ...p, shows: (p.shows || []).filter(id => id !== showId), showCount: Math.max(0, (p.showCount || 0) - 1) }
+                : p
+            );
+            // Persist rollback to AsyncStorage
+            AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(reverted))
+              .catch(err => console.error('❌ Error saving rolled-back playlists to AsyncStorage:', err));
+            return reverted;
+          });
           throw new Error(`Failed to add show: ${error.message}`);
         }
 
@@ -687,20 +715,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         console.log('✅ Show added to playlist in Supabase');
       }
-
-      // Update local state optimistically for immediate UI update
-      setPlaylists(prev => prev.map(p => 
-        p.id === playlistId 
-          ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
-          : p
-      ));
-
-      const updatedPlaylists = playlists.map(p => 
-        p.id === playlistId 
-          ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
-          : p
-      );
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
     } catch (error) {
       console.error('❌ Error adding show to playlist:', error);
       throw error;

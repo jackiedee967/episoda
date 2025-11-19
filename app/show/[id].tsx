@@ -522,9 +522,10 @@ export default function ShowHub() {
     setIsInPlaylist(true);
   };
 
-  const isShowSaved = (showId: string) => {
-    return playlists.some(pl => isShowInPlaylist(pl.id, showId));
-  };
+  const isShowSaved = useMemo(() => {
+    if (!show) return false;
+    return playlists.some(pl => isShowInPlaylist(pl.id, show.id));
+  }, [playlists, show, isShowInPlaylist]);
 
   const renderBanner = () => {
     if (!show) return null;
@@ -585,7 +586,7 @@ export default function ShowHub() {
               }}
             >
               <IconSymbol 
-                name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                name={isShowSaved ? "bookmark.fill" : "bookmark"} 
                 size={18} 
                 color={tokens.colors.pureWhite} 
               />
