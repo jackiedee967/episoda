@@ -23,9 +23,10 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 ### Feature Specifications
 - **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed, user profiles, "You May Know" suggestions with mutual friends.
 - **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommended titles, dynamic episode progress bar, and "Currently Watching" section for quick logging. Includes a production-grade rating conversion system and a robust poster fallback chain.
+- **Explore Page**: Redesigned search/explore page featuring curated content sections (Friend Activity, For You based on user interests, Trending, Recently Released, genre-specific rows). Includes horizontal scrolling ExploreShowSection component displaying 2.5 shows, conditional TabSelector (hidden when not searching), robust UUID normalization for Trakt-only shows, and seamless integration with user interests service.
 - **Authentication Flow**: Robust 7-screen onboarding with progressive data collection and authentication guards.
 - **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, custom profile tab display.
-- **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, and Show Hub are fully redesigned.
+- **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, Show Hub, and Explore Page are fully redesigned.
 - **Modular & Component-Based**: Organized into logical directories with reusable UI components.
 - **PostModal Flow**: Guides users through selecting a show, fetching/validating episodes, saving to DB, creating a post, and redirecting. Supports custom tags and a half-star rating system with tap and drag gestures.
 - **Account Management**: Account deletion and phone number change features.
