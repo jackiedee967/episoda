@@ -30,11 +30,12 @@ type SuggestedUser = User & {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, cachedRecommendations } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, cachedRecommendations, ensureShowUuid } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
   const [selectedTraktShow, setSelectedTraktShow] = useState<any>(null);
+  const [navigatingShowId, setNavigatingShowId] = useState<string | null>(null);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
@@ -46,6 +47,25 @@ export default function HomeScreen() {
   const isShowSaved = useCallback((showId: string, traktId?: number) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
   }, [playlists, isShowInPlaylist]);
+
+  const handleShowPress = useCallback(async (show: any) => {
+    // Ensure show has an ID for loading state (use fallback if needed)
+    const showId = show.id || `trakt-${show.traktId}`;
+    
+    try {
+      setNavigatingShowId(showId);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // Resolve Trakt ID to UUID if needed
+      const uuid = await ensureShowUuid(show, show.traktShow);
+      
+      router.push(`/show/${uuid}`);
+    } catch (error) {
+      console.error('Failed to navigate to show:', error);
+    } finally {
+      setNavigatingShowId(null);
+    }
+  }, [ensureShowUuid, router]);
 
   useEffect(() => {
     Animated.loop(
@@ -221,8 +241,9 @@ export default function HomeScreen() {
       const recommendations = cachedRecommendations || [];
       
       // 3. Normalize all shows to consistent format using traktId as key
+      // Ensure every show has an ID (use trakt-{id} as fallback)
       const normalizedFriendsShows = friendsShows.map(item => ({
-        id: item.show.id,
+        id: item.show.id || `trakt-${item.show.traktId}`,
         traktId: item.show.traktId,
         title: item.show.title,
         poster: item.show.poster || item.show.posterUrl || null
@@ -231,7 +252,7 @@ export default function HomeScreen() {
       const normalizedInterestShows = recommendations
         .filter(rec => rec?.show?.poster && rec?.traktId && !currentlyWatchingTraktIds.has(rec.traktId))
         .map(rec => ({
-          id: rec.show!.id,
+          id: rec.show!.id || `trakt-${rec.traktId!}`,
           traktId: rec.traktId!,
           title: rec.show!.title,
           poster: rec.show!.poster,
@@ -379,8 +400,12 @@ export default function HomeScreen() {
           {currentlyWatchingShows.map((show) => (
             <Pressable
               key={show.id}
-              style={styles.showCard}
-              onPress={() => router.push(`/show/${show.id}`)}
+              style={[
+                styles.showCard,
+                navigatingShowId === show.id && { opacity: 0.5 }
+              ]}
+              onPress={() => handleShowPress(show)}
+              disabled={navigatingShowId === show.id}
             >
               <View style={styles.posterWrapper}>
                 <Image 
@@ -478,8 +503,12 @@ export default function HomeScreen() {
             return (
               <Pressable
                 key={show.id}
-                style={styles.showCard}
-                onPress={() => router.push(`/show/${show.id}`)}
+                style={[
+                  styles.showCard,
+                  navigatingShowId === show.id && { opacity: 0.5 }
+                ]}
+                onPress={() => handleShowPress(show)}
+                disabled={navigatingShowId === show.id}
               >
                 <View style={styles.posterWrapper}>
                   <Image 

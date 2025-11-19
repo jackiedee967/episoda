@@ -67,6 +67,7 @@ interface DataContextType {
   loadRecommendations: (options?: { force?: boolean }) => Promise<void>;
   getProfileFeed: (userId: string) => FeedItem[];
   getHomeFeed: () => FeedItem[];
+  ensureShowUuid: (show: Show, traktShow?: any) => Promise<string>;
 }
 
 const STORAGE_KEYS = {
@@ -877,6 +878,88 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return newMap;
     });
   }, []);
+
+  const ensureShowUuid = useCallback(async (show: Show, traktShow?: any): Promise<string> => {
+    // Ensure show has an ID - use Trakt ID as fallback
+    const showId = show.id || `trakt-${show.traktId}`;
+    
+    // If already a UUID, return it
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(showId)) {
+      console.log(`✅ Show ${show.title} already has UUID: ${showId}`);
+      return showId;
+    }
+
+    // Extract Trakt ID from trakt-{number} format or use show.traktId directly
+    let traktId: number;
+    if (showId.startsWith('trakt-')) {
+      traktId = parseInt(showId.substring(6));
+    } else if (show.traktId) {
+      traktId = show.traktId;
+    } else {
+      throw new Error(`Cannot resolve UUID: show "${show.title}" has no ID or Trakt ID`);
+    }
+
+    console.log(`🔄 Resolving Trakt ID ${traktId} to UUID for "${show.title}"...`);
+
+    // Check cache first
+    const cachedUuid = traktIdToUuidMap.get(traktId);
+    if (cachedUuid) {
+      console.log(`✅ Found cached UUID for Trakt ID ${traktId}: ${cachedUuid}`);
+      return cachedUuid;
+    }
+
+    // Not in cache - need to save to database
+    console.log(`💾 Saving show "${show.title}" to database to get UUID...`);
+    
+    try {
+      const { saveOrUpdateShow } = await import('@/services/showDatabase');
+      const { getShowDetails } = await import('@/services/trakt');
+      const { showEnrichmentManager } = await import('@/services/showEnrichment');
+
+      // Fetch full Trakt data if not provided
+      let fullTraktShow = traktShow;
+      if (!fullTraktShow) {
+        console.log(`📡 Fetching Trakt data for ID ${traktId}...`);
+        fullTraktShow = await getShowDetails(traktId);
+      }
+
+      // Enrich with poster if needed
+      let posterUrl = show.poster;
+      if (!posterUrl) {
+        try {
+          const enrichedData = await showEnrichmentManager.enrichShow(fullTraktShow);
+          posterUrl = enrichedData.posterUrl;
+        } catch (error) {
+          console.warn(`Failed to enrich poster for ${show.title}`);
+        }
+      }
+
+      // Save to database
+      const dbShow = await saveOrUpdateShow({
+        trakt_id: traktId,
+        title: show.title,
+        description: show.description || '',
+        poster_url: posterUrl,
+        backdrop_url: show.backdrop || null,
+        rating: show.rating || 0,
+        total_seasons: show.totalSeasons || 0,
+        total_episodes: show.totalEpisodes || 0,
+        color_scheme: show.colorScheme || null,
+      });
+
+      const uuid = dbShow.id;
+      console.log(`✅ Saved show "${show.title}" to database with UUID: ${uuid}`);
+
+      // Record mapping
+      recordTraktIdMapping(traktId, uuid);
+
+      return uuid;
+    } catch (error) {
+      console.error(`❌ Failed to save show "${show.title}" to database:`, error);
+      throw new Error(`Failed to resolve show UUID: ${error}`);
+    }
+  }, [traktIdToUuidMap, recordTraktIdMapping]);
 
   const isShowInPlaylist = useCallback((playlistId: string, showId: string): boolean => {
     const playlist = playlists.find(p => p.id === playlistId);
@@ -2381,7 +2464,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ...actions,
     // Exposed helpers
     recordTraktIdMapping,
-  }), [state, selectors, actions, recordTraktIdMapping]);
+    ensureShowUuid,
+  }), [state, selectors, actions, recordTraktIdMapping, ensureShowUuid]);
 
   return (
     <DataContext.Provider value={contextValue}>
