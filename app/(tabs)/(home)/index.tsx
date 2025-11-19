@@ -177,21 +177,24 @@ export default function HomeScreen() {
       try {
         const followingIds = currentUser.following || [];
         
-        // 1. Get shows from friends' posts
+        // 1. Get shows from friends' posts and count unique friends per show
         const friendsPosts = posts.filter(post => 
           followingIds.includes(post.user.id) && post.show
         );
 
-        // Count how many unique friends have logged each show
-        const showFriendCounts = new Map<string, { show: any; friendCount: number; friendIds: Set<string> }>();
+        // Use traktId as consistent identifier, count unique friends
+        const showFriendCounts = new Map<number, { show: any; friendCount: number; friendIds: Set<string> }>();
         
         for (const post of friendsPosts) {
-          const existing = showFriendCounts.get(post.show.id);
+          const traktId = post.show.traktId;
+          if (!traktId) continue;
+          
+          const existing = showFriendCounts.get(traktId);
           if (existing) {
             existing.friendIds.add(post.user.id);
             existing.friendCount = existing.friendIds.size;
           } else {
-            showFriendCounts.set(post.show.id, {
+            showFriendCounts.set(traktId, {
               show: post.show,
               friendCount: 1,
               friendIds: new Set([post.user.id])
@@ -199,31 +202,53 @@ export default function HomeScreen() {
           }
         }
 
-        // Sort by friend count (descending) and take top shows
+        // Sort by friend count (descending) - DON'T slice yet
         const friendsShows = Array.from(showFriendCounts.values())
-          .sort((a, b) => b.friendCount - a.friendCount)
-          .slice(0, 3)
-          .map(item => item.show);
+          .sort((a, b) => b.friendCount - a.friendCount);
 
         // 2. Get interest-based recommendations
         const recommendations = await getCombinedRecommendations(currentUser.id, 12);
         
-        // Convert recommendations to show format
-        const interestShows = recommendations
-          .filter(rec => rec.poster_url) // Only include shows with posters
+        // 3. Normalize all shows to consistent format using traktId as key
+        const normalizedFriendsShows = friendsShows.map(item => ({
+          id: item.show.id,
+          traktId: item.show.traktId,
+          title: item.show.title,
+          poster: item.show.poster || item.show.posterUrl || null
+        }));
+
+        const normalizedInterestShows = recommendations
+          .filter(rec => rec.poster_url)
           .map(rec => ({
             id: rec.id || `trakt-${rec.trakt_id}`,
+            traktId: rec.trakt_id,
             title: rec.title,
-            poster: rec.poster_url,
-            traktId: rec.trakt_id
+            poster: rec.poster_url
           }));
 
-        // 3. Combine: friends' shows first, then interest-based (remove duplicates)
-        const friendsShowIds = new Set(friendsShows.map(s => s.id));
-        const uniqueInterestShows = interestShows.filter(s => !friendsShowIds.has(s.id));
-        
-        const combined = [...friendsShows, ...uniqueInterestShows].slice(0, 6);
-        setRecommendedShows(combined);
+        // 4. Merge: friends' shows first (by friend count), then interest-based
+        // Remove duplicates by traktId (keep first occurrence = friend show)
+        const seenTraktIds = new Set<number>();
+        const combined = [];
+
+        // Add friends' shows first (already sorted by friend count)
+        for (const show of normalizedFriendsShows) {
+          if (!seenTraktIds.has(show.traktId)) {
+            seenTraktIds.add(show.traktId);
+            combined.push(show);
+          }
+        }
+
+        // Add interest-based shows (only if not already added)
+        for (const show of normalizedInterestShows) {
+          if (!seenTraktIds.has(show.traktId)) {
+            seenTraktIds.add(show.traktId);
+            combined.push(show);
+          }
+        }
+
+        // NOW slice to 6
+        setRecommendedShows(combined.slice(0, 6));
       } catch (error) {
         console.error('Error fetching recommended shows:', error);
       }
@@ -366,25 +391,30 @@ export default function HomeScreen() {
   const renderRecommendedTitles = () => {
     if (recommendedShows.length === 0) return null;
 
-    const getFriendsWatchingCount = (showId: string) => {
-      const friendIds = currentUser.following || [];
-      const friendsWhoPosted = posts.filter(post => 
-        friendIds.includes(post.user.id) && 
-        post.show?.id === showId
-      );
-      const uniqueFriends = new Set(friendsWhoPosted.map(post => post.user.id));
-      return uniqueFriends.size;
-    };
+    // Pre-compute friend counts and avatars for all shows (avoid O(n*m) per-render scans)
+    const followingIds = currentUser.following || [];
+    const friendDataCache = new Map<number, { count: number; users: any[] }>();
 
-    const getFriendsWatchingShow = (showId: string) => {
-      const friendIds = currentUser.following || [];
-      const friendsWhoPosted = posts.filter(post => 
-        friendIds.includes(post.user.id) && 
-        post.show?.id === showId
-      );
-      const uniqueFriends = Array.from(new Set(friendsWhoPosted.map(post => post.user)));
-      return uniqueFriends.slice(0, 3);
-    };
+    // Single pass over posts to build cache
+    for (const post of posts) {
+      if (!followingIds.includes(post.user.id) || !post.show?.traktId) continue;
+      
+      const traktId = post.show.traktId;
+      const existing = friendDataCache.get(traktId);
+      
+      if (existing) {
+        // Check if this friend already counted
+        if (!existing.users.find(u => u.id === post.user.id)) {
+          existing.users.push(post.user);
+          existing.count = existing.users.length;
+        }
+      } else {
+        friendDataCache.set(traktId, {
+          count: 1,
+          users: [post.user]
+        });
+      }
+    }
 
     return (
       <View style={styles.recommendedSection}>
@@ -402,8 +432,9 @@ export default function HomeScreen() {
           style={styles.showsScrollView}
         >
           {recommendedShows.map((show) => {
-            const friendCount = getFriendsWatchingCount(show.id);
-            const friendsWatching = getFriendsWatchingShow(show.id);
+            const friendData = friendDataCache.get(show.traktId);
+            const friendCount = friendData?.count || 0;
+            const friendsWatching = friendData?.users.slice(0, 3) || [];
 
             return (
               <Pressable

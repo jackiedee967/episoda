@@ -4,9 +4,17 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
 ## Recent Changes (November 19, 2025)
+- **Recommended Titles Real Data - Production-Ready**: Replaced mock data with two-tier recommendation system using real user data
+  - **Friends' Shows Priority**: First displays shows being watched by friends, ranked by unique friend count (e.g., show watched by 5 friends appears before one watched by 2)
+  - **Interest-Based Recommendations**: Fills remaining slots using existing `getCombinedRecommendations` service that analyzes user's genre preferences from logged shows
+  - **Smart Deduplication**: Uses `traktId` as consistent identifier to prevent duplicates when same show appears in both friends' and interest-based lists
+  - **Data Normalization**: All shows normalized to consistent format (id, traktId, title, poster) with poster fallback chain (poster → posterUrl → null)
+  - **Performance Optimization**: Single-pass friend data caching eliminates O(n*m) repeated array scans, improving render performance with large post feeds
+  - **Friend Activity Display**: Shows avatars of up to 3 friends watching each show with accurate friend count, using cached data for instant rendering
+  - **Architect Validated**: All critical issues resolved - correct ranking, no duplicates, consistent data structure, optimized performance
 - **Currently Watching Section**: New homepage section showing last 6 unique shows user has logged, positioned above Recommended Titles
   - **Smart Show Tracking**: Automatically extracts unique shows from user's post history, displays most recent first
-  - **Quick Logging**: Each show poster includes a "Log episode" button that opens PostModal with show pre-selected
+  - **Quick Logging**: Each show poster includes green "Log episode" button (with #8bfc76 background) that opens PostModal with show pre-selected
   - **User Experience**: Users can quickly re-log shows they're actively watching without searching again
   - **Consistent UI**: Follows same design pattern as Recommended Titles with card background, stroke, and bookmark functionality
 - **You May Know Real Data Implementation**: Replaced hardcoded mockUsers in "You May Know" section with real suggested users from database
