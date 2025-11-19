@@ -223,15 +223,7 @@ export default function UserProfile() {
     return baseTabs;
   }, [isCurrentUser, userPlaylists]);
 
-  if (!user || !profileUser) {
-    return (
-      <View style={styles.pageContainer}>
-        <Stack.Screen options={{ title: 'User Not Found', headerShown: false }} />
-        <Text style={styles.errorText}>User not found</Text>
-      </View>
-    );
-  }
-
+  // Handler functions - MUST be before early return
   const handleFollowToggle = async (userId: string) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -248,6 +240,15 @@ export default function UserProfile() {
       Alert.alert('Error', 'Failed to update follow status. Please try again.');
     }
   };
+
+  if (!user || !profileUser) {
+    return (
+      <View style={styles.pageContainer}>
+        <Stack.Screen options={{ title: 'User Not Found', headerShown: false }} />
+        <Text style={styles.errorText}>User not found</Text>
+      </View>
+    );
+  }
 
   const handleBlock = () => {
     setIsBlocked(!isBlocked);
