@@ -2161,7 +2161,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         show: item.show,
         mostRecentEpisode,
         loggedCount: item.episodes.size,
-        totalCount: item.episodes.size,
+        totalCount: item.show.totalEpisodes ?? item.episodes.size,
         lastWatchedDate: item.lastDate,
       };
     });
