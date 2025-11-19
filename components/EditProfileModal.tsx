@@ -327,23 +327,38 @@ export default function EditProfileModal({
         }
 
         if (existingProfile) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('profiles' as any)
             .update(updateData)
             .eq('user_id', user.id);
+          
+          if (updateError) {
+            console.error('Error updating profile:', updateError);
+            throw updateError;
+          }
         } else {
-          await supabase
+          const { error: insertError } = await supabase
             .from('profiles' as any)
             .insert({
               user_id: user.id,
               ...updateData,
             });
+          
+          if (insertError) {
+            console.error('Error inserting profile:', insertError);
+            throw insertError;
+          }
         }
 
-        await supabase
+        const { error: deleteError } = await supabase
           .from('social_links' as any)
           .delete()
           .eq('user_id', user.id);
+        
+        if (deleteError) {
+          console.error('Error deleting social links:', deleteError);
+          throw deleteError;
+        }
 
         if (updatedSocialLinks.length > 0) {
           const socialLinksToInsert = updatedSocialLinks.map(link => ({
@@ -352,9 +367,14 @@ export default function EditProfileModal({
             url: link.url,
           }));
 
-          await supabase
+          const { error: insertLinksError } = await supabase
             .from('social_links' as any)
             .insert(socialLinksToInsert as any);
+          
+          if (insertLinksError) {
+            console.error('Error inserting social links:', insertLinksError);
+            throw insertLinksError;
+          }
         }
       }
 
@@ -381,9 +401,11 @@ export default function EditProfileModal({
       }
 
     } catch (error) {
+      console.error('Failed to save profile:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       if (typeof window !== 'undefined') {
-        window.alert('Failed to save profile. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        window.alert(`Failed to save profile: ${errorMessage}\n\nPlease check the console for details.`);
       }
     } finally {
       setIsSaving(false);
