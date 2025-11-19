@@ -49,16 +49,25 @@ export default function PlaylistDetailScreen() {
       
       // Load actual shows from Supabase database
       if (foundPlaylist.shows && foundPlaylist.shows.length > 0) {
-        const { data: shows, error } = await supabase
-          .from('shows')
-          .select('*')
-          .in('id', foundPlaylist.shows);
+        // Filter out invalid UUIDs (corrupted data like "trakt-191758")
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const validShowIds = foundPlaylist.shows.filter(showId => uuidRegex.test(showId));
         
-        if (error) {
-          console.error('❌ Error loading playlist shows:', error);
+        if (validShowIds.length > 0) {
+          const { data: shows, error } = await supabase
+            .from('shows')
+            .select('*')
+            .in('id', validShowIds);
+          
+          if (error) {
+            console.error('❌ Error loading playlist shows:', error);
+            setPlaylistShows([]);
+          } else if (shows) {
+            setPlaylistShows(shows as Show[]);
+          }
+        } else {
+          console.log('⚠️ No valid show IDs in playlist');
           setPlaylistShows([]);
-        } else if (shows) {
-          setPlaylistShows(shows as Show[]);
         }
       }
     } else {

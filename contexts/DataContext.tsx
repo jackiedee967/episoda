@@ -827,14 +827,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error('❌ Error loading playlists from Supabase:', error);
         } else if (data) {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           const loadedPlaylists: Playlist[] = data.map(p => {
             const shows = p.playlist_shows.map((ps: any) => ps.show_id);
+            // Filter out invalid show IDs (corrupted data like "trakt-191758")
+            const validShows = shows.filter((id: string) => uuidRegex.test(id));
             return {
               id: p.id,
               name: p.name,
               userId: p.user_id,
-              shows: shows,
-              showCount: shows.length,
+              shows: validShows,
+              showCount: validShows.length,
               isPublic: p.is_public,
               createdAt: new Date(p.created_at),
             };
