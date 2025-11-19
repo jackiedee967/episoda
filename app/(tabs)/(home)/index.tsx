@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
@@ -30,6 +30,7 @@ type SuggestedUser = User & {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, cachedRecommendations, ensureShowUuid } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
@@ -43,6 +44,25 @@ export default function HomeScreen() {
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Calculate poster dimensions dynamically to show exactly 2.5 posters
+  const posterDimensions = useMemo(() => {
+    const padding = 40; // 20px left + 20px right
+    const gap = 13;
+    const contentWidth = screenWidth - padding;
+    // Calculate width for 2.5 posters: (width * 2.5) + (gap * 2) = contentWidth
+    const cardWidth = Math.floor((contentWidth - (2 * gap)) / 2.5);
+    // Clamp between 120-170px for reasonable sizes
+    const clampedWidth = Math.max(120, Math.min(170, cardWidth));
+    const cardHeight = Math.floor(clampedWidth * 1.5); // 2:3 aspect ratio
+    const overlayWidth = clampedWidth - 24; // 12px padding on each side
+    
+    return {
+      cardWidth: clampedWidth,
+      cardHeight,
+      overlayWidth,
+    };
+  }, [screenWidth]);
 
   const isShowSaved = useCallback((showId: string, traktId?: number) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
@@ -402,15 +422,16 @@ export default function HomeScreen() {
               key={show.id}
               style={[
                 styles.showCard,
+                { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight },
                 navigatingShowId === show.id && { opacity: 0.5 }
               ]}
               onPress={() => handleShowPress(show)}
               disabled={navigatingShowId === show.id}
             >
-              <View style={styles.posterWrapper}>
+              <View style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}>
                 <Image 
                   source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-                  style={styles.showImage}
+                  style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
                 />
                 
                 <Pressable 
@@ -434,7 +455,7 @@ export default function HomeScreen() {
                 </Pressable>
 
                 <Pressable 
-                  style={styles.logEpisodeButton}
+                  style={[styles.logEpisodeButton, { width: posterDimensions.overlayWidth }]}
                   onPress={(e) => {
                     e.stopPropagation();
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -507,15 +528,16 @@ export default function HomeScreen() {
                 key={show.id}
                 style={[
                   styles.showCard,
+                  { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight },
                   navigatingShowId === show.id && { opacity: 0.5 }
                 ]}
                 onPress={() => handleShowPress(show)}
                 disabled={navigatingShowId === show.id}
               >
-                <View style={styles.posterWrapper}>
+                <View style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}>
                   <Image 
                     source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-                    style={styles.showImage}
+                    style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
                   />
                   
                   <Pressable 
@@ -539,7 +561,7 @@ export default function HomeScreen() {
                   </Pressable>
 
                   {friendCount > 0 && (
-                    <View style={styles.friendsBar}>
+                    <View style={[styles.friendsBar, { width: posterDimensions.overlayWidth }]}>
                       <View style={styles.friendAvatars}>
                         {friendsWatching.map((user, index) => (
                           <Image
@@ -805,18 +827,18 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   showCard: {
-    width: 130,
-    height: 195,
+    width: 140,
+    height: 210,
     position: 'relative',
   },
   posterWrapper: {
     position: 'relative',
-    width: 130,
-    height: 195,
+    width: 140,
+    height: 210,
   },
   showImage: {
-    width: 130,
-    height: 195,
+    width: 140,
+    height: 210,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: tokens.colors.imageStroke,
@@ -840,7 +862,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     bottom: 12,
-    width: 106,
+    width: 116,
     height: 38,
     justifyContent: 'center',
     alignItems: 'center',
@@ -857,7 +879,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     bottom: 12,
-    width: 106,
+    width: 116,
     height: 38,
     paddingVertical: 9,
     paddingHorizontal: 14,
