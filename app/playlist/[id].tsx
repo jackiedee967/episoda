@@ -260,7 +260,7 @@ export default function PlaylistDetailScreen() {
             </View>
           )}
 
-          <View style={{ height: 100 }} />
+          <View style={{ height: 120 }} />
         </ScrollView>
       </View>
     </>
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   showCount: {
-    fontSize: 16,
+    ...typography.smallSubtitle,
     color: colors.textSecondary,
     marginBottom: 16,
   },
