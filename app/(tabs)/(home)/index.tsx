@@ -274,15 +274,18 @@ export default function HomeScreen() {
       if (!currentUser?.id || isLoadingFeed) return;
 
       const homeFeed = getHomeFeed();
-      const friendPosts = homeFeed.filter(item => currentUser.following?.includes(item.post.user.id));
+      const activityPosts = homeFeed.filter(item => 
+        currentUser.following?.includes(item.post.user.id) || 
+        item.post.user.id === currentUser.id
+      );
       
-      if (friendPosts.length < 5) {
-        const friendPostIds = friendPosts.map(item => item.post.id);
-        const needed = 5 - friendPosts.length;
+      if (activityPosts.length < 5) {
+        const activityPostIds = activityPosts.map(item => item.post.id);
+        const needed = 5 - activityPosts.length;
         
         const rawCommunityPosts = await getCommunityPosts({
           userId: currentUser.id,
-          excludedPostIds: friendPostIds,
+          excludedPostIds: activityPostIds,
           limit: needed,
         });
         
@@ -570,19 +573,22 @@ export default function HomeScreen() {
     );
   };
 
-  const friendActivityData = useMemo(() => {
+  const activityData = useMemo(() => {
     const homeFeed = getHomeFeed();
     
-    // Filter to only friend activity (posts from followed users)
-    return homeFeed.filter(item => currentUser.following?.includes(item.post.user.id));
-  }, [getHomeFeed, currentUser.following]);
+    // Show all activity (user's own posts + friends' posts)
+    return homeFeed.filter(item => 
+      currentUser.following?.includes(item.post.user.id) || 
+      item.post.user.id === currentUser.id
+    );
+  }, [getHomeFeed, currentUser.following, currentUser.id]);
 
   const renderFriendActivity = () => {
-    const friendPosts = friendActivityData.slice(0, 5);
-    const communityPostsToShow = communityPosts.slice(0, Math.max(0, 5 - friendPosts.length));
+    const activityPosts = activityData.slice(0, 5);
+    const communityPostsToShow = communityPosts.slice(0, Math.max(0, 5 - activityPosts.length));
     
     const blendedActivity = [
-      ...friendPosts,
+      ...activityPosts,
       ...communityPostsToShow.map(post => ({
         post,
         sortTimestamp: post.timestamp,
@@ -592,7 +598,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.friendActivitySection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Friend Activity</Text>
+          <Text style={styles.sectionTitle}>Activity</Text>
         </View>
         {isLoadingFeed ? (
           <>
@@ -912,7 +918,7 @@ const styles = StyleSheet.create({
     color: tokens.colors.black,
   },
   
-  // Friend Activity - exact specs
+  // Activity - exact specs
   friendActivitySection: {
     gap: 17,
     marginBottom: 40,
