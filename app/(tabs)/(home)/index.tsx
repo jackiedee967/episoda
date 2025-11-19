@@ -228,12 +228,12 @@ export default function HomeScreen() {
       }));
 
       const normalizedInterestShows = recommendations
-        .filter(rec => rec.poster && !currentlyWatchingTraktIds.has(rec.traktId))
+        .filter(rec => rec?.show?.poster && rec?.traktId && !currentlyWatchingTraktIds.has(rec.traktId))
         .map(rec => ({
-          id: rec.id || `trakt-${rec.traktId}`,
-          traktId: rec.traktId,
-          title: rec.title,
-          poster: rec.poster
+          id: rec.show!.id || `trakt-${rec.traktId}`,
+          traktId: rec.traktId!,
+          title: rec.show!.title,
+          poster: rec.show!.poster
         }));
 
       // 4. Merge: friends' shows first (by friend count), then interest-based
