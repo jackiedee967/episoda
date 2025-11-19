@@ -453,7 +453,7 @@ export default function EditProfileModal({
           <View style={styles.header}>
             <Text style={styles.title}>Edit Profile</Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={colors.almostWhite} />
+              <X size={24} color={colors.black} />
             </Pressable>
           </View>
 
@@ -475,9 +475,9 @@ export default function EditProfileModal({
                 </Pressable>
                 <Pressable onPress={handlePickImage} style={styles.uploadIconButton}>
                   {isUploadingAvatar ? (
-                    <ActivityIndicator size="small" color={colors.almostWhite} />
+                    <ActivityIndicator size="small" color={colors.black} />
                   ) : (
-                    <IconSymbol name="arrow.up.circle.fill" size={28} color={colors.almostWhite} />
+                    <IconSymbol name="camera" size={24} color={colors.grey1} />
                   )}
                 </Pressable>
               </View>
@@ -550,7 +550,7 @@ export default function EditProfileModal({
               <Text style={styles.label}>Instagram</Text>
               <View style={styles.socialInputContainer}>
                 <View style={styles.iconContainer}>
-                  <Instagram size={16} color={colors.almostWhite} />
+                  <Instagram size={16} color={colors.black} />
                 </View>
                 <TextInput
                   style={styles.socialInput}
@@ -567,7 +567,7 @@ export default function EditProfileModal({
               <Text style={styles.label}>TikTok</Text>
               <View style={styles.socialInputContainer}>
                 <View style={styles.iconContainer}>
-                  <Music size={16} color={colors.almostWhite} />
+                  <Music size={16} color={colors.black} />
                 </View>
                 <TextInput
                   style={styles.socialInput}
@@ -601,7 +601,7 @@ export default function EditProfileModal({
               <Text style={styles.label}>Spotify</Text>
               <View style={styles.socialInputContainer}>
                 <View style={styles.iconContainer}>
-                  <Music size={16} color={colors.almostWhite} />
+                  <Music size={16} color={colors.black} />
                 </View>
                 <TextInput
                   style={styles.socialInput}
@@ -618,7 +618,7 @@ export default function EditProfileModal({
               <Text style={styles.label}>Website</Text>
               <View style={styles.socialInputContainer}>
                 <View style={styles.iconContainer}>
-                  <Globe size={16} color={colors.almostWhite} />
+                  <Globe size={16} color={colors.black} />
                 </View>
                 <TextInput
                   style={styles.socialInput}
@@ -656,20 +656,16 @@ export default function EditProfileModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   backdrop: {
     flex: 1,
   },
   modalContent: {
-    backgroundColor: colors.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: colors.almostWhite,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     height: SCREEN_HEIGHT * 0.9,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: colors.cardStroke,
   },
   header: {
     flexDirection: 'row',
@@ -677,11 +673,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.cardStroke,
+    borderBottomColor: colors.grey2,
   },
   title: {
     ...typography.titleL,
-    color: colors.almostWhite,
+    color: colors.black,
   },
   closeButton: {
     padding: 4,
@@ -707,7 +703,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: colors.pageBackground,
+    backgroundColor: colors.grey2,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -716,24 +712,24 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.subtitle,
-    color: colors.almostWhite,
+    color: colors.black,
     paddingHorizontal: 20,
     marginTop: 30,
     marginBottom: 10,
   },
   label: {
     ...typography.p1B,
-    color: colors.almostWhite,
+    color: colors.black,
     marginBottom: 8,
   },
   input: {
     ...typography.p1,
-    backgroundColor: colors.pageBackground,
+    backgroundColor: colors.pureWhite,
     borderWidth: 1,
-    borderColor: colors.cardStroke,
+    borderColor: colors.grey2,
     borderRadius: 12,
     padding: 14,
-    color: colors.almostWhite,
+    color: colors.black,
   },
   textArea: {
     minHeight: 80,
@@ -766,9 +762,9 @@ const styles = StyleSheet.create({
   socialInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.pageBackground,
+    backgroundColor: colors.pureWhite,
     borderWidth: 1,
-    borderColor: colors.cardStroke,
+    borderColor: colors.grey2,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -777,23 +773,23 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.almostWhite,
   },
   socialInput: {
     ...typography.p1,
     flex: 1,
     padding: 14,
-    color: colors.almostWhite,
+    color: colors.black,
   },
   xIcon: {
     fontSize: 16,
-    color: colors.almostWhite,
+    color: colors.black,
     fontWeight: '600',
   },
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: colors.cardStroke,
+    borderTopColor: colors.grey2,
   },
   saveButton: {
     backgroundColor: colors.greenHighlight,
