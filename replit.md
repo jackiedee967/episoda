@@ -4,6 +4,12 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, focusing on a pixel-perfect UI and robust data integration for TV show metadata.
 
 ## Recent Changes (November 19, 2025)
+- **You May Know Real Data Implementation**: Replaced hardcoded mockUsers in "You May Know" section with real suggested users from database
+  - **Smart User Suggestions**: Fetches users not being followed by current user, calculates actual mutual friends for each candidate
+  - **Mutual Friends Display**: Shows up to 3 mutual friend avatars with "+X" badge for additional mutual connections using reusable BaseFriends component
+  - **Smart Filtering**: Only suggests users with at least 1 mutual friend for better relevance
+  - **Performance Note**: Current implementation uses N+1 query pattern (one query per user) - acceptable for 5-user limit but can be optimized with single SQL join query for production scale
+  - **User Experience**: Clicking suggested user cards navigates to their profile, section header links to search tab for discovering more users
 - **Edit Profile Error Handling - Production-Ready**: Added comprehensive error handling to EditProfileModal to identify and surface database operation failures
   - **Root Cause**: Supabase operations were not checking for errors, causing silent failures when RLS policies or other database issues occurred
   - **Authentication Validation**: Added error checking to `supabase.auth.getUser()` with fallback to catch auth failures early
