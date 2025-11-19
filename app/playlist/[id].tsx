@@ -64,7 +64,23 @@ export default function PlaylistDetailScreen() {
             console.error('❌ Error loading playlist shows:', error);
             setPlaylistShows([]);
           } else if (shows) {
-            setPlaylistShows(shows as Show[]);
+            // Normalize snake_case columns to camelCase properties
+            const normalizedShows = shows.map((show: any) => ({
+              id: show.id,
+              title: show.title,
+              year: show.year,
+              overview: show.overview,
+              traktId: show.trakt_id,
+              imdbId: show.imdb_id,
+              tmdbId: show.tmdb_id,
+              poster: show.poster_url,
+              rating: show.rating,
+              status: show.status,
+              network: show.network,
+              genres: show.genres,
+              totalEpisodes: show.total_episodes,
+            }));
+            setPlaylistShows(normalizedShows as Show[]);
           }
         } else {
           console.log('⚠️ No valid show IDs in playlist');
