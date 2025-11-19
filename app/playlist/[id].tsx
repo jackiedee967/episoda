@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   showPoster: {
     width: '100%',
     aspectRatio: 2 / 3,
-    borderRadius: 8,
+    borderRadius: 14,
   },
   removeButton: {
     position: 'absolute',
