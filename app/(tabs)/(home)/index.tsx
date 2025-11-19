@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
@@ -42,6 +42,8 @@ export default function HomeScreen() {
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
   const [recommendedShows, setRecommendedShows] = useState<any[]>([]);
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -312,29 +314,51 @@ export default function HomeScreen() {
       if (!currentUser?.id || isLoadingFeed) return;
 
       const homeFeed = getHomeFeed();
-      const activityPosts = homeFeed.filter(item => 
-        currentUser.following?.includes(item.post.user.id) || 
-        item.post.user.id === currentUser.id
-      );
+      const activityPostIds = homeFeed.map(item => item.post.id);
       
-      if (activityPosts.length < 5) {
-        const activityPostIds = activityPosts.map(item => item.post.id);
-        const needed = 5 - activityPosts.length;
-        
-        const rawCommunityPosts = await getCommunityPosts({
-          userId: currentUser.id,
-          excludedPostIds: activityPostIds,
-          limit: needed,
-        });
-        
-        setCommunityPosts(rawCommunityPosts);
-      } else {
-        setCommunityPosts([]);
-      }
+      // Load initial batch of community posts (10 posts)
+      const rawCommunityPosts = await getCommunityPosts({
+        userId: currentUser.id,
+        excludedPostIds: activityPostIds,
+        limit: 10,
+      });
+      
+      setCommunityPosts(rawCommunityPosts);
+      setHasMorePosts(rawCommunityPosts.length === 10);
     };
 
     fetchCommunityPosts();
   }, [currentUser?.id, currentUser?.following, posts, isLoadingFeed, getHomeFeed]);
+
+  const loadMorePosts = useCallback(async () => {
+    if (isLoadingMore || !hasMorePosts || !currentUser?.id) return;
+
+    setIsLoadingMore(true);
+    try {
+      const homeFeed = getHomeFeed();
+      const allCurrentPostIds = [
+        ...homeFeed.map(item => item.post.id),
+        ...communityPosts.map(post => post.id)
+      ];
+      
+      const newPosts = await getCommunityPosts({
+        userId: currentUser.id,
+        excludedPostIds: allCurrentPostIds,
+        limit: 10,
+      });
+      
+      if (newPosts.length > 0) {
+        setCommunityPosts(prev => [...prev, ...newPosts]);
+        setHasMorePosts(newPosts.length === 10);
+      } else {
+        setHasMorePosts(false);
+      }
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMorePosts, currentUser?.id, communityPosts, getHomeFeed]);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -633,69 +657,133 @@ export default function HomeScreen() {
       currentUser.following?.includes(item.post.user.id) || 
       item.post.user.id === currentUser.id
     );
-  }, [getHomeFeed, currentUser.following, currentUser.id]);
+  }, [getHomeFeed, currentUser.following, currentUser.id, posts, allReposts]);
 
-  const renderFriendActivity = () => {
-    const activityPosts = activityData.slice(0, 5);
-    const communityPostsToShow = communityPosts.slice(0, Math.max(0, 5 - activityPosts.length));
+  // Combine activity and community posts for FlatList with chronological sorting
+  // Activity posts are already in { post, sortTimestamp, repostContext? } format
+  // Community posts need to be wrapped in the same format
+  const feedData = useMemo(() => {
+    const wrappedCommunityPosts = communityPosts
+      .map(post => {
+        let timestamp: Date;
+        if (post.timestamp instanceof Date) {
+          timestamp = post.timestamp;
+        } else {
+          const parsed = new Date(post.timestamp);
+          timestamp = isNaN(parsed.getTime()) ? new Date(0) : parsed;
+        }
+        return {
+          post,
+          sortTimestamp: timestamp,
+        };
+      })
+      .filter(item => item.sortTimestamp.getTime() > 0); // Filter out invalid timestamps
     
-    const blendedActivity = [
-      ...activityPosts,
-      ...communityPostsToShow.map(post => ({
-        post,
-        sortTimestamp: post.timestamp,
-      }))
-    ];
+    // Merge and sort by timestamp (newest first)
+    const combined = [...activityData, ...wrappedCommunityPosts];
+    return combined.sort((a, b) => {
+      const aTime = a.sortTimestamp instanceof Date ? a.sortTimestamp.getTime() : new Date(a.sortTimestamp).getTime();
+      const bTime = b.sortTimestamp instanceof Date ? b.sortTimestamp.getTime() : new Date(b.sortTimestamp).getTime();
+      return bTime - aTime;
+    });
+  }, [activityData, communityPosts]);
 
-    return (
+  const renderFeedItem = useCallback(({ item, index }: { item: any; index: number }) => (
+    <FadeInView key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} delay={Math.min(index * 50, 500)}>
+      <PostCard
+        post={item.post}
+        onLike={() => handleLike(item.post.id)}
+        onRepost={() => handleRepost(item.post.id)}
+        onShare={() => handleShare(item.post.id)}
+        repostContext={item.repostContext}
+      />
+    </FadeInView>
+  ), []);
+
+  const renderListHeader = () => (
+    <>
+      {renderHeader()}
+      {renderDivider()}
+      {renderWelcome()}
+      {renderPostInput()}
+      {renderCurrentlyWatching()}
+      {renderRecommendedTitles()}
+      {renderYouMayKnow()}
       <View style={styles.friendActivitySection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Activity</Text>
         </View>
-        {isLoadingFeed ? (
-          <>
-            <PostCardSkeleton />
-            <PostCardSkeleton />
-            <PostCardSkeleton />
-          </>
-        ) : blendedActivity.length > 0 ? (
-          blendedActivity.map((item, index) => (
-            <FadeInView key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} delay={index * 50}>
-              <PostCard
-                post={item.post}
-                onLike={() => handleLike(item.post.id)}
-                onRepost={() => handleRepost(item.post.id)}
-                onShare={() => handleShare(item.post.id)}
-                repostContext={item.repostContext}
-              />
-            </FadeInView>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No activity yet</Text>
-            <Text style={styles.emptyText}>Follow friends or explore shows to see activity</Text>
-          </View>
-        )}
       </View>
-    );
+    </>
+  );
+
+  const renderListFooter = () => {
+    if (isLoadingFeed) {
+      return (
+        <>
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+        </>
+      );
+    }
+    
+    if (feedData.length === 0) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No activity yet</Text>
+          <Text style={styles.emptyText}>Follow friends or explore shows to see activity</Text>
+        </View>
+      );
+    }
+
+    if (isLoadingMore) {
+      return (
+        <>
+          <PostCardSkeleton />
+          <PostCardSkeleton />
+        </>
+      );
+    }
+
+    if (!hasMorePosts && feedData.length > 10) {
+      return (
+        <View style={styles.endOfFeedContainer}>
+          <Text style={styles.endOfFeedText}>You've reached the end</Text>
+        </View>
+      );
+    }
+
+    return null;
   };
+
+  const keyExtractor = useCallback((item: any, index: number) => 
+    `${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`, 
+  []);
+
+  const handleEndReached = useCallback(() => {
+    if (hasMorePosts && !isLoadingMore) {
+      loadMorePosts();
+    }
+  }, [hasMorePosts, isLoadingMore, loadMorePosts]);
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={feedData}
+        renderItem={renderFeedItem}
+        keyExtractor={keyExtractor}
+        ListHeaderComponent={renderListHeader}
+        ListFooterComponent={renderListFooter}
         showsVerticalScrollIndicator={false}
-      >
-        {renderHeader()}
-        {renderDivider()}
-        {renderWelcome()}
-        {renderPostInput()}
-        {renderCurrentlyWatching()}
-        {renderRecommendedTitles()}
-        {renderYouMayKnow()}
-        {renderFriendActivity()}
-      </ScrollView>
+        contentContainerStyle={styles.scrollContent}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+        initialNumToRender={10}
+      />
 
       <PostModal
         visible={postModalVisible}
@@ -993,6 +1081,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    textAlign: 'center',
+  },
+  endOfFeedContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    marginTop: 20,
+  },
+  endOfFeedText: {
+    ...tokens.typography.p3R,
     color: tokens.colors.grey1,
     textAlign: 'center',
   },
