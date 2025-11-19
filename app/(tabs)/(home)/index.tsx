@@ -35,6 +35,7 @@ export default function HomeScreen() {
   const [selectedShow, setSelectedShow] = useState<any>(null);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
+  const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -147,6 +148,25 @@ export default function HomeScreen() {
     fetchSuggestedUsers();
   }, [currentUser?.id]);
 
+  // Fetch currently watching shows (last 6 unique shows user has logged)
+  useEffect(() => {
+    if (!currentUser?.id || posts.length === 0) return;
+
+    // Get user's posts only
+    const userPosts = posts.filter(post => post.user.id === currentUser.id && post.show);
+    
+    // Extract unique shows (most recent first)
+    const uniqueShows = new Map();
+    for (const post of userPosts) {
+      if (post.show && !uniqueShows.has(post.show.id)) {
+        uniqueShows.set(post.show.id, post.show);
+        if (uniqueShows.size >= 6) break;
+      }
+    }
+    
+    setCurrentlyWatchingShows(Array.from(uniqueShows.values()));
+  }, [currentUser?.id, posts]);
+
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
   };
@@ -213,6 +233,70 @@ export default function HomeScreen() {
   const renderPostInput = () => (
     <LogAShow onPress={() => setPostModalVisible(true)} />
   );
+
+  const renderCurrentlyWatching = () => {
+    if (currentlyWatchingShows.length === 0) return null;
+
+    return (
+      <View style={styles.currentlyWatchingSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Currently Watching</Text>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.showsScroll}
+          style={styles.showsScrollView}
+        >
+          {currentlyWatchingShows.map((show) => (
+            <Pressable
+              key={show.id}
+              style={styles.showCard}
+              onPress={() => router.push(`/show/${show.id}`)}
+            >
+              <View style={styles.posterWrapper}>
+                <Image 
+                  source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
+                  style={styles.showImage}
+                />
+                
+                <Pressable 
+                  style={({ pressed }) => [
+                    styles.saveIcon,
+                    pressed && styles.saveIconPressed,
+                  ]} 
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedShow(show);
+                    setPlaylistModalVisible(true);
+                  }}
+                >
+                  <IconSymbol 
+                    name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
+                    size={18} 
+                    color={tokens.colors.pureWhite} 
+                  />
+                </Pressable>
+
+                <Pressable 
+                  style={styles.logEpisodeButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setSelectedShow(show);
+                    setPostModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.logEpisodeButtonText}>Log episode</Text>
+                </Pressable>
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderRecommendedTitles = () => {
     const getFriendsWatchingCount = (showId: string) => {
@@ -396,6 +480,7 @@ export default function HomeScreen() {
         {renderDivider()}
         {renderWelcome()}
         {renderPostInput()}
+        {renderCurrentlyWatching()}
         {renderRecommendedTitles()}
         {renderYouMayKnow()}
         {renderFriendActivity()}
@@ -403,7 +488,11 @@ export default function HomeScreen() {
 
       <PostModal
         visible={postModalVisible}
-        onClose={() => setPostModalVisible(false)}
+        onClose={() => {
+          setPostModalVisible(false);
+          setSelectedShow(null);
+        }}
+        preselectedShow={selectedShow}
       />
 
       {selectedShow && (
@@ -490,6 +579,12 @@ const styles = StyleSheet.create({
   },
   
   
+  // Currently Watching - exact specs
+  currentlyWatchingSection: {
+    gap: 17,
+    marginBottom: 29,
+  },
+  
   // Recommended Titles - exact specs
   recommendedSection: {
     gap: 17,
@@ -544,6 +639,23 @@ const styles = StyleSheet.create({
   saveIconPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
+  },
+  logEpisodeButton: {
+    position: 'absolute',
+    left: 12,
+    bottom: 12,
+    width: 191,
+    height: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
+  },
+  logEpisodeButtonText: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.almostWhite,
   },
   friendsBar: {
     position: 'absolute',
