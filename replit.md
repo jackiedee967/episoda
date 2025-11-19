@@ -36,8 +36,8 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system for metadata, posters, and episode thumbnails.
 - **Search Enrichment System**: Background worker enhances search results with complete metadata using throttled parallel fetching, progressive enhancement, and smart caching.
 - **Database Persistence**: Shows and episodes saved to Supabase before post creation, with robust UUID management for playlist integrity.
-- **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, background loading for remaining seasons, smart season logic, and optimized queries for community and friend feeds.
-- **Smart Show Recommendations**: Personalized recommendation system using user posts, genre interests, and trending shows with an instant-loading caching system, including friend-based recommendations.
+- **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, background loading for remaining seasons, smart season logic, and optimized queries for community and friend feeds. Homepage uses cached recommendations from DataContext to eliminate redundant Trakt API calls.
+- **Smart Show Recommendations**: Personalized recommendation system using user posts, genre interests, and trending shows with an instant-loading caching system (25 recommendations, 5-minute TTL), including friend-based recommendations. DataContext caches enriched recommendations that homepage accesses directly, preventing duplicate API requests.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system for zero-downtime operation.
 - **Database Schema**: `profiles`, `posts`, `shows`, `episodes`, `playlists`, `playlist_shows`, `likes`, `reposts`, `comments`, `follows`, `post_episodes`, `social_links`, `help_desk_posts`.
 
