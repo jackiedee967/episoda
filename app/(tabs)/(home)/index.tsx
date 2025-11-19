@@ -14,6 +14,18 @@ import { ChevronRight, Bookmark } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
+import { Friends } from '@/components/Friends';
+import { supabase } from '@/app/integrations/supabase/client';
+import { User } from '@/types';
+
+type SuggestedUser = User & {
+  mutualFriends: Array<{
+    id: string;
+    avatar?: string;
+    displayName?: string;
+    username?: string;
+  }>;
+};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -22,6 +34,7 @@ export default function HomeScreen() {
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -53,6 +66,86 @@ export default function HomeScreen() {
     }, 100);
     return () => clearTimeout(timer);
   }, [posts]);
+
+  // Fetch suggested users with mutual friends
+  useEffect(() => {
+    const fetchSuggestedUsers = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        // Get users the current user is following
+        const { data: currentUserFollowing } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', currentUser.id);
+        
+        const followingIds = currentUserFollowing?.map(f => f.following_id) || [];
+
+        // Get all users who are NOT being followed (excluding current user)
+        const { data: allUsers } = await supabase
+          .from('profiles')
+          .select('*')
+          .neq('id', currentUser.id)
+          .limit(20);
+
+        if (!allUsers) return;
+
+        // Filter to users not being followed and calculate mutual friends
+        const usersWithMutuals: SuggestedUser[] = [];
+
+        for (const user of allUsers) {
+          // Skip if already following
+          if (followingIds.includes(user.id)) continue;
+
+          // Get followers of this user
+          const { data: userFollowers } = await supabase
+            .from('follows')
+            .select(`
+              follower:profiles!follows_follower_id_fkey(
+                id,
+                username,
+                display_name,
+                avatar
+              )
+            `)
+            .eq('following_id', user.id);
+
+          // Find mutual friends (followers of this user who are followed by current user)
+          const mutualFriends = (userFollowers || [])
+            .map(f => f.follower)
+            .filter(follower => follower && followingIds.includes(follower.id))
+            .map(follower => ({
+              id: follower.id,
+              avatar: follower.avatar || undefined,
+              displayName: follower.display_name || undefined,
+              username: follower.username || '',
+            }));
+
+          // Only include users with mutual friends for better relevance
+          if (mutualFriends.length > 0) {
+            usersWithMutuals.push({
+              id: user.id,
+              username: user.username || '',
+              displayName: user.display_name || '',
+              avatar: user.avatar || '',
+              bio: user.bio || '',
+              socialLinks: [],
+              mutualFriends,
+            });
+          }
+
+          // Stop once we have 5 users
+          if (usersWithMutuals.length >= 5) break;
+        }
+
+        setSuggestedUsers(usersWithMutuals);
+      } catch (error) {
+        console.error('Error fetching suggested users:', error);
+      }
+    };
+
+    fetchSuggestedUsers();
+  }, [currentUser?.id]);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -211,8 +304,6 @@ export default function HomeScreen() {
   };
 
   const renderYouMayKnow = () => {
-    const suggestedUsers = mockUsers.filter(user => !isFollowing(user.id)).slice(0, 5);
-    
     if (suggestedUsers.length === 0) return null;
 
     return (
@@ -239,20 +330,11 @@ export default function HomeScreen() {
               <Image source={{ uri: user.avatar }} style={styles.userProfilePic} />
               <Text style={styles.userCardName} numberOfLines={1}>{user.displayName}</Text>
               <Text style={styles.userCardUsername} numberOfLines={1}>@{user.username}</Text>
-              <View style={styles.friendsWatchingContainer}>
-                <View style={styles.friendsAvatarRow}>
-                  {mockUsers.slice(0, 3).map((friend, index) => (
-                    <Image
-                      key={friend.id}
-                      source={{ uri: friend.avatar }}
-                      style={[styles.friendAvatar, { marginLeft: index > 0 ? -6 : 0 }]}
-                    />
-                  ))}
-                  <View style={[styles.friendAvatar, styles.countBadge, { marginLeft: -6 }]}>
-                    <Text style={styles.countBadgeText}>+5</Text>
-                  </View>
-                </View>
-              </View>
+              <Friends 
+                state="FriendsInCommonBar"
+                prop="Small"
+                friends={user.mutualFriends}
+              />
             </Pressable>
           ))}
         </ScrollView>
