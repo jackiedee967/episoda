@@ -17,6 +17,7 @@ import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
 import { supabase } from '@/app/integrations/supabase/client';
 import { User } from '@/types';
+import { getCombinedRecommendations } from '@/services/recommendations';
 
 type SuggestedUser = User & {
   mutualFriends: Array<{
@@ -36,6 +37,7 @@ export default function HomeScreen() {
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
+  const [recommendedShows, setRecommendedShows] = useState<any[]>([]);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -166,6 +168,69 @@ export default function HomeScreen() {
     
     setCurrentlyWatchingShows(Array.from(uniqueShows.values()));
   }, [currentUser?.id, posts]);
+
+  // Fetch recommended shows (friends' shows + interest-based recommendations)
+  useEffect(() => {
+    const fetchRecommendedShows = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        const followingIds = currentUser.following || [];
+        
+        // 1. Get shows from friends' posts
+        const friendsPosts = posts.filter(post => 
+          followingIds.includes(post.user.id) && post.show
+        );
+
+        // Count how many unique friends have logged each show
+        const showFriendCounts = new Map<string, { show: any; friendCount: number; friendIds: Set<string> }>();
+        
+        for (const post of friendsPosts) {
+          const existing = showFriendCounts.get(post.show.id);
+          if (existing) {
+            existing.friendIds.add(post.user.id);
+            existing.friendCount = existing.friendIds.size;
+          } else {
+            showFriendCounts.set(post.show.id, {
+              show: post.show,
+              friendCount: 1,
+              friendIds: new Set([post.user.id])
+            });
+          }
+        }
+
+        // Sort by friend count (descending) and take top shows
+        const friendsShows = Array.from(showFriendCounts.values())
+          .sort((a, b) => b.friendCount - a.friendCount)
+          .slice(0, 3)
+          .map(item => item.show);
+
+        // 2. Get interest-based recommendations
+        const recommendations = await getCombinedRecommendations(currentUser.id, 12);
+        
+        // Convert recommendations to show format
+        const interestShows = recommendations
+          .filter(rec => rec.poster_url) // Only include shows with posters
+          .map(rec => ({
+            id: rec.id || `trakt-${rec.trakt_id}`,
+            title: rec.title,
+            poster: rec.poster_url,
+            traktId: rec.trakt_id
+          }));
+
+        // 3. Combine: friends' shows first, then interest-based (remove duplicates)
+        const friendsShowIds = new Set(friendsShows.map(s => s.id));
+        const uniqueInterestShows = interestShows.filter(s => !friendsShowIds.has(s.id));
+        
+        const combined = [...friendsShows, ...uniqueInterestShows].slice(0, 6);
+        setRecommendedShows(combined);
+      } catch (error) {
+        console.error('Error fetching recommended shows:', error);
+      }
+    };
+
+    fetchRecommendedShows();
+  }, [currentUser?.id, currentUser?.following, posts]);
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -299,6 +364,8 @@ export default function HomeScreen() {
   };
 
   const renderRecommendedTitles = () => {
+    if (recommendedShows.length === 0) return null;
+
     const getFriendsWatchingCount = (showId: string) => {
       const friendIds = currentUser.following || [];
       const friendsWhoPosted = posts.filter(post => 
@@ -307,6 +374,16 @@ export default function HomeScreen() {
       );
       const uniqueFriends = new Set(friendsWhoPosted.map(post => post.user.id));
       return uniqueFriends.size;
+    };
+
+    const getFriendsWatchingShow = (showId: string) => {
+      const friendIds = currentUser.following || [];
+      const friendsWhoPosted = posts.filter(post => 
+        friendIds.includes(post.user.id) && 
+        post.show?.id === showId
+      );
+      const uniqueFriends = Array.from(new Set(friendsWhoPosted.map(post => post.user)));
+      return uniqueFriends.slice(0, 3);
     };
 
     return (
@@ -324,11 +401,9 @@ export default function HomeScreen() {
           contentContainerStyle={styles.showsScroll}
           style={styles.showsScrollView}
         >
-          {mockShows.slice(0, 6).map((show) => {
+          {recommendedShows.map((show) => {
             const friendCount = getFriendsWatchingCount(show.id);
-            const friendsToShow = mockUsers
-              .filter(user => currentUser.following?.includes(user.id))
-              .slice(0, Math.min(3, friendCount));
+            const friendsWatching = getFriendsWatchingShow(show.id);
 
             return (
               <Pressable
@@ -364,7 +439,7 @@ export default function HomeScreen() {
                   {friendCount > 0 && (
                     <View style={styles.friendsBar}>
                       <View style={styles.friendAvatars}>
-                        {friendsToShow.map((user, index) => (
+                        {friendsWatching.map((user, index) => (
                           <Image
                             key={user.id}
                             source={{ uri: user.avatar }}
