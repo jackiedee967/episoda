@@ -552,6 +552,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log('📝 Creating playlist:', name);
 
+      // Defensive validation: If showId is provided, ensure it's a valid UUID
+      if (showId) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(showId)) {
+          const errorMsg = `Invalid show ID format: "${showId}". Expected UUID, got Trakt ID or corrupted data. ` +
+            `Please use ensureShowUuid() to convert to database UUID before calling createPlaylist.`;
+          console.error('❌', errorMsg);
+          throw new Error(errorMsg);
+        }
+      }
+
       // Check if user is authenticated
       if (!authUserId) {
         console.log('⚠️ No authenticated user - creating local-only playlist');
@@ -638,6 +649,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const addShowToPlaylist = useCallback(async (playlistId: string, showId: string) => {
     try {
       console.log('📝 Adding show to playlist:', playlistId, showId);
+
+      // Defensive validation: Ensure showId is a valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(showId)) {
+        const errorMsg = `Invalid show ID format: "${showId}". Expected UUID, got Trakt ID or corrupted data. ` +
+          `Please use ensureShowUuid() to convert to database UUID before calling addShowToPlaylist.`;
+        console.error('❌', errorMsg);
+        throw new Error(errorMsg);
+      }
 
       if (authUserId) {
         const { error } = await supabase

@@ -326,3 +326,47 @@ export async function getEpisodeById(episodeId: string): Promise<DatabaseEpisode
 
   return data as DatabaseEpisode;
 }
+
+/**
+ * Ensures a show has a valid database UUID.
+ * This function handles the conversion of Trakt IDs to database UUIDs for playlist operations.
+ * 
+ * @param show - The show object (may have either UUID or Trakt ID as its id)
+ * @param traktShow - Optional full Trakt show data for saving if needed
+ * @returns Database UUID for the show
+ * @throws Error if show cannot be found or saved
+ */
+export async function ensureShowUuid(
+  show: { id: string; traktId: number; title: string },
+  traktShow?: TraktShow
+): Promise<string> {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  // Step 1: If show.id is already a valid UUID, return it immediately
+  if (uuidRegex.test(show.id)) {
+    console.log('✅ Show ID is already a UUID:', show.id);
+    return show.id;
+  }
+  
+  console.log('🔄 Show ID is not a UUID (likely Trakt ID), checking database...');
+  
+  // Step 2: Check if show exists in database by Trakt ID
+  const existingShow = await getShowByTraktId(show.traktId);
+  if (existingShow) {
+    console.log('✅ Found existing show in database, UUID:', existingShow.id);
+    return existingShow.id;
+  }
+  
+  // Step 3: Show doesn't exist in database - need to save it
+  if (!traktShow) {
+    throw new Error(
+      `Cannot save show "${show.title}" to playlist: show not in database and TraktShow data not provided. ` +
+      `Please fetch the full show data from Trakt API before adding to playlist.`
+    );
+  }
+  
+  console.log('💾 Show not in database, saving with Trakt data...');
+  const savedShow = await saveShow(traktShow);
+  console.log('✅ Show saved to database, UUID:', savedShow.id);
+  return savedShow.id;
+}

@@ -17,7 +17,7 @@ import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
-import { saveShow } from '@/services/showDatabase';
+import { ensureShowUuid } from '@/services/showDatabase';
 import { TraktShow } from '@/services/trakt';
 
 interface PlaylistModalProps {
@@ -38,7 +38,45 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   const successAnim = useRef(new Animated.Value(0)).current;
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [ensuredShowUuid, setEnsuredShowUuid] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
+  const requestTokenRef = useRef<number>(0);
+
+  // Ensure we have the database UUID for UI state checks
+  useEffect(() => {
+    if (visible && show) {
+      // Clear previous UUID and increment token to invalidate any in-flight requests
+      setEnsuredShowUuid(null);
+      requestTokenRef.current += 1;
+      const currentToken = requestTokenRef.current;
+      
+      ensureShowUuid(show, traktShow)
+        .then(uuid => {
+          // Only update if this request is still current (prevent race conditions)
+          if (requestTokenRef.current === currentToken) {
+            setEnsuredShowUuid(uuid);
+            console.log('✅ Pre-fetched show UUID for UI state:', uuid);
+          } else {
+            console.log('⚠️ Discarding stale UUID fetch (request token mismatch)');
+          }
+        })
+        .catch(error => {
+          if (requestTokenRef.current === currentToken) {
+            console.error('⚠️ Could not pre-fetch show UUID:', error);
+            setEnsuredShowUuid(null);
+          }
+        });
+      
+      // Cleanup: invalidate this request if component unmounts or deps change
+      return () => {
+        if (requestTokenRef.current === currentToken) {
+          requestTokenRef.current += 1;
+        }
+      };
+    } else {
+      setEnsuredShowUuid(null);
+    }
+  }, [visible, show, traktShow]);
 
   useEffect(() => {
     if (visible) {
@@ -103,14 +141,9 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       try {
-        let showIdToUse = show.id;
-        
-        if (traktShow) {
-          console.log('💾 Saving show to database before adding to playlist...');
-          const savedShow = await saveShow(traktShow);
-          showIdToUse = savedShow.id;
-          console.log('✅ Show saved to database with ID:', showIdToUse);
-        }
+        // Ensure we have a valid database UUID for the show
+        const showIdToUse = await ensureShowUuid(show, traktShow);
+        console.log('✅ Ensured show has database UUID:', showIdToUse);
         
         // Create playlist with the show automatically added
         const newPlaylist = await createPlaylist(newPlaylistName, showIdToUse);
@@ -140,13 +173,17 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   const handleTogglePlaylist = async (playlistId: string) => {
     const playlist = playlists.find(pl => pl.id === playlistId);
     
-    // Check if show is already in the playlist
-    if (isShowInPlaylist(playlistId, show.id)) {
-      // Remove from playlist
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      // Ensure we have a valid database UUID for the show
+      const showIdToUse = await ensureShowUuid(show, traktShow);
+      console.log('✅ Ensured show has database UUID:', showIdToUse);
       
-      try {
-        await removeShowFromPlaylist(playlistId, show.id);
+      // Check if show is already in the playlist
+      if (isShowInPlaylist(playlistId, showIdToUse)) {
+        // Remove from playlist
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        
+        await removeShowFromPlaylist(playlistId, showIdToUse);
         console.log(`Removed ${show.title} from ${playlist?.name}`);
         
         // Show success animation
@@ -156,24 +193,9 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
         setTimeout(() => {
           onClose();
         }, 1000);
-      } catch (error) {
-        console.error('Error removing from playlist:', error);
-        showSuccessAnimation('Failed to remove from playlist');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    } else {
-      // Add to playlist
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-      try {
-        let showIdToUse = show.id;
-        
-        if (traktShow) {
-          console.log('💾 Saving show to database before adding to playlist...');
-          const savedShow = await saveShow(traktShow);
-          showIdToUse = savedShow.id;
-          console.log('✅ Show saved to database with ID:', showIdToUse);
-        }
+      } else {
+        // Add to playlist
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
         await addShowToPlaylist(playlistId, showIdToUse);
         console.log(`Added ${show.title} to ${playlist?.name}`);
@@ -190,11 +212,11 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
         setTimeout(() => {
           onClose();
         }, 1000);
-      } catch (error) {
-        console.error('Error adding to playlist:', error);
-        showSuccessAnimation('Failed to add to playlist');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
+    } catch (error) {
+      console.error('Error toggling playlist:', error);
+      showSuccessAnimation('Failed to update playlist');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
@@ -290,16 +312,20 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
             {/* Existing Playlists */}
             <View style={styles.playlistsContainer}>
               {playlists.map((playlist) => {
-                const isShowInList = isShowInPlaylist(playlist.id, show.id);
+                // Only check state once UUID is ready to avoid incorrect initial state
+                const isShowInList = ensuredShowUuid ? isShowInPlaylist(playlist.id, ensuredShowUuid) : false;
+                const isLoading = !ensuredShowUuid;
                 return (
                   <Pressable
                     key={playlist.id}
                     style={({ pressed }) => [
                       styles.playlistItem,
-                      pressed && styles.playlistItemPressed,
+                      pressed && !isLoading && styles.playlistItemPressed,
                       isShowInList && styles.playlistItemAdded,
+                      isLoading && styles.playlistItemDisabled,
                     ]}
-                    onPress={() => handleTogglePlaylist(playlist.id)}
+                    onPress={() => !isLoading && handleTogglePlaylist(playlist.id)}
+                    disabled={isLoading}
                   >
                     <View style={styles.playlistInfo}>
                       <Text style={styles.playlistName}>{playlist.name}</Text>
@@ -438,6 +464,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.purpleLight,
     borderWidth: 1,
     borderColor: colors.purple,
+  },
+  playlistItemDisabled: {
+    opacity: 0.5,
   },
   playlistInfo: {
     flex: 1,
