@@ -61,7 +61,7 @@ interface DataContextType {
   getWatchHistory: (userId: string) => WatchHistoryItem[];
   isLoading: boolean;
   isDeletingPost: boolean;
-  cachedRecommendations: { recommendedShow: any; traktShow: any }[];
+  cachedRecommendations: CachedRecommendation[];
   isLoadingRecommendations: boolean;
   recommendationsReady: boolean;
   loadRecommendations: (options?: { force?: boolean }) => Promise<void>;
@@ -98,6 +98,13 @@ const EMPTY_USER: User = {
   followers: [],
 };
 
+interface CachedRecommendation {
+  show: Show;
+  traktShow: any;
+  traktId: number;
+  isDatabaseBacked: boolean;
+}
+
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, profileRefreshKey } = useAuth();
   
@@ -115,7 +122,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   
   const [userProfileCache, setUserProfileCache] = useState<Record<string, User>>({});
-  const [cachedRecommendations, setCachedRecommendations] = useState<{ recommendedShow: any; traktShow: any }[]>([]);
+  const [cachedRecommendations, setCachedRecommendations] = useState<CachedRecommendation[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [traktIdToUuidMap, setTraktIdToUuidMap] = useState<Map<number, string>>(new Map());
@@ -330,8 +337,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // Convert to display-ready format (same as PostModal)
         const convertedShows = await Promise.all(
           recommendations.map(async (rec) => {
-            if (rec.recommendedShow.isFromDatabase && rec.recommendedShow.id) {
-              const dbShow = await getShowById(rec.recommendedShow.id);
+            if (rec.isFromDatabase && rec.id) {
+              const dbShow = await getShowById(rec.id);
               if (!dbShow) return null;
 
               // Use database data directly if Trakt is down
@@ -372,13 +379,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
               };
             } else if (!traktHealthy) {
               // Skip Trakt-only recommendations when API is down
-              console.warn(`Skipping Trakt-only recommendation ${rec.recommendedShow.trakt_id} - API unavailable`);
+              console.warn(`Skipping Trakt-only recommendation ${rec.trakt_id} - API unavailable`);
               return null;
             } else {
               // Trakt-only show with enrichment
               try {
                 const { showEnrichmentManager } = await import('@/services/showEnrichment');
-                const traktShow = await getShowDetails(rec.recommendedShow.trakt_id);
+                const traktShow = await getShowDetails(rec.trakt_id);
                 const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
 
                 return {
@@ -388,11 +395,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     totalEpisodes: traktShow.aired_episodes
                   }),
                   traktShow,
-                  traktId: rec.recommendedShow.trakt_id,
+                  traktId: rec.trakt_id,
                   isDatabaseBacked: false
                 };
               } catch (error) {
-                console.warn(`Failed to fetch Trakt show ${rec.recommendedShow.trakt_id}`);
+                console.warn(`Failed to fetch Trakt show ${rec.trakt_id}`);
                 return null;
               }
             }
