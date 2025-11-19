@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.inputStroke,
   },
   createButton: {
-    backgroundColor: tokens.colors.tabStroke3,
+    backgroundColor: tokens.colors.greenHighlight,
     borderRadius: 12,
     width: 52,
     height: 52,
