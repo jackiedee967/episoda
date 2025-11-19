@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
+  const [selectedTraktShow, setSelectedTraktShow] = useState<any>(null);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
@@ -396,6 +397,7 @@ export default function HomeScreen() {
                     e.stopPropagation();
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setSelectedShow(show);
+                    setSelectedTraktShow(show.traktShow || null);
                     setPlaylistModalVisible(true);
                   }}
                 >
@@ -494,6 +496,7 @@ export default function HomeScreen() {
                       e.stopPropagation();
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setSelectedShow(show);
+                      setSelectedTraktShow(show.traktShow || null);
                       setPlaylistModalVisible(true);
                     }}
                   >
@@ -655,6 +658,7 @@ export default function HomeScreen() {
           visible={playlistModalVisible}
           onClose={() => setPlaylistModalVisible(false)}
           show={selectedShow}
+          traktShow={selectedTraktShow}
           onAddToPlaylist={() => {}}
         />
       )}
