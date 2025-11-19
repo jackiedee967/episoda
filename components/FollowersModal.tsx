@@ -14,7 +14,7 @@ import {
 import { IconSymbol } from '@/components/IconSymbol';
 import FollowButton from '@/components/FollowButton';
 import { User } from '@/types';
-import { colors } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 
@@ -92,7 +92,7 @@ export default function FollowersModal({
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
-              <IconSymbol name="xmark" size={24} color={colors.text} />
+              <IconSymbol name="xmark" size={24} color={tokens.colors.black} />
             </Pressable>
           </View>
 
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   modalContainer: {
-    backgroundColor: colors.background,
+    backgroundColor: tokens.colors.pureWhite,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.8,
@@ -166,12 +166,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: tokens.colors.grey2,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
+    ...tokens.typography.titleL,
+    color: tokens.colors.black,
   },
   closeButton: {
     padding: 4,
@@ -185,8 +184,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: colors.textSecondary,
+    ...tokens.typography.subtitleR,
+    color: tokens.colors.grey1,
     textAlign: 'center',
   },
   userItem: {
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: tokens.colors.grey2,
   },
   userPressable: {
     flexDirection: 'row',
@@ -212,19 +211,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   displayName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    ...tokens.typography.subtitle,
+    color: tokens.colors.black,
     marginBottom: 2,
   },
   username: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
     marginBottom: 2,
   },
   bio: {
-    fontSize: 12,
-    color: colors.textSecondary,
+    ...tokens.typography.p3R,
+    color: tokens.colors.grey1,
   },
   buttonWrapper: {
     marginLeft: 8,
