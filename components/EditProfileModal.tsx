@@ -477,7 +477,10 @@ export default function EditProfileModal({
                   {isUploadingAvatar ? (
                     <ActivityIndicator size="small" color={colors.black} />
                   ) : (
-                    <IconSymbol name="camera" size={24} color={colors.grey1} />
+                    <Image
+                      source={require('@/attached_assets/Upload_1763529174180.png')}
+                      style={styles.uploadIcon}
+                    />
                   )}
                 </Pressable>
               </View>
@@ -709,6 +712,11 @@ const styles = StyleSheet.create({
   },
   uploadIconButton: {
     padding: 4,
+  },
+  uploadIcon: {
+    width: 24,
+    height: 24,
+    tintColor: colors.grey1,
   },
   sectionTitle: {
     ...typography.subtitle,
