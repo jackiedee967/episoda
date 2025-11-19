@@ -197,31 +197,36 @@ export default function SearchScreen() {
         const interests = await getUserInterests(currentUser.id);
         setUserGenres(interests.genres);
         
-        // 3. For You - popular shows in user's interests
+        // 3. For You - popular shows in user's interests (or trending as fallback)
+        let forYouList = [];
         if (interests.genres.length > 0) {
           const forYouPromises = interests.genres.slice(0, 3).map(genre => 
             getPopularShowsByGenre(genre, 5)
           );
           const forYouResults = await Promise.all(forYouPromises);
-          const forYouList = forYouResults.flat().slice(0, 12);
-          
-          const enrichedForYou = await Promise.all(
-            forYouList.map(async (traktShow) => {
-              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-              const show = mapTraktShowToShow(traktShow, {
-                posterUrl: enrichedData.posterUrl,
-                totalSeasons: enrichedData.totalSeasons,
-              });
-              return {
-                ...show,
-                id: show.id || `trakt-${traktShow.ids.trakt}`,
-                traktId: traktShow.ids.trakt,
-                traktShow
-              };
-            })
-          );
-          setForYouShows(enrichedForYou);
+          forYouList = forYouResults.flat().slice(0, 12);
+        } else {
+          // Fallback to trending shows when no genre interests available
+          console.log('ℹ️ No genre interests, using trending shows for "For You"');
+          forYouList = await getTrendingShows(12);
         }
+        
+        const enrichedForYou = await Promise.all(
+          forYouList.map(async (traktShow) => {
+            const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+            const show = mapTraktShowToShow(traktShow, {
+              posterUrl: enrichedData.posterUrl,
+              totalSeasons: enrichedData.totalSeasons,
+            });
+            return {
+              ...show,
+              id: show.id || `trakt-${traktShow.ids.trakt}`,
+              traktId: traktShow.ids.trakt,
+              traktShow
+            };
+          })
+        );
+        setForYouShows(enrichedForYou);
         
         // 4. Trending
         const trending = await getTrendingShows(12);

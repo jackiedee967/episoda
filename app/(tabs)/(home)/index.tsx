@@ -483,7 +483,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.recommendedSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recommended Titles</Text>
+          <Text style={styles.sectionTitle}>For You</Text>
           <Pressable 
             style={styles.viewMoreButton}
             onPress={() => router.push('/(tabs)/search')}
