@@ -23,7 +23,7 @@ import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';

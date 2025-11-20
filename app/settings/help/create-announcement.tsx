@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
 import { isAdmin } from '@/config/admins';
 import ButtonL from '@/components/ButtonL';

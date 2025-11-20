@@ -18,7 +18,7 @@ import { X, Instagram, Music, Globe } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { SocialLink } from '@/types';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { IconSymbol } from '@/components/IconSymbol';
 
 interface EditProfileModalProps {

@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert } 
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { NotificationPreferences } from '@/types';
 
 export default function NotificationsSettingsScreen() {

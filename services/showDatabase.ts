@@ -1,4 +1,4 @@
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { TraktShow, TraktEpisode } from './trakt';
 import { getPosterUrl, getEpisodeThumbnail } from './tvmaze';
 import { assignColorToShow } from '@/utils/showColors';

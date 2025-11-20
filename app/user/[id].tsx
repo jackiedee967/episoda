@@ -31,7 +31,7 @@ import { useData } from '@/contexts/DataContext';
 import { User, Playlist, ReportReason, Show, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe, Eye, EyeOff } from 'lucide-react-native';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';

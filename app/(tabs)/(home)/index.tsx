@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { User, Post } from '@/types';
 import { getCommunityPosts } from '@/services/communityPosts';
 

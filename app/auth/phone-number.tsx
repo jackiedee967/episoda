@@ -16,7 +16,7 @@ import { PhoneInput } from '@/components/PhoneInput';
 import ButtonL from '@/components/ButtonL';
 import { PaginationDots } from '@/components/PaginationDots';
 import { Country } from '@/components/auth/CountryCodeSelector';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 
 const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;

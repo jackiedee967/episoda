@@ -28,7 +28,7 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown, Star } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import PostTags from '@/components/PostTags';
 
 interface PostModalProps {

@@ -16,7 +16,7 @@ import { Heart, MessageCircle, Send } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { HelpDeskPost, HelpDeskComment } from '@/types';
 import { useData } from '@/contexts/DataContext';

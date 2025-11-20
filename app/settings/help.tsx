@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { HelpDeskPost } from '@/types';
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';

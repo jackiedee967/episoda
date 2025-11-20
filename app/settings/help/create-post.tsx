@@ -15,7 +15,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { HelpDeskCategory } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { isAdmin } from '@/config/admins';

@@ -5,7 +5,7 @@ import { colors, typography } from '@/styles/tokens';
 import { GradientBackground } from '@/components/auth/GradientBackground';
 import { useAuth } from '@/contexts/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ResetScreen() {
   const router = useRouter();

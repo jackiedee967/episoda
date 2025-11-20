@@ -15,7 +15,7 @@ import { Asset } from 'expo-asset';
 import { colors, typography } from '@/styles/tokens';
 import { PaginationDots } from '@/components/PaginationDots';
 import ButtonL from '@/components/ButtonL';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 

@@ -23,7 +23,7 @@ import { SearchDuotoneLine } from '@/components/SearchDuotoneLine';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import { useData } from '@/contexts/DataContext';
 import { Episode, Show } from '@/types';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 import { Star } from 'lucide-react-native';

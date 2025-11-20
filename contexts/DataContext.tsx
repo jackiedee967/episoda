@@ -1,5 +1,5 @@
 
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { Post, Show, User, Playlist, Episode, FeedItem } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';

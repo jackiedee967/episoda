@@ -18,7 +18,7 @@ import { Show, Playlist } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Trash2 } from 'lucide-react-native';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import tokens from '@/styles/tokens';
 import { useRouter } from 'expo-router';

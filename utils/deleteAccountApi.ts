@@ -1,4 +1,4 @@
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export async function deleteAccountViaEdgeFunction(): Promise<{ success: boolean; error?: string }> {
   try {

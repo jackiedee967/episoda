@@ -120,7 +120,7 @@ export default function UsernameSelectScreen() {
       
       // Check if display_name is already populated (e.g., from Apple Sign-In)
       if (user) {
-        const { supabase } = await import('@/app/integrations/supabase/client');
+        const { supabase } = await import('@/integrations/supabase/client');
         const { data: profile } = await supabase
           .from('profiles' as any)
           .select('display_name')

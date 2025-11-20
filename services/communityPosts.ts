@@ -1,4 +1,4 @@
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Post } from '@/types';
 
 export interface CommunityPostsOptions {

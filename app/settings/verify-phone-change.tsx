@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
 import { GradientBackground } from '@/components/auth/GradientBackground';
 import { AuthButton } from '@/components/auth/AuthButton';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 
 export default function VerifyPhoneChangeScreen() {

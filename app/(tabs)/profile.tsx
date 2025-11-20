@@ -18,7 +18,7 @@ import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';

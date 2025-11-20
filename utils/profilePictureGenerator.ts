@@ -1,4 +1,4 @@
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export const COLOR_SCHEMES = [
   { id: 1, icon: '#FFF2F3', base: '#FF135E' },

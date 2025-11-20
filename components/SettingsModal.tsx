@@ -20,7 +20,7 @@ import tokens from '@/styles/tokens';
 import { NotificationPreferences, SocialLink } from '@/types';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe } from 'lucide-react-native';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SettingsModalProps {
   visible: boolean;

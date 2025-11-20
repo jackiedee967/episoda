@@ -24,7 +24,7 @@ import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
-import { supabase } from '@/app/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
 import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
