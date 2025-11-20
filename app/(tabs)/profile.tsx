@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
   rotationPoster: {
     position: 'relative',
     width: 128.67,
-    height: 162.25,
+    aspectRatio: 2 / 3,
     borderRadius: 14,
     overflow: 'hidden',
   },
