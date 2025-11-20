@@ -558,12 +558,12 @@ export default function SettingsModal({
             autoCapitalize="none"
             editable={true}
           />
-          {isCheckingUsername && (
+          {isCheckingUsername ? (
             <View style={styles.usernameIndicator}>
               <ActivityIndicator size="small" color={colors.secondary} />
             </View>
-          )}
-          {!isCheckingUsername && username !== initialUsername && (
+          ) : null}
+          {!isCheckingUsername && username !== initialUsername ? (
             <View style={styles.usernameIndicator}>
               {usernameAvailable ? (
                 <IconSymbol name="checkmark.circle.fill" size={20} color={tokens.colors.tabStroke3} />
@@ -571,14 +571,14 @@ export default function SettingsModal({
                 <IconSymbol name="xmark.circle.fill" size={20} color={tokens.colors.tabStroke5} />
               )}
             </View>
-          )}
+          ) : null}
         </View>
-        {usernameError && (
+        {usernameError ? (
           <Text style={styles.errorText}>{usernameError}</Text>
-        )}
-        {!usernameError && usernameAvailable && username !== initialUsername && (
+        ) : null}
+        {!usernameError && usernameAvailable && username !== initialUsername ? (
           <Text style={styles.successText}>Username is available!</Text>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.inputGroup}>
@@ -614,11 +614,11 @@ export default function SettingsModal({
             autoCapitalize="none"
           />
         </View>
-        {instagramUsername.trim() && (
+        {instagramUsername.trim() ? (
           <Text style={styles.urlPreview}>
             {PLATFORM_URLS.instagram}{instagramUsername}
           </Text>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.inputGroup}>
@@ -636,11 +636,11 @@ export default function SettingsModal({
             autoCapitalize="none"
           />
         </View>
-        {tiktokUsername.trim() && (
+        {tiktokUsername.trim() ? (
           <Text style={styles.urlPreview}>
             {PLATFORM_URLS.tiktok}{tiktokUsername}
           </Text>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.inputGroup}>
@@ -658,11 +658,11 @@ export default function SettingsModal({
             autoCapitalize="none"
           />
         </View>
-        {xUsername.trim() && (
+        {xUsername.trim() ? (
           <Text style={styles.urlPreview}>
             {PLATFORM_URLS.x}{xUsername}
           </Text>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.inputGroup}>
@@ -680,11 +680,11 @@ export default function SettingsModal({
             autoCapitalize="none"
           />
         </View>
-        {spotifyUsername.trim() && (
+        {spotifyUsername.trim() ? (
           <Text style={styles.urlPreview}>
             {PLATFORM_URLS.spotify}{spotifyUsername}
           </Text>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.inputGroup}>
@@ -818,7 +818,7 @@ export default function SettingsModal({
         </Text>
       </View>
 
-      {authMethod === 'sms' && phoneNumber && (
+      {authMethod === 'sms' && phoneNumber ? (
         <>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Phone Number</Text>
@@ -828,7 +828,7 @@ export default function SettingsModal({
             <Text style={styles.changeButtonText}>Change Phone Number</Text>
           </Pressable>
         </>
-      )}
+      ) : null}
 
       <View style={styles.dangerZone}>
         <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
@@ -901,16 +901,16 @@ export default function SettingsModal({
           </View>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            {activeTab === 'account' && renderAccountTab()}
-            {activeTab === 'notifications' && renderNotificationsTab()}
-            {activeTab === 'security' && renderSecurityTab()}
+            {activeTab === 'account' ? renderAccountTab() : null}
+            {activeTab === 'notifications' ? renderNotificationsTab() : null}
+            {activeTab === 'security' ? renderSecurityTab() : null}
 
-            {activeTab !== 'security' && (
+            {activeTab !== 'security' ? (
               <View style={styles.buttonContainer}>
                 <Pressable 
                   style={[
                     styles.saveButton,
-                    isSaveDisabled && styles.saveButtonDisabled
+                    isSaveDisabled ? styles.saveButtonDisabled : null
                   ]} 
                   onPress={() => {
                     console.log('Save button pressed - calling handleSave');
@@ -934,13 +934,13 @@ export default function SettingsModal({
                     </Text>
                   )}
                 </Pressable>
-                {isSaveDisabled && !isSaving && (
+                {isSaveDisabled && !isSaving ? (
                   <Text style={styles.disabledHint}>
                     {isCheckingUsername ? 'Checking username availability...' : 'Please fix errors before saving'}
                   </Text>
-                )}
+                ) : null}
               </View>
-            )}
+            ) : null}
 
             <View style={styles.buttonContainer}>
               <Pressable style={styles.logoutButton} onPress={onLogout}>

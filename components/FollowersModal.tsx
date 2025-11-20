@@ -120,10 +120,10 @@ export default function FollowersModal({
                       <View style={styles.userInfo}>
                         <Text style={styles.displayName}>{user.displayName}</Text>
                         <Text style={styles.username}>@{user.username}</Text>
-                        {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
+                        {user.bio ? <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text> : null}
                       </View>
                     </Pressable>
-                    {!isCurrentUser && (
+                    {!isCurrentUser ? (
                       <View style={styles.buttonWrapper}>
                         <FollowButton
                           userId={user.id}
@@ -132,7 +132,7 @@ export default function FollowersModal({
                           size="small"
                         />
                       </View>
-                    )}
+                    ) : null}
                   </View>
                 );
               })

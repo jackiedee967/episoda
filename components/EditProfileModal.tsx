@@ -511,12 +511,12 @@ export default function EditProfileModal({
                   placeholderTextColor={colors.grey1}
                   autoCapitalize="none"
                 />
-                {isCheckingUsername && (
+                {isCheckingUsername ? (
                   <View style={styles.usernameIndicator}>
                     <ActivityIndicator size="small" color={colors.tabStroke3} />
                   </View>
-                )}
-                {!isCheckingUsername && username !== initialUsername && (
+                ) : null}
+                {!isCheckingUsername && username !== initialUsername ? (
                   <View style={styles.usernameIndicator}>
                     {usernameAvailable ? (
                       <IconSymbol name="checkmark.circle.fill" size={20} color={colors.tabStroke3} />
@@ -524,14 +524,14 @@ export default function EditProfileModal({
                       <IconSymbol name="xmark.circle.fill" size={20} color={colors.error} />
                     )}
                   </View>
-                )}
+                ) : null}
               </View>
-              {usernameError && (
+              {usernameError ? (
                 <Text style={styles.errorText}>{usernameError}</Text>
-              )}
-              {!usernameError && usernameAvailable && username !== initialUsername && (
+              ) : null}
+              {!usernameError && usernameAvailable && username !== initialUsername ? (
                 <Text style={styles.successText}>Username is available!</Text>
-              )}
+              ) : null}
             </View>
 
             <View style={styles.section}>
