@@ -326,19 +326,16 @@ export default function ProfileScreen() {
 
   const getSocialIcon = (platform: SocialLink['platform']) => {
     const iconProps = { size: 16, color: colors.almostWhite };
-    switch (platform) {
-      case 'instagram':
-        return <Instagram {...iconProps} />;
-      case 'tiktok':
-      case 'spotify':
-        return <Music {...iconProps} />;
-      case 'x':
-        return <Text style={styles.xIconSmall}>𝕏</Text>;
-      case 'website':
-        return <Globe {...iconProps} />;
-      default:
-        return null;
+    if (platform === 'instagram') {
+      return <Instagram {...iconProps} />;
+    } else if (platform === 'tiktok' || platform === 'spotify') {
+      return <Music {...iconProps} />;
+    } else if (platform === 'x') {
+      return <Text style={styles.xIconSmall}>𝕏</Text>;
+    } else if (platform === 'website') {
+      return <Globe {...iconProps} />;
     }
+    return null;
   };
 
   const tabs: TabSelectorTab[] = [
@@ -409,114 +406,97 @@ export default function ProfileScreen() {
   // Section 3: Stats Grid
   const renderStatsGrid = () => (
     <View style={styles.statsSection}>
-      {isLoadingStats ? (
-        <>
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-        </>
-      ) : (
-        <>
-          <View style={styles.statCard}>
-            <FadeInView delay={0}>
-              <View style={styles.statContent}>
-                <FadeInImage source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
-                <Text style={styles.statValue}>
-                  <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
-                </Text>
-              </View>
-            </FadeInView>
-          </View>
+      <View style={styles.statCard}>
+        <View style={styles.statContent}>
+          <FadeInImage source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
+          </Text>
+        </View>
+      </View>
 
-          <View style={styles.statCard}>
-            <FadeInView delay={50}>
-              <View style={styles.statContent}>
-                <FadeInImage source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
-                <Text style={styles.statValue}>
-                  <Text style={styles.statNumber}>{totalLikes}</Text> Likes
-                </Text>
-              </View>
-            </FadeInView>
-          </View>
+      <View style={styles.statCard}>
+        <View style={styles.statContent}>
+          <FadeInImage source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{totalLikes}</Text> Likes
+          </Text>
+        </View>
+      </View>
 
-          <Pressable style={styles.statCard} onPress={handleShowFollowers}>
-            <FadeInView delay={100}>
-              <View style={styles.statContent}>
-                <View style={styles.avatarRow}>
-                  {topFollowers && topFollowers.length > 0 && topFollowers.slice(0, 3).filter(Boolean).map((follower, index) => (
-                    follower.avatar ? (
-                      <FadeInImage
-                        key={follower.id}
-                        source={{ uri: follower.avatar }}
-                        style={[
-                          styles.miniAvatar,
-                          index > 0 && { marginLeft: -8 }
-                        ]}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View
-                        key={follower.id}
-                        style={[
-                          styles.miniAvatar,
-                          styles.miniAvatarPlaceholder,
-                          index > 0 && { marginLeft: -8 }
-                        ]}
-                      >
-                        <Text style={styles.miniAvatarText}>
-                          {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                    )
-                  ))}
+      <Pressable style={styles.statCard} onPress={handleShowFollowers}>
+        <View style={styles.statContent}>
+          <View style={styles.avatarRow}>
+            {topFollowers.slice(0, 3).map((follower, index) => {
+              if (!follower) return null;
+              return follower.avatar ? (
+                <FadeInImage
+                  key={follower.id}
+                  source={{ uri: follower.avatar }}
+                  style={[
+                    styles.miniAvatar,
+                    index > 0 ? { marginLeft: -8 } : null
+                  ]}
+                  contentFit="cover"
+                />
+              ) : (
+                <View
+                  key={follower.id}
+                  style={[
+                    styles.miniAvatar,
+                    styles.miniAvatarPlaceholder,
+                    index > 0 ? { marginLeft: -8 } : null
+                  ]}
+                >
+                  <Text style={styles.miniAvatarText}>
+                    {(follower.displayName || follower.username || '?').charAt(0).toUpperCase()}
+                  </Text>
                 </View>
-                <Text style={styles.statValue}>
-                  <Text style={styles.statNumber}>{followers.length}</Text> Followers
-                </Text>
-              </View>
-            </FadeInView>
-          </Pressable>
+              );
+            })}
+          </View>
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{followers.length}</Text> Followers
+          </Text>
+        </View>
+      </Pressable>
 
-          <Pressable style={styles.statCard} onPress={handleShowFollowing}>
-            <FadeInView delay={150}>
-              <View style={styles.statContent}>
-                <View style={styles.avatarRow}>
-                  {topFollowing && topFollowing.length > 0 && topFollowing.slice(0, 3).filter(Boolean).map((user, index) => (
-                    user.avatar ? (
-                      <FadeInImage
-                        key={user.id}
-                        source={{ uri: user.avatar }}
-                        style={[
-                          styles.miniAvatar,
-                          index > 0 && { marginLeft: -8 }
-                        ]}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View
-                        key={user.id}
-                        style={[
-                          styles.miniAvatar,
-                          styles.miniAvatarPlaceholder,
-                          index > 0 && { marginLeft: -8 }
-                        ]}
-                      >
-                        <Text style={styles.miniAvatarText}>
-                          {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                    )
-                  ))}
+      <Pressable style={styles.statCard} onPress={handleShowFollowing}>
+        <View style={styles.statContent}>
+          <View style={styles.avatarRow}>
+            {topFollowing.slice(0, 3).map((user, index) => {
+              if (!user) return null;
+              return user.avatar ? (
+                <FadeInImage
+                  key={user.id}
+                  source={{ uri: user.avatar }}
+                  style={[
+                    styles.miniAvatar,
+                    index > 0 ? { marginLeft: -8 } : null
+                  ]}
+                  contentFit="cover"
+                />
+              ) : (
+                <View
+                  key={user.id}
+                  style={[
+                    styles.miniAvatar,
+                    styles.miniAvatarPlaceholder,
+                    index > 0 ? { marginLeft: -8 } : null
+                  ]}
+                >
+                  <Text style={styles.miniAvatarText}>
+                    {(user.displayName || user.username || '?').charAt(0).toUpperCase()}
+                  </Text>
                 </View>
-                <Text style={styles.statValue}>
-                  <Text style={styles.statNumber}>{following.length}</Text> Following
-                </Text>
-              </View>
-            </FadeInView>
-          </Pressable>
-        </>
-      )}
+              );
+            })}
+          </View>
+          <Text style={styles.statValue}>
+            <Text style={styles.statNumber}>{following.length}</Text> Following
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 
