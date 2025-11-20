@@ -107,7 +107,7 @@ interface CachedRecommendation {
 }
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const { user, profileRefreshKey } = useAuth();
+  const { user, profileRefreshKey, authReady } = useAuth();
   
   const [posts, setPosts] = useState<Post[]>([]);
   const [userData, setUserData] = useState<UserData>({
@@ -465,15 +465,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       hasPreloadedForUserRef.current = authUserId;
       loadRecommendations({ force: false });
-    } else if (!authUserId) {
+    } else if (!authUserId && authReady) {
       // User logged out - reset recommendation cache and metadata
+      // Only clear if authReady to prevent false logout during initialization
       console.log('📊 User logged out, clearing recommendation cache...');
       setCachedRecommendations([]);
       setLastRecommendationFetch(null);
       lastRecommendationFetchRef.current = null;
       hasPreloadedForUserRef.current = null;
     }
-  }, [authUserId, loadRecommendations]);
+  }, [authUserId, authReady, loadRecommendations]);
 
   const loadUserProfiles = useCallback(async (userIds: string[]) => {
     if (userIds.length === 0) return;
@@ -533,7 +534,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       loadCurrentUserProfile(user.id);
       loadFollowDataFromSupabase(user.id);
       loadRecommendations({ userId: user.id }); // Pass user.id directly to avoid race condition
-    } else {
+    } else if (authReady) {
+      // Only clear data if authReady to prevent false logout during initialization
       console.log('⚠️ User signed out - clearing all data');
       setAuthUserId(null);
       currentAuthUserIdRef.current = null; // Clear ref immediately
@@ -549,7 +551,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setCachedRecommendations([]); // Clear cached recommendations
       setLastRecommendationFetch(null);
     }
-  }, [user, profileRefreshKey, loadCurrentUserProfile, loadFollowDataFromSupabase, loadRecommendations]);
+  }, [user, authReady, profileRefreshKey, loadCurrentUserProfile, loadFollowDataFromSupabase, loadRecommendations]);
 
   useEffect(() => {
     const repostUserIds = reposts.map(r => r.userId);
