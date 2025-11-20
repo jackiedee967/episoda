@@ -252,15 +252,23 @@ export default function SearchScreen() {
           .filter(post => post.user.id === currentUser.id && post.show?.traktId)
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
-        const recentShowsMap = new Map();
+        // Track most recent post timestamp for each show to ensure deterministic ordering
+        const showLastWatchedMap = new Map<number, { show: any; lastWatchedAt: string }>();
         userPosts.forEach(post => {
           const traktId = post.show.traktId;
-          if (!recentShowsMap.has(traktId)) {
-            recentShowsMap.set(traktId, post.show);
+          if (!showLastWatchedMap.has(traktId)) {
+            showLastWatchedMap.set(traktId, {
+              show: post.show,
+              lastWatchedAt: post.createdAt
+            });
           }
         });
         
-        const recentShows = Array.from(recentShowsMap.values()).slice(0, 3);
+        // Sort by most recent watch (post createdAt), then slice to get 3 most recent shows
+        const recentShows = Array.from(showLastWatchedMap.values())
+          .sort((a, b) => new Date(b.lastWatchedAt).getTime() - new Date(a.lastWatchedAt).getTime())
+          .slice(0, 3)
+          .map(item => item.show);
         
         const becauseYouWatchedPromises = recentShows.map(async (show) => {
           try {
