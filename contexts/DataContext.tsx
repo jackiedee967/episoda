@@ -1126,7 +1126,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // Step 3: Batch fetch all related data (scoped to these 100 posts)
         const [usersResult, showsResult, episodesResult, likesResult, userLikesResult] = await Promise.all([
           // Fetch all user profiles
-          supabase.from('user_profiles').select('*').in('user_id', uniqueUserIds),
+          supabase.from('profiles' as any).select('*').in('user_id', uniqueUserIds),
           // Fetch all shows
           supabase.from('shows').select('*').in('id', uniqueShowIds),
           // Fetch all episodes
@@ -1175,7 +1175,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           const missingProfilesResults = await Promise.all(
             missingUserIds.map(userId =>
               supabase
-                .from('user_profiles')
+                .from('profiles' as any)
                 .select('*')
                 .eq('user_id', userId)
                 .single()
