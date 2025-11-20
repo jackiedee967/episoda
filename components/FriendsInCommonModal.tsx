@@ -131,10 +131,8 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.cardStroke,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...typography.subtitle,
     color: colors.almostWhite,
-    fontFamily: typography.titleL.fontFamily,
   },
   closeButton: {
     padding: 4,

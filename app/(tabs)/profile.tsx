@@ -6,6 +6,7 @@ import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
+import PlaylistViewModal from '@/components/PlaylistViewModal';
 import FollowersModal from '@/components/FollowersModal';
 import EditProfileModal from '@/components/EditProfileModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
@@ -55,6 +56,7 @@ export default function ProfileScreen() {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
   const [showInviteFriendsModal, setShowInviteFriendsModal] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState<Show | null>(null);
+  const [showPlaylistViewModal, setShowPlaylistViewModal] = useState<string | null>(null);
   const [followersType, setFollowersType] = useState<'followers' | 'following'>('followers');
   const [episodesWatched, setEpisodesWatched] = useState(0);
   const [totalLikes, setTotalLikes] = useState(0);
@@ -302,7 +304,7 @@ export default function ProfileScreen() {
 
   const handlePlaylistPress = (playlistId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/playlist/${playlistId}`);
+    setShowPlaylistViewModal(playlistId);
   };
 
   const handleFollowToggle = async (userId: string) => {
@@ -770,6 +772,14 @@ export default function ProfileScreen() {
             onAddToPlaylist={() => {}}
           />
         ) : null}
+
+        {showPlaylistViewModal && (
+          <PlaylistViewModal
+            visible={!!showPlaylistViewModal}
+            onClose={() => setShowPlaylistViewModal(null)}
+            playlistId={showPlaylistViewModal}
+          />
+        )}
       </View>
     </>
   );

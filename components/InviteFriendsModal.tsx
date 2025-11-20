@@ -97,13 +97,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
+    ...typography.subtitle,
     width: 326,
     color: colors.black,
     textAlign: 'center',
-    fontFamily: 'Instrument Serif',
-    fontSize: 25,
-    fontWeight: '400',
-    letterSpacing: -0.5,
   },
   subtitle: {
     width: 308,

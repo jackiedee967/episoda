@@ -292,8 +292,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...tokens.typography.subtitle,
     color: colors.text,
   },
   closeButton: {

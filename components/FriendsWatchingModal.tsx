@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     borderBottomColor: tokens.colors.cardStroke,
   },
   title: {
-    ...tokens.typography.titleL,
+    ...tokens.typography.subtitle,
     color: tokens.colors.pureWhite,
   },
   closeButton: {

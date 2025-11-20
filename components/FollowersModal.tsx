@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     borderBottomColor: tokens.colors.grey2,
   },
   title: {
-    ...tokens.typography.titleL,
+    ...tokens.typography.subtitle,
     color: tokens.colors.black,
   },
   closeButton: {
