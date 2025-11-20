@@ -30,6 +30,8 @@ import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, get
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
+import { getShowRecommendations, getSimilarShows } from '@/services/tmdb';
+import { rankCandidates } from '@/services/recommendationScoring';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -262,35 +264,101 @@ export default function SearchScreen() {
         
         const becauseYouWatchedPromises = recentShows.map(async (show) => {
           try {
-            const relatedTraktShows = await getRelatedShows(show.traktId, 12);
-            const enrichedRelated = await Promise.all(
-              relatedTraktShows.map(async (traktShow) => {
+            console.log(`🎯 Fetching recommendations for "${show.title}"...`);
+            
+            // Step 1: Gather candidates from multiple sources
+            const candidatesMap = new Map<number, TraktShow>();
+            
+            // Source 1: Trakt related shows (collaborative filtering)
+            try {
+              const relatedShows = await getRelatedShows(show.traktId, 30);
+              relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
+              console.log(`  ✓ Trakt related: ${relatedShows.length} shows`);
+            } catch (error) {
+              console.warn(`  ⚠️ Trakt related failed:`, error);
+            }
+            
+            // Get seed show enrichment data for scoring
+            const seedEnrichment = await showEnrichmentManager.enrichShow(
+              mapDatabaseShowToTraktShow(show)
+            );
+            
+            // Source 2 & 3: TMDB recommendations and similar (content-based)
+            if (seedEnrichment.tmdbId) {
+              try {
+                const [tmdbRecs, tmdbSimilar] = await Promise.all([
+                  getShowRecommendations(seedEnrichment.tmdbId),
+                  getSimilarShows(seedEnrichment.tmdbId)
+                ]);
+                
+                // Convert TMDB recommendations to Trakt shows
+                for (const rec of [...tmdbRecs, ...tmdbSimilar]) {
+                  if (rec.traktId && !candidatesMap.has(rec.traktId)) {
+                    // Create minimal TraktShow object from TMDB data
+                    candidatesMap.set(rec.traktId, {
+                      title: rec.name,
+                      year: new Date(rec.first_air_date || '').getFullYear(),
+                      ids: { trakt: rec.traktId, slug: '', tvdb: null, imdb: null, tmdb: rec.id },
+                      overview: rec.overview,
+                      rating: rec.vote_average,
+                      genres: rec.genre_ids?.map(id => String(id)) || [],
+                    } as TraktShow);
+                  }
+                }
+                console.log(`  ✓ TMDB: ${tmdbRecs.length} recommendations, ${tmdbSimilar.length} similar`);
+              } catch (error) {
+                console.warn(`  ⚠️ TMDB fetch failed:`, error);
+              }
+            }
+            
+            const candidates = Array.from(candidatesMap.values());
+            console.log(`  📊 Total candidates: ${candidates.length}`);
+            
+            // Step 2: Enrich all candidates (needed for keyword-based scoring)
+            const enrichedCandidates = await Promise.all(
+              candidates.map(async (traktShow) => {
                 const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                const mappedShow = mapTraktShowToShow(traktShow, {
-                  posterUrl: enrichedData.posterUrl,
-                  totalSeasons: enrichedData.totalSeasons,
-                });
                 return {
-                  ...mappedShow,
-                  id: mappedShow.id || `trakt-${traktShow.ids.trakt}`,
-                  traktId: traktShow.ids.trakt,
-                  traktShow
+                  show: mapTraktShowToShow(traktShow, {
+                    posterUrl: enrichedData.posterUrl,
+                    totalSeasons: enrichedData.totalSeasons,
+                  }),
+                  traktShow,
+                  enrichedData
                 };
               })
             );
             
+            // Step 3: Apply similarity scoring and rank
+            const seedShow = {
+              traktShow: mapDatabaseShowToTraktShow(show),
+              enrichedData: seedEnrichment
+            };
+            
+            const ranked = rankCandidates(seedShow, enrichedCandidates, 40); // Min score: 40
+            console.log(`  ⭐ High-quality matches: ${ranked.length} (min score 40)`);
+            
+            // Step 4: Take top 12 recommendations
+            const topRecommendations = ranked.slice(0, 12).map(item => ({
+              ...item.show,
+              id: item.show.id || `trakt-${item.traktShow.ids.trakt}`,
+              traktId: item.traktShow.ids.trakt,
+              traktShow: item.traktShow
+            }));
+            
             return {
               show,
-              relatedShows: enrichedRelated
+              relatedShows: topRecommendations
             };
           } catch (error) {
-            console.error(`Error fetching related shows for ${show.title}:`, error);
+            console.error(`❌ Error fetching recommendations for ${show.title}:`, error);
             return { show, relatedShows: [] };
           }
         });
         
         const becauseYouWatched = await Promise.all(becauseYouWatchedPromises);
-        setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length > 0));
+        // Only show rows with 6+ recommendations (high-quality threshold)
+        setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length >= 6));
         
         // 6. Popular Rewatches
         const playedShows = await getPlayedShows('monthly', 12);
