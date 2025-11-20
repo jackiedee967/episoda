@@ -220,7 +220,7 @@ export default function AccountSettingsScreen() {
               ) : null}
             </View>
 
-            {authMethod === 'sms' && phoneNumber && (
+            {authMethod === 'sms' && phoneNumber ? (
               <>
                 <View style={styles.infoCard}>
                   <Text style={styles.infoLabel}>Phone Number</Text>
@@ -233,14 +233,14 @@ export default function AccountSettingsScreen() {
                   <Text style={styles.changeButtonText}>Change Phone Number</Text>
                 </Pressable>
               </>
-            )}
+            ) : null}
 
-            {authMethod === 'email' && email && (
+            {authMethod === 'email' && email ? (
               <View style={styles.infoCard}>
                 <Text style={styles.infoLabel}>Email</Text>
                 <Text style={styles.infoValue}>{email}</Text>
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Danger Zone */}
