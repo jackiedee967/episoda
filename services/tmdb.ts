@@ -123,6 +123,52 @@ export async function getShowKeywords(tmdbId: number): Promise<string[]> {
   }
 }
 
+export interface TMDBDiscoverParams {
+  genreIds?: number[];
+  keywordIds?: number[];
+  page?: number;
+  sortBy?: 'popularity.desc' | 'vote_average.desc' | 'first_air_date.desc';
+}
+
+export async function discoverShows(params: TMDBDiscoverParams): Promise<TMDBShow[]> {
+  if (!TMDB_API_KEY) {
+    console.log('⚠️ TMDB API key not configured');
+    return [];
+  }
+
+  try {
+    const urlParams = new URLSearchParams({
+      api_key: TMDB_API_KEY,
+      include_adult: 'true',
+      page: (params.page || 1).toString(),
+      sort_by: params.sortBy || 'popularity.desc',
+    });
+
+    if (params.genreIds && params.genreIds.length > 0) {
+      urlParams.append('with_genres', params.genreIds.join(','));
+    }
+
+    if (params.keywordIds && params.keywordIds.length > 0) {
+      urlParams.append('with_keywords', params.keywordIds.join(','));
+    }
+
+    const response = await fetch(`${TMDB_BASE_URL}/discover/tv?${urlParams}`);
+
+    if (!response.ok) {
+      console.error(`❌ TMDB discover API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const data: TMDBSearchResult = await response.json();
+    console.log(`✅ TMDB discover found ${data.results.length} shows`);
+    return data.results;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ TMDB discover error:`, errorMsg);
+    return [];
+  }
+}
+
 export interface TMDBRecommendation {
   id: number;
   name: string;

@@ -32,9 +32,36 @@ import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
 import { getShowRecommendations, getSimilarShows } from '@/services/tmdb';
 import { rankCandidates } from '@/services/recommendationScoring';
-import { getUserNanoGenres, getNanoGenreEmoji, type NanoGenre } from '@/services/nanoGenreService';
+import { getNanoGenresForGenre, getNanoGenreById } from '@/services/curatedNanoGenres';
+import { discoverShows, type TMDBDiscoverParams, type TMDBShow } from '@/services/tmdb';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
+
+// TMDB Genre ID Mapping (Official TMDB TV genre IDs)
+const TMDB_GENRE_IDS: { [key: string]: number } = {
+  'action': 10759,       // Action & Adventure
+  'adventure': 10759,    // Action & Adventure
+  'animation': 16,       // Animation
+  'anime': 16,           // Animation
+  'comedy': 35,          // Comedy
+  'crime': 80,           // Crime
+  'documentary': 99,     // Documentary
+  'drama': 18,           // Drama
+  'family': 10751,       // Family
+  'fantasy': 10765,      // Sci-Fi & Fantasy
+  'kids': 10762,         // Kids
+  'music': 10764,        // Reality (closest match)
+  'mystery': 9648,       // Mystery
+  'news': 10763,         // News
+  'reality': 10762,      // Reality
+  'science-fiction': 10765, // Sci-Fi & Fantasy
+  'soap': 10766,         // Soap
+  'talk': 10767,         // Talk
+  'war': 10768,          // War & Politics
+  'western': 37,         // Western
+  // Note: TMDB TV doesn't have separate Horror, Romance, History, or Thriller genres
+  // These will be filtered via keywords only
+};
 
 // Genre to emoji mapping
 const getGenreEmoji = (genre: string): string => {
@@ -61,6 +88,17 @@ const getGenreEmoji = (genre: string): string => {
     'western': '🤠',
   };
   return emojiMap[genreLower] || '📺';
+};
+
+// Get section title
+const getSectionTitle = (sectionKey: string): string => {
+  if (sectionKey === 'for-you') return 'For You';
+  if (sectionKey === 'trending') return 'Trending';
+  if (sectionKey === 'popular-rewatches') return 'Popular Rewatches';
+  if (sectionKey.startsWith('because-you-watched-')) {
+    return 'Because You Watched';
+  }
+  return 'Section';
 };
 
 export default function SearchScreen() {
@@ -102,9 +140,17 @@ export default function SearchScreen() {
   const [popularRewatchesShows, setPopularRewatchesShows] = useState<any[]>([]);
   const [allGenres, setAllGenres] = useState<string[]>([]);
   const [userGenres, setUserGenres] = useState<string[]>([]);
-  const [nanoGenres, setNanoGenres] = useState<NanoGenre[]>([]);
   const [isLoadingCurated, setIsLoadingCurated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Genre/Section detail view state
+  const genreParam = params.genre as string | undefined;
+  const sectionParam = params.section as string | undefined;
+  const nanoGenreParam = params.nanoGenre as string | undefined;
+  const [genreShows, setGenreShows] = useState<any[]>([]);
+  const [isLoadingGenre, setIsLoadingGenre] = useState(false);
+  const [sectionShows, setSectionShows] = useState<any[]>([]);
+  const [isLoadingSection, setIsLoadingSection] = useState(false);
 
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
@@ -299,22 +345,6 @@ export default function SearchScreen() {
           .slice(0, 3)
           .map(item => item.show);
         
-        // Start fetching nano-genres early (parallel with recommendations)
-        const nanoGenresPromise = (async () => {
-          try {
-            const userShowsForNanoGenres = Array.from(showLastWatchedMap.values())
-              .map(item => ({
-                title: item.show.title,
-                year: item.show.year
-              }));
-            
-            return await getUserNanoGenres(userShowsForNanoGenres, 20);
-          } catch (error) {
-            console.error('Failed to fetch nano-genres:', error);
-            return [];
-          }
-        })();
-        
         const becauseYouWatchedPromises = recentShows.map(async (show) => {
           try {
             console.log(`🎯 Fetching recommendations for "${show.title}"...`);
@@ -420,10 +450,6 @@ export default function SearchScreen() {
           })
         );
         setPopularRewatchesShows(enrichedPlayed);
-        
-        // 7. Nano Genres - Wait for parallel fetch to complete
-        const nanoGenresData = await nanoGenresPromise;
-        setNanoGenres(nanoGenresData);
         
       } catch (error) {
         console.error('Error loading curated content:', error);
@@ -545,6 +571,113 @@ export default function SearchScreen() {
       silentRefresh();
     }, [searchQuery, currentUser, posts, forYouShows])
   );
+
+  // Load genre detail view
+  useEffect(() => {
+    if (!genreParam) {
+      setGenreShows([]);
+      return;
+    }
+
+    const loadGenreShows = async () => {
+      setIsLoadingGenre(true);
+      try {
+        const genreId = TMDB_GENRE_IDS[genreParam.toLowerCase()];
+        if (!genreId) {
+          console.error(`Genre "${genreParam}" not found in TMDB mapping`);
+          setIsLoadingGenre(false);
+          return;
+        }
+
+        // Build TMDB discover params
+        const params: TMDBDiscoverParams = {
+          genreIds: [genreId],
+          page: 1,
+          sortBy: 'popularity.desc',
+        };
+
+        // Add nano-genre keyword filter if selected and keyword ID is available
+        if (nanoGenreParam) {
+          const nanoGenre = getNanoGenreById(nanoGenreParam);
+          if (nanoGenre && nanoGenre.tmdbKeywordId) {
+            params.keywordIds = [nanoGenre.tmdbKeywordId];
+            console.log(`🏷️ Filtering by nano-genre: ${nanoGenre.name} (keyword ID: ${nanoGenre.tmdbKeywordId})`);
+          } else if (nanoGenre) {
+            console.log(`⚠️ Nano-genre "${nanoGenre.name}" selected but keyword ID not available, showing genre results only`);
+          }
+        }
+
+        const tmdbShows = await discoverShows(params);
+        
+        // Enrich with Trakt data
+        const enrichedShows = await Promise.all(
+          tmdbShows.slice(0, 30).map(async (tmdbShow) => {
+            try {
+              // Search for matching Trakt show
+              const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
+              if (searchResults.results.length > 0) {
+                const traktShow = searchResults.results[0].show;
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                return {
+                  ...mapTraktShowToShow(traktShow, {
+                    posterUrl: enrichedData.posterUrl,
+                    totalSeasons: enrichedData.totalSeasons,
+                  }),
+                  id: `trakt-${traktShow.ids.trakt}`,
+                  traktId: traktShow.ids.trakt,
+                  traktShow,
+                };
+              }
+            } catch (error) {
+              console.error(`Error enriching ${tmdbShow.name}:`, error);
+            }
+            return null;
+          })
+        );
+
+        const validShows = enrichedShows.filter(show => show !== null);
+        setGenreShows(validShows);
+      } catch (error) {
+        console.error('Error loading genre shows:', error);
+      } finally {
+        setIsLoadingGenre(false);
+      }
+    };
+
+    loadGenreShows();
+  }, [genreParam, nanoGenreParam]);
+
+  // Load section detail view
+  useEffect(() => {
+    if (!sectionParam) {
+      setSectionShows([]);
+      return;
+    }
+
+    setIsLoadingSection(true);
+    try {
+      let shows: any[] = [];
+      
+      if (sectionParam === 'for-you') {
+        shows = forYouShows;
+      } else if (sectionParam === 'trending') {
+        shows = trendingShows;
+      } else if (sectionParam === 'popular-rewatches') {
+        shows = popularRewatchesShows;
+      } else if (sectionParam.startsWith('because-you-watched-')) {
+        const index = parseInt(sectionParam.replace('because-you-watched-', ''), 10);
+        if (!isNaN(index) && index >= 0 && index < becauseYouWatchedSections.length) {
+          shows = becauseYouWatchedSections[index].relatedShows;
+        }
+      }
+      
+      setSectionShows(shows);
+    } catch (error) {
+      console.error('Error loading section shows:', error);
+    } finally {
+      setIsLoadingSection(false);
+    }
+  }, [sectionParam, forYouShows, trendingShows, popularRewatchesShows, becauseYouWatchedSections]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -1361,8 +1494,8 @@ export default function SearchScreen() {
           </View>
         </View>
 
-        {/* Show TabSelector only when searching */}
-        {searchQuery.trim().length > 0 ? (
+        {/* Show TabSelector only when searching (not in genre/section views) */}
+        {searchQuery.trim().length > 0 && !params.genre && !params.section ? (
           <View style={styles.tabSelectorWrapper}>
             <TabSelector
               tabs={tabs}
@@ -1375,8 +1508,148 @@ export default function SearchScreen() {
 
         {renderShowFilter()}
 
-        {/* Curated Content (when not searching) */}
-        {searchQuery.trim().length === 0 ? (
+        {/* Genre Detail View */}
+        {params.genre && searchQuery.trim().length === 0 ? (
+          <RNScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.detailContainer}
+          >
+            {/* Back Button and Header */}
+            <View style={styles.detailHeader}>
+              <Pressable 
+                style={styles.backButton}
+                onPress={() => router.push('/search?tab=shows')}
+              >
+                <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
+                <Text style={styles.backButtonText}>Back</Text>
+              </Pressable>
+              <Text style={styles.detailTitle}>
+                {getGenreEmoji(params.genre as string)} {(params.genre as string).charAt(0).toUpperCase() + (params.genre as string).slice(1)}
+              </Text>
+            </View>
+
+            {/* Nano-genre filter pills */}
+            {genreDetailNanoGenres.length > 0 && (
+              <View style={styles.nanoGenreFilters}>
+                <FlatList
+                  data={genreDetailNanoGenres}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.nanoGenrePillsContainer}
+                  renderItem={({ item: nanoGenre }) => (
+                    <Pressable
+                      style={[
+                        styles.nanoGenrePill,
+                        params.nanoGenre === nanoGenre.id && styles.nanoGenrePillActive
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (params.nanoGenre === nanoGenre.id) {
+                          router.push(`/search?tab=shows&genre=${params.genre}`);
+                        } else {
+                          router.push(`/search?tab=shows&genre=${params.genre}&nanoGenre=${nanoGenre.id}`);
+                        }
+                      }}
+                    >
+                      <Text style={[
+                        styles.nanoGenrePillText,
+                        params.nanoGenre === nanoGenre.id && styles.nanoGenrePillTextActive
+                      ]}>
+                        {nanoGenre.name}
+                      </Text>
+                    </Pressable>
+                  )}
+                  keyExtractor={(item) => item.id}
+                />
+              </View>
+            )}
+
+            {/* Genre Results Grid */}
+            {genreDetailLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+              </View>
+            ) : genreDetailShows.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {genreDetailShows.map((show, index) => (
+                  <Pressable
+                    key={`${show.id}-${index}`}
+                    style={styles.gridItem}
+                    onPress={async () => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      const uuid = await ensureShowUuid(show, show.traktShow);
+                      router.push(`/show/${uuid}`);
+                    }}
+                  >
+                    <FadeInImage
+                      source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
+                      style={styles.gridPoster}
+                      contentFit="cover"
+                    />
+                    <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
+                    {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No shows found for this genre</Text>
+              </View>
+            )}
+          </RNScrollView>
+        ) : params.section && searchQuery.trim().length === 0 ? (
+          <RNScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.detailContainer}
+          >
+            {/* Back Button and Header */}
+            <View style={styles.detailHeader}>
+              <Pressable 
+                style={styles.backButton}
+                onPress={() => router.push('/search?tab=shows')}
+              >
+                <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
+                <Text style={styles.backButtonText}>Back</Text>
+              </Pressable>
+              <Text style={styles.detailTitle}>{getSectionTitle(params.section as string)}</Text>
+            </View>
+
+            {/* Section Results Grid */}
+            {sectionDetailLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+              </View>
+            ) : sectionDetailShows.length > 0 ? (
+              <View style={styles.gridContainer}>
+                {sectionDetailShows.map((show, index) => (
+                  <Pressable
+                    key={`${show.id}-${index}`}
+                    style={styles.gridItem}
+                    onPress={async () => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      const uuid = await ensureShowUuid(show, show.traktShow);
+                      router.push(`/show/${uuid}`);
+                    }}
+                  >
+                    <FadeInImage
+                      source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
+                      style={styles.gridPoster}
+                      contentFit="cover"
+                    />
+                    <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
+                    {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No shows found for this section</Text>
+              </View>
+            )}
+          </RNScrollView>
+        ) : searchQuery.trim().length === 0 ? (
           <RNScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
@@ -1403,6 +1676,7 @@ export default function SearchScreen() {
                   setPlaylistModalVisible(true);
                 }}
                 isShowSaved={isShowSaved}
+                onViewMore={() => router.push('/search?tab=shows&section=for-you')}
               />
             ) : null}
 
@@ -1419,6 +1693,7 @@ export default function SearchScreen() {
                   setPlaylistModalVisible(true);
                 }}
                 isShowSaved={isShowSaved}
+                onViewMore={() => router.push('/search?tab=shows&section=trending')}
               />
             ) : null}
 
@@ -1438,6 +1713,7 @@ export default function SearchScreen() {
                     setPlaylistModalVisible(true);
                   }}
                   isShowSaved={isShowSaved}
+                  onViewMore={() => router.push(`/search?tab=shows&section=because-you-watched-${index}`)}
                 />
               ))}
 
@@ -1454,6 +1730,7 @@ export default function SearchScreen() {
                   setPlaylistModalVisible(true);
                 }}
                 isShowSaved={isShowSaved}
+                onViewMore={() => router.push('/search?tab=shows&section=popular-rewatches')}
               />
             ) : null}
 
@@ -1473,7 +1750,7 @@ export default function SearchScreen() {
                       ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        router.push(`/search?tab=shows&query=${encodeURIComponent(genre)}`);
+                        router.push(`/search?tab=shows&genre=${encodeURIComponent(genre)}`);
                       }}
                     >
                       <Text style={styles.genreButtonText}>
@@ -1498,7 +1775,7 @@ export default function SearchScreen() {
                       ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        router.push(`/search?tab=shows&query=${encodeURIComponent(genre)}`);
+                        router.push(`/search?tab=shows&genre=${encodeURIComponent(genre)}`);
                       }}
                     >
                       <Text style={styles.genreButtonText}>
@@ -1507,62 +1784,6 @@ export default function SearchScreen() {
                     </Pressable>
                   )}
                   keyExtractor={(item) => item}
-                  snapToInterval={140}
-                  decelerationRate="fast"
-                />
-              </View>
-            ) : null}
-
-            {nanoGenres.length > 0 ? (
-              <View style={styles.genresSection}>
-                <Text style={styles.genresTitle}>Nano Genres</Text>
-                <FlatList
-                  data={nanoGenres.slice(0, Math.ceil(nanoGenres.length / 2))}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.genreRow}
-                  renderItem={({ item: nanoGenre }) => (
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.genreButton,
-                        pressed && styles.genreButtonPressed
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        router.push(`/search?tab=shows&query=${encodeURIComponent(nanoGenre.name)}`);
-                      }}
-                    >
-                      <Text style={styles.genreButtonText}>
-                        {getNanoGenreEmoji(nanoGenre.name)} {nanoGenre.name}
-                      </Text>
-                    </Pressable>
-                  )}
-                  keyExtractor={(item) => `nano-${item.id}`}
-                  snapToInterval={140}
-                  decelerationRate="fast"
-                />
-                <FlatList
-                  data={nanoGenres.slice(Math.ceil(nanoGenres.length / 2))}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.genreRow}
-                  renderItem={({ item: nanoGenre }) => (
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.genreButton,
-                        pressed && styles.genreButtonPressed
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        router.push(`/search?tab=shows&query=${encodeURIComponent(nanoGenre.name)}`);
-                      }}
-                    >
-                      <Text style={styles.genreButtonText}>
-                        {getNanoGenreEmoji(nanoGenre.name)} {nanoGenre.name}
-                      </Text>
-                    </Pressable>
-                  )}
-                  keyExtractor={(item) => `nano-${item.id}`}
                   snapToInterval={140}
                   decelerationRate="fast"
                 />
@@ -1982,5 +2203,96 @@ const styles = StyleSheet.create({
   genreButtonText: {
     ...tokens.typography.p2M,
     color: tokens.colors.almostWhite,
+  },
+  detailContainer: {
+    paddingTop: 18,
+    paddingBottom: 100,
+  },
+  detailHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  backButtonText: {
+    ...tokens.typography.p2M,
+    color: tokens.colors.almostWhite,
+  },
+  detailTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.pureWhite,
+  },
+  nanoGenreFilters: {
+    paddingBottom: 20,
+  },
+  nanoGenrePillsContainer: {
+    gap: 10,
+    paddingHorizontal: 20,
+  },
+  nanoGenrePill: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
+  },
+  nanoGenrePillActive: {
+    backgroundColor: tokens.colors.greenHighlight,
+    borderColor: tokens.colors.greenHighlight,
+  },
+  nanoGenrePillText: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.almostWhite,
+    fontSize: 12,
+  },
+  nanoGenrePillTextActive: {
+    color: tokens.colors.black,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 15,
+    gap: 15,
+  },
+  gridItem: {
+    width: '47%',
+    marginBottom: 10,
+  },
+  gridPoster: {
+    width: '100%',
+    aspectRatio: 2 / 3,
+    borderRadius: 8,
+    backgroundColor: tokens.colors.cardBackground,
+  },
+  gridTitle: {
+    ...tokens.typography.p2M,
+    color: tokens.colors.almostWhite,
+    marginTop: 8,
+  },
+  gridYear: {
+    ...tokens.typography.p3,
+    color: tokens.colors.grey1,
+    marginTop: 2,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
   },
 });

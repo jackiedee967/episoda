@@ -22,6 +22,7 @@ interface ExploreShowSectionProps {
   onShowPress: (show: Show) => void;
   onBookmarkPress?: (show: Show) => void;
   isShowSaved?: (showId: string) => boolean;
+  onViewMore?: () => void;
 }
 
 export default function ExploreShowSection({
@@ -31,7 +32,8 @@ export default function ExploreShowSection({
   onTitlePress,
   onShowPress,
   onBookmarkPress,
-  isShowSaved
+  isShowSaved,
+  onViewMore
 }: ExploreShowSectionProps) {
   const router = useRouter();
 
@@ -54,7 +56,7 @@ export default function ExploreShowSection({
 
   return (
     <View style={styles.section}>
-      {/* Section Title */}
+      {/* Section Title with View More */}
       {isGenreSection && onTitlePress ? (
         <Pressable 
           style={styles.genreTitleButton}
@@ -63,7 +65,17 @@ export default function ExploreShowSection({
           <Text style={styles.genreTitle}>{title}</Text>
         </Pressable>
       ) : (
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          {onViewMore && (
+            <Pressable onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onViewMore();
+            }}>
+              <Text style={styles.viewMoreButton}>View More</Text>
+            </Pressable>
+          )}
+        </View>
       )}
 
       {/* Horizontal Scrolling Shows */}
@@ -125,10 +137,20 @@ const styles = StyleSheet.create({
     gap: 13,
     marginBottom: 29,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
   sectionTitle: {
     ...tokens.typography.p1,
     color: tokens.colors.almostWhite,
-    paddingHorizontal: 20,
+  },
+  viewMoreButton: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.greenHighlight,
+    fontSize: 13,
   },
   genreTitleButton: {
     paddingHorizontal: 20,
