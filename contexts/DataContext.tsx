@@ -1122,9 +1122,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         // Step 3: Batch fetch all related data (scoped to these 100 posts)
-        const [usersResult, showsResult, episodesResult, likesResult, userLikesResult, commentsResult] = await Promise.all([
+        const [usersResult, showsResult, episodesResult, likesResult, userLikesResult] = await Promise.all([
           // Fetch all user profiles
-          supabase.from('profiles').select('*').in('user_id', uniqueUserIds),
+          supabase.from('user_profiles').select('*').in('user_id', uniqueUserIds),
           // Fetch all shows
           supabase.from('shows').select('*').in('id', uniqueShowIds),
           // Fetch all episodes
@@ -1133,9 +1133,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('post_likes').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
           supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
-          // Fetch comments ONLY for these posts
-          supabase.from('comments').select('post_id').in('post_id', postIds),
         ]);
+        
+        // Comments removed - no comments table in schema, count stored in posts.comments column
+        const commentsResult = { data: [] };
         
         // Use pre-fetched repost data
         const repostsResult = { data: repostsData };
@@ -1172,7 +1173,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           const missingProfilesResults = await Promise.all(
             missingUserIds.map(userId =>
               supabase
-                .from('profiles')
+                .from('user_profiles')
                 .select('*')
                 .eq('user_id', userId)
                 .single()
@@ -1578,20 +1579,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw likesError;
       }
 
-      // Step 4: Delete comments referencing this post
-      const { error: commentsError } = await supabase
-        .from('comments')
-        .delete()
-        .eq('post_id', postId);
-
-      if (commentsError) {
-        console.error('❌ Error deleting comments:', commentsError);
-        throw commentsError;
-      }
-
-      // Step 5: Delete reposts referencing this post
+      // Step 4: Delete reposts referencing this post
       const { error: repostsError } = await supabase
-        .from('reposts')
+        .from('post_reposts')
         .delete()
         .eq('post_id', postId);
 
