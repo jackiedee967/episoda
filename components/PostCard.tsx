@@ -184,7 +184,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
                     />
                   );
                 })()}
-                {latestPost.episodes && latestPost.episodes.length > 0 && latestPost.episodes.map((episode, index) => (
+                {latestPost.episodes && latestPost.episodes.length > 0 ? latestPost.episodes.map((episode, index) => (
                   <PostTags
                     key={episode.id || index}
                     prop="Large"
@@ -195,7 +195,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
                       router.push(`/episode/${episode.id}`);
                     }}
                   />
-                ))}
+                )) : null}
               </View>
               {latestPost.rating ? (
                 <StarRatings rating={latestPost.rating} size={14} />
