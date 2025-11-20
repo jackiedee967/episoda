@@ -1,7 +1,7 @@
 import { TraktShow, getShowSeasons } from './trakt';
 import { getShowByImdbId, getShowByTvdbId, searchShowByName, TVMazeShow } from './tvmaze';
 import { getOMDBByTitle } from './omdb';
-import { searchShowByName as searchTMDB, getPosterUrl as getTMDBPosterUrl } from './tmdb';
+import { searchShowByName as searchTMDB, getPosterUrl as getTMDBPosterUrl, getShowKeywords } from './tmdb';
 
 export interface EnrichedShowData {
   totalSeasons: number;
@@ -9,6 +9,8 @@ export interface EnrichedShowData {
   backdropUrl: string | null;
   tvmazeId: number | null;
   imdbId: string | null;
+  tmdbId: number | null;
+  keywords: string[];
   isEnriched: boolean;
 }
 
@@ -55,10 +57,14 @@ class ShowEnrichmentManager {
       // Multi-tier poster fallback for 99% coverage
       let posterUrl: string | null = null;
       let imdbId: string | null = traktShow.ids.imdb || null;
+      let tmdbId: number | null = null;
+      let keywords: string[] = [];
       
       // Tier 1: TMDB (best coverage, especially for international shows)
       const tmdbData = await this.fetchTMDBData(traktShow.title, traktShow.year);
       posterUrl = tmdbData?.posterUrl || null;
+      tmdbId = tmdbData?.tmdbId || null;
+      keywords = tmdbData?.keywords || [];
       
       // Tier 2: OMDB (high quality posters)
       if (!posterUrl) {
@@ -84,6 +90,8 @@ class ShowEnrichmentManager {
         backdropUrl: null, // Skip backdrop for search results
         tvmazeId: null,
         imdbId,
+        tmdbId,
+        keywords,
         isEnriched: !!posterUrl,
       };
       
@@ -97,6 +105,8 @@ class ShowEnrichmentManager {
         backdropUrl: null,
         tvmazeId: null,
         imdbId: traktShow.ids.imdb || null,
+        tmdbId: null,
+        keywords: [],
         isEnriched: false,
       };
     } finally {
@@ -110,15 +120,20 @@ class ShowEnrichmentManager {
     return seasons.filter(s => s.number > 0).length;
   }
 
-  private async fetchTMDBData(title: string, year: number | null): Promise<{ posterUrl: string | null } | null> {
+  private async fetchTMDBData(title: string, year: number | null): Promise<{ posterUrl: string | null; tmdbId: number | null; keywords: string[] } | null> {
     const tmdbResult = await searchTMDB(title, year);
     
     if (!tmdbResult) {
       return null;
     }
     
+    const tmdbId = tmdbResult.id;
+    const keywords = await getShowKeywords(tmdbId);
+    
     return {
       posterUrl: tmdbResult.poster_path ? getTMDBPosterUrl(tmdbResult.poster_path) : null,
+      tmdbId,
+      keywords,
     };
   }
 

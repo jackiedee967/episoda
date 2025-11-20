@@ -90,3 +90,89 @@ export function getBackdropUrl(backdropPath: string | null): string | null {
   if (!backdropPath) return null;
   return `${TMDB_IMAGE_BASE}${backdropPath}`;
 }
+
+export interface TMDBKeyword {
+  id: number;
+  name: string;
+}
+
+export interface TMDBKeywordsResponse {
+  results: TMDBKeyword[];
+}
+
+export async function getShowKeywords(tmdbId: number): Promise<string[]> {
+  if (!TMDB_API_KEY) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/keywords?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      console.error(`❌ TMDB keywords API error: ${response.status}`);
+      return [];
+    }
+
+    const data: TMDBKeywordsResponse = await response.json();
+    return data.results.map(k => k.name);
+  } catch (error) {
+    console.error(`❌ Error fetching TMDB keywords:`, error);
+    return [];
+  }
+}
+
+export interface TMDBRecommendation {
+  id: number;
+  name: string;
+  poster_path: string | null;
+}
+
+export interface TMDBRecommendationsResponse {
+  results: TMDBRecommendation[];
+}
+
+export async function getShowRecommendations(tmdbId: number): Promise<TMDBRecommendation[]> {
+  if (!TMDB_API_KEY) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/recommendations?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data: TMDBRecommendationsResponse = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error(`❌ Error fetching TMDB recommendations:`, error);
+    return [];
+  }
+}
+
+export async function getSimilarShows(tmdbId: number): Promise<TMDBRecommendation[]> {
+  if (!TMDB_API_KEY) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/similar?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data: TMDBRecommendationsResponse = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error(`❌ Error fetching TMDB similar shows:`, error);
+    return [];
+  }
+}
