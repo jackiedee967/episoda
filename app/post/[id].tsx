@@ -17,7 +17,6 @@ import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send, MoreVertica
 import CommentCard from '@/components/CommentCard';
 import PostTags from '@/components/PostTags';
 import StarRatings from '@/components/StarRatings';
-import { mockComments } from '@/data/mockData';
 import * as ImagePicker from 'expo-image-picker';
 import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';

@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
-import { Post, Show, User, Playlist, Episode, FeedItem } from '@/types';
+import { Post, Show, User, Playlist, Episode, FeedItem, SocialLink } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -202,19 +202,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Loading current user profile from Supabase:', userId);
       
-      const { data: profile, error } = await supabase
-        .from('profiles' as any)
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Fetch profile and social links in parallel
+      const [profileResult, socialLinksResult] = await Promise.all([
+        supabase
+          .from('profiles' as any)
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        supabase
+          .from('social_links' as any)
+          .select('*')
+          .eq('user_id', userId)
+      ]);
 
-      if (error) {
-        console.error('Error loading user profile:', error);
+      if (profileResult.error) {
+        console.error('Error loading user profile:', profileResult.error);
         return;
       }
 
-      if (profile) {
-        const profileData = profile as any;
+      if (profileResult.data) {
+        const profileData = profileResult.data as any;
         console.log('✅ Loaded user profile:', profileData.username);
         
         // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
@@ -224,13 +231,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           console.log('🎨 Generated avatar data URI for user:', profileData.username);
         }
         
+        // Fetch social links for current user
+        const socialLinks: SocialLink[] = socialLinksResult.data
+          ? socialLinksResult.data.map((link: any) => ({
+              platform: link.platform,
+              url: link.url,
+            }))
+          : [];
+        
         const userData = {
           id: userId,
           username: profileData.username || 'user',
           displayName: profileData.display_name || profileData.username || 'User',
           avatar: avatarUrl,
           bio: profileData.bio || '',
-          socialLinks: [],
+          socialLinks,
           following: [],
           followers: [],
         };
@@ -480,19 +495,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (userIds.length === 0) return;
     
     try {
-      const { data, error } = await supabase
-        .from('profiles' as any)
-        .select('*')
-        .in('user_id', userIds);
+      // Fetch profiles and social links in parallel
+      const [profilesResult, socialLinksResult] = await Promise.all([
+        supabase
+          .from('profiles' as any)
+          .select('*')
+          .in('user_id', userIds),
+        supabase
+          .from('social_links' as any)
+          .select('*')
+          .in('user_id', userIds)
+      ]);
 
-      if (error) {
-        console.error('Error batch-loading user profiles:', error);
+      if (profilesResult.error) {
+        console.error('Error batch-loading user profiles:', profilesResult.error);
         return;
       }
 
-      if (data) {
+      if (profilesResult.data) {
+        // Group social links by user_id
+        const socialLinksByUser: Record<string, SocialLink[]> = {};
+        if (socialLinksResult.data) {
+          socialLinksResult.data.forEach((link: any) => {
+            if (!socialLinksByUser[link.user_id]) {
+              socialLinksByUser[link.user_id] = [];
+            }
+            socialLinksByUser[link.user_id].push({
+              platform: link.platform,
+              url: link.url,
+            });
+          });
+        }
+
         const newProfiles: Record<string, User> = {};
-        data.forEach((profile: any) => {
+        profilesResult.data.forEach((profile: any) => {
           // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
           let avatarUrl = profile.avatar_url || '';
           if (!avatarUrl && profile.avatar_color_scheme && profile.avatar_icon) {
@@ -505,7 +541,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             displayName: profile.display_name || profile.username || 'User',
             avatar: avatarUrl,
             bio: profile.bio || '',
-            socialLinks: [],
+            socialLinks: socialLinksByUser[profile.user_id] || [],
             following: [],
             followers: [],
           };

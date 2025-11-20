@@ -82,8 +82,9 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
     const uniqueShowIds = [...new Set(validPosts.map(p => p.show_id))];
     const allEpisodeIds = [...new Set(validPosts.flatMap(p => p.episode_ids || []))];
 
-    const [usersResult, showsResult, episodesResult, likesResult, userLikesResult, commentsResult, repostsResult] = await Promise.all([
+    const [usersResult, socialLinksResult, showsResult, episodesResult, likesResult, userLikesResult, commentsResult, repostsResult] = await Promise.all([
       (supabase as any).from('profiles').select('*').in('user_id', uniqueUserIds),
+      (supabase as any).from('social_links').select('*').in('user_id', uniqueUserIds),
       supabase.from('shows').select('*').in('id', uniqueShowIds),
       allEpisodeIds.length > 0 ? supabase.from('episodes').select('*').in('id', allEpisodeIds) : { data: [] },
       (supabase as any).from('likes').select('post_id').in('post_id', postIds),
@@ -91,6 +92,18 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
       (supabase as any).from('comments').select('post_id').in('post_id', postIds),
       (supabase as any).from('reposts').select('post_id').in('post_id', postIds),
     ]);
+
+    // Group social links by user_id
+    const socialLinksByUser: Record<string, any[]> = {};
+    (socialLinksResult.data || []).forEach((link: any) => {
+      if (!socialLinksByUser[link.user_id]) {
+        socialLinksByUser[link.user_id] = [];
+      }
+      socialLinksByUser[link.user_id].push({
+        platform: link.platform,
+        url: link.url,
+      });
+    });
 
     const usersMap = new Map();
     (usersResult.data || []).forEach((profile: any) => {
@@ -104,7 +117,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
         displayName: profile.display_name || profile.username || 'User',
         avatar: avatarUrl,
         bio: profile.bio || '',
-        socialLinks: [],
+        socialLinks: socialLinksByUser[profile.user_id] || [],
         following: [],
         followers: [],
       });
