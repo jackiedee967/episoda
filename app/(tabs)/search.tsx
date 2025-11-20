@@ -1346,10 +1346,13 @@ export default function SearchScreen() {
             {allGenres.length > 0 ? (
               <View style={styles.genresSection}>
                 <Text style={styles.genresTitle}>Genres</Text>
-                <View style={styles.genresGrid}>
-                  {allGenres.map((genre) => (
+                <FlatList
+                  data={allGenres.slice(0, Math.ceil(allGenres.length / 2))}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.genreRow}
+                  renderItem={({ item: genre }) => (
                     <Pressable
-                      key={genre}
                       style={({ pressed }) => [
                         styles.genreButton,
                         pressed && styles.genreButtonPressed
@@ -1363,8 +1366,36 @@ export default function SearchScreen() {
                         {genre.charAt(0).toUpperCase() + genre.slice(1)}
                       </Text>
                     </Pressable>
-                  ))}
-                </View>
+                  )}
+                  keyExtractor={(item) => item}
+                  snapToInterval={140}
+                  decelerationRate="fast"
+                />
+                <FlatList
+                  data={allGenres.slice(Math.ceil(allGenres.length / 2))}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.genreRow}
+                  renderItem={({ item: genre }) => (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.genreButton,
+                        pressed && styles.genreButtonPressed
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push(`/search?tab=shows&query=${encodeURIComponent(genre)}`);
+                      }}
+                    >
+                      <Text style={styles.genreButtonText}>
+                        {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                      </Text>
+                    </Pressable>
+                  )}
+                  keyExtractor={(item) => item}
+                  snapToInterval={140}
+                  decelerationRate="fast"
+                />
               </View>
             ) : null}
           </RNScrollView>
@@ -1751,34 +1782,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   genresSection: {
-    paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 40,
+    gap: 12,
   },
   genresTitle: {
     ...tokens.typography.p1,
     color: tokens.colors.almostWhite,
-    marginBottom: 17,
+    marginBottom: 5,
+    paddingHorizontal: 20,
   },
-  genresGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  genreRow: {
     gap: 10,
+    paddingHorizontal: 20,
   },
   genreButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
     backgroundColor: tokens.colors.cardBackground,
+    marginRight: 10,
   },
   genreButtonPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
   },
   genreButtonText: {
-    ...tokens.typography.p3M,
+    ...tokens.typography.p2M,
     color: tokens.colors.almostWhite,
   },
 });
