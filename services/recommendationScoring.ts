@@ -12,12 +12,12 @@ export interface ScoredShow {
  * Calculate similarity score between two shows
  * Uses weighted attribute matching for intelligent recommendations
  * 
- * Weights:
- * - Genres: 35%
- * - Keywords: 25%
- * - Demographics (network/certification): 15%
+ * Weights (Phase 1 - Trakt-only, keyword-sparse optimized):
+ * - Genres: 50% (increased from 35% due to sparse keyword data)
+ * - Keywords: 15% (reduced from 25% until enrichment improves)
+ * - Demographics (network/country): 15%
  * - Era (release year proximity): 10%
- * - Rating similarity: 15%
+ * - Rating similarity: 10% (reduced from 15%)
  */
 export function scoreShowSimilarity(
   seedShow: {
@@ -31,21 +31,21 @@ export function scoreShowSimilarity(
 ): number {
   let totalScore = 0;
 
-  // 1. Genre matching (35%)
+  // 1. Genre matching (50% - primary signal for Trakt-only recommendations)
   const genreScore = calculateGenreScore(
     seedShow.traktShow.genres || [],
     candidateShow.traktShow.genres || []
   );
-  totalScore += genreScore * 0.35;
+  totalScore += genreScore * 0.50;
 
-  // 2. Keyword matching (25%)
+  // 2. Keyword matching (15% - reduced weight until enrichment improves)
   const keywordScore = calculateKeywordScore(
     seedShow.enrichedData?.keywords || [],
     candidateShow.enrichedData?.keywords || []
   );
-  totalScore += keywordScore * 0.25;
+  totalScore += keywordScore * 0.15;
 
-  // 3. Demographics - network and certification (15%)
+  // 3. Demographics - network and country (15%)
   const demographicScore = calculateDemographicScore(
     seedShow.traktShow,
     candidateShow.traktShow
@@ -59,12 +59,12 @@ export function scoreShowSimilarity(
   );
   totalScore += eraScore * 0.10;
 
-  // 5. Rating similarity (15%)
+  // 5. Rating similarity (10%)
   const ratingScore = calculateRatingScore(
     seedShow.traktShow.rating,
     candidateShow.traktShow.rating
   );
-  totalScore += ratingScore * 0.15;
+  totalScore += ratingScore * 0.10;
 
   return Math.round(totalScore * 100) / 100;
 }
@@ -206,12 +206,32 @@ export function rankCandidates(
   minScore: number = 40 // Minimum similarity score threshold
 ): ScoredShow[] {
   const scored = candidates
-    .map(candidate => ({
-      ...candidate,
-      score: scoreShowSimilarity(seedShow, candidate)
-    }))
+    .map(candidate => {
+      const score = scoreShowSimilarity(seedShow, candidate);
+      return {
+        ...candidate,
+        score
+      };
+    })
     .filter(item => item.score >= minScore)
     .sort((a, b) => b.score - a.score);
+
+  // Debug logging
+  if (scored.length === 0 && candidates.length > 0) {
+    const allScored = candidates.map(c => ({
+      ...c,
+      score: scoreShowSimilarity(seedShow, c)
+    })).sort((a, b) => b.score - a.score);
+    console.log(`🔍 Ranking debug for "${seedShow.traktShow.title}":`);
+    console.log(`  Seed genres: ${seedShow.traktShow.genres?.join(', ') || 'none'}`);
+    console.log(`  Seed keywords: ${seedShow.enrichedData?.keywords?.length || 0} keywords`);
+    console.log(`  Top 3 candidate scores:`, allScored.slice(0, 3).map(s => ({
+      title: s.traktShow.title,
+      score: s.score.toFixed(1),
+      genres: s.traktShow.genres?.join(', ') || 'none',
+      keywords: s.enrichedData?.keywords?.length || 0
+    })));
+  }
 
   return scored;
 }

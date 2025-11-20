@@ -283,33 +283,8 @@ export default function SearchScreen() {
               mapDatabaseShowToTraktShow(show)
             );
             
-            // Source 2 & 3: TMDB recommendations and similar (content-based)
-            if (seedEnrichment.tmdbId) {
-              try {
-                const [tmdbRecs, tmdbSimilar] = await Promise.all([
-                  getShowRecommendations(seedEnrichment.tmdbId),
-                  getSimilarShows(seedEnrichment.tmdbId)
-                ]);
-                
-                // Convert TMDB recommendations to Trakt shows
-                for (const rec of [...tmdbRecs, ...tmdbSimilar]) {
-                  if (rec.traktId && !candidatesMap.has(rec.traktId)) {
-                    // Create minimal TraktShow object from TMDB data
-                    candidatesMap.set(rec.traktId, {
-                      title: rec.name,
-                      year: new Date(rec.first_air_date || '').getFullYear(),
-                      ids: { trakt: rec.traktId, slug: '', tvdb: null, imdb: null, tmdb: rec.id },
-                      overview: rec.overview,
-                      rating: rec.vote_average,
-                      genres: rec.genre_ids?.map(id => String(id)) || [],
-                    } as TraktShow);
-                  }
-                }
-                console.log(`  ✓ TMDB: ${tmdbRecs.length} recommendations, ${tmdbSimilar.length} similar`);
-              } catch (error) {
-                console.warn(`  ⚠️ TMDB fetch failed:`, error);
-              }
-            }
+            // TODO: Add TMDB recommendations/similar shows later after implementing efficient TMDB→Trakt mapping
+            // For now, using Trakt related shows only (collaborative filtering)
             
             const candidates = Array.from(candidatesMap.values());
             console.log(`  📊 Total candidates: ${candidates.length}`);
@@ -335,8 +310,22 @@ export default function SearchScreen() {
               enrichedData: seedEnrichment
             };
             
-            const ranked = rankCandidates(seedShow, enrichedCandidates, 40); // Min score: 40
-            console.log(`  ⭐ High-quality matches: ${ranked.length} (min score 40)`);
+            // Debug: Log seed show enrichment data
+            console.log(`  🔍 Seed enrichment: TMDB ID=${seedEnrichment.tmdbId}, keywords=${seedEnrichment.keywords?.length || 0}`);
+            
+            const ranked = rankCandidates(seedShow, enrichedCandidates, 20); // Min score: 20 (Phase 1: Trakt-only optimized)
+            console.log(`  ⭐ High-quality matches: ${ranked.length} (min score 20)`);
+            if (ranked.length > 0) {
+              console.log(`  📈 Top scores: ${ranked.slice(0, 3).map(r => `${r.traktShow.title} (${r.score})`).join(', ')}`);
+            }
+            if (ranked.length === 0 && enrichedCandidates.length > 0) {
+              // Debug: Show what scores we're actually getting
+              const allScores = enrichedCandidates.slice(0, 5).map(c => {
+                const { scoreShowSimilarity } = require('@/services/recommendationScoring');
+                return { title: c.traktShow.title, score: scoreShowSimilarity(seedShow, c) };
+              });
+              console.log(`  ⚠️ All candidates scored too low. Sample scores:`, allScores);
+            }
             
             // Step 4: Take top 12 recommendations
             const topRecommendations = ranked.slice(0, 12).map(item => ({

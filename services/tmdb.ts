@@ -127,6 +127,11 @@ export interface TMDBRecommendation {
   id: number;
   name: string;
   poster_path: string | null;
+  first_air_date?: string;
+  overview?: string;
+  vote_average?: number;
+  genre_ids?: number[];
+  origin_country?: string[];
 }
 
 export interface TMDBRecommendationsResponse {
@@ -174,5 +179,37 @@ export async function getSimilarShows(tmdbId: number): Promise<TMDBRecommendatio
   } catch (error) {
     console.error(`❌ Error fetching TMDB similar shows:`, error);
     return [];
+  }
+}
+
+export interface TMDBExternalIds {
+  imdb_id?: string | null;
+  tvdb_id?: number | null;
+  tvrage_id?: number | null;
+}
+
+/**
+ * Get external IDs (IMDB, TVDB) for a TMDB show
+ * Note: TMDB doesn't provide Trakt IDs, so we'll use IMDB ID to look up on Trakt
+ */
+export async function getExternalIds(tmdbId: number): Promise<TMDBExternalIds | null> {
+  if (!TMDB_API_KEY) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data: TMDBExternalIds = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`❌ Error fetching TMDB external IDs:`, error);
+    return null;
   }
 }
