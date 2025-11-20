@@ -181,13 +181,13 @@ export default function NotificationsScreen() {
           </View>
         </View>
         
-        {thumbnail && (
+        {thumbnail ? (
           <FadeInImage
             source={{ uri: thumbnail }}
             style={styles.thumbnail}
             contentFit="cover"
           />
-        )}
+        ) : null}
       </Pressable>
     );
   };

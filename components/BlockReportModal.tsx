@@ -202,12 +202,12 @@ export default function BlockReportModal({
             <View
               style={[
                 styles.radioButton,
-                selectedReason === reason.value && styles.radioButtonSelected,
+                selectedReason === reason.value ? styles.radioButtonSelected : null,
               ]}
             >
-              {selectedReason === reason.value && (
+              {selectedReason === reason.value ? (
                 <View style={styles.radioButtonInner} />
-              )}
+              ) : null}
             </View>
             <Text style={styles.reasonLabel}>{reason.label}</Text>
           </Pressable>

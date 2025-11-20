@@ -128,7 +128,7 @@ export default function RecommendedTitlesScreen() {
         </ScrollView>
       </View>
 
-      {selectedShow && (
+      {selectedShow ? (
         <PlaylistModal
           visible={playlistModalVisible}
           onClose={() => {
@@ -138,7 +138,7 @@ export default function RecommendedTitlesScreen() {
           show={selectedShow}
           onAddToPlaylist={handleAddToPlaylist}
         />
-      )}
+      ) : null}
     </>
   );
 }

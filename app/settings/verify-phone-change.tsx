@@ -191,11 +191,11 @@ export default function VerifyPhoneChangeScreen() {
             </View>
           </View>
 
-          {loading && (
+          {loading ? (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color={colors.secondary} />
             </View>
-          )}
+          ) : null}
         </View>
       </GradientBackground>
     </>

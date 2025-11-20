@@ -201,9 +201,9 @@ export default function CreatePostScreen() {
               >
                 <View style={[styles.categoryIndicator, { backgroundColor: getCategoryColor(cat) }]} />
                 <Text style={styles.categoryOptionText}>{cat}</Text>
-                {category === cat && (
+                {category === cat ? (
                   <Text style={styles.checkmark}>✓</Text>
-                )}
+                ) : null}
               </Pressable>
             ))}
           </View>

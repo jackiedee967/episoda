@@ -63,11 +63,11 @@ export default function FriendsWatchingModal({
                   <View style={styles.textContainer}>
                     <Text style={styles.name}>{friend.displayName}</Text>
                     <Text style={styles.username}>@{friend.username}</Text>
-                    {friend.bio && (
+                    {friend.bio ? (
                       <Text style={styles.bio} numberOfLines={1}>
                         {friend.bio}
                       </Text>
-                    )}
+                    ) : null}
                   </View>
                 </View>
                 <FollowButton 

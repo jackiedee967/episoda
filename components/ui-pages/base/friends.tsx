@@ -51,19 +51,19 @@ export function Friends(props: BaseFriendsProps) {
           </View>
         )
       ))}
-      {showCountBadge && (
+      {showCountBadge ? (
         <View
           style={[
             styles.countBadge,
-            isSmall && styles.countBadgeSmall,
-            displayedFriends.length > 0 && { marginLeft: isSmall ? -6 : -8 }
+            isSmall ? styles.countBadgeSmall : null,
+            displayedFriends.length > 0 ? { marginLeft: isSmall ? -6 : -8 } : null
           ]}
         >
-          <Text style={[styles.countText, isSmall && styles.countTextSmall]}>
+          <Text style={[styles.countText, isSmall ? styles.countTextSmall : null]}>
             +{remainingCount}
           </Text>
         </View>
-      )}
+      ) : null}
     </View>
   );
 }

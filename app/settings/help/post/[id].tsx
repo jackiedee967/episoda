@@ -215,11 +215,11 @@ export default function HelpDeskPostDetailScreen() {
             <View style={styles.postHeaderText}>
               <View style={styles.userRow}>
                 <Text style={styles.username}>{post.username}</Text>
-                {post.username === 'jvckie' && (
+                {post.username === 'jvckie' ? (
                   <View style={styles.adminBadge}>
                     <Text style={styles.adminBadgeText}>Admin</Text>
                   </View>
-                )}
+                ) : null}
               </View>
               <Text style={styles.timestamp}>{formatTimestamp(post.created_at)}</Text>
             </View>
@@ -262,11 +262,11 @@ export default function HelpDeskPostDetailScreen() {
                     <View style={styles.commentHeader}>
                       <View style={styles.commentUserRow}>
                         <Text style={styles.commentUsername}>{comment.username}</Text>
-                        {comment.username === 'jvckie' && (
+                        {comment.username === 'jvckie' ? (
                           <View style={styles.adminBadgeSmall}>
                             <Text style={styles.adminBadgeTextSmall}>Admin</Text>
                           </View>
-                        )}
+                        ) : null}
                       </View>
                       <Text style={styles.commentTimestamp}>
                         {formatTimestamp(comment.created_at)}

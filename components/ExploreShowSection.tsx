@@ -93,11 +93,11 @@ export default function ExploreShowSection({
               />
               
               {/* Bookmark Button */}
-              {onBookmarkPress && isShowSaved && (
+              {onBookmarkPress && isShowSaved ? (
                 <Pressable
                   style={({ pressed }) => [
                     styles.saveIcon,
-                    pressed && styles.saveIconPressed
+                    pressed ? styles.saveIconPressed : null
                   ]}
                   onPress={(e) => handleBookmarkPress(show, e)}
                 >
@@ -107,7 +107,7 @@ export default function ExploreShowSection({
                     color="#FFFFFF"
                   />
                 </Pressable>
-              )}
+              ) : null}
             </View>
             
             <Text style={styles.showTitle} numberOfLines={2}>

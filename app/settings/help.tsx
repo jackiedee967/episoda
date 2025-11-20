@@ -152,11 +152,11 @@ export default function HelpDeskScreen() {
         <View style={styles.communityPostHeaderText}>
           <View style={styles.communityPostUserRow}>
             <Text style={styles.communityPostUsername}>{post.username}</Text>
-            {post.username === 'jvckie' && (
+            {post.username === 'jvckie' ? (
               <View style={styles.adminBadge}>
                 <Text style={styles.adminBadgeText}>Team</Text>
               </View>
-            )}
+            ) : null}
           </View>
           <Text style={styles.communityPostTimestamp}>
             {formatTimestamp(post.created_at)}
@@ -235,12 +235,12 @@ export default function HelpDeskScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>FROM THE TEAM</Text>
-            {userIsAdmin && (
+            {userIsAdmin ? (
               <Pressable style={styles.createButton} onPress={handleCreateAnnouncement}>
                 <Plus size={16} color={colors.background} />
                 <Text style={styles.createButtonText}>Announce</Text>
               </Pressable>
-            )}
+            ) : null}
           </View>
           {adminPosts.length > 0 ? (
             <ScrollView

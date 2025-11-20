@@ -28,11 +28,11 @@ export default function SortDropdown({ sortBy, onSortChange, style }: SortDropdo
 
   return (
     <>
-      {dropdownVisible && (
+      {dropdownVisible ? (
         <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
           <View style={styles.modalOverlay} />
         </TouchableWithoutFeedback>
-      )}
+      ) : null}
       
       <View style={styles.wrapper}>
         <Pressable 
@@ -43,27 +43,27 @@ export default function SortDropdown({ sortBy, onSortChange, style }: SortDropdo
           <SortIcon />
         </Pressable>
 
-        {dropdownVisible && (
+        {dropdownVisible ? (
           <View style={styles.dropdown}>
             <Pressable
-              style={[styles.option, sortBy === 'recent' && styles.optionActive]}
+              style={[styles.option, sortBy === 'recent' ? styles.optionActive : null]}
               onPress={() => handleOptionPress('recent')}
             >
-              <Text style={[styles.optionText, sortBy === 'recent' && styles.optionTextActive]}>
+              <Text style={[styles.optionText, sortBy === 'recent' ? styles.optionTextActive : null]}>
                 Recent
               </Text>
             </Pressable>
             <View style={styles.divider} />
             <Pressable
-              style={[styles.option, sortBy === 'hot' && styles.optionActive]}
+              style={[styles.option, sortBy === 'hot' ? styles.optionActive : null]}
               onPress={() => handleOptionPress('hot')}
             >
-              <Text style={[styles.optionText, sortBy === 'hot' && styles.optionTextActive]}>
+              <Text style={[styles.optionText, sortBy === 'hot' ? styles.optionTextActive : null]}>
                 Hot
               </Text>
             </Pressable>
           </View>
-        )}
+        ) : null}
       </View>
     </>
   );

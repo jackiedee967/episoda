@@ -154,26 +154,24 @@ export default function ChangePhoneScreen() {
                       autoFocus
                     />
                   </View>
-                ) : (
-                  PhoneInput && (
-                    <PhoneInput
-                      ref={phoneInput}
-                      defaultValue={phoneNumber}
-                      defaultCode="US"
-                      layout="first"
-                      onChangeText={setPhoneNumber}
-                      onChangeFormattedText={setPhoneNumber}
-                      disabled={loading}
-                      containerStyle={styles.phoneInputContainer}
-                      textContainerStyle={styles.phoneInputTextContainer}
-                      textInputStyle={styles.phoneInputText}
-                      codeTextStyle={styles.phoneInputCode}
-                      flagButtonStyle={styles.phoneInputFlag}
-                      placeholder="555 123 4567"
-                      autoFocus
-                    />
-                  )
-                )}
+                ) : PhoneInput ? (
+                  <PhoneInput
+                    ref={phoneInput}
+                    defaultValue={phoneNumber}
+                    defaultCode="US"
+                    layout="first"
+                    onChangeText={setPhoneNumber}
+                    onChangeFormattedText={setPhoneNumber}
+                    disabled={loading}
+                    containerStyle={styles.phoneInputContainer}
+                    textContainerStyle={styles.phoneInputTextContainer}
+                    textInputStyle={styles.phoneInputText}
+                    codeTextStyle={styles.phoneInputCode}
+                    flagButtonStyle={styles.phoneInputFlag}
+                    placeholder="555 123 4567"
+                    autoFocus
+                  />
+                ) : null}
               </View>
 
               <View style={styles.buttonSection}>
