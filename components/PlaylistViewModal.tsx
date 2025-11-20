@@ -74,7 +74,6 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
     
     if (foundPlaylist) {
       setPlaylist(foundPlaylist);
-      setPlaylistShows([]);
       
       if (foundPlaylist.shows && foundPlaylist.shows.length > 0) {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
