@@ -67,7 +67,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
     if (visible && playlistId) {
       loadPlaylistData();
     }
-  }, [playlistId, playlists, visible]);
+  }, [playlistId, visible]);
 
   const loadPlaylistData = async () => {
     const foundPlaylist = playlists.find(p => p.id === playlistId);
