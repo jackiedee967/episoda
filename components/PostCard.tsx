@@ -149,7 +149,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
 
   return (
     <Pressable style={styles.card} onPress={handlePostPress}>
-      {repostContext && (
+      {repostContext ? (
         <View style={styles.repostBanner}>
           <RefreshCw size={12} color={tokens.colors.grey1} strokeWidth={1.5} />
           <Text style={styles.repostBannerText}>
@@ -158,7 +158,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
               : `${repostContext.repostedBy.displayName} reposted`}
           </Text>
         </View>
-      )}
+      ) : null}
       <View style={styles.userPostInfo}>
         <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
           <FadeInImage source={{ uri: getPosterUrl(latestPost.show.poster, latestPost.show.title) }} style={styles.showPoster} contentFit="cover" />
@@ -197,9 +197,9 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
                   />
                 ))}
               </View>
-              {latestPost.rating && (
+              {latestPost.rating ? (
                 <StarRatings rating={latestPost.rating} size={14} />
-              )}
+              ) : null}
             </View>
             <Pressable onPress={handleUserPress}>
               <FadeInImage source={{ uri: latestPost.user.avatar }} style={styles.userProfilePic} contentFit="cover" />
@@ -208,13 +208,13 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
         </View>
       </View>
 
-      {(latestPost.title || latestPost.body) && <View style={styles.divider} />}
+      {(latestPost.title || latestPost.body) ? <View style={styles.divider} /> : null}
 
-      {(latestPost.title || latestPost.body) && (
+      {(latestPost.title || latestPost.body) ? (
         <View style={styles.postInfo}>
-          {latestPost.title && (
+          {latestPost.title ? (
             <Text style={styles.postTitle}>{latestPost.title}</Text>
-          )}
+          ) : null}
           {shouldShowSpoilerAlert ? (
             <Pressable style={styles.spoilerAlertButton} onPress={handleSpoilerReveal}>
               <AlertTriangle size={14} color={tokens.colors.tabStroke} />
@@ -222,14 +222,14 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
               <Text style={styles.spoilerAlertSubtext}>Click to view</Text>
             </Pressable>
           ) : (
-            latestPost.body && (
+            latestPost.body ? (
               <Text style={styles.postBody}>{latestPost.body}</Text>
-            )
+            ) : null
           )}
         </View>
-      )}
+      ) : null}
 
-      {latestPost.tags.length > 0 && (
+      {latestPost.tags.length > 0 ? (
         <View style={styles.postTagsContainer}>
           {latestPost.tags.map((tag, index) => (
             <PostTags
@@ -240,7 +240,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
             />
           ))}
         </View>
-      )}
+      ) : null}
 
       <View style={styles.engagementRow}>
         <View style={styles.engagementIconsAndCount}>
