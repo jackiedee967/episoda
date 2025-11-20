@@ -104,7 +104,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
         displayName: profile.display_name || profile.username || 'User',
         avatar: avatarUrl,
         bio: profile.bio || '',
-        socialLinks: profile.social_links || {},
+        socialLinks: [],
         following: [],
         followers: [],
       });
@@ -154,7 +154,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
         displayName: 'Unknown User',
         avatar: '',
         bio: '',
-        socialLinks: {},
+        socialLinks: [],
         following: [],
         followers: [],
       };

@@ -247,7 +247,7 @@ export type Database = {
         }
         Relationships: []
       }
-      post_likes: {
+      likes: {
         Row: {
           id: string
           post_id: string
@@ -268,14 +268,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "post_likes_post_id_fkey"
+            foreignKeyName: "likes_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
             referencedColumns: ["id"]
           }
         ]
       }
-      post_reposts: {
+      reposts: {
         Row: {
           id: string
           post_id: string
@@ -296,12 +296,105 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "post_reposts_post_id_fkey"
+            foreignKeyName: "reposts_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
             referencedColumns: ["id"]
           }
         ]
+      }
+      comments: {
+        Row: {
+          id: string
+          user_id: string | null
+          post_id: string | null
+          content: string
+          created_at: string
+          parent_comment_id: string | null
+          is_deleted: boolean
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          post_id?: string | null
+          content: string
+          created_at?: string
+          parent_comment_id?: string | null
+          is_deleted?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          post_id?: string | null
+          content?: string
+          created_at?: string
+          parent_comment_id?: string | null
+          is_deleted?: boolean
+        }
+        Relationships: []
+      }
+      comment_likes: {
+        Row: {
+          id: string
+          user_id: string
+          comment_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          comment_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          comment_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      post_episodes: {
+        Row: {
+          id: string
+          post_id: string
+          episode_id: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          episode_id: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          episode_id?: string
+        }
+        Relationships: []
+      }
+      social_links: {
+        Row: {
+          id: string
+          user_id: string | null
+          platform: string
+          url: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          platform: string
+          url: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          platform?: string
+          url?: string
+          created_at?: string
+        }
+        Relationships: []
       }
       watch_history: {
         Row: {
@@ -325,51 +418,64 @@ export type Database = {
           episode_id?: string
           watched_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "watch_history_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "watch_history_show_id_fkey"
+            columns: ["show_id"]
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watch_history_episode_id_fkey"
+            columns: ["episode_id"]
+            referencedRelation: "episodes"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {
-          id: string
           user_id: string
           username: string
           display_name: string | null
           avatar_url: string | null
           bio: string | null
-          social_links: Json | null
-          episodes_watched: number
-          total_likes_received: number
-          follower_count: number
-          following_count: number
+          birthday: string | null
+          onboarding_completed: boolean
+          avatar_color_scheme: number | null
+          avatar_icon: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
-          id?: string
           user_id: string
           username: string
           display_name?: string | null
           avatar_url?: string | null
           bio?: string | null
-          social_links?: Json | null
-          episodes_watched?: number
-          total_likes_received?: number
-          follower_count?: number
-          following_count?: number
+          birthday?: string | null
+          onboarding_completed?: boolean
+          avatar_color_scheme?: number | null
+          avatar_icon?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
-          id?: string
           user_id?: string
           username?: string
           display_name?: string | null
           avatar_url?: string | null
           bio?: string | null
-          social_links?: Json | null
-          episodes_watched?: number
-          total_likes_received?: number
-          follower_count?: number
-          following_count?: number
+          birthday?: string | null
+          onboarding_completed?: boolean
+          avatar_color_scheme?: number | null
+          avatar_icon?: string | null
           created_at?: string
           updated_at?: string
         }

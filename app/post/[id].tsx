@@ -157,7 +157,7 @@ export default function PostDetail() {
           displayName: 'User',
           avatar: '',
           bio: '',
-          socialLinks: {},
+          socialLinks: [],
           following: [],
           followers: [],
         },
