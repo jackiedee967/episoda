@@ -35,6 +35,33 @@ import { rankCandidates } from '@/services/recommendationScoring';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
+// Genre to emoji mapping
+const getGenreEmoji = (genre: string): string => {
+  const genreLower = genre.toLowerCase();
+  const emojiMap: { [key: string]: string } = {
+    'action': '💥',
+    'adventure': '🗺️',
+    'animation': '🎨',
+    'anime': '🎌',
+    'comedy': '😂',
+    'crime': '🔫',
+    'documentary': '🎥',
+    'drama': '🎭',
+    'family': '👨‍👩‍👧‍👦',
+    'fantasy': '🧙',
+    'history': '📜',
+    'horror': '👻',
+    'music': '🎵',
+    'mystery': '🔍',
+    'romance': '💕',
+    'science-fiction': '🚀',
+    'thriller': '😱',
+    'war': '⚔️',
+    'western': '🤠',
+  };
+  return emojiMap[genreLower] || '📺';
+};
+
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -1428,7 +1455,7 @@ export default function SearchScreen() {
                       }}
                     >
                       <Text style={styles.genreButtonText}>
-                        {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                        {getGenreEmoji(genre)} {genre.charAt(0).toUpperCase() + genre.slice(1)}
                       </Text>
                     </Pressable>
                   )}
@@ -1453,7 +1480,7 @@ export default function SearchScreen() {
                       }}
                     >
                       <Text style={styles.genreButtonText}>
-                        {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                        {getGenreEmoji(genre)} {genre.charAt(0).toUpperCase() + genre.slice(1)}
                       </Text>
                     </Pressable>
                   )}
