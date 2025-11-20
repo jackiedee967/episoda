@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, Linking } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, Linking, RefreshControl } from 'react-native';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
@@ -64,6 +64,7 @@ export default function ProfileScreen() {
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist ? isShowInPlaylist(pl.id, showId) : false);
@@ -161,6 +162,49 @@ export default function ProfileScreen() {
       setTopFollowing([]);
     }
   };
+
+  const handleRefresh = useCallback(async () => {
+    if (!profileUser) return;
+    
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadProfileData(),
+        loadStats(),
+        loadFollowData(),
+        loadPlaylists()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [profileUser]);
+
+  // Silent auto-refresh when page comes into focus (no spinner)
+  useFocusEffect(
+    useCallback(() => {
+      const silentRefresh = async () => {
+        if (!profileUser) return;
+        
+        try {
+          await Promise.all([
+            loadProfileData(),
+            loadStats(),
+            loadFollowData(),
+            loadPlaylists()
+          ]);
+        } catch (error) {
+          console.error('Error auto-refreshing profile:', error);
+        }
+      };
+      
+      silentRefresh();
+    }, [profileUser])
+  );
 
   const allUserActivity = useMemo(() => {
     if (!profileUser) return [];
@@ -641,7 +685,18 @@ export default function ProfileScreen() {
             style={styles.inviteButtonIcon}
           />
         </Pressable>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.almostWhite}
+              colors={[colors.almostWhite]}
+            />
+          }
+        >
           {renderProfileInfo()}
           {renderActionButtons()}
           {renderStatsGrid()}

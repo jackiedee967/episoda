@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,9 @@ import {
   Platform,
   Pressable,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -49,6 +50,7 @@ export default function EpisodeHub() {
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [show, setShow] = useState<Show | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
@@ -156,6 +158,166 @@ export default function EpisodeHub() {
 
     loadEpisodeData();
   }, [id]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!id) return;
+    
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    setRefreshing(true);
+    try {
+      // Fetch episode
+      const { data: episodeData, error: episodeError } = await supabase
+        .from('episodes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (episodeError || !episodeData) {
+        console.error('Error loading episode:', episodeError);
+        return;
+      }
+
+      // Fetch show data
+      const { data: showData, error: showError } = await supabase
+        .from('shows')
+        .select('*')
+        .eq('id', episodeData.show_id)
+        .single();
+
+      if (showError || !showData) {
+        console.error('Error loading show:', showError);
+        return;
+      }
+
+      // If thumbnail is missing and we have TVMaze ID, try to fetch it
+      let thumbnailUrl = episodeData.thumbnail_url;
+      if (!thumbnailUrl && showData.tvmaze_id) {
+        try {
+          const tvmazeEpisode = await getTVMazeEpisode(
+            showData.tvmaze_id, 
+            episodeData.season_number, 
+            episodeData.episode_number
+          );
+          thumbnailUrl = tvmazeEpisode?.image?.original || null;
+          
+          if (thumbnailUrl) {
+            await supabase
+              .from('episodes')
+              .update({ thumbnail_url: thumbnailUrl })
+              .eq('id', episodeData.id);
+          }
+        } catch (err) {
+          console.error('Failed to fetch thumbnail from TVMaze:', err);
+        }
+      }
+
+      // Transform episode data
+      const episodeObj: Episode = {
+        id: episodeData.id,
+        showId: episodeData.show_id,
+        seasonNumber: episodeData.season_number,
+        episodeNumber: episodeData.episode_number,
+        title: episodeData.title,
+        description: episodeData.description || '',
+        rating: episodeData.rating || 0,
+        postCount: 0,
+        thumbnail: thumbnailUrl || undefined,
+      };
+
+      setEpisode(episodeObj);
+
+      const showObj: Show = {
+        id: showData.id,
+        title: showData.title,
+        year: showData.year,
+        poster: showData.poster_url || '',
+        totalSeasons: showData.total_seasons || 0,
+        genre: showData.genre || '',
+        rating: showData.rating || 0,
+        traktId: showData.trakt_id,
+        colorScheme: showData.color_scheme,
+      };
+      setShow(showObj);
+    } catch (error) {
+      console.error('Error refreshing episode:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [id]);
+
+  // Silent auto-refresh when page comes into focus (no spinner)
+  useFocusEffect(
+    useCallback(() => {
+      const silentRefresh = async () => {
+        if (!id) return;
+        
+        try {
+          const { data: episodeData, error: episodeError } = await supabase
+            .from('episodes')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (episodeError || !episodeData) return;
+
+          const { data: showData, error: showError } = await supabase
+            .from('shows')
+            .select('*')
+            .eq('id', episodeData.show_id)
+            .single();
+
+          if (showError || !showData) return;
+
+          let thumbnailUrl = episodeData.thumbnail_url;
+          if (!thumbnailUrl && showData.tvmaze_id) {
+            try {
+              const tvmazeEpisode = await getTVMazeEpisode(
+                showData.tvmaze_id, 
+                episodeData.season_number, 
+                episodeData.episode_number
+              );
+              thumbnailUrl = tvmazeEpisode?.image?.original || null;
+            } catch (err) {
+              console.error('Failed to fetch thumbnail:', err);
+            }
+          }
+
+          const episodeObj: Episode = {
+            id: episodeData.id,
+            showId: episodeData.show_id,
+            seasonNumber: episodeData.season_number,
+            episodeNumber: episodeData.episode_number,
+            title: episodeData.title,
+            description: episodeData.description || '',
+            rating: episodeData.rating || 0,
+            postCount: 0,
+            thumbnail: thumbnailUrl || undefined,
+          };
+
+          setEpisode(episodeObj);
+
+          const showObj: Show = {
+            id: showData.id,
+            title: showData.title,
+            year: showData.year,
+            poster: showData.poster_url || '',
+            totalSeasons: showData.total_seasons || 0,
+            genre: showData.genre || '',
+            rating: showData.rating || 0,
+            traktId: showData.trakt_id,
+            colorScheme: showData.color_scheme,
+          };
+          setShow(showObj);
+        } catch (error) {
+          console.error('Error auto-refreshing episode:', error);
+        }
+      };
+      
+      silentRefresh();
+    }, [id])
+  );
   
   // Get all posts for this episode (unfiltered for rating calculation)
   const allEpisodePosts = useMemo(() => {
@@ -242,7 +404,18 @@ export default function EpisodeHub() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.almostWhite}
+              colors={[tokens.colors.almostWhite]}
+            />
+          }
+        >
           {/* Header with Back and Search */}
           <View style={styles.topBar}>
             <Pressable style={styles.backButton} onPress={handleBack}>

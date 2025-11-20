@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions, RefreshControl } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
@@ -6,7 +6,7 @@ import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
 import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
@@ -44,6 +44,7 @@ export default function HomeScreen() {
   const [communityPosts, setCommunityPosts] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -359,6 +360,62 @@ export default function HomeScreen() {
       setIsLoadingMore(false);
     }
   }, [isLoadingMore, hasMorePosts, currentUser?.id, communityPosts, getHomeFeed]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!currentUser?.id || isLoadingFeed) return;
+    
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    setRefreshing(true);
+    try {
+      // Reload posts from DataContext (this refreshes activity feed data)
+      const homeFeed = getHomeFeed();
+      const activityPostIds = homeFeed.map(item => item.post.id);
+      
+      // Reload community posts from scratch
+      const rawCommunityPosts = await getCommunityPosts({
+        userId: currentUser.id,
+        excludedPostIds: activityPostIds,
+        limit: 10,
+      });
+      
+      setCommunityPosts(rawCommunityPosts);
+      setHasMorePosts(rawCommunityPosts.length === 10);
+    } catch (error) {
+      console.error('Error refreshing feed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [currentUser?.id, isLoadingFeed, getHomeFeed]);
+
+  // Silent auto-refresh when page comes into focus (no spinner)
+  useFocusEffect(
+    useCallback(() => {
+      const silentRefresh = async () => {
+        if (!currentUser?.id || isLoadingFeed) return;
+        
+        try {
+          const homeFeed = getHomeFeed();
+          const activityPostIds = homeFeed.map(item => item.post.id);
+          
+          // Reload community posts from scratch (no spinner, no haptic)
+          const rawCommunityPosts = await getCommunityPosts({
+            userId: currentUser.id,
+            excludedPostIds: activityPostIds,
+            limit: 10,
+          });
+          
+          setCommunityPosts(rawCommunityPosts);
+          setHasMorePosts(rawCommunityPosts.length === 10);
+        } catch (error) {
+          console.error('Error auto-refreshing feed:', error);
+        }
+      };
+      
+      silentRefresh();
+    }, [currentUser?.id, isLoadingFeed, getHomeFeed])
+  );
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
@@ -783,6 +840,14 @@ export default function HomeScreen() {
         maxToRenderPerBatch={10}
         windowSize={10}
         initialNumToRender={10}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={tokens.colors.almostWhite}
+            colors={[tokens.colors.almostWhite]}
+          />
+        }
       />
 
       <PostModal

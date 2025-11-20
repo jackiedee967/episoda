@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,10 @@ import {
   Pressable,
   ActivityIndicator,
   Platform,
+  RefreshControl,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { ChevronLeft } from 'lucide-react-native';
@@ -96,6 +97,7 @@ export default function ShowHub() {
   const [showError, setShowError] = useState<string | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [hasSetInitialTab, setHasSetInitialTab] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   
@@ -522,6 +524,48 @@ export default function ShowHub() {
     setIsInPlaylist(true);
   };
 
+  const handleRefresh = useCallback(async () => {
+    if (!id || typeof id !== 'string') return;
+    
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    setRefreshing(true);
+    try {
+      // Reload show data
+      const dbShow = await getShowById(id);
+      if (dbShow) {
+        setShow(mapDatabaseShowToShow(dbShow));
+      }
+      
+      // Episodes will be reloaded by the useEffect watching show.id
+    } catch (error) {
+      console.error('Error refreshing show:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [id]);
+
+  // Silent auto-refresh when page comes into focus (no spinner)
+  useFocusEffect(
+    useCallback(() => {
+      const silentRefresh = async () => {
+        if (!id || typeof id !== 'string') return;
+        
+        try {
+          const dbShow = await getShowById(id);
+          if (dbShow) {
+            setShow(mapDatabaseShowToShow(dbShow));
+          }
+        } catch (error) {
+          console.error('Error auto-refreshing show:', error);
+        }
+      };
+      
+      silentRefresh();
+    }, [id])
+  );
+
   const isShowSaved = useMemo(() => {
     if (!show) return false;
     return playlists.some(pl => isShowInPlaylist(pl.id, show.id));
@@ -845,7 +889,19 @@ export default function ShowHub() {
     <>
       <Stack.Screen options={{ title: show.title, headerShown: false }} />
       <View style={[commonStyles.container, styles.container]}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContentContainer}>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContentContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.almostWhite}
+              colors={[tokens.colors.almostWhite]}
+            />
+          }
+        >
           {renderBanner()}
           <View style={styles.contentContainer}>
             {renderShowInfo()}

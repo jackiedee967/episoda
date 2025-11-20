@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, ImageBackground, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, ImageBackground, ActivityIndicator, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import UserCard from '@/components/UserCard';
@@ -73,6 +73,7 @@ export default function SearchScreen() {
   const [genreSections, setGenreSections] = useState<Array<{ genre: string; shows: any[] }>>([]);
   const [userGenres, setUserGenres] = useState<string[]>([]);
   const [isLoadingCurated, setIsLoadingCurated] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
@@ -314,6 +315,174 @@ export default function SearchScreen() {
     
     loadCuratedContent();
   }, [searchQuery, currentUser, posts]);
+
+  const handleRefresh = useCallback(async () => {
+    // Don't refresh while searching or without a user
+    if (searchQuery.trim().length > 0 || !currentUser?.id || isLoadingCurated) return;
+    
+    // Trigger haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    setRefreshing(true);
+    try {
+      // Reload curated content
+      const followingIds = currentUser.following || [];
+      const friendsPosts = posts.filter(post => 
+        followingIds.includes(post.user.id) && post.show
+      );
+      
+      const showFriendCounts = new Map();
+      friendsPosts.forEach(post => {
+        const traktId = post.show.traktId;
+        if (!traktId) return;
+        
+        const existing = showFriendCounts.get(traktId);
+        if (existing) {
+          existing.friendIds.add(post.user.id);
+          existing.friendCount = existing.friendIds.size;
+        } else {
+          showFriendCounts.set(traktId, {
+            show: post.show,
+            friendCount: 1,
+            friendIds: new Set([post.user.id])
+          });
+        }
+      });
+      
+      const friendShows = Array.from(showFriendCounts.values())
+        .sort((a, b) => b.friendCount - a.friendCount)
+        .map(item => ({
+          ...item.show,
+          id: item.show.id || `trakt-${item.show.traktId}`
+        }))
+        .slice(0, 12);
+      
+      setFriendActivityShows(friendShows);
+      
+      // Reload other sections (trending, for you, etc.)
+      const interests = await getUserInterests(currentUser.id);
+      setUserGenres(interests.genres);
+      
+      let forYouList = [];
+      if (interests.genres.length > 0) {
+        const forYouPromises = interests.genres.slice(0, 3).map(genre => 
+          getPopularShowsByGenre(genre, 5)
+        );
+        const forYouResults = await Promise.all(forYouPromises);
+        forYouList = forYouResults.flat().slice(0, 12);
+      } else {
+        forYouList = await getTrendingShows(12);
+      }
+      
+      const enrichedForYou = await Promise.all(
+        forYouList.map(async (traktShow) => {
+          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+          const show = mapTraktShowToShow(traktShow, {
+            posterUrl: enrichedData.posterUrl,
+            totalSeasons: enrichedData.totalSeasons,
+          });
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            traktShow
+          };
+        })
+      );
+      setForYouShows(enrichedForYou);
+      
+      const trending = await getTrendingShows(12);
+      const enrichedTrending = await Promise.all(
+        trending.map(async (traktShow) => {
+          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+          const show = mapTraktShowToShow(traktShow, {
+            posterUrl: enrichedData.posterUrl,
+            totalSeasons: enrichedData.totalSeasons,
+          });
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            traktShow
+          };
+        })
+      );
+      setTrendingShows(enrichedTrending);
+      
+      const recent = await getRecentlyReleasedShows(12);
+      const enrichedRecent = await Promise.all(
+        recent.map(async (traktShow) => {
+          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+          const show = mapTraktShowToShow(traktShow, {
+            posterUrl: enrichedData.posterUrl,
+            totalSeasons: enrichedData.totalSeasons,
+          });
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            traktShow
+          };
+        })
+      );
+      setRecentlyReleasedShows(enrichedRecent);
+      
+    } catch (error) {
+      console.error('Error refreshing explore page:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [searchQuery, currentUser, posts]);
+
+  // Silent auto-refresh when page comes into focus (no spinner)
+  useFocusEffect(
+    useCallback(() => {
+      const silentRefresh = async () => {
+        // Only refresh curated content when not searching
+        if (searchQuery.trim().length > 0 || !currentUser?.id || isLoadingCurated) return;
+        
+        try {
+          // Silent reload without haptic or spinner
+          const followingIds = currentUser.following || [];
+          const friendsPosts = posts.filter(post => 
+            followingIds.includes(post.user.id) && post.show
+          );
+          
+          const showFriendCounts = new Map();
+          friendsPosts.forEach(post => {
+            const traktId = post.show.traktId;
+            if (!traktId) return;
+            
+            const existing = showFriendCounts.get(traktId);
+            if (existing) {
+              existing.friendIds.add(post.user.id);
+              existing.friendCount = existing.friendIds.size;
+            } else {
+              showFriendCounts.set(traktId, {
+                show: post.show,
+                friendCount: 1,
+                friendIds: new Set([post.user.id])
+              });
+            }
+          });
+          
+          const friendShows = Array.from(showFriendCounts.values())
+            .sort((a, b) => b.friendCount - a.friendCount)
+            .map(item => ({
+              ...item.show,
+              id: item.show.id || `trakt-${item.show.traktId}`
+            }))
+            .slice(0, 12);
+          
+          setFriendActivityShows(friendShows);
+        } catch (error) {
+          console.error('Error auto-refreshing explore page:', error);
+        }
+      };
+      
+      silentRefresh();
+    }, [searchQuery, currentUser, posts])
+  );
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -1150,6 +1319,14 @@ export default function SearchScreen() {
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.curatedContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={tokens.colors.almostWhite}
+                colors={[tokens.colors.almostWhite]}
+              />
+            }
           >
             {friendActivityShows.length > 0 && (
               <ExploreShowSection
