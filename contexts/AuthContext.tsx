@@ -11,6 +11,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null | undefined;
   isLoading: boolean;
+  authReady: boolean; // TRUE after initial session check completes
   onboardingStatus: OnboardingStatus;
   profileRefreshKey: number;
   signInWithPhone: (phoneNumber: string) => Promise<{ error: any }>;
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false); // Prevents race condition during initialization
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>('not_started');
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Initial session:', session?.user?.id || 'null');
       setSession(session);
       setUser(session?.user ?? null);
+      setAuthReady(true); // Mark auth as ready after first session check
       
       if (session?.user) {
         setIsLoading(true);
@@ -504,6 +507,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user,
     isLoading,
+    authReady,
     onboardingStatus,
     profileRefreshKey,
     signInWithPhone,
