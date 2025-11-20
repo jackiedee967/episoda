@@ -83,7 +83,7 @@ export default function ProfileScreen() {
     // Load data when profile user is set
     loadStats();
     loadFollowData();
-  }, [profileUser]);
+  }, [profileUser?.id]);
 
   const loadProfileData = async () => {
     try {
