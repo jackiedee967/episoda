@@ -490,7 +490,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.currentlyWatchingSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Friend Activity</Text>
+          <Text style={styles.sectionTitle}>Currently Watching</Text>
         </View>
         <ScrollView
           horizontal
@@ -768,7 +768,7 @@ export default function HomeScreen() {
       {renderYouMayKnow()}
       <View style={styles.friendActivitySection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Activity</Text>
+          <Text style={styles.sectionTitle}>Friend Activity</Text>
         </View>
       </View>
     </>
