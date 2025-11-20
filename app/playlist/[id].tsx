@@ -236,7 +236,7 @@ export default function PlaylistDetailScreen() {
             </Text>
 
             {/* Action Buttons (only for own playlists) */}
-            {isOwnPlaylist && (
+            {isOwnPlaylist ? (
               <View style={styles.actionButtons}>
                 <Pressable
                   style={styles.actionButton}
@@ -256,7 +256,7 @@ export default function PlaylistDetailScreen() {
                   </Text>
                 </Pressable>
               </View>
-            )}
+            ) : null}
           </View>
 
           {/* Shows Grid */}
@@ -274,7 +274,7 @@ export default function PlaylistDetailScreen() {
                     <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
                     
                     {/* Remove button (only for own playlists) */}
-                    {isOwnPlaylist && (
+                    {isOwnPlaylist ? (
                       <Pressable
                         style={styles.removeButton}
                         onPress={(e) => {
@@ -284,7 +284,7 @@ export default function PlaylistDetailScreen() {
                       >
                         <IconSymbol name="xmark.circle.fill" size={24} color="#EF4444" />
                       </Pressable>
-                    )}
+                    ) : null}
                   </Pressable>
                   <Text style={styles.showTitle} numberOfLines={2}>
                     {show.title}

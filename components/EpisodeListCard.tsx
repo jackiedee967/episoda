@@ -73,13 +73,13 @@ export default function EpisodeListCard({
       onPress={handleCardPress}
       style={[styles.episodeCard, { borderColor: cardBorderColor, backgroundColor: cardBackgroundColor }]}
     >
-      {thumbnail && (
+      {thumbnail ? (
         <FadeInImage 
           source={{ uri: thumbnail }} 
           style={styles.thumbnail}
           contentFit="cover"
         />
-      )}
+      ) : null}
       
       <View style={styles.episodeInfo}>
         <View style={styles.titleRow}>
@@ -89,14 +89,14 @@ export default function EpisodeListCard({
           <Text style={[styles.episodeTitle, { color: titleColor }]} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
         </View>
         
-        {description && (
+        {description ? (
           <Text style={[styles.episodeDescription, { color: descriptionColor }]} numberOfLines={2}>
             {description}
           </Text>
-        )}
+        ) : null}
         
         <View style={styles.ratingAndPostCount}>
-          {rating !== undefined && (
+          {rating !== undefined ? (
             <View style={styles.starRating}>
               <Star 
                 size={10} 
@@ -105,31 +105,31 @@ export default function EpisodeListCard({
               />
               <Text style={styles.ratingText}>{convertToFiveStarRating(rating).toFixed(1)}</Text>
             </View>
-          )}
-          {postCount !== undefined && (
+          ) : null}
+          {postCount !== undefined ? (
             <Text style={styles.postCountText}>{postCount} posts</Text>
-          )}
+          ) : null}
         </View>
       </View>
 
-      {onToggleSelect && (
+      {onToggleSelect ? (
         <Pressable 
           onPress={handleTogglePress}
           style={[
             styles.checkmarkButton,
             { borderColor: checkmarkBorderColor },
-            showCheckmark && { backgroundColor: checkmarkBackgroundColor }
+            showCheckmark ? { backgroundColor: checkmarkBackgroundColor } : null
           ]}
         >
-          {showCheckmark && (
+          {showCheckmark ? (
             <Check 
               size={10} 
               color={checkmarkColor}
               strokeWidth={3}
             />
-          )}
+          ) : null}
         </Pressable>
-      )}
+      ) : null}
     </Pressable>
   );
 }

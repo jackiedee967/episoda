@@ -65,7 +65,7 @@ export default function EpisodeCard({
               {title}
             </Text>
           </View>
-          {onBookmark && (
+          {onBookmark ? (
             <Pressable onPress={handleBookmark} style={styles.bookmarkButton}>
               <Bookmark
                 size={18}
@@ -73,7 +73,7 @@ export default function EpisodeCard({
                 fill={isBookmarked ? colors.greenHighlight : 'transparent'}
               />
             </Pressable>
-          )}
+          ) : null}
         </View>
       </Pressable>
     );
@@ -88,15 +88,15 @@ export default function EpisodeCard({
           pressed && styles.pressed,
         ]}
       >
-        {image && (
+        {image ? (
           <Image
             source={typeof image === 'string' ? { uri: image } : image}
             style={styles.compactImage}
             resizeMode="cover"
           />
-        )}
+        ) : null}
         <View style={styles.compactOverlay}>
-          {onBookmark && (
+          {onBookmark ? (
             <Pressable onPress={handleBookmark} style={styles.bookmarkButtonCard}>
               <Bookmark
                 size={16}
@@ -104,7 +104,7 @@ export default function EpisodeCard({
                 fill={isBookmarked ? colors.greenHighlight : 'transparent'}
               />
             </Pressable>
-          )}
+          ) : null}
         </View>
         <View style={styles.compactInfo}>
           <Text style={styles.episodeNumber}>{episodeNumber}</Text>
@@ -124,15 +124,15 @@ export default function EpisodeCard({
         pressed && styles.pressed,
       ]}
     >
-      {image && (
+      {image ? (
         <Image
           source={typeof image === 'string' ? { uri: image } : image}
           style={styles.image}
           resizeMode="cover"
         />
-      )}
+      ) : null}
       <View style={styles.overlay}>
-        {onBookmark && (
+        {onBookmark ? (
           <Pressable onPress={handleBookmark} style={styles.bookmarkButtonCard}>
             <Bookmark
               size={20}
@@ -140,7 +140,7 @@ export default function EpisodeCard({
               fill={isBookmarked ? colors.greenHighlight : 'transparent'}
             />
           </Pressable>
-        )}
+        ) : null}
       </View>
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>
@@ -149,7 +149,7 @@ export default function EpisodeCard({
         <Text style={styles.showTitle} numberOfLines={1}>
           {showTitle}
         </Text>
-        {friends && friends.length > 0 && (
+        {friends && friends.length > 0 ? (
           <View style={styles.friendsRow}>
             <View style={styles.friendAvatars}>
               {friends.slice(0, 3).map((friend, index) => (
@@ -162,7 +162,7 @@ export default function EpisodeCard({
               {friends.join(' and ')} wat...
             </Text>
           </View>
-        )}
+        ) : null}
       </View>
     </Pressable>
   );

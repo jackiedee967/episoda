@@ -459,13 +459,13 @@ export default function EpisodeHub() {
             <View style={styles.episodeCard}>
               <View style={styles.thumbnailWrapper}>
                 <View style={styles.thumbnailPlaceholder}>
-                  {episode.thumbnail && (
+                  {episode.thumbnail ? (
                     <FadeInImage
                       source={{ uri: episode.thumbnail }}
                       style={styles.thumbnail}
                       contentFit="cover"
                     />
-                  )}
+                  ) : null}
                 </View>
                 <Pressable 
                   style={({ pressed }) => [
@@ -555,14 +555,14 @@ export default function EpisodeHub() {
         preselectedEpisode={episode}
       />
 
-      {show && (
+      {show ? (
         <PlaylistModal
           visible={playlistModalVisible}
           onClose={() => setPlaylistModalVisible(false)}
           show={show}
           onAddToPlaylist={() => {}}
         />
-      )}
+      ) : null}
       
       <FloatingTabBar 
         tabs={[
