@@ -17,7 +17,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Navigation**: Expo Router (file-based routing)
 - **State Management**: React Context API
 - **Styling**: StyleSheet API with a centralized design token system (`styles/tokens.ts`)
-- **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow. Fixed critical session initialization race condition by initializing user state to `undefined` instead of `null`, preventing premature data clearing during app startup.
+- **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow. **CRITICAL FIX (Nov 2025)**: Resolved production "Unknown User" bug caused by race condition during session initialization. AuthContext now uses `authReady` flag to signal when bootstrap completes, preventing DataContext from clearing caches prematurely. User state initialized to `undefined` (not `null`) during startup, and DataContext only clears data when `authReady=true AND user=null`.
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
 
 ### Feature Specifications
