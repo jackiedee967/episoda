@@ -70,15 +70,20 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
   }, [playlistId, playlists, visible]);
 
   const loadPlaylistData = async () => {
+    console.log('🔍 Loading playlist data for:', playlistId);
     const foundPlaylist = playlists.find(p => p.id === playlistId);
+    console.log('🔍 Found playlist:', foundPlaylist);
+    
     if (foundPlaylist) {
       setPlaylist(foundPlaylist);
       
       setPlaylistShows([]);
       
+      console.log('🔍 Playlist shows:', foundPlaylist.shows);
       if (foundPlaylist.shows && foundPlaylist.shows.length > 0) {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const validShowIds = foundPlaylist.shows.filter(showId => uuidRegex.test(showId));
+        console.log('🔍 Valid show IDs:', validShowIds);
         
         if (validShowIds.length > 0) {
           const { data: playlistShowsData, error: playlistShowsError } = await supabase
@@ -87,6 +92,8 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
             .eq('playlist_id', playlistId)
             .in('show_id', validShowIds)
             .order('added_at', { ascending: false });
+          
+          console.log('🔍 Playlist shows data:', playlistShowsData);
           
           if (playlistShowsError) {
             console.error('❌ Error loading playlist_shows:', playlistShowsError);
@@ -98,6 +105,8 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
             .from('shows')
             .select('*')
             .in('id', validShowIds);
+          
+          console.log('🔍 Shows from DB:', shows);
           
           if (error) {
             console.error('❌ Error loading playlist shows:', error);
@@ -125,13 +134,18 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               return bAddedAt.localeCompare(aAddedAt);
             });
             
+            console.log('✅ Setting playlist shows:', sortedShows);
             setPlaylistShows(sortedShows);
           }
         } else {
+          console.log('⚠️ No valid show IDs');
           setPlaylistShows([]);
         }
+      } else {
+        console.log('⚠️ No shows in playlist');
       }
     } else {
+      console.log('❌ Playlist not found');
       setPlaylist(null);
       setPlaylistShows([]);
     }
@@ -238,32 +252,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                 {playlistShows.length} {playlistShows.length === 1 ? 'show' : 'shows'}
               </Text>
             </View>
-            <Pressable onPress={onClose} style={styles.closeButton}>
-              <IconSymbol name="xmark" size={24} color={tokens.colors.black} />
-            </Pressable>
           </View>
-
-          {isOwnPlaylist && (
-            <View style={styles.actionButtons}>
-              <Pressable
-                style={styles.actionButton}
-                onPress={handleSharePlaylist}
-              >
-                <IconSymbol name="square.and.arrow.up" size={18} color={tokens.colors.black} />
-                <Text style={styles.actionButtonText}>Share</Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={handleDeletePlaylist}
-              >
-                <Trash2 size={18} color="#EF4444" />
-                <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-                  Delete
-                </Text>
-              </Pressable>
-            </View>
-          )}
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             {playlistShows.length > 0 ? (
@@ -299,7 +288,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <IconSymbol name="tv" size={48} color={tokens.colors.gray} />
+                <IconSymbol name="tv" size={48} color={tokens.colors.grey1} />
                 <Text style={styles.emptyStateText}>
                   {isOwnPlaylist
                     ? 'Add shows to this playlist to see them here'
@@ -341,8 +330,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.lightGray,
   },
   headerContent: {
     flex: 1,
@@ -355,7 +342,7 @@ const styles = StyleSheet.create({
   },
   showCount: {
     ...tokens.typography.smallSubtitle,
-    color: tokens.colors.gray,
+    color: tokens.colors.grey1,
   },
   closeButton: {
     padding: 4,
@@ -376,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.almostWhite,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: tokens.colors.lightGray,
+    borderColor: tokens.colors.grey2,
   },
   actionButtonText: {
     ...tokens.typography.smallSubtitle,
@@ -399,7 +386,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   showItem: {
-    width: 'calc(33.33% - 11px)',
+    width: '30%',
   },
   showPosterContainer: {
     position: 'relative',
@@ -430,8 +417,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyStateText: {
-    ...tokens.typography.body,
-    color: tokens.colors.gray,
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
     textAlign: 'center',
     marginTop: 16,
   },
