@@ -208,16 +208,16 @@ export default function AccountSettingsScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>Sign-in Method</Text>
               <Text style={styles.infoValue}>
-                {authMethod === 'apple' && 'Sign in with Apple'}
-                {authMethod === 'sms' && 'SMS Authentication'}
-                {authMethod === 'email' && 'Email Authentication'}
-                {!authMethod && 'Not signed in'}
+                {authMethod === 'apple' ? 'Sign in with Apple' : null}
+                {authMethod === 'sms' ? 'SMS Authentication' : null}
+                {authMethod === 'email' ? 'Email Authentication' : null}
+                {!authMethod ? 'Not signed in' : null}
               </Text>
-              {authMethod === 'apple' && (
+              {authMethod === 'apple' ? (
                 <Text style={styles.infoNote}>
                   Your Apple ID is securely linked to your account and cannot be changed.
                 </Text>
-              )}
+              ) : null}
             </View>
 
             {authMethod === 'sms' && phoneNumber && (
