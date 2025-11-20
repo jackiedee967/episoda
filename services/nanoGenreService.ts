@@ -54,7 +54,7 @@ export async function getUserNanoGenres(
     return [];
   }
 
-  const keywordFrequencyMap = new Map<number, { name: string; count: number }>();
+  const keywordFrequencyMap = new Map<string, { name: string; count: number }>();
 
   // Fetch keywords for each show the user has watched
   for (const show of userShows) {
@@ -74,14 +74,12 @@ export async function getUserNanoGenres(
             return;
           }
 
-          // Use keyword name as ID (we don't have keyword IDs from this endpoint)
-          const keywordId = keywordName.toLowerCase().replace(/\s+/g, '-');
-          
-          const existing = keywordFrequencyMap.get(keywordId as any);
+          // Use lowercase keyword as map key for deduplication
+          const existing = keywordFrequencyMap.get(keywordLower);
           if (existing) {
             existing.count++;
           } else {
-            keywordFrequencyMap.set(keywordId as any, {
+            keywordFrequencyMap.set(keywordLower, {
               name: keywordName,
               count: 1
             });
@@ -95,8 +93,8 @@ export async function getUserNanoGenres(
 
   // Convert to array and sort by frequency
   const rankedKeywords = Array.from(keywordFrequencyMap.entries())
-    .map(([id, data]) => ({
-      id: typeof id === 'string' ? id.charCodeAt(0) : id,
+    .map(([key, data], index) => ({
+      id: index, // Simple numeric ID for rendering
       name: data.name,
       frequency: data.count
     }))

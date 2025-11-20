@@ -32,6 +32,7 @@ import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
 import { getShowRecommendations, getSimilarShows } from '@/services/tmdb';
 import { rankCandidates } from '@/services/recommendationScoring';
+import { getUserNanoGenres, getNanoGenreEmoji, type NanoGenre } from '@/services/nanoGenreService';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
@@ -101,6 +102,7 @@ export default function SearchScreen() {
   const [popularRewatchesShows, setPopularRewatchesShows] = useState<any[]>([]);
   const [allGenres, setAllGenres] = useState<string[]>([]);
   const [userGenres, setUserGenres] = useState<string[]>([]);
+  const [nanoGenres, setNanoGenres] = useState<NanoGenre[]>([]);
   const [isLoadingCurated, setIsLoadingCurated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -402,6 +404,15 @@ export default function SearchScreen() {
           })
         );
         setPopularRewatchesShows(enrichedPlayed);
+        
+        // 7. Nano Genres - Personalized based on user's watch history
+        const userShowsForNanoGenres = recentShows.map(show => ({
+          title: show.title,
+          year: show.year
+        }));
+        
+        const nanoGenresData = await getUserNanoGenres(userShowsForNanoGenres, 20);
+        setNanoGenres(nanoGenresData);
         
       } catch (error) {
         console.error('Error loading curated content:', error);
@@ -1485,6 +1496,62 @@ export default function SearchScreen() {
                     </Pressable>
                   )}
                   keyExtractor={(item) => item}
+                  snapToInterval={140}
+                  decelerationRate="fast"
+                />
+              </View>
+            ) : null}
+
+            {nanoGenres.length > 0 ? (
+              <View style={styles.genresSection}>
+                <Text style={styles.genresTitle}>Nano Genres</Text>
+                <FlatList
+                  data={nanoGenres.slice(0, Math.ceil(nanoGenres.length / 2))}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.genreRow}
+                  renderItem={({ item: nanoGenre }) => (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.genreButton,
+                        pressed && styles.genreButtonPressed
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push(`/search?tab=shows&query=${encodeURIComponent(nanoGenre.name)}`);
+                      }}
+                    >
+                      <Text style={styles.genreButtonText}>
+                        {getNanoGenreEmoji(nanoGenre.name)} {nanoGenre.name}
+                      </Text>
+                    </Pressable>
+                  )}
+                  keyExtractor={(item) => `nano-${item.id}`}
+                  snapToInterval={140}
+                  decelerationRate="fast"
+                />
+                <FlatList
+                  data={nanoGenres.slice(Math.ceil(nanoGenres.length / 2))}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.genreRow}
+                  renderItem={({ item: nanoGenre }) => (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.genreButton,
+                        pressed && styles.genreButtonPressed
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push(`/search?tab=shows&query=${encodeURIComponent(nanoGenre.name)}`);
+                      }}
+                    >
+                      <Text style={styles.genreButtonText}>
+                        {getNanoGenreEmoji(nanoGenre.name)} {nanoGenre.name}
+                      </Text>
+                    </Pressable>
+                  )}
+                  keyExtractor={(item) => `nano-${item.id}`}
                   snapToInterval={140}
                   decelerationRate="fast"
                 />
