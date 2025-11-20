@@ -70,20 +70,15 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
   }, [playlistId, playlists, visible]);
 
   const loadPlaylistData = async () => {
-    console.log('🔍 Loading playlist data for:', playlistId);
     const foundPlaylist = playlists.find(p => p.id === playlistId);
-    console.log('🔍 Found playlist:', foundPlaylist);
     
     if (foundPlaylist) {
       setPlaylist(foundPlaylist);
-      
       setPlaylistShows([]);
       
-      console.log('🔍 Playlist shows:', foundPlaylist.shows);
       if (foundPlaylist.shows && foundPlaylist.shows.length > 0) {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const validShowIds = foundPlaylist.shows.filter(showId => uuidRegex.test(showId));
-        console.log('🔍 Valid show IDs:', validShowIds);
         
         if (validShowIds.length > 0) {
           const { data: playlistShowsData, error: playlistShowsError } = await supabase
@@ -92,8 +87,6 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
             .eq('playlist_id', playlistId)
             .in('show_id', validShowIds)
             .order('added_at', { ascending: false });
-          
-          console.log('🔍 Playlist shows data:', playlistShowsData);
           
           if (playlistShowsError) {
             console.error('❌ Error loading playlist_shows:', playlistShowsError);
@@ -105,8 +98,6 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
             .from('shows')
             .select('*')
             .in('id', validShowIds);
-          
-          console.log('🔍 Shows from DB:', shows);
           
           if (error) {
             console.error('❌ Error loading playlist shows:', error);
@@ -134,18 +125,13 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               return bAddedAt.localeCompare(aAddedAt);
             });
             
-            console.log('✅ Setting playlist shows:', sortedShows);
             setPlaylistShows(sortedShows);
           }
         } else {
-          console.log('⚠️ No valid show IDs');
           setPlaylistShows([]);
         }
-      } else {
-        console.log('⚠️ No shows in playlist');
       }
     } else {
-      console.log('❌ Playlist not found');
       setPlaylist(null);
       setPlaylistShows([]);
     }

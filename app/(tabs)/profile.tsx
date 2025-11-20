@@ -444,7 +444,7 @@ export default function ProfileScreen() {
             <FadeInView delay={100}>
               <View style={styles.statContent}>
                 <View style={styles.avatarRow}>
-                  {topFollowers.slice(0, 3).filter(Boolean).map((follower, index) => (
+                  {topFollowers && topFollowers.length > 0 && topFollowers.slice(0, 3).filter(Boolean).map((follower, index) => (
                     follower.avatar ? (
                       <FadeInImage
                         key={follower.id}
@@ -482,7 +482,7 @@ export default function ProfileScreen() {
             <FadeInView delay={150}>
               <View style={styles.statContent}>
                 <View style={styles.avatarRow}>
-                  {topFollowing.slice(0, 3).filter(Boolean).map((user, index) => (
+                  {topFollowing && topFollowing.length > 0 && topFollowing.slice(0, 3).filter(Boolean).map((user, index) => (
                     user.avatar ? (
                       <FadeInImage
                         key={user.id}
