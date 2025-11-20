@@ -13,11 +13,10 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Heart, MessageCircle, RefreshCw, ChevronLeft, Upload, Send, MoreVertical } from 'lucide-react-native';
+import { Heart, MessageCircle, RefreshCw, ChevronLeft, Send, MoreVertical } from 'lucide-react-native';
 import CommentCard from '@/components/CommentCard';
 import PostTags from '@/components/PostTags';
 import StarRatings from '@/components/StarRatings';
-import * as ImagePicker from 'expo-image-picker';
 import { Comment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
@@ -50,7 +49,6 @@ export default function PostDetail() {
   const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts, isDeletingPost, userProfileCache } = useData();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
-  const [commentImage, setCommentImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string; textPreview: string } | null>(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -236,21 +234,8 @@ export default function PostDetail() {
     }
   };
 
-  const handlePickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setCommentImage(result.assets[0].uri);
-    }
-  };
-
   const handleSubmitComment = async () => {
-    if (!commentText.trim() && !commentImage) return;
+    if (!commentText.trim()) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -263,7 +248,7 @@ export default function PostDetail() {
         parentId: replyingTo.commentId,
         user: currentUser,
         text: commentText,
-        image: commentImage || undefined,
+        image: undefined,
         likes: 0,
         isLiked: false,
         timestamp: new Date(),
@@ -342,7 +327,7 @@ export default function PostDetail() {
         postId: post.id,
         user: currentUser,
         text: commentText,
-        image: commentImage || undefined,
+        image: undefined,
         likes: 0,
         isLiked: false,
         timestamp: new Date(),
@@ -404,7 +389,6 @@ export default function PostDetail() {
     }
 
     setCommentText('');
-    setCommentImage(null);
   };
 
   // Recursive helper to find and update a comment in the tree
@@ -761,17 +745,6 @@ export default function PostDetail() {
               </View>
             ) : null}
             
-            {commentImage ? (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: commentImage }} style={styles.previewImage} />
-                <Pressable
-                  style={styles.removeImageButton}
-                  onPress={() => setCommentImage(null)}
-                >
-                  <Text style={styles.removeImageText}>✕</Text>
-                </Pressable>
-              </View>
-            ) : null}
             <View style={styles.inputRow}>
               <View style={styles.inputBox}>
                 <TextInput
@@ -783,18 +756,10 @@ export default function PostDetail() {
                   multiline
                 />
               </View>
-              <Pressable 
-                onPress={handlePickImage} 
-                style={styles.uploadButton}
-                accessibilityLabel="Upload image"
-                accessibilityRole="button"
-              >
-                <Upload size={20} color={tokens.colors.black} strokeWidth={1.5} />
-              </Pressable>
               <Pressable
                 onPress={handleSubmitComment}
                 style={styles.sendButton}
-                disabled={!commentText.trim() && !commentImage}
+                disabled={!commentText.trim()}
                 accessibilityLabel="Send comment"
                 accessibilityRole="button"
               >
