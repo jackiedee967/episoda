@@ -37,7 +37,7 @@ import { discoverShows, type TMDBDiscoverParams, type TMDBShow } from '@/service
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
 
-// TMDB Genre ID Mapping (Official TMDB TV genre IDs)
+// TMDB Genre ID Mapping (Official TMDB TV genre IDs - verified 2025)
 const TMDB_GENRE_IDS: { [key: string]: number } = {
   'action': 10759,       // Action & Adventure
   'adventure': 10759,    // Action & Adventure
@@ -50,17 +50,21 @@ const TMDB_GENRE_IDS: { [key: string]: number } = {
   'family': 10751,       // Family
   'fantasy': 10765,      // Sci-Fi & Fantasy
   'kids': 10762,         // Kids
-  'music': 10764,        // Reality (closest match)
   'mystery': 9648,       // Mystery
   'news': 10763,         // News
-  'reality': 10762,      // Reality
+  'reality': 10764,      // Reality
   'science-fiction': 10765, // Sci-Fi & Fantasy
   'soap': 10766,         // Soap
   'talk': 10767,         // Talk
   'war': 10768,          // War & Politics
   'western': 37,         // Western
-  // Note: TMDB TV doesn't have separate Horror, Romance, History, or Thriller genres
-  // These will be filtered via keywords only
+  // Note: TMDB TV doesn't have separate Horror, Romance, History, Thriller, or Music genres
+  // These will fall back to Drama/other genres + keyword filtering
+  'music': 18,           // Drama (fallback - use keywords for music shows)
+  'horror': 9648,        // Mystery (fallback - use keywords for horror shows)
+  'thriller': 18,        // Drama (fallback - use keywords for thriller shows)
+  'romance': 18,         // Drama (fallback - use keywords for romance shows)
+  'history': 18,         // Drama (fallback - use keywords for history shows)
 };
 
 // Genre to emoji mapping
