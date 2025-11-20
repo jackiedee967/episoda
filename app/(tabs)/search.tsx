@@ -26,7 +26,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
-import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre } from '@/services/trakt';
+import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
@@ -66,11 +66,11 @@ export default function SearchScreen() {
   }>({ shows: [], posts: [], comments: [], users: [] });
 
   // Curated content state
-  const [friendActivityShows, setFriendActivityShows] = useState<any[]>([]);
   const [forYouShows, setForYouShows] = useState<any[]>([]);
   const [trendingShows, setTrendingShows] = useState<any[]>([]);
-  const [recentlyReleasedShows, setRecentlyReleasedShows] = useState<any[]>([]);
-  const [genreSections, setGenreSections] = useState<Array<{ genre: string; shows: any[] }>>([]);
+  const [becauseYouWatchedSections, setBecauseYouWatchedSections] = useState<Array<{ show: any; relatedShows: any[] }>>([]);
+  const [popularRewatchesShows, setPopularRewatchesShows] = useState<any[]>([]);
+  const [allGenres, setAllGenres] = useState<string[]>([]);
   const [userGenres, setUserGenres] = useState<string[]>([]);
   const [isLoadingCurated, setIsLoadingCurated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -160,7 +160,15 @@ export default function SearchScreen() {
       setIsLoadingCurated(true);
       
       try {
-        // 1. Friend Activity - get shows friends have watched
+        // Get user interests
+        const interests = await getUserInterests(currentUser.id);
+        setUserGenres(interests.genres);
+        
+        // Get all available genres for grid display
+        const genresList = getAllGenres();
+        setAllGenres(genresList);
+        
+        // 1. For You - Mix friends' currently watching + trending recommendations, sorted by rating
         const followingIds = currentUser.following || [];
         const friendsPosts = posts.filter(post => 
           followingIds.includes(post.user.id) && post.show
@@ -188,32 +196,15 @@ export default function SearchScreen() {
           .sort((a, b) => b.friendCount - a.friendCount)
           .map(item => ({
             ...item.show,
-            id: item.show.id || `trakt-${item.show.traktId}`
+            id: item.show.id || `trakt-${item.show.traktId}`,
+            rating: item.show.rating || 0
           }))
-          .slice(0, 12);
+          .slice(0, 6);
         
-        setFriendActivityShows(friendShows);
-        
-        // 2. Get user interests
-        const interests = await getUserInterests(currentUser.id);
-        setUserGenres(interests.genres);
-        
-        // 3. For You - popular shows in user's interests (or trending as fallback)
-        let forYouList = [];
-        if (interests.genres.length > 0) {
-          const forYouPromises = interests.genres.slice(0, 3).map(genre => 
-            getPopularShowsByGenre(genre, 5)
-          );
-          const forYouResults = await Promise.all(forYouPromises);
-          forYouList = forYouResults.flat().slice(0, 12);
-        } else {
-          // Fallback to trending shows when no genre interests available
-          console.log('ℹ️ No genre interests, using trending shows for "For You"');
-          forYouList = await getTrendingShows(12);
-        }
-        
-        const enrichedForYou = await Promise.all(
-          forYouList.map(async (traktShow) => {
+        // Get trending shows for mix
+        const trending = await getTrendingShows(12);
+        const enrichedTrendingForYou = await Promise.all(
+          trending.map(async (traktShow) => {
             const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
             const show = mapTraktShowToShow(traktShow, {
               posterUrl: enrichedData.posterUrl,
@@ -223,14 +214,20 @@ export default function SearchScreen() {
               ...show,
               id: show.id || `trakt-${traktShow.ids.trakt}`,
               traktId: traktShow.ids.trakt,
+              rating: traktShow.rating || 0,
               traktShow
             };
           })
         );
-        setForYouShows(enrichedForYou);
         
-        // 4. Trending
-        const trending = await getTrendingShows(12);
+        // Mix and sort by rating
+        const mixedForYou = [...friendShows, ...enrichedTrendingForYou]
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 12);
+        
+        setForYouShows(mixedForYou);
+        
+        // 2. Trending
         const enrichedTrending = await Promise.all(
           trending.map(async (traktShow) => {
             const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -248,10 +245,57 @@ export default function SearchScreen() {
         );
         setTrendingShows(enrichedTrending);
         
-        // 5. Recently Released
-        const recent = await getRecentlyReleasedShows(12);
-        const enrichedRecent = await Promise.all(
-          recent.map(async (traktShow) => {
+        // 3-5. Because You Watched - Get user's 3 most recently logged shows
+        const userPosts = posts
+          .filter(post => post.user.id === currentUser.id && post.show?.traktId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        const recentShowsMap = new Map();
+        userPosts.forEach(post => {
+          const traktId = post.show.traktId;
+          if (!recentShowsMap.has(traktId)) {
+            recentShowsMap.set(traktId, post.show);
+          }
+        });
+        
+        const recentShows = Array.from(recentShowsMap.values()).slice(0, 3);
+        
+        const becauseYouWatchedPromises = recentShows.map(async (show) => {
+          try {
+            const relatedTraktShows = await getRelatedShows(show.traktId, 12);
+            const enrichedRelated = await Promise.all(
+              relatedTraktShows.map(async (traktShow) => {
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                const mappedShow = mapTraktShowToShow(traktShow, {
+                  posterUrl: enrichedData.posterUrl,
+                  totalSeasons: enrichedData.totalSeasons,
+                });
+                return {
+                  ...mappedShow,
+                  id: mappedShow.id || `trakt-${traktShow.ids.trakt}`,
+                  traktId: traktShow.ids.trakt,
+                  traktShow
+                };
+              })
+            );
+            
+            return {
+              show,
+              relatedShows: enrichedRelated
+            };
+          } catch (error) {
+            console.error(`Error fetching related shows for ${show.title}:`, error);
+            return { show, relatedShows: [] };
+          }
+        });
+        
+        const becauseYouWatched = await Promise.all(becauseYouWatchedPromises);
+        setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length > 0));
+        
+        // 6. Popular Rewatches
+        const playedShows = await getPlayedShows('monthly', 12);
+        const enrichedPlayed = await Promise.all(
+          playedShows.map(async (traktShow) => {
             const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
             const show = mapTraktShowToShow(traktShow, {
               posterUrl: enrichedData.posterUrl,
@@ -265,46 +309,7 @@ export default function SearchScreen() {
             };
           })
         );
-        setRecentlyReleasedShows(enrichedRecent);
-        
-        // 6. Genre Sections
-        const allGenres = getAllGenres();
-        const userGenreSet = new Set(interests.genres.map(g => g.toLowerCase()));
-        const orderedGenres = [
-          ...interests.genres.slice(0, 5),
-          ...allGenres.filter(g => !userGenreSet.has(g.toLowerCase()))
-        ];
-        
-        const genrePromises = orderedGenres.slice(0, 10).map(async (genre) => {
-          try {
-            const shows = await getPopularShowsByGenre(genre, 12);
-            const enrichedShows = await Promise.all(
-              shows.map(async (traktShow) => {
-                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                const show = mapTraktShowToShow(traktShow, {
-                  posterUrl: enrichedData.posterUrl,
-                  totalSeasons: enrichedData.totalSeasons,
-                });
-                return {
-                  ...show,
-                  id: show.id || `trakt-${traktShow.ids.trakt}`,
-                  traktId: traktShow.ids.trakt,
-                  traktShow
-                };
-              })
-            );
-            return {
-              genre,
-              shows: enrichedShows
-            };
-          } catch (error) {
-            console.error(`Error fetching genre ${genre}:`, error);
-            return { genre, shows: [] };
-          }
-        });
-        
-        const genres = await Promise.all(genrePromises);
-        setGenreSections(genres.filter(g => g.shows.length > 0));
+        setPopularRewatchesShows(enrichedPlayed);
         
       } catch (error) {
         console.error('Error loading curated content:', error);
@@ -325,72 +330,7 @@ export default function SearchScreen() {
     
     setRefreshing(true);
     try {
-      // Reload curated content
-      const followingIds = currentUser.following || [];
-      const friendsPosts = posts.filter(post => 
-        followingIds.includes(post.user.id) && post.show
-      );
-      
-      const showFriendCounts = new Map();
-      friendsPosts.forEach(post => {
-        const traktId = post.show.traktId;
-        if (!traktId) return;
-        
-        const existing = showFriendCounts.get(traktId);
-        if (existing) {
-          existing.friendIds.add(post.user.id);
-          existing.friendCount = existing.friendIds.size;
-        } else {
-          showFriendCounts.set(traktId, {
-            show: post.show,
-            friendCount: 1,
-            friendIds: new Set([post.user.id])
-          });
-        }
-      });
-      
-      const friendShows = Array.from(showFriendCounts.values())
-        .sort((a, b) => b.friendCount - a.friendCount)
-        .map(item => ({
-          ...item.show,
-          id: item.show.id || `trakt-${item.show.traktId}`
-        }))
-        .slice(0, 12);
-      
-      setFriendActivityShows(friendShows);
-      
-      // Reload other sections (trending, for you, etc.)
-      const interests = await getUserInterests(currentUser.id);
-      setUserGenres(interests.genres);
-      
-      let forYouList = [];
-      if (interests.genres.length > 0) {
-        const forYouPromises = interests.genres.slice(0, 3).map(genre => 
-          getPopularShowsByGenre(genre, 5)
-        );
-        const forYouResults = await Promise.all(forYouPromises);
-        forYouList = forYouResults.flat().slice(0, 12);
-      } else {
-        forYouList = await getTrendingShows(12);
-      }
-      
-      const enrichedForYou = await Promise.all(
-        forYouList.map(async (traktShow) => {
-          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-          const show = mapTraktShowToShow(traktShow, {
-            posterUrl: enrichedData.posterUrl,
-            totalSeasons: enrichedData.totalSeasons,
-          });
-          return {
-            ...show,
-            id: show.id || `trakt-${traktShow.ids.trakt}`,
-            traktId: traktShow.ids.trakt,
-            traktShow
-          };
-        })
-      );
-      setForYouShows(enrichedForYou);
-      
+      // Reload trending shows only (fast refresh)
       const trending = await getTrendingShows(12);
       const enrichedTrending = await Promise.all(
         trending.map(async (traktShow) => {
@@ -409,9 +349,10 @@ export default function SearchScreen() {
       );
       setTrendingShows(enrichedTrending);
       
-      const recent = await getRecentlyReleasedShows(12);
-      const enrichedRecent = await Promise.all(
-        recent.map(async (traktShow) => {
+      // Reload popular rewatches
+      const playedShows = await getPlayedShows('monthly', 12);
+      const enrichedPlayed = await Promise.all(
+        playedShows.map(async (traktShow) => {
           const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
           const show = mapTraktShowToShow(traktShow, {
             posterUrl: enrichedData.posterUrl,
@@ -425,7 +366,7 @@ export default function SearchScreen() {
           };
         })
       );
-      setRecentlyReleasedShows(enrichedRecent);
+      setPopularRewatchesShows(enrichedPlayed);
       
     } catch (error) {
       console.error('Error refreshing explore page:', error);
@@ -442,7 +383,7 @@ export default function SearchScreen() {
         if (searchQuery.trim().length > 0 || !currentUser?.id || isLoadingCurated) return;
         
         try {
-          // Silent reload without haptic or spinner
+          // Silent reload without haptic or spinner - just update For You with friend data
           const followingIds = currentUser.following || [];
           const friendsPosts = posts.filter(post => 
             followingIds.includes(post.user.id) && post.show
@@ -470,18 +411,25 @@ export default function SearchScreen() {
             .sort((a, b) => b.friendCount - a.friendCount)
             .map(item => ({
               ...item.show,
-              id: item.show.id || `trakt-${item.show.traktId}`
+              id: item.show.id || `trakt-${item.show.traktId}`,
+              rating: item.show.rating || 0
             }))
-            .slice(0, 12);
+            .slice(0, 6);
           
-          setFriendActivityShows(friendShows);
+          // Update For You by mixing with current trending shows (if available)
+          if (forYouShows.length > 0) {
+            const mixedForYou = [...friendShows, ...forYouShows.slice(6)]
+              .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+              .slice(0, 12);
+            setForYouShows(mixedForYou);
+          }
         } catch (error) {
           console.error('Error auto-refreshing explore page:', error);
         }
       };
       
       silentRefresh();
-    }, [searchQuery, currentUser, posts])
+    }, [searchQuery, currentUser, posts, forYouShows])
   );
 
   useEffect(() => {
@@ -1328,22 +1276,6 @@ export default function SearchScreen() {
               />
             }
           >
-            {friendActivityShows.length > 0 ? (
-              <ExploreShowSection
-                title="Friend Activity"
-                shows={friendActivityShows}
-                onShowPress={async (show) => {
-                  const uuid = await ensureShowUuid(show, show.traktShow);
-                  router.push(`/show/${uuid}`);
-                }}
-                onBookmarkPress={(show) => {
-                  setSelectedShow(show as Show);
-                  setPlaylistModalVisible(true);
-                }}
-                isShowSaved={isShowSaved}
-              />
-            ) : null}
-
             {forYouShows.length > 0 ? (
               <ExploreShowSection
                 title="For You"
@@ -1376,10 +1308,29 @@ export default function SearchScreen() {
               />
             ) : null}
 
-            {recentlyReleasedShows.length > 0 ? (
+            {becauseYouWatchedSections
+              .filter(section => section.relatedShows.length > 0)
+              .map((section, index) => (
+                <ExploreShowSection
+                  key={`because-you-watched-${section.show.id}-${index}`}
+                  title={`Because You Watched ${section.show.title}`}
+                  shows={section.relatedShows}
+                  onShowPress={async (show) => {
+                    const uuid = await ensureShowUuid(show, show.traktShow);
+                    router.push(`/show/${uuid}`);
+                  }}
+                  onBookmarkPress={(show) => {
+                    setSelectedShow(show as Show);
+                    setPlaylistModalVisible(true);
+                  }}
+                  isShowSaved={isShowSaved}
+                />
+              ))}
+
+            {popularRewatchesShows.length > 0 ? (
               <ExploreShowSection
-                title="Recently Released"
-                shows={recentlyReleasedShows}
+                title="Popular Rewatches"
+                shows={popularRewatchesShows}
                 onShowPress={async (show) => {
                   const uuid = await ensureShowUuid(show, show.traktShow);
                   router.push(`/show/${uuid}`);
@@ -1392,23 +1343,30 @@ export default function SearchScreen() {
               />
             ) : null}
 
-            {genreSections.map((section) => (
-              <ExploreShowSection
-                key={section.genre}
-                title={section.genre.charAt(0).toUpperCase() + section.genre.slice(1)}
-                shows={section.shows}
-                isGenreSection
-                onShowPress={async (show) => {
-                  const uuid = await ensureShowUuid(show, show.traktShow);
-                  router.push(`/show/${uuid}`);
-                }}
-                onBookmarkPress={(show) => {
-                  setSelectedShow(show as Show);
-                  setPlaylistModalVisible(true);
-                }}
-                isShowSaved={isShowSaved}
-              />
-            ))}
+            {allGenres.length > 0 ? (
+              <View style={styles.genresSection}>
+                <Text style={styles.genresTitle}>Genres</Text>
+                <View style={styles.genresGrid}>
+                  {allGenres.map((genre) => (
+                    <Pressable
+                      key={genre}
+                      style={({ pressed }) => [
+                        styles.genreButton,
+                        pressed && styles.genreButtonPressed
+                      ]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push(`/search?tab=shows&query=${encodeURIComponent(genre)}`);
+                      }}
+                    >
+                      <Text style={styles.genreButtonText}>
+                        {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </RNScrollView>
         ) : (
           <FlatList
@@ -1791,5 +1749,36 @@ const styles = StyleSheet.create({
     color: tokens.colors.pureWhite,
     marginBottom: 16,
     paddingHorizontal: 16,
+  },
+  genresSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+  genresTitle: {
+    ...tokens.typography.p1,
+    color: tokens.colors.almostWhite,
+    marginBottom: 17,
+  },
+  genresGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  genreButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
+  },
+  genreButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  genreButtonText: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.almostWhite,
   },
 });

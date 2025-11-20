@@ -339,3 +339,57 @@ export async function getPopularShowsByGenre(genre: string, limit: number = 12):
     throw error;
   }
 }
+
+export async function getRelatedShows(showId: number | string, limit: number = 12): Promise<TraktShow[]> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured');
+  }
+
+  try {
+    console.log(`🔗 Fetching ${limit} related shows for show ID: ${showId}`);
+    const response = await fetch(
+      `${TRAKT_BASE_URL}/shows/${showId}/related?extended=full&limit=${limit}`,
+      { headers: TRAKT_HEADERS }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+    }
+
+    const shows: TraktShow[] = await response.json();
+    console.log(`✅ Fetched ${shows.length} related shows`);
+    return shows;
+  } catch (error) {
+    console.error(`Error fetching related shows for ${showId} from Trakt:`, error);
+    throw error;
+  }
+}
+
+export async function getPlayedShows(period: string = 'monthly', limit: number = 12): Promise<TraktShow[]> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured');
+  }
+
+  try {
+    console.log(`🔁 Fetching ${limit} most played shows (${period})`);
+    const response = await fetch(
+      `${TRAKT_BASE_URL}/shows/played/${period}?extended=full&limit=${limit}`,
+      { headers: TRAKT_HEADERS }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data: { watcher_count: number; play_count: number; collected_count: number; show: TraktShow }[] = await response.json();
+    const shows = data.map(item => item.show);
+    
+    console.log(`✅ Fetched ${shows.length} most played shows`);
+    return shows;
+  } catch (error) {
+    console.error(`Error fetching played shows from Trakt:`, error);
+    throw error;
+  }
+}
