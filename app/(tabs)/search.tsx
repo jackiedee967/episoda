@@ -299,6 +299,22 @@ export default function SearchScreen() {
           .slice(0, 3)
           .map(item => item.show);
         
+        // Start fetching nano-genres early (parallel with recommendations)
+        const nanoGenresPromise = (async () => {
+          try {
+            const userShowsForNanoGenres = Array.from(showLastWatchedMap.values())
+              .map(item => ({
+                title: item.show.title,
+                year: item.show.year
+              }));
+            
+            return await getUserNanoGenres(userShowsForNanoGenres, 20);
+          } catch (error) {
+            console.error('Failed to fetch nano-genres:', error);
+            return [];
+          }
+        })();
+        
         const becauseYouWatchedPromises = recentShows.map(async (show) => {
           try {
             console.log(`🎯 Fetching recommendations for "${show.title}"...`);
@@ -405,13 +421,8 @@ export default function SearchScreen() {
         );
         setPopularRewatchesShows(enrichedPlayed);
         
-        // 7. Nano Genres - Personalized based on user's watch history
-        const userShowsForNanoGenres = recentShows.map(show => ({
-          title: show.title,
-          year: show.year
-        }));
-        
-        const nanoGenresData = await getUserNanoGenres(userShowsForNanoGenres, 20);
+        // 7. Nano Genres - Wait for parallel fetch to complete
+        const nanoGenresData = await nanoGenresPromise;
         setNanoGenres(nanoGenresData);
         
       } catch (error) {
