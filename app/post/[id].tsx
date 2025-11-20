@@ -161,8 +161,8 @@ export default function PostDetail() {
           following: [],
           followers: [],
         },
-        text: commentData.comment_text,
-        image: commentData.image_url || undefined,
+        text: commentData.content,
+        image: undefined, // Image support removed - database has no image_url column
         likes: likesCount.get(commentData.id) || 0,
         isLiked: userCommentLikes.has(commentData.id),
         timestamp: new Date(commentData.created_at),
@@ -282,9 +282,8 @@ export default function PostDetail() {
         id: tempId,
         post_id: post.id,
         user_id: currentUser.id,
-        comment_text: commentText,
+        content: commentText,
         parent_comment_id: replyingTo.commentId,
-        image_url: commentImage || null,
         created_at: new Date().toISOString(),
       };
       let newTotalCount = 0;
@@ -301,9 +300,8 @@ export default function PostDetail() {
           .insert({
             post_id: post.id,
             user_id: currentUser.id,
-            comment_text: commentText,
+            content: commentText,
             parent_comment_id: replyingTo.commentId,
-            image_url: commentImage || null,
           })
           .select()
           .single();
@@ -360,9 +358,8 @@ export default function PostDetail() {
         id: tempId,
         post_id: post.id,
         user_id: currentUser.id,
-        comment_text: commentText,
+        content: commentText,
         parent_comment_id: null,
-        image_url: commentImage || null,
         created_at: new Date().toISOString(),
       };
       let newTotalCount = 0;
@@ -379,8 +376,7 @@ export default function PostDetail() {
           .insert({
             post_id: post.id,
             user_id: currentUser.id,
-            comment_text: commentText,
-            image_url: commentImage || null,
+            content: commentText,
           })
           .select()
           .single();
