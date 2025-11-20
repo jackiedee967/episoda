@@ -304,7 +304,7 @@ export default function LoginScreen() {
           </View>
 
           {/* Apple Sign In */}
-          {appleAvailable && Platform.OS === 'ios' && (
+          {appleAvailable && Platform.OS === 'ios' ? (
             <View style={styles.section}>
               <AppleAuthentication.AppleAuthenticationButton
                 buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
@@ -314,7 +314,7 @@ export default function LoginScreen() {
                 onPress={handleAppleSignIn}
               />
             </View>
-          )}
+          ) : null}
 
           {/* Info Text */}
           <Text style={styles.infoText}>
@@ -322,7 +322,7 @@ export default function LoginScreen() {
           </Text>
 
           {/* Debug Info (remove in production) */}
-          {__DEV__ && (
+          {__DEV__ ? (
             <View style={styles.debugContainer}>
               <Text style={styles.debugText}>
                 📱 Debug Info:{'\n'}
@@ -330,7 +330,7 @@ export default function LoginScreen() {
                 Formatted: {formattedPhoneNumber}
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

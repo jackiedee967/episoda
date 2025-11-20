@@ -188,12 +188,12 @@ export default function VerifyOTPScreen() {
               />
             </View>
 
-            {loading && (
+            {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.pureWhite} />
                 <Text style={styles.loadingText}>Verifying code...</Text>
               </View>
-            )}
+            ) : null}
 
             <View style={styles.resendContainer}>
               <Text style={styles.resendText}>Didn't receive the code?</Text>

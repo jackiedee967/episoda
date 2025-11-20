@@ -394,9 +394,9 @@ export default function UserProfile() {
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>
         <Text style={styles.displayName}>{profileUser.displayName}</Text>
-        {profileUser.bio && <Text style={styles.bio}>{profileUser.bio}</Text>}
+        {profileUser.bio ? <Text style={styles.bio}>{profileUser.bio}</Text> : null}
         
-        {profileUser.socialLinks && profileUser.socialLinks.length > 0 && (
+        {profileUser.socialLinks && profileUser.socialLinks.length > 0 ? (
           <View style={styles.socialLinksRow}>
             {profileUser.socialLinks.map((link, index) => (
               <Pressable
@@ -408,7 +408,7 @@ export default function UserProfile() {
               </Pressable>
             ))}
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );
@@ -631,11 +631,11 @@ export default function UserProfile() {
               : `${user.displayName} hasn't posted anything yet.`
             }
           </Text>
-          {isCurrentUser && (
+          {isCurrentUser ? (
             <Button variant="primary" onPress={() => setShowPostModal(true)}>
               Log your first show
             </Button>
-          )}
+          ) : null}
         </View>
       )}
     </View>
@@ -669,11 +669,11 @@ export default function UserProfile() {
               : `${user.displayName} hasn't watched anything yet.`
             }
           </Text>
-          {isCurrentUser && (
+          {isCurrentUser ? (
             <Button variant="primary" onPress={() => setShowPostModal(true)}>
               Log your first show
             </Button>
-          )}
+          ) : null}
         </View>
       )}
     </View>
@@ -700,7 +700,7 @@ export default function UserProfile() {
                     {showCount} {showCount === 1 ? 'show' : 'shows'}
                   </Text>
                 </View>
-                {isCurrentUser && (
+                {isCurrentUser ? (
                   <View style={styles.playlistActions}>
                     <Pressable
                       style={styles.iconButton}
@@ -716,7 +716,7 @@ export default function UserProfile() {
                       )}
                     </Pressable>
                   </View>
-                )}
+                ) : null}
               </Pressable>
             );
           })}
@@ -729,11 +729,11 @@ export default function UserProfile() {
             contentFit="contain"
           />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
-          {isCurrentUser && (
+          {isCurrentUser ? (
             <Text style={styles.emptyStateText}>
               Tap the bookmark icon on any show's poster to save it a playlist!
             </Text>
-          )}
+          ) : null}
         </View>
       )}
     </View>
@@ -784,7 +784,7 @@ export default function UserProfile() {
           {renderProfileInfo()}
           
           {/* Friends in Common Bar - Only for other users' profiles */}
-          {!isCurrentUser && friendsInCommon.length > 0 && (
+          {!isCurrentUser && friendsInCommon.length > 0 ? (
             <View style={styles.friendsInCommonContainer}>
               <Friends 
                 state="FriendsInCommonBar"
@@ -808,7 +808,7 @@ export default function UserProfile() {
                 }}
               />
             </View>
-          )}
+          ) : null}
           
           {renderActionButtons()}
           {renderStatsGrid()}
@@ -873,7 +873,7 @@ export default function UserProfile() {
           onClose={() => setShowPostModal(false)}
         />
 
-        {isCurrentUser && (
+        {isCurrentUser ? (
           <>
             <EditProfileModal
               visible={showEditProfileModal}
@@ -890,16 +890,16 @@ export default function UserProfile() {
               onClose={() => setShowInviteFriendsModal(false)}
             />
           </>
-        )}
+        ) : null}
 
-        {showPlaylistModal && (
+        {showPlaylistModal ? (
           <PlaylistModal
             visible={!!showPlaylistModal}
             onClose={() => setShowPlaylistModal(null)}
             show={showPlaylistModal}
             onAddToPlaylist={() => {}}
           />
-        )}
+        ) : null}
       </View>
       
       {/* FloatingTabBar - Show main menu on profile pages */}

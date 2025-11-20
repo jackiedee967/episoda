@@ -586,7 +586,7 @@ export default function PostDetail() {
               </Pressable>
               
               <View style={styles.headerRight}>
-                {canDelete && (
+                {canDelete ? (
                   <Pressable 
                     onPress={handleDeletePress} 
                     style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
@@ -598,7 +598,7 @@ export default function PostDetail() {
                       strokeWidth={1.5} 
                     />
                   </Pressable>
-                )}
+                ) : null}
                 <Pressable onPress={handleUserPress}>
                   <FadeInImage source={{ uri: post.user.avatar }} style={styles.headerUserAvatar} contentFit="cover" />
                 </Pressable>
@@ -642,20 +642,20 @@ export default function PostDetail() {
                       />
                     );
                   })()}
-                  {post.episodes && post.episodes.length > 0 && (
+                  {post.episodes && post.episodes.length > 0 ? (
                     <PostTags
                       prop="Large"
                       state="S_E_"
                       text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
                       onPress={() => handleEpisodePress(post.episodes![0].id)}
                     />
-                  )}
+                  ) : null}
                 </View>
 
                 {/* Star Rating */}
-                {post.rating && (
+                {post.rating ? (
                   <StarRatings rating={post.rating} size={14} />
-                )}
+                ) : null}
               </View>
             </View>
 
@@ -665,17 +665,17 @@ export default function PostDetail() {
             {/* Post Content */}
             <View style={styles.postContentContainer}>
               {/* Post Title */}
-              {post.title && (
+              {post.title ? (
                 <Text style={styles.postTitle}>{post.title}</Text>
-              )}
+              ) : null}
 
               {/* Post Body */}
-              {post.body && (
+              {post.body ? (
                 <Text style={styles.postBody}>{post.body}</Text>
-              )}
+              ) : null}
 
               {/* Post Tags (Discussion, Fan Theory, etc.) */}
-              {post.tags.length > 0 && (
+              {post.tags.length > 0 ? (
                 <View style={styles.postTagsContainer}>
                   {post.tags.map((tag, index) => {
                     let tagState: 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' = 'Misc';
@@ -695,7 +695,7 @@ export default function PostDetail() {
                     );
                   })}
                 </View>
-              )}
+              ) : null}
 
               {/* Engagement Row */}
               <View style={styles.engagementRow}>
@@ -753,7 +753,7 @@ export default function PostDetail() {
           {/* Comment Input Popup */}
           <View style={styles.commentPopup}>
             {/* Replying To Indicator */}
-            {replyingTo && (
+            {replyingTo ? (
               <View style={styles.replyingToContainer}>
                 <View style={styles.replyingToContent}>
                   <Text style={styles.replyingToLabel}>Replying to: </Text>
@@ -764,9 +764,9 @@ export default function PostDetail() {
                   <Text style={styles.cancelReplyText}>✕</Text>
                 </Pressable>
               </View>
-            )}
+            ) : null}
             
-            {commentImage && (
+            {commentImage ? (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: commentImage }} style={styles.previewImage} />
                 <Pressable
@@ -776,7 +776,7 @@ export default function PostDetail() {
                   <Text style={styles.removeImageText}>✕</Text>
                 </Pressable>
               </View>
-            )}
+            ) : null}
             <View style={styles.inputRow}>
               <View style={styles.inputBox}>
                 <TextInput
@@ -814,7 +814,7 @@ export default function PostDetail() {
         </KeyboardAvoidingView>
 
         {/* Delete Menu - Rendered outside ScrollView for proper click handling */}
-        {canDelete && showDeleteMenu && !isDeletingPost && (
+        {canDelete && showDeleteMenu && !isDeletingPost ? (
           <Pressable 
             style={styles.menuOverlay} 
             onPress={() => setShowDeleteMenu(false)}
@@ -825,7 +825,7 @@ export default function PostDetail() {
               </Pressable>
             </View>
           </Pressable>
-        )}
+        ) : null}
       </View>
     </>
   );

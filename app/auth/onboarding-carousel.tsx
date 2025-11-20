@@ -156,7 +156,7 @@ export default function OnboardingCarouselScreen() {
             ))}
           </View>
 
-          {isLastSlide && (
+          {isLastSlide ? (
             <View style={styles.buttonContainer}>
               <AuthButton
                 title="Get Started"
@@ -165,7 +165,7 @@ export default function OnboardingCarouselScreen() {
                 variant="primary"
               />
             </View>
-          )}
+          ) : null}
         </View>
     </ImageBackground>
   );

@@ -265,7 +265,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
           ]}
         >
           {/* Success Indicator */}
-          {showSuccess && (
+          {showSuccess ? (
             <Animated.View 
               style={[
                 styles.successBanner,
@@ -283,7 +283,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
               <IconSymbol name="checkmark.circle.fill" size={24} color={tokens.colors.tabStroke3} />
               <Text style={styles.successText}>{successMessage}</Text>
             </Animated.View>
-          )}
+          ) : null}
 
           {/* Header */}
           <View style={styles.header}>

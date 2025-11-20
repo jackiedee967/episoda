@@ -106,7 +106,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
 
         <Text style={styles.text}>{comment.text}</Text>
 
-        {comment.image && (
+        {comment.image ? (
           <View style={styles.commentImageContainer}>
             {Platform.OS === 'web' ? (
               <img 
@@ -123,7 +123,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
               <Image source={{ uri: comment.image }} style={styles.commentImage} resizeMode="contain" />
             )}
           </View>
-        )}
+        ) : null}
 
         <View style={styles.actions}>
           <Pressable
@@ -152,7 +152,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
         </View>
 
         {/* Nested Replies - Recursive rendering up to MAX_DEPTH */}
-        {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH && (
+        {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH ? (
           <View style={styles.repliesContainer}>
             {comment.replies.map((reply) => (
               <CommentCard
@@ -164,7 +164,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
               />
             ))}
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );

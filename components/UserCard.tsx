@@ -62,13 +62,13 @@ export default function UserCard({
           pressed && styles.pressed,
         ]}
       >
-        {avatar && (
+        {avatar ? (
           <Image
             source={typeof avatar === 'string' ? { uri: avatar } : avatar}
             style={styles.compactAvatar}
             resizeMode="cover"
           />
-        )}
+        ) : null}
         <View style={styles.compactInfo}>
           <Text style={styles.compactDisplayName} numberOfLines={1}>
             {displayName}
@@ -85,21 +85,21 @@ export default function UserCard({
     return (
       <View style={styles.largeCard}>
         <Pressable onPress={handlePress} style={styles.largeHeader}>
-          {avatar && (
+          {avatar ? (
             <Image
               source={typeof avatar === 'string' ? { uri: avatar } : avatar}
               style={styles.largeAvatar}
               resizeMode="cover"
             />
-          )}
+          ) : null}
           <View style={styles.largeInfo}>
             <Text style={styles.largeDisplayName}>{displayName}</Text>
             <Text style={styles.largeUsername}>@{username}</Text>
-            {bio && <Text style={styles.largeBio}>{bio}</Text>}
+            {bio ? <Text style={styles.largeBio}>{bio}</Text> : null}
           </View>
         </Pressable>
         
-        {stats && (
+        {stats ? (
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Text style={styles.statValue}>{stats.posts || 0}</Text>
@@ -114,9 +114,9 @@ export default function UserCard({
               <Text style={styles.statLabel}>Following</Text>
             </View>
           </View>
-        )}
+        ) : null}
         
-        {showFollowButton && (
+        {showFollowButton ? (
           <Button
             variant={isFollowing ? 'secondary' : 'primary'}
             size="medium"
@@ -125,7 +125,7 @@ export default function UserCard({
           >
             {isFollowing ? 'Following' : 'Follow'}
           </Button>
-        )}
+        ) : null}
       </View>
     );
   }
@@ -138,13 +138,13 @@ export default function UserCard({
         pressed && styles.pressed,
       ]}
     >
-      {avatar && (
+      {avatar ? (
         <Image
           source={typeof avatar === 'string' ? { uri: avatar } : avatar}
           style={styles.avatar}
           resizeMode="cover"
         />
-      )}
+      ) : null}
       <View style={styles.info}>
         <Text style={styles.displayName} numberOfLines={1}>
           {displayName}
@@ -152,13 +152,13 @@ export default function UserCard({
         <Text style={styles.username} numberOfLines={1}>
           @{username}
         </Text>
-        {bio && (
+        {bio ? (
           <Text style={styles.bio} numberOfLines={2}>
             {bio}
           </Text>
-        )}
+        ) : null}
       </View>
-      {showFollowButton && (
+      {showFollowButton ? (
         <Button
           variant={isFollowing ? 'secondary' : 'primary'}
           size="small"
@@ -166,7 +166,7 @@ export default function UserCard({
         >
           {isFollowing ? 'Following' : 'Follow'}
         </Button>
-      )}
+      ) : null}
     </Pressable>
   );
 }
