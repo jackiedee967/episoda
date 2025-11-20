@@ -93,20 +93,20 @@ function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
       <View key={starNumber} style={styles.starContainer}>
         {/* Visual star */}
         <View style={styles.starVisual} pointerEvents="none">
-          {isEmpty && (
+          {isEmpty ? (
             <Star size={32} color={emptyColor} fill="none" strokeWidth={1} />
-          )}
-          {isHalf && (
+          ) : null}
+          {isHalf ? (
             <View style={styles.starWrapper}>
               <Star size={32} color={emptyColor} fill="none" strokeWidth={1} />
               <View style={styles.halfStarOverlay}>
                 <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={1} />
               </View>
             </View>
-          )}
-          {isFull && (
+          ) : null}
+          {isFull ? (
             <Star size={32} color={highlightColor} fill={highlightColor} strokeWidth={1} />
-          )}
+          ) : null}
         </View>
         
         {/* Two invisible touch zones for left/right half */}
@@ -1421,27 +1421,27 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           />
         </View>
         <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
-          {isSearching && (
+          {isSearching ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
               <Text style={styles.loadingText}>Searching...</Text>
             </View>
-          )}
-          {searchError && (
+          ) : null}
+          {searchError ? (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{searchError}</Text>
               <Pressable style={styles.retryButton} onPress={() => setSearchQuery(searchQuery + ' ')}>
                 <Text style={styles.retryButtonText}>Retry</Text>
               </Pressable>
             </View>
-          )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && isLoadingRecommendations && (
+          ) : null}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && isLoadingRecommendations ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
               <Text style={styles.loadingText}>Loading recommendations...</Text>
             </View>
-          )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length > 0 && (
+          ) : null}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length > 0 ? (
             <View style={styles.showsGrid}>
                 {cachedRecommendations.slice(0, 12).map(result => (
                   <Pressable
@@ -1475,18 +1475,18 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                   </Pressable>
                 ))}
             </View>
-          )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length === 0 && (
+          ) : null}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>Start typing to search for shows</Text>
             </View>
-          )}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() !== '' && (
+          ) : null}
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() !== '' ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>No shows found</Text>
             </View>
-          )}
-          {!isSearching && !searchError && showSearchResults.length > 0 && (
+          ) : null}
+          {!isSearching && !searchError && showSearchResults.length > 0 ? (
             <View style={styles.showsGrid}>
               {showSearchResults.map(result => (
                 <Pressable
@@ -1520,7 +1520,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 </Pressable>
               ))}
             </View>
-          )}
+          ) : null}
         </ScrollView>
       </View>
     );
@@ -1528,12 +1528,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   const renderSelectEpisodes = () => (
     <View style={styles.stepContainer}>
-      {!preselectedShow && (
+      {!preselectedShow ? (
         <Pressable style={styles.backButton} onPress={() => setStep('selectShow')}>
           <IconSymbol name="chevron.left" size={20} color={tokens.colors.black} />
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
-      )}
+      ) : null}
       <Text style={styles.stepTitle}>Select Episodes</Text>
       <Text style={styles.stepSubtitle}>Optional</Text>
       <ScrollView style={styles.episodesList} showsVerticalScrollIndicator={false}>
@@ -1555,7 +1555,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 )}
               </View>
             </Pressable>
-            {season.expanded && (
+            {season.expanded ? (
               <View style={styles.episodesContainer}>
                 {season.episodes.map(episode => {
                   const isSelected = selectedEpisodes.some(ep => ep.id === episode.id);
@@ -1576,7 +1576,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                   );
                 })}
               </View>
-            )}
+            ) : null}
           </View>
         ))}
       </ScrollView>
@@ -1661,9 +1661,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           {/* Tags Section */}
           <View style={styles.tagsSection}>
             <Text style={styles.sectionLabel}>Tags</Text>
-            {!canSelectTags && (
+            {!canSelectTags ? (
               <Text style={styles.tagsHelperText}>Write a title or body text to select a tag</Text>
-            )}
+            ) : null}
             <View style={styles.tagsContainer}>
               {Object.entries(tagMap).map(([displayName, stateName]) => {
                 const isSelected = selectedTags.includes(displayName);
@@ -1764,7 +1764,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         </Animated.View>
       </Animated.View>
       
-      {selectedShowForPlaylist && (
+      {selectedShowForPlaylist ? (
         <PlaylistModal
           visible={playlistModalVisible}
           onClose={() => {
@@ -1774,7 +1774,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           show={selectedShowForPlaylist}
           onAddToPlaylist={() => {}}
         />
-      )}
+      ) : null}
     </Modal>
   );
 }
