@@ -518,7 +518,7 @@ export default function ProfileScreen() {
               <Pressable 
                 style={({ pressed }) => [
                   styles.saveIconRotation,
-                  pressed && styles.saveIconPressed,
+                  pressed ? styles.saveIconPressed : null,
                 ]} 
                 onPress={(e) => {
                   e.stopPropagation();
@@ -612,7 +612,7 @@ export default function ProfileScreen() {
                 key={playlist.id}
                 style={({ pressed }) => [
                   styles.playlistItem,
-                  pressed && styles.playlistItemPressed,
+                  pressed ? styles.playlistItemPressed : null,
                 ]}
                 onPress={() => handlePlaylistPress(playlist.id)}
               >
@@ -753,13 +753,13 @@ export default function ProfileScreen() {
           />
         ) : null}
 
-        {showPlaylistViewModal && (
+        {showPlaylistViewModal ? (
           <PlaylistViewModal
             visible={!!showPlaylistViewModal}
             onClose={() => setShowPlaylistViewModal(null)}
             playlistId={showPlaylistViewModal}
           />
-        )}
+        ) : null}
       </View>
     </>
   );

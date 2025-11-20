@@ -624,7 +624,7 @@ export default function HomeScreen() {
                   <Pressable 
                     style={({ pressed }) => [
                       styles.saveIcon,
-                      pressed && styles.saveIconPressed,
+                      pressed ? styles.saveIconPressed : null,
                     ]} 
                     onPress={(e) => {
                       e.stopPropagation();
@@ -641,7 +641,7 @@ export default function HomeScreen() {
                     />
                   </Pressable>
 
-                  {friendCount > 0 && (
+                  {friendCount > 0 ? (
                     <View style={[styles.friendsBar, { width: posterDimensions.overlayWidth }]}>
                       <View style={styles.friendAvatars}>
                         {friendsWatching.map((user, index) => (
@@ -657,7 +657,7 @@ export default function HomeScreen() {
                         <Text style={styles.friendsWatchingLabel}> friends watching</Text>
                       </View>
                     </View>
-                  )}
+                  ) : null}
                 </View>
               </Pressable>
             );
@@ -859,7 +859,7 @@ export default function HomeScreen() {
         preselectedShow={selectedShow}
       />
 
-      {selectedShow && (
+      {selectedShow ? (
         <PlaylistModal
           visible={playlistModalVisible}
           onClose={() => setPlaylistModalVisible(false)}
@@ -867,7 +867,7 @@ export default function HomeScreen() {
           traktShow={selectedTraktShow}
           onAddToPlaylist={() => {}}
         />
-      )}
+      ) : null}
     </View>
   );
 }

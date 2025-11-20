@@ -248,13 +248,13 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                     <Pressable
                       style={({ pressed }) => [
                         styles.showPosterContainer,
-                        pressed && styles.showPosterPressed,
+                        pressed ? styles.showPosterPressed : null,
                       ]}
                       onPress={() => handleShowPress(show.id)}
                     >
                       <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
                       
-                      {isOwnPlaylist && (
+                      {isOwnPlaylist ? (
                         <Pressable
                           style={styles.removeButton}
                           onPress={(e) => {
@@ -264,7 +264,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                         >
                           <IconSymbol name="xmark.circle.fill" size={24} color="#EF4444" />
                         </Pressable>
-                      )}
+                      ) : null}
                     </Pressable>
                     <Text style={styles.showTitle} numberOfLines={2}>
                       {show.title}

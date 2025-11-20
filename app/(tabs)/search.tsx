@@ -992,11 +992,11 @@ export default function SearchScreen() {
                 cachePolicy="memory-disk"
                 contentFit="cover"
               />
-              {isEnriching && (
+              {isEnriching ? (
                 <View style={styles.enrichingOverlay}>
                   <ActivityIndicator size="small" color={tokens.colors.green} />
                 </View>
-              )}
+              ) : null}
               <Pressable
                 style={styles.saveButton}
                 onPress={(e) => handleSavePress(show, e)}
@@ -1023,12 +1023,12 @@ export default function SearchScreen() {
                 <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
                 <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
               </View>
-              {show.friendsWatching > 0 && (
+              {show.friendsWatching > 0 ? (
                 <View style={styles.friendsRow}>
                   <IconSymbol name="person.2.fill" size={12} color={tokens.colors.grey1} />
                   <Text style={styles.friendsText}>{show.friendsWatching} friends watching</Text>
                 </View>
-              )}
+              ) : null}
             </View>
             </Pressable>
           </FadeInView>
@@ -1083,12 +1083,12 @@ export default function SearchScreen() {
                     <Text style={styles.commentTextWhite}> commented on post "</Text>
                     <Text style={styles.commentTextWhite}>{truncatedPostTitle}</Text>
                     <Text style={styles.commentTextWhite}>" about </Text>
-                    {episodeText && (
+                    {episodeText ? (
                       <>
                         <Text style={styles.commentTextGreen}>{episodeText}</Text>
                         <Text style={styles.commentTextWhite}> of </Text>
                       </>
-                    )}
+                    ) : null}
                     <Text style={styles.commentTextGreen}>{post.show.title}</Text>
                     <Text style={styles.commentTextWhite}>:</Text>
                   </Text>
@@ -1291,16 +1291,16 @@ export default function SearchScreen() {
               returnKeyType="search"
               onSubmitEditing={handleSearchSubmit}
             />
-            {searchQuery.length > 0 && (
+            {searchQuery.length > 0 ? (
               <Pressable onPress={() => setSearchQuery('')}>
                 <IconSymbol name="xmark.circle.fill" size={20} color={tokens.colors.grey1} />
               </Pressable>
-            )}
+            ) : null}
           </View>
         </View>
 
         {/* Show TabSelector only when searching */}
-        {searchQuery.trim().length > 0 && (
+        {searchQuery.trim().length > 0 ? (
           <View style={styles.tabSelectorWrapper}>
             <TabSelector
               tabs={tabs}
@@ -1309,7 +1309,7 @@ export default function SearchScreen() {
               variant="default"
             />
           </View>
-        )}
+        ) : null}
 
         {renderShowFilter()}
 
@@ -1328,7 +1328,7 @@ export default function SearchScreen() {
               />
             }
           >
-            {friendActivityShows.length > 0 && (
+            {friendActivityShows.length > 0 ? (
               <ExploreShowSection
                 title="Friend Activity"
                 shows={friendActivityShows}
@@ -1342,9 +1342,9 @@ export default function SearchScreen() {
                 }}
                 isShowSaved={isShowSaved}
               />
-            )}
+            ) : null}
 
-            {forYouShows.length > 0 && (
+            {forYouShows.length > 0 ? (
               <ExploreShowSection
                 title="For You"
                 shows={forYouShows}
@@ -1358,9 +1358,9 @@ export default function SearchScreen() {
                 }}
                 isShowSaved={isShowSaved}
               />
-            )}
+            ) : null}
 
-            {trendingShows.length > 0 && (
+            {trendingShows.length > 0 ? (
               <ExploreShowSection
                 title="Trending"
                 shows={trendingShows}
@@ -1374,9 +1374,9 @@ export default function SearchScreen() {
                 }}
                 isShowSaved={isShowSaved}
               />
-            )}
+            ) : null}
 
-            {recentlyReleasedShows.length > 0 && (
+            {recentlyReleasedShows.length > 0 ? (
               <ExploreShowSection
                 title="Recently Released"
                 shows={recentlyReleasedShows}
@@ -1390,7 +1390,7 @@ export default function SearchScreen() {
                 }}
                 isShowSaved={isShowSaved}
               />
-            )}
+            ) : null}
 
             {genreSections.map((section) => (
               <ExploreShowSection
@@ -1428,7 +1428,7 @@ export default function SearchScreen() {
           />
         )}
 
-      {selectedShow && (
+      {selectedShow ? (
         <PlaylistModal
           visible={playlistModalVisible}
           onClose={() => {
@@ -1438,7 +1438,7 @@ export default function SearchScreen() {
           show={selectedShow}
           onAddToPlaylist={handleAddToPlaylist}
         />
-      )}
+      ) : null}
       </View>
     </>
   );
