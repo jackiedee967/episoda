@@ -638,37 +638,90 @@ export default function SearchScreen() {
     loadGenreShows();
   }, [genreParam]);
 
-  // Load section detail view
+  // Load section detail view (fetch 30 shows for full results)
   useEffect(() => {
     if (!sectionParam) {
       setSectionShows([]);
       return;
     }
 
-    setIsLoadingSection(true);
-    try {
-      let shows: any[] = [];
-      
-      if (sectionParam === 'for-you') {
-        shows = forYouShows;
-      } else if (sectionParam === 'trending') {
-        shows = trendingShows;
-      } else if (sectionParam === 'popular-rewatches') {
-        shows = popularRewatchesShows;
-      } else if (sectionParam.startsWith('because-you-watched-')) {
-        const index = parseInt(sectionParam.replace('because-you-watched-', ''), 10);
-        if (!isNaN(index) && index >= 0 && index < becauseYouWatchedSections.length) {
-          shows = becauseYouWatchedSections[index].relatedShows;
+    const loadSectionShows = async () => {
+      setIsLoadingSection(true);
+      try {
+        let shows: any[] = [];
+        
+        if (sectionParam === 'for-you') {
+          // For You = friend activity + trending (sorted by rating)
+          const trending = await getTrendingShows(30);
+          const enrichedTrending = await Promise.all(
+            trending.map(async (traktShow) => {
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              const show = mapTraktShowToShow(traktShow, {
+                posterUrl: enrichedData.posterUrl,
+                totalSeasons: enrichedData.totalSeasons,
+              });
+              return {
+                ...show,
+                id: show.id || `trakt-${traktShow.ids.trakt}`,
+                rating: show.rating || 0,
+                traktId: traktShow.ids.trakt,
+                traktShow
+              };
+            })
+          );
+          shows = enrichedTrending.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (sectionParam === 'trending') {
+          const trending = await getTrendingShows(30);
+          shows = await Promise.all(
+            trending.map(async (traktShow) => {
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              const show = mapTraktShowToShow(traktShow, {
+                posterUrl: enrichedData.posterUrl,
+                totalSeasons: enrichedData.totalSeasons,
+              });
+              return {
+                ...show,
+                id: show.id || `trakt-${traktShow.ids.trakt}`,
+                traktId: traktShow.ids.trakt,
+                traktShow
+              };
+            })
+          );
+        } else if (sectionParam === 'popular-rewatches') {
+          const playedShows = await getPlayedShows('monthly', 30);
+          shows = await Promise.all(
+            playedShows.map(async (traktShow) => {
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              const show = mapTraktShowToShow(traktShow, {
+                posterUrl: enrichedData.posterUrl,
+                totalSeasons: enrichedData.totalSeasons,
+              });
+              return {
+                ...show,
+                id: show.id || `trakt-${traktShow.ids.trakt}`,
+                traktId: traktShow.ids.trakt,
+                traktShow
+              };
+            })
+          );
+        } else if (sectionParam.startsWith('because-you-watched-')) {
+          // For because-you-watched sections, use the related shows from the state
+          const index = parseInt(sectionParam.replace('because-you-watched-', ''), 10);
+          if (!isNaN(index) && index >= 0 && index < becauseYouWatchedSections.length) {
+            shows = becauseYouWatchedSections[index].relatedShows;
+          }
         }
+        
+        setSectionShows(shows);
+      } catch (error) {
+        console.error('Error loading section shows:', error);
+      } finally {
+        setIsLoadingSection(false);
       }
-      
-      setSectionShows(shows);
-    } catch (error) {
-      console.error('Error loading section shows:', error);
-    } finally {
-      setIsLoadingSection(false);
-    }
-  }, [sectionParam, forYouShows, trendingShows, popularRewatchesShows, becauseYouWatchedSections]);
+    };
+
+    loadSectionShows();
+  }, [sectionParam, becauseYouWatchedSections]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
