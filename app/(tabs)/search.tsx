@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, ImageBackground, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, ImageBackground, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -153,11 +153,13 @@ export default function SearchScreen() {
   const [isLoadingGenre, setIsLoadingGenre] = useState(false);
   const [genrePage, setGenrePage] = useState(1);
   const [hasMoreGenreShows, setHasMoreGenreShows] = useState(true);
+  const [lastSuccessfulGenrePage, setLastSuccessfulGenrePage] = useState(0);
   const [sectionShows, setSectionShows] = useState<any[]>([]);
   const [isLoadingSection, setIsLoadingSection] = useState(false);
   const [sectionPage, setSectionPage] = useState(1);
   const [sectionPageCount, setSectionPageCount] = useState<number | null>(null);
   const [hasMoreSectionShows, setHasMoreSectionShows] = useState(true);
+  const [lastSuccessfulSectionPage, setLastSuccessfulSectionPage] = useState(0);
 
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
@@ -585,6 +587,7 @@ export default function SearchScreen() {
       setGenreShows([]);
       setGenrePage(1);
       setHasMoreGenreShows(true);
+      setLastSuccessfulGenrePage(0);
       return;
     }
 
@@ -592,6 +595,7 @@ export default function SearchScreen() {
     setGenreShows([]);
     setGenrePage(2); // Start at page 2 since we're loading 2 pages initially
     setHasMoreGenreShows(true);
+    setLastSuccessfulGenrePage(0);
     
     const loadGenreShows = async () => {
       setIsLoadingGenre(true);
@@ -655,6 +659,7 @@ export default function SearchScreen() {
 
         const validShows = enrichedShows.filter(show => show !== null);
         setGenreShows(validShows);
+        setLastSuccessfulGenrePage(2); // Track initial successful load (loaded pages 1-2)
       } catch (error) {
         console.error('Error loading genre shows:', error);
       } finally {
@@ -672,6 +677,7 @@ export default function SearchScreen() {
       setSectionPage(1);
       setSectionPageCount(null);
       setHasMoreSectionShows(true);
+      setLastSuccessfulSectionPage(0);
       return;
     }
 
@@ -680,6 +686,7 @@ export default function SearchScreen() {
     setSectionPage(1);
     setSectionPageCount(null); // null = unknown, not yet fetched
     setHasMoreSectionShows(true);
+    setLastSuccessfulSectionPage(0);
 
     const loadSectionShows = async () => {
       setIsLoadingSection(true);
@@ -758,6 +765,7 @@ export default function SearchScreen() {
         }
         
         setSectionShows(shows);
+        setLastSuccessfulSectionPage(1); // Track initial successful load
       } catch (error) {
         console.error('Error loading section shows:', error);
       } finally {
@@ -822,18 +830,36 @@ export default function SearchScreen() {
               retryAttempt++;
               continue;
             } else {
-              // Exhausted retries with empty responses
-              console.error('Exhausted retries, ending pagination');
-              setHasMoreSectionShows(false);
+              // Exhausted retries - likely rate limiting, keep pagination alive for manual retry
+              console.warn('⚠️ Trakt API rate limit detected - keeping pagination alive for retry');
+              Alert.alert(
+                'Slow Down There!',
+                'Trakt needs a quick breather. Scroll again in a moment to load more shows.',
+                [{ text: 'Got It', style: 'default' }]
+              );
               setIsLoadingSection(false);
+              // Keep hasMore=true so user can retry later
               return;
             }
           } else {
-            // No pagination headers - fall back to length-based heuristic
-            // Empty response likely means end of data
-            setHasMoreSectionShows(false);
-            setIsLoadingSection(false);
-            return;
+            // No pagination headers - could be transient failure or end of data
+            if (retryAttempt < maxRetries) {
+              console.warn(`No pagination headers, retrying (${retryAttempt + 1}/${maxRetries})...`);
+              await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
+              retryAttempt++;
+              continue;
+            } else {
+              // After retries, treat as transient failure and keep pagination alive
+              console.warn('⚠️ Empty response without headers after retries - keeping pagination alive');
+              Alert.alert(
+                'Connection Issue',
+                'Having trouble loading more shows. Scroll again to retry.',
+                [{ text: 'OK', style: 'default' }]
+              );
+              setIsLoadingSection(false);
+              // Keep hasMore=true for manual retry
+              return;
+            }
           }
         }
         
@@ -857,6 +883,7 @@ export default function SearchScreen() {
         // Only increment page and append data after successful fetch and enrichment
         setSectionShows(prev => [...prev, ...newShows]);
         setSectionPage(nextPage); // Only incremented on success
+        setLastSuccessfulSectionPage(nextPage); // Track last successful fetch
         
         // Use pagination headers to determine if more data is available
         if (pagination && pagination.pageCount && nextPage >= pagination.pageCount) {
@@ -874,8 +901,14 @@ export default function SearchScreen() {
           await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
           retryAttempt++;
         } else {
-          // Exhausted retries
-          setHasMoreSectionShows(false);
+          // Exhausted retries - keep pagination alive for manual retry
+          console.warn('⚠️ Error loading shows after retries - keeping pagination alive');
+          Alert.alert(
+            'Network Error',
+            'Could not load more shows. Check your connection and scroll again to retry.',
+            [{ text: 'OK', style: 'default' }]
+          );
+          // Keep hasMore=true so user can retry later
           break;
         }
       }
@@ -891,56 +924,109 @@ export default function SearchScreen() {
     const nextPage = genrePage + 1;
     setIsLoadingGenre(true);
 
-    try {
-      const genreId = TMDB_GENRE_IDS[genreParam.toLowerCase()];
-      if (!genreId) return;
+    // Retry logic: max 2 retries with exponential backoff
+    let retryAttempt = 0;
+    const maxRetries = 2;
+    const delays = [250, 750];
 
-      const params: TMDBDiscoverParams = {
-        genreIds: [genreId],
-        page: nextPage,
-        sortBy: 'popularity.desc',
-      };
+    while (retryAttempt <= maxRetries) {
+      try {
+        const genreId = TMDB_GENRE_IDS[genreParam.toLowerCase()];
+        if (!genreId) {
+          setIsLoadingGenre(false);
+          return;
+        }
 
-      const tmdbShows = await discoverShows(params);
-      
-      if (tmdbShows.length < 20) {
-        setHasMoreGenreShows(false);
-      }
+        const params: TMDBDiscoverParams = {
+          genreIds: [genreId],
+          page: nextPage,
+          sortBy: 'popularity.desc',
+        };
 
-      const enrichedShows = await Promise.all(
-        tmdbShows.map(async (tmdbShow) => {
-          try {
-            const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
-            if (searchResults.results.length > 0) {
-              const traktShow = searchResults.results[0].show;
-              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-              return {
-                ...mapTraktShowToShow(traktShow, {
-                  posterUrl: enrichedData.posterUrl,
-                  totalSeasons: enrichedData.totalSeasons,
-                }),
-                id: `trakt-${traktShow.ids.trakt}`,
-                traktId: traktShow.ids.trakt,
-                traktShow,
-              };
-            }
-          } catch (error) {
-            console.error(`Error enriching ${tmdbShow.name}:`, error);
+        const tmdbShows = await discoverShows(params);
+        
+        // Handle empty responses
+        if (tmdbShows.length === 0) {
+          if (retryAttempt < maxRetries) {
+            console.warn(`Empty TMDB response on page ${nextPage}, retrying (${retryAttempt + 1}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
+            retryAttempt++;
+            continue;
+          } else {
+            // After retries, keep pagination alive for manual retry
+            console.warn('⚠️ TMDB empty response after retries - keeping pagination alive');
+            Alert.alert(
+              'No More Shows',
+              'Could not load more shows. Scroll again to retry or try a different genre.',
+              [{ text: 'OK', style: 'default' }]
+            );
+            setIsLoadingGenre(false);
+            // Keep hasMore=true for manual retry
+            return;
           }
-          return null;
-        })
-      );
+        }
+        
+        // Check if this is likely the last page
+        if (tmdbShows.length < 20) {
+          setHasMoreGenreShows(false);
+        }
 
-      const validShows = enrichedShows.filter(show => show !== null);
-      if (validShows.length > 0) {
-        setGenreShows(prev => [...prev, ...validShows]);
+        const enrichedShows = await Promise.all(
+          tmdbShows.map(async (tmdbShow) => {
+            try {
+              const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
+              if (searchResults.results.length > 0) {
+                const traktShow = searchResults.results[0].show;
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                return {
+                  ...mapTraktShowToShow(traktShow, {
+                    posterUrl: enrichedData.posterUrl,
+                    totalSeasons: enrichedData.totalSeasons,
+                  }),
+                  id: `trakt-${traktShow.ids.trakt}`,
+                  traktId: traktShow.ids.trakt,
+                  traktShow,
+                };
+              }
+            } catch (error) {
+              console.error(`Error enriching ${tmdbShow.name}:`, error);
+            }
+            return null;
+          })
+        );
+
+        const validShows = enrichedShows.filter(show => show !== null);
+        if (validShows.length > 0) {
+          setGenreShows(prev => [...prev, ...validShows]);
+        }
+        setGenrePage(nextPage);
+        setLastSuccessfulGenrePage(nextPage); // Track last successful fetch
+        
+        // Success - break retry loop
+        break;
+        
+      } catch (error) {
+        console.error(`Error loading more genre shows (attempt ${retryAttempt + 1}/${maxRetries + 1}):`, error);
+        
+        if (retryAttempt < maxRetries) {
+          // Retry on error
+          await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
+          retryAttempt++;
+        } else {
+          // Exhausted retries - keep pagination alive for manual retry
+          console.warn('⚠️ Error loading genre shows after retries - keeping pagination alive');
+          Alert.alert(
+            'Network Error',
+            'Could not load more shows. Check your connection and scroll again to retry.',
+            [{ text: 'OK', style: 'default' }]
+          );
+          // Keep hasMore=true so user can retry later
+          break;
+        }
       }
-      setGenrePage(nextPage);
-    } catch (error) {
-      console.error('Error loading more genre shows:', error);
-    } finally {
-      setIsLoadingGenre(false);
     }
+
+    setIsLoadingGenre(false);
   }, [genreParam, genrePage, isLoadingGenre, hasMoreGenreShows]);
 
   useEffect(() => {
