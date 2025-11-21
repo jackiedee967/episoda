@@ -466,11 +466,13 @@ export default function SearchScreen() {
     loadCuratedContent();
   }, [searchQuery, currentUser, posts]);
 
-  // Load nano-genres when genre parameter changes
+  // Load nano-genres when genre parameter changes (only show ones with keyword IDs)
   useEffect(() => {
     if (genreParam) {
       const nanoGenres = getNanoGenresForGenre(genreParam);
-      setGenreDetailNanoGenres(nanoGenres);
+      // Only show nano-genres that have keyword IDs to prevent filtering confusion
+      const availableNanoGenres = nanoGenres.filter(ng => ng.tmdbKeywordId !== null);
+      setGenreDetailNanoGenres(availableNanoGenres);
     } else {
       setGenreDetailNanoGenres([]);
     }
