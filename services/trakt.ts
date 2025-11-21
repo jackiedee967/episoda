@@ -241,7 +241,19 @@ export async function getAllEpisodes(traktId: number | string): Promise<TraktEpi
   }
 }
 
-export async function getTrendingShows(limit: number = 12, page: number = 1): Promise<TraktShow[]> {
+export interface TraktPaginationInfo {
+  page: number;
+  limit: number;
+  pageCount: number;
+  itemCount?: number;
+}
+
+export interface TraktPaginatedResponse<T> {
+  data: T[];
+  pagination: TraktPaginationInfo;
+}
+
+export async function getTrendingShows(limit: number = 12, page: number = 1): Promise<TraktPaginatedResponse<TraktShow>> {
   if (!TRAKT_CLIENT_ID) {
     console.error('❌ Trakt API credentials not configured');
     throw new Error('Trakt API credentials not configured');
@@ -258,11 +270,19 @@ export async function getTrendingShows(limit: number = 12, page: number = 1): Pr
       throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: { watchers: number; show: TraktShow }[] = await response.json();
-    const shows = data.map(item => item.show);
+    // Extract pagination headers
+    const pagination: TraktPaginationInfo = {
+      page: parseInt(response.headers.get('X-Pagination-Page') || page.toString(), 10),
+      limit: parseInt(response.headers.get('X-Pagination-Limit') || limit.toString(), 10),
+      pageCount: parseInt(response.headers.get('X-Pagination-Page-Count') || '1', 10),
+      itemCount: parseInt(response.headers.get('X-Pagination-Item-Count') || '0', 10),
+    };
+
+    const responseData: { watchers: number; show: TraktShow }[] = await response.json();
+    const shows = responseData.map(item => item.show);
     
-    console.log(`✅ Fetched ${shows.length} trending shows`);
-    return shows;
+    console.log(`✅ Fetched ${shows.length} trending shows (page ${pagination.page}/${pagination.pageCount})`);
+    return { data: shows, pagination };
   } catch (error) {
     console.error('Error fetching trending shows from Trakt:', error);
     throw error;
@@ -366,7 +386,7 @@ export async function getRelatedShows(showId: number | string, limit: number = 1
   }
 }
 
-export async function getPlayedShows(period: string = 'monthly', limit: number = 12, page: number = 1): Promise<TraktShow[]> {
+export async function getPlayedShows(period: string = 'monthly', limit: number = 12, page: number = 1): Promise<TraktPaginatedResponse<TraktShow>> {
   if (!TRAKT_CLIENT_ID) {
     console.error('❌ Trakt API credentials not configured');
     throw new Error('Trakt API credentials not configured');
@@ -383,11 +403,19 @@ export async function getPlayedShows(period: string = 'monthly', limit: number =
       throw new Error(`Trakt API error: ${response.status} ${response.statusText}`);
     }
 
-    const data: { watcher_count: number; play_count: number; collected_count: number; show: TraktShow }[] = await response.json();
-    const shows = data.map(item => item.show);
+    // Extract pagination headers
+    const pagination: TraktPaginationInfo = {
+      page: parseInt(response.headers.get('X-Pagination-Page') || page.toString(), 10),
+      limit: parseInt(response.headers.get('X-Pagination-Limit') || limit.toString(), 10),
+      pageCount: parseInt(response.headers.get('X-Pagination-Page-Count') || '1', 10),
+      itemCount: parseInt(response.headers.get('X-Pagination-Item-Count') || '0', 10),
+    };
+
+    const responseData: { watcher_count: number; play_count: number; collected_count: number; show: TraktShow }[] = await response.json();
+    const shows = responseData.map(item => item.show);
     
-    console.log(`✅ Fetched ${shows.length} most played shows`);
-    return shows;
+    console.log(`✅ Fetched ${shows.length} most played shows (page ${pagination.page}/${pagination.pageCount})`);
+    return { data: shows, pagination };
   } catch (error) {
     console.error(`Error fetching played shows from Trakt:`, error);
     throw error;

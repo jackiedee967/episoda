@@ -26,7 +26,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
-import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows } from '@/services/trakt';
+import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
@@ -156,6 +156,7 @@ export default function SearchScreen() {
   const [sectionShows, setSectionShows] = useState<any[]>([]);
   const [isLoadingSection, setIsLoadingSection] = useState(false);
   const [sectionPage, setSectionPage] = useState(1);
+  const [sectionPageCount, setSectionPageCount] = useState<number | null>(null);
   const [hasMoreSectionShows, setHasMoreSectionShows] = useState(true);
 
   const preselectedShowId = params.showId as string | undefined;
@@ -285,7 +286,7 @@ export default function SearchScreen() {
           .slice(0, 6);
         
         // Get trending shows for mix
-        const trending = await getTrendingShows(12);
+        const { data: trending } = await getTrendingShows(12);
         const enrichedTrendingForYou = await Promise.all(
           trending.map(async (traktShow) => {
             const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -439,7 +440,7 @@ export default function SearchScreen() {
         setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length >= 6));
         
         // 6. Popular Rewatches
-        const playedShows = await getPlayedShows('monthly', 12);
+        const { data: playedShows } = await getPlayedShows('monthly', 12);
         const enrichedPlayed = await Promise.all(
           playedShows.map(async (traktShow) => {
             const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -477,7 +478,7 @@ export default function SearchScreen() {
     setRefreshing(true);
     try {
       // Reload trending shows only (fast refresh)
-      const trending = await getTrendingShows(12);
+      const { data: trending } = await getTrendingShows(12);
       const enrichedTrending = await Promise.all(
         trending.map(async (traktShow) => {
           const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -496,7 +497,7 @@ export default function SearchScreen() {
       setTrendingShows(enrichedTrending);
       
       // Reload popular rewatches
-      const playedShows = await getPlayedShows('monthly', 12);
+      const { data: playedShows } = await getPlayedShows('monthly', 12);
       const enrichedPlayed = await Promise.all(
         playedShows.map(async (traktShow) => {
           const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -669,6 +670,7 @@ export default function SearchScreen() {
     if (!sectionParam) {
       setSectionShows([]);
       setSectionPage(1);
+      setSectionPageCount(null);
       setHasMoreSectionShows(true);
       return;
     }
@@ -676,6 +678,7 @@ export default function SearchScreen() {
     // Reset pagination state when section changes
     setSectionShows([]);
     setSectionPage(1);
+    setSectionPageCount(null); // null = unknown, not yet fetched
     setHasMoreSectionShows(true);
 
     const loadSectionShows = async () => {
@@ -685,7 +688,10 @@ export default function SearchScreen() {
         
         if (sectionParam === 'for-you') {
           // For You = friend activity + trending (sorted by rating)
-          const trending = await getTrendingShows(30, 1);
+          const { data: trending, pagination } = await getTrendingShows(30, 1);
+          if (pagination && pagination.pageCount) {
+            setSectionPageCount(pagination.pageCount);
+          }
           const enrichedTrending = await Promise.all(
             trending.map(async (traktShow) => {
               const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -704,7 +710,10 @@ export default function SearchScreen() {
           );
           shows = enrichedTrending.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         } else if (sectionParam === 'trending') {
-          const trending = await getTrendingShows(30, 1);
+          const { data: trending, pagination } = await getTrendingShows(30, 1);
+          if (pagination && pagination.pageCount) {
+            setSectionPageCount(pagination.pageCount);
+          }
           shows = await Promise.all(
             trending.map(async (traktShow) => {
               const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -721,7 +730,10 @@ export default function SearchScreen() {
             })
           );
         } else if (sectionParam === 'popular-rewatches') {
-          const playedShows = await getPlayedShows('monthly', 30, 1);
+          const { data: playedShows, pagination } = await getPlayedShows('monthly', 30, 1);
+          if (pagination && pagination.pageCount) {
+            setSectionPageCount(pagination.pageCount);
+          }
           shows = await Promise.all(
             playedShows.map(async (traktShow) => {
               const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -756,61 +768,121 @@ export default function SearchScreen() {
     loadSectionShows();
   }, [sectionParam, becauseYouWatchedSections]);
 
-  // Load more section shows (if available)
+  // Load more section shows with retry logic for production reliability
   const loadMoreSectionShows = useCallback(async () => {
     if (!sectionParam || isLoadingSection || !hasMoreSectionShows) return;
 
     const nextPage = sectionPage + 1;
+    
+    // Only check page count if we have valid pagination headers (null = unknown/not fetched yet)
+    if (sectionPageCount !== null && nextPage > sectionPageCount) {
+      setHasMoreSectionShows(false);
+      return;
+    }
+
     setIsLoadingSection(true);
 
-    try {
-      let traktShows: any[] = [];
-      
-      if (sectionParam === 'for-you' || sectionParam === 'trending') {
-        traktShows = await getTrendingShows(30, nextPage); // Fetch 30 more (same as initial page size)
-      } else if (sectionParam === 'popular-rewatches') {
-        traktShows = await getPlayedShows('monthly', 30, nextPage);
+    // Retry logic: max 2 retries with exponential backoff (250ms, 750ms)
+    let retryAttempt = 0;
+    const maxRetries = 2;
+    const delays = [250, 750];
+
+    while (retryAttempt <= maxRetries) {
+      try {
+        let traktShows: any[] = [];
+        let pagination: TraktPaginationInfo | null = null;
+        
+        if (sectionParam === 'for-you' || sectionParam === 'trending') {
+          const response = await getTrendingShows(30, nextPage);
+          traktShows = response.data;
+          pagination = response.pagination;
+        } else if (sectionParam === 'popular-rewatches') {
+          const response = await getPlayedShows('monthly', 30, nextPage);
+          traktShows = response.data;
+          pagination = response.pagination;
+        }
+        
+        // Update page count from headers (may change dynamically)
+        if (pagination && pagination.pageCount) {
+          setSectionPageCount(pagination.pageCount);
+        }
+        
+        // Handle empty responses
+        if (traktShows.length === 0) {
+          if (pagination && pagination.pageCount && nextPage >= pagination.pageCount) {
+            // Pagination confirms we're at the end
+            setHasMoreSectionShows(false);
+            setIsLoadingSection(false);
+            return;
+          } else if (pagination && pagination.pageCount) {
+            // Have headers but empty response and more pages exist - retry (could be rate limit)
+            if (retryAttempt < maxRetries) {
+              console.warn(`Empty response on page ${nextPage}, retrying (${retryAttempt + 1}/${maxRetries})...`);
+              await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
+              retryAttempt++;
+              continue;
+            } else {
+              // Exhausted retries with empty responses
+              console.error('Exhausted retries, ending pagination');
+              setHasMoreSectionShows(false);
+              setIsLoadingSection(false);
+              return;
+            }
+          } else {
+            // No pagination headers - fall back to length-based heuristic
+            // Empty response likely means end of data
+            setHasMoreSectionShows(false);
+            setIsLoadingSection(false);
+            return;
+          }
+        }
+        
+        // Success! Enrich shows
+        const newShows = await Promise.all(
+          traktShows.map(async (traktShow) => {
+            const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+            const show = mapTraktShowToShow(traktShow, {
+              posterUrl: enrichedData.posterUrl,
+              totalSeasons: enrichedData.totalSeasons,
+            });
+            return {
+              ...show,
+              id: show.id || `trakt-${traktShow.ids.trakt}`,
+              traktId: traktShow.ids.trakt,
+              traktShow
+            };
+          })
+        );
+        
+        // Only increment page and append data after successful fetch and enrichment
+        setSectionShows(prev => [...prev, ...newShows]);
+        setSectionPage(nextPage); // Only incremented on success
+        
+        // Use pagination headers to determine if more data is available
+        if (pagination && pagination.pageCount && nextPage >= pagination.pageCount) {
+          setHasMoreSectionShows(false);
+        }
+        
+        // Success - break retry loop
+        break;
+        
+      } catch (error) {
+        console.error(`Error loading section shows (attempt ${retryAttempt + 1}/${maxRetries + 1}):`, error);
+        
+        if (retryAttempt < maxRetries) {
+          // Retry on error
+          await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
+          retryAttempt++;
+        } else {
+          // Exhausted retries
+          setHasMoreSectionShows(false);
+          break;
+        }
       }
-      
-      // If Trakt returned empty array, we've reached the end
-      if (traktShows.length === 0) {
-        setHasMoreSectionShows(false);
-        setIsLoadingSection(false);
-        return;
-      }
-      
-      // Enrich shows
-      const newShows = await Promise.all(
-        traktShows.map(async (traktShow) => {
-          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-          const show = mapTraktShowToShow(traktShow, {
-            posterUrl: enrichedData.posterUrl,
-            totalSeasons: enrichedData.totalSeasons,
-          });
-          return {
-            ...show,
-            id: show.id || `trakt-${traktShow.ids.trakt}`,
-            traktId: traktShow.ids.trakt,
-            traktShow
-          };
-        })
-      );
-      
-      // Only increment page and append data after successful fetch
-      setSectionShows(prev => [...prev, ...newShows]);
-      setSectionPage(nextPage);
-      
-      // If we got fewer than requested (full page is 30), we've reached the end
-      if (traktShows.length < 30) {
-        setHasMoreSectionShows(false);
-      }
-    } catch (error) {
-      console.error('Error loading more section shows:', error);
-      setHasMoreSectionShows(false);
-    } finally {
-      setIsLoadingSection(false);
     }
-  }, [sectionParam, sectionPage, isLoadingSection, hasMoreSectionShows]);
+
+    setIsLoadingSection(false);
+  }, [sectionParam, sectionPage, sectionPageCount, isLoadingSection, hasMoreSectionShows]);
 
   // Load more genre shows (pagination - starts from page 3 since initial load gets pages 1-2)
   const loadMoreGenreShows = useCallback(async () => {

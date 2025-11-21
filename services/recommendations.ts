@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { searchShows, getTrendingShows, TraktShow } from './trakt';
+import { searchShows, getTrendingShows, TraktShow, TraktPaginatedResponse } from './trakt';
 import { DatabaseShow } from './showDatabase';
 
 interface RecentlyLoggedShow {
@@ -267,7 +267,8 @@ export async function getCombinedRecommendations(
       } else {
         // Fallback to trending shows if no genre interests
         console.log('ℹ️ No genre interests, using trending shows as fallback');
-        traktRecommendations = await getTrendingShows(remainingSlots * 2);
+        const response = await getTrendingShows(remainingSlots * 2);
+        traktRecommendations = response.data;
       }
     } catch (error) {
       // CRITICAL: If Trakt fails, try to get database trending shows as fallback
