@@ -87,10 +87,10 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
       (supabase as any).from('social_links').select('*').in('user_id', uniqueUserIds),
       supabase.from('shows').select('*').in('id', uniqueShowIds),
       allEpisodeIds.length > 0 ? supabase.from('episodes').select('*').in('id', allEpisodeIds) : { data: [] },
-      (supabase as any).from('likes').select('post_id').in('post_id', postIds),
-      (supabase as any).from('likes').select('post_id').eq('user_id', userId).in('post_id', postIds),
+      (supabase as any).from('post_likes').select('post_id').in('post_id', postIds),
+      (supabase as any).from('post_likes').select('post_id').eq('user_id', userId).in('post_id', postIds),
       (supabase as any).from('comments').select('post_id').in('post_id', postIds),
-      (supabase as any).from('reposts').select('post_id').in('post_id', postIds),
+      (supabase as any).from('post_reposts').select('post_id').in('post_id', postIds),
     ]);
 
     // Group social links by user_id

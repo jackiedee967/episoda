@@ -1149,7 +1149,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         // Fetch reposts first to get reposter user IDs
         const { data: repostsData } = await supabase
-          .from('reposts')
+          .from('post_reposts')
           .select('post_id, user_id, created_at')
           .in('post_id', postIds);
         
@@ -1168,9 +1168,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Fetch all episodes
           allEpisodeIds.length > 0 ? supabase.from('episodes').select('*').in('id', allEpisodeIds) : { data: [] },
           // Fetch likes ONLY for these posts
-          supabase.from('likes').select('post_id').in('post_id', postIds),
+          supabase.from('post_likes').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
-          supabase.from('likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
+          supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
         ]);
         
         // Comments removed - no comments table in schema, count stored in posts.comments column
@@ -1608,7 +1608,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       // Step 3: Delete likes referencing this post
       const { error: likesError } = await supabase
-        .from('likes')
+        .from('post_likes')
         .delete()
         .eq('post_id', postId);
 
@@ -1619,7 +1619,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       // Step 4: Delete reposts referencing this post
       const { error: repostsError } = await supabase
-        .from('reposts')
+        .from('post_reposts')
         .delete()
         .eq('post_id', postId);
 
@@ -1711,7 +1711,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       // Insert like
       const { data, error } = await supabase
-        .from('likes')
+        .from('post_likes')
         .insert({
           post_id: postId,
           user_id: user.id,
@@ -1781,7 +1781,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (user) {
         // Delete like
         await supabase
-          .from('likes')
+          .from('post_likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
