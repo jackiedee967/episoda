@@ -19,6 +19,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Styling**: StyleSheet API with a centralized design token system (`styles/tokens.ts`)
 - **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow. **CRITICAL FIX (Nov 2025)**: Resolved production "Unknown User" bug caused by race condition during session initialization. AuthContext now uses `authReady` flag to signal when bootstrap completes, preventing DataContext from clearing caches prematurely. User state initialized to `undefined` (not `null`) during startup, and DataContext only clears data when `authReady=true AND user=null`.
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
+- **Database Schema Alignment (Nov 21, 2025)**: Comprehensive schema alignment completed to ensure 100% consistency between code and database. All table names standardized (`likes`, `reposts`, `comments`), comment system updated to use `content` field (no image support), and social links properly fetched from `social_links` table. User type updated with correct `socialLinks: SocialLink[]` array type.
 
 ### Feature Specifications
 - **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed with infinite scroll, user profiles, "You May Know" suggestions with mutual friends.
