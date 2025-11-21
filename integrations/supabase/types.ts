@@ -247,7 +247,7 @@ export type Database = {
         }
         Relationships: []
       }
-      likes: {
+      post_likes: {
         Row: {
           id: string
           post_id: string
@@ -268,14 +268,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "likes_post_id_fkey"
+            foreignKeyName: "post_likes_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
             referencedColumns: ["id"]
           }
         ]
       }
-      reposts: {
+      post_reposts: {
         Row: {
           id: string
           post_id: string
@@ -296,7 +296,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "reposts_post_id_fkey"
+            foreignKeyName: "post_reposts_post_id_fkey"
             columns: ["post_id"]
             referencedRelation: "posts"
             referencedColumns: ["id"]
@@ -308,7 +308,7 @@ export type Database = {
           id: string
           user_id: string | null
           post_id: string | null
-          content: string
+          comment_text: string
           created_at: string
           parent_comment_id: string | null
           is_deleted: boolean
@@ -317,7 +317,7 @@ export type Database = {
           id?: string
           user_id?: string | null
           post_id?: string | null
-          content: string
+          comment_text: string
           created_at?: string
           parent_comment_id?: string | null
           is_deleted?: boolean
@@ -326,7 +326,7 @@ export type Database = {
           id?: string
           user_id?: string | null
           post_id?: string | null
-          content?: string
+          comment_text?: string
           created_at?: string
           parent_comment_id?: string | null
           is_deleted?: boolean

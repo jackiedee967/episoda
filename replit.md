@@ -19,7 +19,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Styling**: StyleSheet API with a centralized design token system (`styles/tokens.ts`)
 - **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow. **CRITICAL FIX (Nov 2025)**: Resolved production "Unknown User" bug caused by race condition during session initialization. AuthContext now uses `authReady` flag to signal when bootstrap completes, preventing DataContext from clearing caches prematurely. User state initialized to `undefined` (not `null`) during startup, and DataContext only clears data when `authReady=true AND user=null`.
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
-- **Database Schema Alignment (Nov 21, 2025)**: Comprehensive schema alignment completed to ensure 100% consistency between code and database. All table names standardized (`likes`, `reposts`, `comments`), comment system updated to use `content` field (no image support), and social links properly fetched from `social_links` table. User type updated with correct `socialLinks: SocialLink[]` array type.
+- **Database Schema Alignment (Nov 21, 2025)**: Comprehensive schema alignment completed to ensure 100% consistency between code and database. All table names standardized to match Supabase PostgREST cached schema: `post_likes`, `post_reposts`, `comments` with `comment_text` field (no image support). Social links properly fetched from `social_links` table. User type updated with correct `socialLinks: SocialLink[]` array type. **CRITICAL**: Table names cannot be changed due to Supabase managed PostgREST cache - attempting to rename tables will break persistence.
 
 ### Feature Specifications
 - **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed with infinite scroll, user profiles, "You May Know" suggestions with mutual friends.
@@ -43,7 +43,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, background loading for remaining seasons, smart season logic, and optimized queries for community and friend feeds. Homepage uses cached recommendations from DataContext to eliminate redundant Trakt API calls.
 - **Smart Show Recommendations**: Personalized recommendation system using user posts, genre interests, and trending shows with an instant-loading caching system (25 recommendations, 5-minute TTL), including friend-based recommendations. DataContext caches enriched recommendations that homepage accesses directly, preventing duplicate API requests.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system for zero-downtime operation.
-- **Database Schema**: `profiles`, `posts`, `shows`, `episodes`, `playlists`, `playlist_shows`, `likes`, `reposts`, `comments`, `follows`, `post_episodes`, `social_links`, `help_desk_posts`.
+- **Database Schema**: `profiles`, `posts`, `shows`, `episodes`, `playlists`, `playlist_shows`, `post_likes`, `post_reposts`, `comments` (with `comment_text` field), `follows`, `post_episodes`, `social_links`, `help_desk_posts`, `comment_likes`, `watch_history`, `notification_preferences`, `reports`. **NOTE**: Table names `post_likes` and `post_reposts` are locked by Supabase PostgREST cache and cannot be renamed without breaking production.
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.
