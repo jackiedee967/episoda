@@ -241,16 +241,16 @@ export async function getAllEpisodes(traktId: number | string): Promise<TraktEpi
   }
 }
 
-export async function getTrendingShows(limit: number = 12): Promise<TraktShow[]> {
+export async function getTrendingShows(limit: number = 12, page: number = 1): Promise<TraktShow[]> {
   if (!TRAKT_CLIENT_ID) {
     console.error('❌ Trakt API credentials not configured');
     throw new Error('Trakt API credentials not configured');
   }
 
   try {
-    console.log(`🔥 Fetching ${limit} trending shows from Trakt`);
+    console.log(`🔥 Fetching ${limit} trending shows from Trakt (page ${page})`);
     const response = await fetch(
-      `${TRAKT_BASE_URL}/shows/trending?extended=full&limit=${limit}`,
+      `${TRAKT_BASE_URL}/shows/trending?extended=full&limit=${limit}&page=${page}`,
       { headers: TRAKT_HEADERS }
     );
 
@@ -366,16 +366,16 @@ export async function getRelatedShows(showId: number | string, limit: number = 1
   }
 }
 
-export async function getPlayedShows(period: string = 'monthly', limit: number = 12): Promise<TraktShow[]> {
+export async function getPlayedShows(period: string = 'monthly', limit: number = 12, page: number = 1): Promise<TraktShow[]> {
   if (!TRAKT_CLIENT_ID) {
     console.error('❌ Trakt API credentials not configured');
     throw new Error('Trakt API credentials not configured');
   }
 
   try {
-    console.log(`🔁 Fetching ${limit} most played shows (${period})`);
+    console.log(`🔁 Fetching ${limit} most played shows (${period}, page ${page})`);
     const response = await fetch(
-      `${TRAKT_BASE_URL}/shows/played/${period}?extended=full&limit=${limit}`,
+      `${TRAKT_BASE_URL}/shows/played/${period}?extended=full&limit=${limit}&page=${page}`,
       { headers: TRAKT_HEADERS }
     );
 

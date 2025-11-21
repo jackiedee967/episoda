@@ -151,8 +151,12 @@ export default function SearchScreen() {
   const sectionParam = params.section as string | undefined;
   const [genreShows, setGenreShows] = useState<any[]>([]);
   const [isLoadingGenre, setIsLoadingGenre] = useState(false);
+  const [genrePage, setGenrePage] = useState(1);
+  const [hasMoreGenreShows, setHasMoreGenreShows] = useState(true);
   const [sectionShows, setSectionShows] = useState<any[]>([]);
   const [isLoadingSection, setIsLoadingSection] = useState(false);
+  const [sectionPage, setSectionPage] = useState(1);
+  const [hasMoreSectionShows, setHasMoreSectionShows] = useState(true);
 
   const preselectedShowId = params.showId as string | undefined;
   const [showFilter, setShowFilter] = useState<string | undefined>(preselectedShowId);
@@ -574,13 +578,20 @@ export default function SearchScreen() {
     }, [searchQuery, currentUser, posts, forYouShows])
   );
 
-  // Load genre detail view
+  // Load genre detail view with pagination
   useEffect(() => {
     if (!genreParam) {
       setGenreShows([]);
+      setGenrePage(1);
+      setHasMoreGenreShows(true);
       return;
     }
 
+    // Reset when genre changes
+    setGenreShows([]);
+    setGenrePage(2); // Start at page 2 since we're loading 2 pages initially
+    setHasMoreGenreShows(true);
+    
     const loadGenreShows = async () => {
       setIsLoadingGenre(true);
       try {
@@ -591,18 +602,33 @@ export default function SearchScreen() {
           return;
         }
 
-        // Build TMDB discover params
-        const params: TMDBDiscoverParams = {
+        // Fetch first 2 pages to ensure we have 30+ shows after enrichment
+        const page1Params: TMDBDiscoverParams = {
           genreIds: [genreId],
           page: 1,
           sortBy: 'popularity.desc',
         };
+        const page2Params: TMDBDiscoverParams = {
+          genreIds: [genreId],
+          page: 2,
+          sortBy: 'popularity.desc',
+        };
 
-        const tmdbShows = await discoverShows(params);
+        const [page1Shows, page2Shows] = await Promise.all([
+          discoverShows(page1Params),
+          discoverShows(page2Params)
+        ]);
+        
+        const allShows = [...page1Shows, ...page2Shows];
+        
+        // Check if we have more shows
+        if (page2Shows.length < 20) {
+          setHasMoreGenreShows(false);
+        }
         
         // Enrich with Trakt data
         const enrichedShows = await Promise.all(
-          tmdbShows.slice(0, 30).map(async (tmdbShow) => {
+          allShows.map(async (tmdbShow) => {
             try {
               // Search for matching Trakt show
               const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
@@ -642,8 +668,15 @@ export default function SearchScreen() {
   useEffect(() => {
     if (!sectionParam) {
       setSectionShows([]);
+      setSectionPage(1);
+      setHasMoreSectionShows(true);
       return;
     }
+
+    // Reset pagination state when section changes
+    setSectionShows([]);
+    setSectionPage(1);
+    setHasMoreSectionShows(true);
 
     const loadSectionShows = async () => {
       setIsLoadingSection(true);
@@ -652,7 +685,7 @@ export default function SearchScreen() {
         
         if (sectionParam === 'for-you') {
           // For You = friend activity + trending (sorted by rating)
-          const trending = await getTrendingShows(30);
+          const trending = await getTrendingShows(30, 1);
           const enrichedTrending = await Promise.all(
             trending.map(async (traktShow) => {
               const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -671,7 +704,7 @@ export default function SearchScreen() {
           );
           shows = enrichedTrending.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         } else if (sectionParam === 'trending') {
-          const trending = await getTrendingShows(30);
+          const trending = await getTrendingShows(30, 1);
           shows = await Promise.all(
             trending.map(async (traktShow) => {
               const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -688,7 +721,7 @@ export default function SearchScreen() {
             })
           );
         } else if (sectionParam === 'popular-rewatches') {
-          const playedShows = await getPlayedShows('monthly', 30);
+          const playedShows = await getPlayedShows('monthly', 30, 1);
           shows = await Promise.all(
             playedShows.map(async (traktShow) => {
               const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -722,6 +755,121 @@ export default function SearchScreen() {
 
     loadSectionShows();
   }, [sectionParam, becauseYouWatchedSections]);
+
+  // Load more section shows (if available)
+  const loadMoreSectionShows = useCallback(async () => {
+    if (!sectionParam || isLoadingSection || !hasMoreSectionShows) return;
+
+    const nextPage = sectionPage + 1;
+    setIsLoadingSection(true);
+
+    try {
+      let traktShows: any[] = [];
+      
+      if (sectionParam === 'for-you' || sectionParam === 'trending') {
+        traktShows = await getTrendingShows(30, nextPage); // Fetch 30 more (same as initial page size)
+      } else if (sectionParam === 'popular-rewatches') {
+        traktShows = await getPlayedShows('monthly', 30, nextPage);
+      }
+      
+      // If Trakt returned empty array, we've reached the end
+      if (traktShows.length === 0) {
+        setHasMoreSectionShows(false);
+        setIsLoadingSection(false);
+        return;
+      }
+      
+      // Enrich shows
+      const newShows = await Promise.all(
+        traktShows.map(async (traktShow) => {
+          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+          const show = mapTraktShowToShow(traktShow, {
+            posterUrl: enrichedData.posterUrl,
+            totalSeasons: enrichedData.totalSeasons,
+          });
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            traktShow
+          };
+        })
+      );
+      
+      // Only increment page and append data after successful fetch
+      setSectionShows(prev => [...prev, ...newShows]);
+      setSectionPage(nextPage);
+      
+      // If we got fewer than requested (full page is 30), we've reached the end
+      if (traktShows.length < 30) {
+        setHasMoreSectionShows(false);
+      }
+    } catch (error) {
+      console.error('Error loading more section shows:', error);
+      setHasMoreSectionShows(false);
+    } finally {
+      setIsLoadingSection(false);
+    }
+  }, [sectionParam, sectionPage, isLoadingSection, hasMoreSectionShows]);
+
+  // Load more genre shows (pagination - starts from page 3 since initial load gets pages 1-2)
+  const loadMoreGenreShows = useCallback(async () => {
+    if (!genreParam || isLoadingGenre || !hasMoreGenreShows) return;
+
+    const nextPage = genrePage + 1;
+    setIsLoadingGenre(true);
+
+    try {
+      const genreId = TMDB_GENRE_IDS[genreParam.toLowerCase()];
+      if (!genreId) return;
+
+      const params: TMDBDiscoverParams = {
+        genreIds: [genreId],
+        page: nextPage,
+        sortBy: 'popularity.desc',
+      };
+
+      const tmdbShows = await discoverShows(params);
+      
+      if (tmdbShows.length < 20) {
+        setHasMoreGenreShows(false);
+      }
+
+      const enrichedShows = await Promise.all(
+        tmdbShows.map(async (tmdbShow) => {
+          try {
+            const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
+            if (searchResults.results.length > 0) {
+              const traktShow = searchResults.results[0].show;
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              return {
+                ...mapTraktShowToShow(traktShow, {
+                  posterUrl: enrichedData.posterUrl,
+                  totalSeasons: enrichedData.totalSeasons,
+                }),
+                id: `trakt-${traktShow.ids.trakt}`,
+                traktId: traktShow.ids.trakt,
+                traktShow,
+              };
+            }
+          } catch (error) {
+            console.error(`Error enriching ${tmdbShow.name}:`, error);
+          }
+          return null;
+        })
+      );
+
+      const validShows = enrichedShows.filter(show => show !== null);
+      if (validShows.length > 0) {
+        setGenreShows(prev => [...prev, ...validShows]);
+      }
+      setGenrePage(nextPage);
+    } catch (error) {
+      console.error('Error loading more genre shows:', error);
+    } finally {
+      setIsLoadingGenre(false);
+    }
+  }, [genreParam, genrePage, isLoadingGenre, hasMoreGenreShows]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -1552,111 +1700,127 @@ export default function SearchScreen() {
 
         {renderShowFilter()}
 
-        {/* Genre Detail View */}
+        {/* Genre Detail View with Infinite Scroll */}
         {params.genre && searchQuery.trim().length === 0 ? (
-          <RNScrollView
+          <FlatList
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.detailContainer}
-          >
-            {/* Back Button and Header */}
-            <View style={styles.detailHeader}>
-              <Pressable 
-                style={styles.backButton}
-                onPress={() => router.push('/search?tab=shows')}
+            data={genreShows}
+            numColumns={3}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            ListHeaderComponent={
+              <View style={styles.detailHeader}>
+                <Pressable 
+                  style={styles.backButton}
+                  onPress={() => router.push('/search?tab=shows')}
+                >
+                  <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
+                  <Text style={styles.backButtonText}>Back</Text>
+                </Pressable>
+                <Text style={styles.detailTitle}>
+                  {getGenreEmoji(params.genre as string)} {(params.genre as string).charAt(0).toUpperCase() + (params.genre as string).slice(1)}
+                </Text>
+              </View>
+            }
+            renderItem={({ item: show }) => (
+              <Pressable
+                style={styles.gridItem}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
               >
-                <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
-                <Text style={styles.backButtonText}>Back</Text>
+                <FadeInImage
+                  source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
+                  style={styles.gridPoster}
+                  contentFit="cover"
+                />
+                <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
+                {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
               </Pressable>
-              <Text style={styles.detailTitle}>
-                {getGenreEmoji(params.genre as string)} {(params.genre as string).charAt(0).toUpperCase() + (params.genre as string).slice(1)}
-              </Text>
-            </View>
-
-            {/* Genre Results Grid */}
-            {isLoadingGenre ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
-              </View>
-            ) : genreShows.length > 0 ? (
-              <View style={styles.gridContainer}>
-                {genreShows.map((show, index) => (
-                  <Pressable
-                    key={`${show.id}-${index}`}
-                    style={styles.gridItem}
-                    onPress={async () => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      const uuid = await ensureShowUuid(show, show.traktShow);
-                      router.push(`/show/${uuid}`);
-                    }}
-                  >
-                    <FadeInImage
-                      source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
-                      style={styles.gridPoster}
-                      contentFit="cover"
-                    />
-                    <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
-                    {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No shows found for this genre</Text>
-              </View>
             )}
-          </RNScrollView>
+            ListEmptyComponent={
+              isLoadingGenre ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+                </View>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No shows found for this genre</Text>
+                </View>
+              )
+            }
+            ListFooterComponent={
+              isLoadingGenre && genreShows.length > 0 ? (
+                <View style={styles.loadingFooter}>
+                  <ActivityIndicator size="small" color={tokens.colors.greenHighlight} />
+                </View>
+              ) : null
+            }
+            onEndReached={loadMoreGenreShows}
+            onEndReachedThreshold={0.5}
+          />
         ) : params.section && searchQuery.trim().length === 0 ? (
-          <RNScrollView
+          <FlatList
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.detailContainer}
-          >
-            {/* Back Button and Header */}
-            <View style={styles.detailHeader}>
-              <Pressable 
-                style={styles.backButton}
-                onPress={() => router.push('/search?tab=shows')}
+            data={sectionShows}
+            numColumns={3}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            ListHeaderComponent={
+              <View style={styles.detailHeader}>
+                <Pressable 
+                  style={styles.backButton}
+                  onPress={() => router.push('/search?tab=shows')}
+                >
+                  <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
+                  <Text style={styles.backButtonText}>Back</Text>
+                </Pressable>
+                <Text style={styles.detailTitle}>{getSectionTitle(params.section as string)}</Text>
+              </View>
+            }
+            renderItem={({ item: show }) => (
+              <Pressable
+                style={styles.gridItem}
+                onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  const uuid = await ensureShowUuid(show, show.traktShow);
+                  router.push(`/show/${uuid}`);
+                }}
               >
-                <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
-                <Text style={styles.backButtonText}>Back</Text>
+                <FadeInImage
+                  source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
+                  style={styles.gridPoster}
+                  contentFit="cover"
+                />
+                <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
+                {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
               </Pressable>
-              <Text style={styles.detailTitle}>{getSectionTitle(params.section as string)}</Text>
-            </View>
-
-            {/* Section Results Grid */}
-            {isLoadingSection ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
-              </View>
-            ) : sectionShows.length > 0 ? (
-              <View style={styles.gridContainer}>
-                {sectionShows.map((show, index) => (
-                  <Pressable
-                    key={`${show.id}-${index}`}
-                    style={styles.gridItem}
-                    onPress={async () => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      const uuid = await ensureShowUuid(show, show.traktShow);
-                      router.push(`/show/${uuid}`);
-                    }}
-                  >
-                    <FadeInImage
-                      source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
-                      style={styles.gridPoster}
-                      contentFit="cover"
-                    />
-                    <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
-                    {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
-                  </Pressable>
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No shows found for this section</Text>
-              </View>
             )}
-          </RNScrollView>
+            ListEmptyComponent={
+              isLoadingSection ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
+                </View>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No shows found for this section</Text>
+                </View>
+              )
+            }
+            ListFooterComponent={
+              isLoadingSection && sectionShows.length > 0 ? (
+                <View style={styles.loadingFooter}>
+                  <ActivityIndicator size="small" color={tokens.colors.greenHighlight} />
+                </View>
+              ) : null
+            }
+            onEndReached={loadMoreSectionShows}
+            onEndReachedThreshold={0.5}
+          />
         ) : searchQuery.trim().length === 0 ? (
           <RNScrollView
             style={styles.scrollView}
