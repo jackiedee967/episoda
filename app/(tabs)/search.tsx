@@ -32,7 +32,6 @@ import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
 import { getShowRecommendations, getSimilarShows } from '@/services/tmdb';
 import { rankCandidates } from '@/services/recommendationScoring';
-import { getNanoGenresForGenre, getNanoGenreById } from '@/services/curatedNanoGenres';
 import { discoverShows, type TMDBDiscoverParams, type TMDBShow } from '@/services/tmdb';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
@@ -150,9 +149,7 @@ export default function SearchScreen() {
   // Genre/Section detail view state
   const genreParam = params.genre as string | undefined;
   const sectionParam = params.section as string | undefined;
-  const nanoGenreParam = params.nanoGenre as string | undefined;
   const [genreShows, setGenreShows] = useState<any[]>([]);
-  const [genreDetailNanoGenres, setGenreDetailNanoGenres] = useState<NanoGenre[]>([]);
   const [isLoadingGenre, setIsLoadingGenre] = useState(false);
   const [sectionShows, setSectionShows] = useState<any[]>([]);
   const [isLoadingSection, setIsLoadingSection] = useState(false);
@@ -466,18 +463,6 @@ export default function SearchScreen() {
     loadCuratedContent();
   }, [searchQuery, currentUser, posts]);
 
-  // Load nano-genres when genre parameter changes (only show ones with keyword IDs)
-  useEffect(() => {
-    if (genreParam) {
-      const nanoGenres = getNanoGenresForGenre(genreParam);
-      // Only show nano-genres that have keyword IDs to prevent filtering confusion
-      const availableNanoGenres = nanoGenres.filter(ng => ng.tmdbKeywordId !== null);
-      setGenreDetailNanoGenres(availableNanoGenres);
-    } else {
-      setGenreDetailNanoGenres([]);
-    }
-  }, [genreParam]);
-
   const handleRefresh = useCallback(async () => {
     // Don't refresh while searching or without a user
     if (searchQuery.trim().length > 0 || !currentUser?.id || isLoadingCurated) return;
@@ -613,17 +598,6 @@ export default function SearchScreen() {
           sortBy: 'popularity.desc',
         };
 
-        // Add nano-genre keyword filter if selected and keyword ID is available
-        if (nanoGenreParam) {
-          const nanoGenre = getNanoGenreById(nanoGenreParam);
-          if (nanoGenre && nanoGenre.tmdbKeywordId) {
-            params.keywordIds = [nanoGenre.tmdbKeywordId];
-            console.log(`🏷️ Filtering by nano-genre: ${nanoGenre.name} (keyword ID: ${nanoGenre.tmdbKeywordId})`);
-          } else if (nanoGenre) {
-            console.log(`⚠️ Nano-genre "${nanoGenre.name}" selected but keyword ID not available, showing genre results only`);
-          }
-        }
-
         const tmdbShows = await discoverShows(params);
         
         // Enrich with Trakt data
@@ -662,7 +636,7 @@ export default function SearchScreen() {
     };
 
     loadGenreShows();
-  }, [genreParam, nanoGenreParam]);
+  }, [genreParam]);
 
   // Load section detail view
   useEffect(() => {
@@ -1546,42 +1520,6 @@ export default function SearchScreen() {
               </Text>
             </View>
 
-            {/* Nano-genre filter pills */}
-            {genreDetailNanoGenres.length > 0 && (
-              <View style={styles.nanoGenreFilters}>
-                <FlatList
-                  data={genreDetailNanoGenres}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.nanoGenrePillsContainer}
-                  renderItem={({ item: nanoGenre }) => (
-                    <Pressable
-                      style={[
-                        styles.nanoGenrePill,
-                        params.nanoGenre === nanoGenre.id && styles.nanoGenrePillActive
-                      ]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        if (params.nanoGenre === nanoGenre.id) {
-                          router.push(`/search?tab=shows&genre=${params.genre}`);
-                        } else {
-                          router.push(`/search?tab=shows&genre=${params.genre}&nanoGenre=${nanoGenre.id}`);
-                        }
-                      }}
-                    >
-                      <Text style={[
-                        styles.nanoGenrePillText,
-                        params.nanoGenre === nanoGenre.id && styles.nanoGenrePillTextActive
-                      ]}>
-                        {nanoGenre.name}
-                      </Text>
-                    </Pressable>
-                  )}
-                  keyExtractor={(item) => item.id}
-                />
-              </View>
-            )}
-
             {/* Genre Results Grid */}
             {isLoadingGenre ? (
               <View style={styles.loadingContainer}>
@@ -1634,13 +1572,13 @@ export default function SearchScreen() {
             </View>
 
             {/* Section Results Grid */}
-            {sectionDetailLoading ? (
+            {isLoadingSection ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
               </View>
-            ) : sectionDetailShows.length > 0 ? (
+            ) : sectionShows.length > 0 ? (
               <View style={styles.gridContainer}>
-                {sectionDetailShows.map((show, index) => (
+                {sectionShows.map((show, index) => (
                   <Pressable
                     key={`${show.id}-${index}`}
                     style={styles.gridItem}
@@ -2281,10 +2219,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 15,
-    gap: 15,
+    gap: 10,
   },
   gridItem: {
-    width: '47%',
+    width: '31%',
     marginBottom: 10,
   },
   gridPoster: {
