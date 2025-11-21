@@ -152,6 +152,7 @@ export default function SearchScreen() {
   const sectionParam = params.section as string | undefined;
   const nanoGenreParam = params.nanoGenre as string | undefined;
   const [genreShows, setGenreShows] = useState<any[]>([]);
+  const [genreDetailNanoGenres, setGenreDetailNanoGenres] = useState<NanoGenre[]>([]);
   const [isLoadingGenre, setIsLoadingGenre] = useState(false);
   const [sectionShows, setSectionShows] = useState<any[]>([]);
   const [isLoadingSection, setIsLoadingSection] = useState(false);
@@ -464,6 +465,16 @@ export default function SearchScreen() {
     
     loadCuratedContent();
   }, [searchQuery, currentUser, posts]);
+
+  // Load nano-genres when genre parameter changes
+  useEffect(() => {
+    if (genreParam) {
+      const nanoGenres = getNanoGenresForGenre(genreParam);
+      setGenreDetailNanoGenres(nanoGenres);
+    } else {
+      setGenreDetailNanoGenres([]);
+    }
+  }, [genreParam]);
 
   const handleRefresh = useCallback(async () => {
     // Don't refresh while searching or without a user
@@ -1570,13 +1581,13 @@ export default function SearchScreen() {
             )}
 
             {/* Genre Results Grid */}
-            {genreDetailLoading ? (
+            {isLoadingGenre ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
               </View>
-            ) : genreDetailShows.length > 0 ? (
+            ) : genreShows.length > 0 ? (
               <View style={styles.gridContainer}>
-                {genreDetailShows.map((show, index) => (
+                {genreShows.map((show, index) => (
                   <Pressable
                     key={`${show.id}-${index}`}
                     style={styles.gridItem}
