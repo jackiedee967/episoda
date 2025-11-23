@@ -1,4 +1,4 @@
-import { TraktShow, getShowSeasons } from './trakt';
+import { TraktShow, getShowSeasons, fetchShowEndYear } from './trakt';
 import { getShowByImdbId, getShowByTvdbId, searchShowByName, TVMazeShow } from './tvmaze';
 import { getOMDBByTitle } from './omdb';
 import { searchShowByName as searchTMDB, getPosterUrl as getTMDBPosterUrl, getShowKeywords } from './tmdb';
@@ -11,6 +11,7 @@ export interface EnrichedShowData {
   imdbId: string | null;
   tmdbId: number | null;
   keywords: string[];
+  endYear: number | undefined;
   isEnriched: boolean;
 }
 
@@ -81,8 +82,10 @@ class ShowEnrichmentManager {
         posterUrl = tvmazeData?.posterUrl || null;
       }
 
-      // Fetch season count from Trakt
-      const totalSeasons = await this.fetchSeasons(traktShow.ids.trakt);
+      // Fetch seasons once and reuse for both totalSeasons and endYear
+      const seasons = await getShowSeasons(traktShow.ids.trakt);
+      const totalSeasons = seasons.filter(s => s.number > 0).length;
+      const endYear = await fetchShowEndYear(traktShow, seasons);
 
       const enriched = {
         totalSeasons,
@@ -92,6 +95,7 @@ class ShowEnrichmentManager {
         imdbId,
         tmdbId,
         keywords,
+        endYear,
         isEnriched: !!posterUrl,
       };
       
@@ -107,6 +111,7 @@ class ShowEnrichmentManager {
         imdbId: traktShow.ids.imdb || null,
         tmdbId: null,
         keywords: [],
+        endYear: undefined,
         isEnriched: false,
       };
     } finally {

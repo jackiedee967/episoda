@@ -6,6 +6,7 @@ export interface ShowOverrides {
   posterUrl?: string | null;
   totalSeasons?: number;
   totalEpisodes?: number;
+  endYear?: number;
 }
 
 export function mapTraktShowToShow(
@@ -17,7 +18,7 @@ export function mapTraktShowToShow(
     traktId: traktShow.ids.trakt,
     title: traktShow.title,
     year: traktShow.year,
-    endYear: undefined, // Year ranges disabled - heuristic calculation was inaccurate
+    endYear: overrides.endYear,
     poster: overrides.posterUrl ?? null,
     description: traktShow.overview || '',
     rating: traktShow.rating || 0,

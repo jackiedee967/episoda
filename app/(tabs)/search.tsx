@@ -424,6 +424,7 @@ export default function SearchScreen() {
             const show = mapTraktShowToShow(traktShow, {
               posterUrl: enrichedData.posterUrl,
               totalSeasons: enrichedData.totalSeasons,
+              endYear: enrichedData.endYear,
             });
             return {
               ...show,
@@ -453,6 +454,7 @@ export default function SearchScreen() {
             const show = mapTraktShowToShow(traktShow, {
               posterUrl: enrichedData.posterUrl,
               totalSeasons: enrichedData.totalSeasons,
+              endYear: enrichedData.endYear,
             });
             return {
               ...show,
@@ -570,6 +572,7 @@ export default function SearchScreen() {
                   show: mapTraktShowToShow(traktShow, {
                     posterUrl: enrichedData.posterUrl,
                     totalSeasons: enrichedData.totalSeasons,
+                    endYear: enrichedData.endYear,
                   }),
                   traktShow,
                   enrichedData
@@ -645,6 +648,7 @@ export default function SearchScreen() {
             const show = mapTraktShowToShow(traktShow, {
               posterUrl: enrichedData.posterUrl,
               totalSeasons: enrichedData.totalSeasons,
+              endYear: enrichedData.endYear,
             });
             return {
               ...show,
@@ -902,6 +906,7 @@ export default function SearchScreen() {
                 ...mapTraktShowToShow(traktShow, {
                   posterUrl: enrichedData.posterUrl,
                   totalSeasons: enrichedData.totalSeasons,
+                  endYear: enrichedData.endYear,
                 }),
                 id: `trakt-${traktShow.ids.trakt}`,
                 traktId: traktShow.ids.trakt,
@@ -1092,6 +1097,7 @@ export default function SearchScreen() {
                   show: mapTraktShowToShow(traktShow, {
                     posterUrl: enrichedData.posterUrl,
                     totalSeasons: enrichedData.totalSeasons,
+                    endYear: enrichedData.endYear,
                   }),
                   traktShow,
                   enrichedData,
@@ -1236,6 +1242,7 @@ export default function SearchScreen() {
             const show = mapTraktShowToShow(traktShow, {
               posterUrl: enrichedData.posterUrl,
               totalSeasons: enrichedData.totalSeasons,
+              endYear: enrichedData.endYear,
             });
             return {
               ...show,
@@ -1348,6 +1355,7 @@ export default function SearchScreen() {
                 ...mapTraktShowToShow(traktShow, {
                   posterUrl: enrichedData.posterUrl,
                   totalSeasons: enrichedData.totalSeasons,
+                  endYear: enrichedData.endYear,
                 }),
                 id: `trakt-${traktShow.ids.trakt}`,
                 traktId: traktShow.ids.trakt,

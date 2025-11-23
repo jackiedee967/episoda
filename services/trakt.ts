@@ -223,6 +223,42 @@ export async function getSeasonEpisodes(
   }
 }
 
+export async function fetchShowEndYear(
+  traktShow: TraktShow, 
+  seasons?: TraktSeason[]
+): Promise<number | undefined> {
+  try {
+    // Only set endYear for ended/canceled shows
+    if (traktShow.status !== 'ended' && traktShow.status !== 'canceled') {
+      return undefined;
+    }
+    
+    // Reuse seasons if provided, otherwise fetch them
+    const showSeasons = seasons || await getShowSeasons(traktShow.ids.trakt);
+    
+    if (showSeasons.length === 0) {
+      return undefined;
+    }
+    
+    const lastSeason = showSeasons[showSeasons.length - 1];
+    const episodes = await getSeasonEpisodes(traktShow.ids.trakt, lastSeason.number);
+    
+    const airedEpisodes = episodes.filter(ep => ep.first_aired);
+    
+    if (airedEpisodes.length === 0) {
+      return undefined;
+    }
+    
+    const lastEpisode = airedEpisodes[airedEpisodes.length - 1];
+    const endYear = new Date(lastEpisode.first_aired!).getFullYear();
+    
+    return endYear;
+  } catch (error) {
+    console.error('❌ Error fetching show end year:', error);
+    return undefined;
+  }
+}
+
 export interface GetShowsByGenreOptions {
   page?: number;
   limit?: number;
