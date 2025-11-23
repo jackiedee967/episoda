@@ -1609,7 +1609,7 @@ export default function SearchScreen() {
             </View>
             <View style={styles.showInfo}>
               <Text style={styles.showTitle} numberOfLines={1}>
-                {show.title}
+                {show.title}{show.year ? ` (${show.year})` : ''}
               </Text>
               <Text style={styles.showDescription} numberOfLines={2}>
                 {show.description}

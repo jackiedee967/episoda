@@ -16,6 +16,7 @@ export function mapTraktShowToShow(
     id: `trakt-${traktShow.ids.trakt}`,
     traktId: traktShow.ids.trakt,
     title: traktShow.title,
+    year: traktShow.year,
     poster: overrides.posterUrl ?? null,
     description: traktShow.overview || '',
     rating: traktShow.rating || 0,
@@ -49,6 +50,7 @@ export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
     id: dbShow.id,
     traktId: dbShow.trakt_id,
     title: dbShow.title,
+    year: dbShow.year || undefined,
     poster: dbShow.poster_url ?? null,
     description: dbShow.description || '',
     rating: dbShow.rating || 0,
@@ -76,7 +78,7 @@ export function mapDatabaseEpisodeToEpisode(dbEpisode: DatabaseEpisode): Episode
 export function mapDatabaseShowToTraktShow(dbShow: DatabaseShow): TraktShow {
   return {
     title: dbShow.title,
-    year: 0,
+    year: dbShow.year || 0,
     ids: {
       trakt: dbShow.trakt_id,
       slug: '',
@@ -87,18 +89,12 @@ export function mapDatabaseShowToTraktShow(dbShow: DatabaseShow): TraktShow {
     overview: dbShow.description || undefined,
     first_aired: undefined,
     runtime: undefined,
-    certification: undefined,
     network: undefined,
     country: undefined,
-    trailer: undefined,
-    homepage: undefined,
     status: undefined,
     rating: dbShow.rating || 0,
     votes: undefined,
-    comment_count: undefined,
-    updated_at: undefined,
     language: undefined,
-    available_translations: undefined,
     genres: dbShow.genres || [],
     aired_episodes: dbShow.total_episodes || undefined
   };

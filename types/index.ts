@@ -23,6 +23,7 @@ export interface Show {
   id: string;
   traktId: number;
   title: string;
+  year?: number;
   poster: string | null;
   backdrop?: string | null;
   description: string;

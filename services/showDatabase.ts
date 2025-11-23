@@ -11,6 +11,7 @@ export interface DatabaseShow {
   tmdb_id: number | null;
   tvmaze_id: number | null;
   title: string;
+  year: number | null;
   description: string | null;
   poster_url: string | null;
   backdrop_url: string | null;
@@ -95,6 +96,7 @@ export async function saveShow(
     tmdb_id: traktShow.ids.tmdb,
     tvmaze_id: tvmazeId,
     title: traktShow.title,
+    year: traktShow.year || null,
     description: traktShow.overview || null,
     poster_url: posterUrl,
     backdrop_url: backdropUrl,
