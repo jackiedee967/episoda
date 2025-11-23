@@ -1891,11 +1891,32 @@ export default function SearchScreen() {
                   router.push(`/show/${uuid}`);
                 }}
               >
-                <FadeInImage
-                  source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
-                  style={styles.gridPoster}
-                  contentFit="cover"
-                />
+                <View style={styles.gridPosterWrapper}>
+                  <FadeInImage
+                    source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
+                    style={styles.gridPoster}
+                    contentFit="cover"
+                  />
+                  {/* Bookmark Icon */}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.gridSaveIcon,
+                      pressed && styles.gridSaveIconPressed
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedShow(show);
+                      setPlaylistModalVisible(true);
+                    }}
+                  >
+                    <IconSymbol
+                      name="bookmark"
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                  </Pressable>
+                </View>
                 <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
                 {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
               </Pressable>
@@ -1951,11 +1972,32 @@ export default function SearchScreen() {
                   router.push(`/show/${uuid}`);
                 }}
               >
-                <FadeInImage
-                  source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
-                  style={styles.gridPoster}
-                  contentFit="cover"
-                />
+                <View style={styles.gridPosterWrapper}>
+                  <FadeInImage
+                    source={{ uri: show.poster || getPosterUrl(show.title || '', show.id.toString()) }}
+                    style={styles.gridPoster}
+                    contentFit="cover"
+                  />
+                  {/* Bookmark Icon */}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.gridSaveIcon,
+                      pressed && styles.gridSaveIconPressed
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedShow(show);
+                      setPlaylistModalVisible(true);
+                    }}
+                  >
+                    <IconSymbol
+                      name="bookmark"
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                  </Pressable>
+                </View>
                 <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
                 {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
               </Pressable>
@@ -2605,11 +2647,31 @@ const styles = StyleSheet.create({
   gridItem: {
     width: '31.5%',
   },
+  gridPosterWrapper: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: 2 / 3,
+  },
   gridPoster: {
     width: '100%',
     aspectRatio: 2 / 3,
     borderRadius: 8,
     backgroundColor: tokens.colors.cardBackground,
+  },
+  gridSaveIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 14,
+  },
+  gridSaveIconPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   gridTitle: {
     ...tokens.typography.p2M,
