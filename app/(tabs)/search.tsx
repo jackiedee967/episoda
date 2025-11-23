@@ -395,13 +395,20 @@ export default function SearchScreen() {
             const candidates = Array.from(candidatesMap.values());
             console.log(`  📊 Total candidates: ${candidates.length}`);
             
-            // Step 1.5: Apply hard filters (primary genre + ≥2 overlap + ±5 years)
+            // Step 1.5: Apply hard filters (genre + year + animation + language + rating)
             const filteredCandidates = applyHardFilters(seedTraktShow, candidates);
             
-            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (primary genre + ≥2 overlap + ±5yr)`);
+            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (genre + year + animation + language + rating)`);
             if (filteredCandidates.length < candidates.length) {
               const filtered = candidates.filter(c => !filteredCandidates.includes(c));
-              console.log(`  ❌ Filtered out: ${filtered.slice(0, 3).map(c => `${c.title} (${c.year || 'unknown'})`).join(', ')}`);
+              const animated = filtered.filter(c => c.genres?.some(g => g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'));
+              const foreign = filtered.filter(c => c.language && c.language !== 'en' && !['us', 'gb', 'ca', 'au'].includes(c.country?.toLowerCase() || ''));
+              const lowRated = filtered.filter(c => c.rating && c.rating < 6.5);
+              
+              console.log(`  ❌ Filtered out: ${filtered.length} shows`);
+              if (animated.length > 0) console.log(`    - Animation/Anime: ${animated.slice(0, 3).map(c => c.title).join(', ')}`);
+              if (foreign.length > 0) console.log(`    - Foreign: ${foreign.slice(0, 3).map(c => `${c.title} (${c.language})`).join(', ')}`);
+              if (lowRated.length > 0) console.log(`    - Low-rated (<6.5): ${lowRated.slice(0, 3).map(c => `${c.title} (${c.rating})`).join(', ')}`);
             }
             
             // Step 2: Enrich filtered candidates (needed for keyword-based scoring)
@@ -428,8 +435,8 @@ export default function SearchScreen() {
             // Debug: Log seed show enrichment data
             console.log(`  🔍 Seed enrichment: TMDB ID=${seedEnrichment.tmdbId}, keywords=${seedEnrichment.keywords?.length || 0}`);
             
-            const ranked = rankCandidates(seedShow, enrichedCandidates, 20); // Min score: 20 (Phase 1: Trakt-only optimized)
-            console.log(`  ⭐ High-quality matches: ${ranked.length} (min score 20)`);
+            const ranked = rankCandidates(seedShow, enrichedCandidates, 15); // Min score: 15 (lowered for better results)
+            console.log(`  ⭐ High-quality matches: ${ranked.length} (min score 15)`);
             if (ranked.length > 0) {
               console.log(`  📈 Top scores: ${ranked.slice(0, 3).map(r => `${r.traktShow.title} (${r.score})`).join(', ')}`);
             }
@@ -793,10 +800,21 @@ export default function SearchScreen() {
             const candidates = Array.from(candidatesMap.values());
             console.log(`  📊 Total candidates: ${candidates.length}`);
             
-            // Step 2: Apply hard filters (primary genre + ≥2 overlap + ±5 years)
+            // Step 2: Apply hard filters (genre + year + animation + language + rating)
             const filteredCandidates = applyHardFilters(seedTraktShow, candidates);
             
-            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (primary genre + ≥2 overlap + ±5yr)`);
+            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (genre + year + animation + language + rating)`);
+            if (filteredCandidates.length < candidates.length) {
+              const filtered = candidates.filter(c => !filteredCandidates.includes(c));
+              const animated = filtered.filter(c => c.genres?.some(g => g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'));
+              const foreign = filtered.filter(c => c.language && c.language !== 'en' && !['us', 'gb', 'ca', 'au'].includes(c.country?.toLowerCase() || ''));
+              const lowRated = filtered.filter(c => c.rating && c.rating < 6.5);
+              
+              console.log(`  ❌ Filtered out: ${filtered.length} shows`);
+              if (animated.length > 0) console.log(`    - Animation/Anime: ${animated.slice(0, 3).map(c => c.title).join(', ')}`);
+              if (foreign.length > 0) console.log(`    - Foreign: ${foreign.slice(0, 3).map(c => `${c.title} (${c.language})`).join(', ')}`);
+              if (lowRated.length > 0) console.log(`    - Low-rated (<6.5): ${lowRated.slice(0, 3).map(c => `${c.title} (${c.rating})`).join(', ')}`);
+            }
             
             // Step 3: Enrich candidates with posters
             const enrichedCandidates = await Promise.all(
@@ -820,8 +838,8 @@ export default function SearchScreen() {
               enrichedData: seedEnrichment,
             };
             
-            const rankedShows = rankCandidates(seedShow, enrichedCandidates, 20);
-            console.log(`  ⭐ High-quality matches: ${rankedShows.length} (min score 20)`);
+            const rankedShows = rankCandidates(seedShow, enrichedCandidates, 15);
+            console.log(`  ⭐ High-quality matches: ${rankedShows.length} (min score 15)`);
             
             shows = rankedShows.map(scored => ({
               ...scored.show,

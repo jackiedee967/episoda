@@ -15,9 +15,12 @@ export interface ScoredShow {
  * 1. Primary genre MUST match (first genre in seed show's genres array)
  * 2. For multi-genre shows: require ≥2 genre overlap
  * 3. Must be within ±5 years of seed show
+ * 4. Block animation/anime (unless seed is animated)
+ * 5. Require English language (en) OR English-speaking country (US/GB/CA/AU)
+ * 6. Minimum Trakt rating ≥7.0
  * 
  * These filters prevent irrelevant recommendations like anime/foreign/vintage content
- * for modern shows (e.g., "I Love LA" 2025 comedy shouldn't show 1990s anime).
+ * for modern shows (e.g., "I Love LA" 2025 comedy shouldn't show Japanese anime).
  */
 export function applyHardFilters(
   seedShow: TraktShow,
@@ -27,33 +30,74 @@ export function applyHardFilters(
   const seedYear = seedShow.year || 0;
   const primaryGenre = seedGenres[0]; // First genre is primary
   
+  // Check if seed is animated
+  const seedIsAnimated = seedGenres.some(g => 
+    g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'
+  );
+  
   return candidates.filter(candidate => {
     const candidateGenres = candidate.genres || [];
     const candidateYear = candidate.year || 0;
     
-    // Skip filter if genres/year missing
+    // CRITICAL: Run animation/language/rating filters FIRST (always apply, even if genres missing)
+    
+    // Filter 1: Block animation/anime (unless seed is animated)
+    if (!seedIsAnimated) {
+      const candidateIsAnimated = candidateGenres.some(g => 
+        g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'
+      );
+      if (candidateIsAnimated) {
+        return false;
+      }
+    }
+    
+    // Filter 2: Require English language OR English-speaking country
+    const language = candidate.language?.toLowerCase();
+    const country = candidate.country?.toLowerCase();
+    const englishSpeakingCountries = ['us', 'gb', 'ca', 'au'];
+    
+    // Reject if language is non-English (when present)
+    if (language && language !== 'en') {
+      return false;
+    }
+    
+    // Reject if country is non-English-speaking (when present)
+    if (country && !englishSpeakingCountries.includes(country)) {
+      return false;
+    }
+    
+    // Filter 3: Minimum rating ≥6.5 (lowered from 7.0 for better candidate pool)
+    const rating = candidate.rating || 0;
+    if (rating > 0 && rating < 6.5) {
+      return false;
+    }
+    
+    // Skip genre/year filters if metadata missing (but other filters already applied above)
     if (seedGenres.length === 0 || candidateGenres.length === 0) {
       return true;
     }
     
-    // Filter 1: Primary genre MUST match
+    // Filter 4: Primary genre MUST match
     const primaryGenreMatch = candidateGenres.includes(primaryGenre);
     if (!primaryGenreMatch) {
       return false;
     }
     
-    // Filter 2: For multi-genre shows, require ≥2 genre overlap
+    // Filter 5: For multi-genre shows, require ≥2 genre overlap
     const sharedGenres = candidateGenres.filter(g => seedGenres.includes(g));
     const multiGenreMatch = seedGenres.length === 1 || sharedGenres.length >= 2;
     if (!multiGenreMatch) {
       return false;
     }
     
-    // Filter 3: Must be within ±5 years
+    // Filter 6: Must be within ±5 years
     const withinYearRange = seedYear === 0 || candidateYear === 0 || 
       Math.abs(candidateYear - seedYear) <= 5;
+    if (!withinYearRange) {
+      return false;
+    }
     
-    return withinYearRange;
+    return true;
   });
 }
 
@@ -278,12 +322,12 @@ function isKidsShow(traktShow: TraktShow): boolean {
 }
 
 /**
- * Filter and rank candidates by similarity score with demographic filtering
- * Returns only candidates above the threshold, sorted by score
+ * Filter and rank candidates by composite score (similarity + popularity)
+ * Returns only candidates above the threshold, sorted by final score
  * Enhanced with:
  * - Demographic filtering (exclude kids shows for adult content)
- * - Rating tier validation
- * - Era proximity enforcement
+ * - Composite ranking: similarity (60%) + popularity (40%)
+ * - Popularity based on Trakt votes and rating
  */
 export function rankCandidates(
   seedShow: {
@@ -306,17 +350,39 @@ export function rankCandidates(
     filteredCandidates = filteredCandidates.filter(candidate => !isKidsShow(candidate.traktShow));
   }
   
-  // Then score and rank
+  // Calculate max votes for normalization (used for popularity scoring)
+  const maxVotes = Math.max(...filteredCandidates.map(c => c.traktShow.votes || 0), 1);
+  
+  // Score and rank with composite scoring
   const scored = filteredCandidates
     .map(candidate => {
-      const score = scoreShowSimilarity(seedShow, candidate);
+      const similarityScore = scoreShowSimilarity(seedShow, candidate);
+      
+      // Calculate popularity score (0-100) based on votes and rating
+      const votes = candidate.traktShow.votes || 0;
+      const rating = candidate.traktShow.rating || 0;
+      
+      // Normalize votes to 0-100 scale
+      const normalizedVotes = maxVotes > 0 ? (votes / maxVotes) * 100 : 0;
+      
+      // Normalize rating to 0-100 scale (Trakt uses 0-10)
+      const normalizedRating = rating * 10;
+      
+      // Combine votes (70%) and rating (30%) for popularity score
+      const popularityScore = (normalizedVotes * 0.7) + (normalizedRating * 0.3);
+      
+      // Final composite score: similarity (60%) + popularity (40%)
+      const finalScore = (similarityScore * 0.6) + (popularityScore * 0.4);
+      
       return {
         ...candidate,
-        score
+        score: finalScore,
+        similarityScore,
+        popularityScore
       };
     })
-    .filter(item => item.score >= minScore)
-    .sort((a, b) => b.score - a.score);
+    .filter(item => item.similarityScore >= minScore) // Filter by similarity threshold
+    .sort((a, b) => b.score - a.score); // Sort by composite score
 
   // Debug logging
   if (scored.length === 0 && candidates.length > 0) {
