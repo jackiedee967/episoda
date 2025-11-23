@@ -86,11 +86,6 @@ class ShowEnrichmentManager {
       const seasons = await getShowSeasons(traktShow.ids.trakt);
       const totalSeasons = seasons.filter(s => s.number > 0).length;
       const endYear = await fetchShowEndYear(traktShow, seasons);
-      
-      // Debug logging
-      if (endYear) {
-        console.log(`📅 ${traktShow.title}: ${traktShow.year}-${endYear} (status: ${traktShow.status})`);
-      }
 
       const enriched = {
         totalSeasons,

@@ -299,17 +299,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // Recommendation caching with staleness checking (10-minute cache)
   const RECOMMENDATION_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+  const CACHE_VERSION = 2; // Increment to invalidate old caches (v2: added endYear support)
   const loadRecommendationsRef = useRef<Promise<any> | null>(null);
-  const lastRecommendationFetchRef = useRef<number | null>(null);
-  const [lastRecommendationFetch, setLastRecommendationFetch] = useState<number | null>(null);
+  const lastRecommendationFetchRef = useRef<{ timestamp: number; version: number } | null>(null);
+  const [lastRecommendationFetch, setLastRecommendationFetch] = useState<{ timestamp: number; version: number } | null>(null);
   const hasPreloadedForUserRef = useRef<string | null>(null);
   const currentAuthUserIdRef = useRef<string | null>(null); // Ref for cross-user contamination check
 
   const loadRecommendations = useCallback(async (options: { force?: boolean; userId?: string } = {}) => {
     // Skip if we already have a fresh fetch (regardless of result count) - unless forced
     if (!options.force && lastRecommendationFetchRef.current) {
-      const age = Date.now() - lastRecommendationFetchRef.current;
-      if (age < RECOMMENDATION_CACHE_TTL) {
+      const cache = lastRecommendationFetchRef.current;
+      const age = Date.now() - cache.timestamp;
+      // Invalidate cache if version mismatch
+      if (cache.version !== CACHE_VERSION) {
+        console.log('📊 Cache version mismatch - clearing stale cache and refetching');
+        setCachedRecommendations([]);
+        setLastRecommendationFetch(null);
+        lastRecommendationFetchRef.current = null;
+        // Continue to fetch new data
+      } else if (age < RECOMMENDATION_CACHE_TTL) {
         console.log('📊 Using cached recommendations (age:', Math.floor(age / 1000), 'seconds, count:', cachedRecommendations.length, ')');
         return;
       }
@@ -408,7 +417,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
                   show: mapTraktShowToShow(traktShow, {
                     posterUrl: enrichedData.posterUrl,
                     totalSeasons: enrichedData.totalSeasons,
-                    totalEpisodes: traktShow.aired_episodes
+                    totalEpisodes: traktShow.aired_episodes,
+                    endYear: enrichedData.endYear
                   }),
                   traktShow,
                   traktId: rec.trakt_id,
@@ -432,15 +442,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         
         // Always update timestamp, even for empty results, to enable cache reuse logic
         const timestamp = Date.now();
+        const cacheInfo = { timestamp, version: CACHE_VERSION };
         if (validShows.length > 0) {
           setCachedRecommendations(validShows);
-          setLastRecommendationFetch(timestamp);
-          lastRecommendationFetchRef.current = timestamp;
+          setLastRecommendationFetch(cacheInfo);
+          lastRecommendationFetchRef.current = cacheInfo;
           console.log(`✅ Cached ${validShows.length} enriched recommendations for instant display`);
         } else {
           // Empty results: still update timestamp to prevent re-fetching immediately
-          setLastRecommendationFetch(timestamp);
-          lastRecommendationFetchRef.current = timestamp;
+          setLastRecommendationFetch(cacheInfo);
+          lastRecommendationFetchRef.current = cacheInfo;
           console.warn('⚠️ No valid recommendations - marked as fetched to prevent retry storm');
         }
       } catch (error) {
