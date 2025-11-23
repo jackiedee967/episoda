@@ -444,7 +444,6 @@ export default function SearchScreen() {
         const enrichedForYou = await enrichShowsWithMutualFriends(mixedForYou);
         // ⚠️ TEMPORARY: Add placeholder data for styling
         const forYouWithPlaceholders = addPlaceholderMutualFriends(enrichedForYou);
-        console.log('🔍 FOR YOU SHOWS DATA:', forYouWithPlaceholders.slice(0, 3).map(s => ({ title: s.title, year: s.year, endYear: s.endYear })));
         setForYouShows(forYouWithPlaceholders);
         
         // 2. Trending
@@ -468,7 +467,6 @@ export default function SearchScreen() {
         const enrichedTrendingWithFriends = await enrichShowsWithMutualFriends(enrichedTrending);
         // ⚠️ TEMPORARY: Add placeholder data for styling
         const trendingWithPlaceholders = addPlaceholderMutualFriends(enrichedTrendingWithFriends);
-        console.log('🔍 TRENDING SHOWS DATA:', trendingWithPlaceholders.slice(0, 3).map(s => ({ title: s.title, year: s.year, endYear: s.endYear })));
         setTrendingShows(trendingWithPlaceholders);
         
         // 3-5. Because You Watched - Get user's 3 most recently logged shows

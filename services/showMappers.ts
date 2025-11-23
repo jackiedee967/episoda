@@ -81,12 +81,25 @@ export function mapTraktEpisodeToEpisode(
 }
 
 export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
+  // Calculate endYear from database show data if available
+  // Since we don't have status in DB, calculate for all shows with 50+ episodes
+  let endYear: number | undefined = undefined;
+  if (dbShow.year && dbShow.total_episodes && dbShow.total_episodes >= 50) {
+    const estimatedSeasons = Math.ceil(dbShow.total_episodes / 12);
+    const calculatedEndYear = dbShow.year + Math.max(0, estimatedSeasons - 1);
+    endYear = calculatedEndYear > dbShow.year ? calculatedEndYear : undefined;
+    
+    if (endYear) {
+      console.log(`📅 DB Show Year Range: ${dbShow.title} - ${dbShow.total_episodes} eps → ${dbShow.year}-${endYear}`);
+    }
+  }
+  
   return {
     id: dbShow.id,
     traktId: dbShow.trakt_id,
     title: dbShow.title,
     year: dbShow.year || undefined,
-    endYear: undefined, // Database shows don't have endYear stored
+    endYear: endYear,
     poster: dbShow.poster_url ?? null,
     description: dbShow.description || '',
     rating: dbShow.rating || 0,
