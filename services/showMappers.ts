@@ -29,11 +29,14 @@ function calculateEndYear(traktShow: TraktShow): number | undefined {
       // Add years (minus 1 since first year is already counted)
       const endYear = startYear + Math.max(0, estimatedSeasons - 1);
       
+      console.log(`📅 Year Range: ${traktShow.title} (${traktShow.status}) - ${traktShow.aired_episodes} eps → ${startYear}-${endYear}`);
+      
       // Only return endYear if it's different from startYear
       return endYear > startYear ? endYear : undefined;
     }
   }
   
+  console.log(`⚠️ No year range for ${traktShow.title}: status=${traktShow.status}, first_aired=${traktShow.first_aired}, episodes=${traktShow.aired_episodes}`);
   return undefined;
 }
 
@@ -83,6 +86,7 @@ export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
     traktId: dbShow.trakt_id,
     title: dbShow.title,
     year: dbShow.year || undefined,
+    endYear: undefined, // Database shows don't have endYear stored
     poster: dbShow.poster_url ?? null,
     description: dbShow.description || '',
     rating: dbShow.rating || 0,

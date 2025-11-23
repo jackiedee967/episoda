@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   mutualFriendsOverlay: {
     position: 'absolute',
     top: 8,
-    right: 8,
+    left: 8,
     zIndex: 10,
   },
 });
