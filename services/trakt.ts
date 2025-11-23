@@ -223,6 +223,65 @@ export async function getSeasonEpisodes(
   }
 }
 
+export interface GetShowsByGenreOptions {
+  page?: number;
+  limit?: number;
+}
+
+export interface GetShowsByGenreResponse {
+  shows: TraktShow[];
+  pagination: {
+    page: number;
+    limit: number;
+    pageCount: number | null;
+  };
+}
+
+export async function getShowsByGenre(
+  genreSlug: string,
+  options: GetShowsByGenreOptions = {}
+): Promise<GetShowsByGenreResponse> {
+  if (!TRAKT_CLIENT_ID) {
+    console.error('❌ Trakt API credentials not configured');
+    throw new Error('Trakt API credentials not configured. Please check your environment setup.');
+  }
+
+  const { page = 1, limit = 20 } = options;
+
+  try {
+    console.log(`🎭 Fetching ${genreSlug} shows from Trakt (page ${page}, limit ${limit})`);
+    const response = await fetch(
+      `${TRAKT_BASE_URL}/shows/popular?genres=${genreSlug}&extended=full&page=${page}&limit=${limit}`,
+      { headers: TRAKT_HEADERS }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      const errorMsg = `Trakt API error: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`;
+      console.error('❌', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    const shows: TraktShow[] = await response.json();
+    
+    const pagination = {
+      page: parseInt(response.headers.get('X-Pagination-Page') || '1'),
+      limit: parseInt(response.headers.get('X-Pagination-Limit') || String(limit)),
+      pageCount: response.headers.get('X-Pagination-Page-Count') 
+        ? parseInt(response.headers.get('X-Pagination-Page-Count')!)
+        : null,
+    };
+    
+    console.log(`✅ Found ${shows.length} ${genreSlug} shows on page ${pagination.page}${pagination.pageCount ? ` of ${pagination.pageCount}` : ''}`);
+    
+    return { shows, pagination };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching shows by genre';
+    console.error(`❌ Error fetching ${genreSlug} shows from Trakt:`, errorMsg);
+    throw new Error(errorMsg);
+  }
+}
+
 export async function getAllEpisodes(traktId: number | string): Promise<TraktEpisode[]> {
   try {
     const seasons = await getShowSeasons(traktId);

@@ -87,7 +87,6 @@ export function getAllGenres(): string[] {
     'fantasy',
     'history',
     'horror',
-    'music',
     'mystery',
     'romance',
     'science-fiction',

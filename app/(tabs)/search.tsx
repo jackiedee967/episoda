@@ -26,7 +26,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
-import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo } from '@/services/trakt';
+import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo, getShowsByGenre } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
@@ -600,65 +600,46 @@ export default function SearchScreen() {
     const loadGenreShows = async () => {
       setIsLoadingGenre(true);
       try {
-        const genreId = TMDB_GENRE_IDS[genreParam.toLowerCase()];
-        if (!genreId) {
-          console.error(`Genre "${genreParam}" not found in TMDB mapping`);
-          setIsLoadingGenre(false);
-          return;
-        }
-
-        // Fetch first 2 pages to ensure we have 30+ shows after enrichment
-        const page1Params: TMDBDiscoverParams = {
-          genreIds: [genreId],
-          page: 1,
-          sortBy: 'popularity.desc',
-        };
-        const page2Params: TMDBDiscoverParams = {
-          genreIds: [genreId],
-          page: 2,
-          sortBy: 'popularity.desc',
-        };
-
-        const [page1Shows, page2Shows] = await Promise.all([
-          discoverShows(page1Params),
-          discoverShows(page2Params)
+        const genreSlug = genreParam.toLowerCase();
+        
+        // Fetch first 2 pages from Trakt to ensure we have 30+ shows
+        const [page1Response, page2Response] = await Promise.all([
+          getShowsByGenre(genreSlug, { page: 1, limit: 20 }),
+          getShowsByGenre(genreSlug, { page: 2, limit: 20 })
         ]);
         
-        const allShows = [...page1Shows, ...page2Shows];
+        const allShows = [...page1Response.shows, ...page2Response.shows];
         
-        // Check if we have more shows
-        if (page2Shows.length < 20) {
+        // Check if we have more shows - only trust pagination headers
+        if (page2Response.pagination.pageCount !== null && page2Response.pagination.page >= page2Response.pagination.pageCount) {
           setHasMoreGenreShows(false);
         }
+        // Otherwise keep pagination alive (defensive - don't assume <20 shows means end)
         
-        // Enrich with Trakt data
+        // Enrich with posters
         const enrichedShows = await Promise.all(
-          allShows.map(async (tmdbShow) => {
+          allShows.map(async (traktShow) => {
             try {
-              // Search for matching Trakt show
-              const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
-              if (searchResults.results.length > 0) {
-                const traktShow = searchResults.results[0].show;
-                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                return {
-                  ...mapTraktShowToShow(traktShow, {
-                    posterUrl: enrichedData.posterUrl,
-                    totalSeasons: enrichedData.totalSeasons,
-                  }),
-                  id: `trakt-${traktShow.ids.trakt}`,
-                  traktId: traktShow.ids.trakt,
-                  traktShow,
-                };
-              }
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              return {
+                ...mapTraktShowToShow(traktShow, {
+                  posterUrl: enrichedData.posterUrl,
+                  totalSeasons: enrichedData.totalSeasons,
+                }),
+                id: `trakt-${traktShow.ids.trakt}`,
+                traktId: traktShow.ids.trakt,
+                traktShow,
+              };
             } catch (error) {
-              console.error(`Error enriching ${tmdbShow.name}:`, error);
+              console.error(`Error enriching ${traktShow.title}:`, error);
+              return null;
             }
-            return null;
           })
         );
 
         const validShows = enrichedShows.filter(show => show !== null);
         setGenreShows(validShows);
+        setGenrePage(2); // Set to page 2 since we loaded pages 1-2
         setLastSuccessfulGenrePage(2); // Track initial successful load (loaded pages 1-2)
       } catch (error) {
         console.error('Error loading genre shows:', error);
@@ -931,67 +912,63 @@ export default function SearchScreen() {
 
     while (retryAttempt <= maxRetries) {
       try {
-        const genreId = TMDB_GENRE_IDS[genreParam.toLowerCase()];
-        if (!genreId) {
-          setIsLoadingGenre(false);
-          return;
-        }
-
-        const params: TMDBDiscoverParams = {
-          genreIds: [genreId],
-          page: nextPage,
-          sortBy: 'popularity.desc',
-        };
-
-        const tmdbShows = await discoverShows(params);
+        const genreSlug = genreParam.toLowerCase();
+        const response = await getShowsByGenre(genreSlug, { page: nextPage, limit: 20 });
         
         // Handle empty responses
-        if (tmdbShows.length === 0) {
+        if (response.shows.length === 0) {
           if (retryAttempt < maxRetries) {
-            console.warn(`Empty TMDB response on page ${nextPage}, retrying (${retryAttempt + 1}/${maxRetries})...`);
+            console.warn(`Empty Trakt response for ${genreSlug} on page ${nextPage}, retrying (${retryAttempt + 1}/${maxRetries})...`);
             await new Promise(resolve => setTimeout(resolve, delays[retryAttempt]));
             retryAttempt++;
             continue;
           } else {
-            // After retries, keep pagination alive for manual retry
-            console.warn('⚠️ TMDB empty response after retries - keeping pagination alive');
-            Alert.alert(
-              'No More Shows',
-              'Could not load more shows. Scroll again to retry or try a different genre.',
-              [{ text: 'OK', style: 'default' }]
-            );
+            // After retries, check if we have pagination info to determine if this is truly the end
+            const isDefinitelyEnd = response.pagination.pageCount !== null && nextPage >= response.pagination.pageCount;
+            
+            if (isDefinitelyEnd) {
+              // Reached end of results based on pagination headers
+              console.log(`✅ Reached end of ${genreSlug} shows`);
+              setHasMoreGenreShows(false);
+            } else {
+              // Empty response after retries, but we don't know if it's the end
+              // Keep pagination alive for manual retry
+              console.warn('⚠️ Episoda empty response after retries - keeping pagination alive');
+              Alert.alert(
+                'No More Shows',
+                'Could not load more shows. Scroll again to retry or try a different genre.',
+                [{ text: 'OK', style: 'default' }]
+              );
+              // Keep hasMore=true so user can retry later
+            }
             setIsLoadingGenre(false);
-            // Keep hasMore=true for manual retry
             return;
           }
         }
         
-        // Check if this is likely the last page
-        if (tmdbShows.length < 20) {
+        // Check if we have more shows - only trust pagination headers
+        if (response.pagination.pageCount !== null && response.pagination.page >= response.pagination.pageCount) {
           setHasMoreGenreShows(false);
         }
+        // Otherwise keep pagination alive (defensive - don't assume <20 shows means end)
 
         const enrichedShows = await Promise.all(
-          tmdbShows.map(async (tmdbShow) => {
+          response.shows.map(async (traktShow) => {
             try {
-              const searchResults = await searchShows(tmdbShow.name, { page: 1, limit: 1 });
-              if (searchResults.results.length > 0) {
-                const traktShow = searchResults.results[0].show;
-                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                return {
-                  ...mapTraktShowToShow(traktShow, {
-                    posterUrl: enrichedData.posterUrl,
-                    totalSeasons: enrichedData.totalSeasons,
-                  }),
-                  id: `trakt-${traktShow.ids.trakt}`,
-                  traktId: traktShow.ids.trakt,
-                  traktShow,
-                };
-              }
+              const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+              return {
+                ...mapTraktShowToShow(traktShow, {
+                  posterUrl: enrichedData.posterUrl,
+                  totalSeasons: enrichedData.totalSeasons,
+                }),
+                id: `trakt-${traktShow.ids.trakt}`,
+                traktId: traktShow.ids.trakt,
+                traktShow,
+              };
             } catch (error) {
-              console.error(`Error enriching ${tmdbShow.name}:`, error);
+              console.error(`Error enriching ${traktShow.title}:`, error);
+              return null;
             }
-            return null;
           })
         );
 
