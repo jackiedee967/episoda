@@ -44,7 +44,8 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Account Management**: Account deletion and phone number change features.
 
 ### System Design Choices
-- **Development vs Production**: Separate Supabase instances.
+- **Development vs Production**: Single Supabase production instance (mb wuoqoktdgudzaemjhx). Future recommendation: Create separate dev instance for safe testing.
+- **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` environment variables (not secrets) to enable Expo bundler access during all build types. No hardcoded fallbacks to prevent silent failures.
 - **Data Management**: All data managed via real Supabase data; mock data removed. Supabase-backed user profile cache.
 - **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system for metadata, posters, and episode thumbnails.
 - **Search Enrichment System**: Background worker enhances search results with complete metadata using throttled parallel fetching, progressive enhancement, and smart caching.
@@ -67,3 +68,28 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **react-native-phone-number-input**: Phone number input formatting.
 - **LinearGradient**: Gradient backgrounds.
 - **@expo-google-fonts/instrument-serif**: Custom font.
+
+## Production Deployment
+
+### Environment Variables Configuration
+**CRITICAL**: Supabase credentials MUST use `EXPO_PUBLIC_` prefix to work in production builds:
+
+1. **Replit Development** (current setup):
+   - `EXPO_PUBLIC_SUPABASE_URL` - Set in Replit Secrets (Shared environment)
+   - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Set in Replit Secrets (Shared environment)
+
+2. **EAS Build (iOS/Android Production)**:
+   ```bash
+   # Set secrets for EAS builds
+   eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value "https://your-project.supabase.co"
+   eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "your-anon-key"
+   ```
+
+3. **Verification**:
+   - Web preview: Check console for "✅ Supabase Client initialized"
+   - iOS build: Test 2FA login flow end-to-end
+   - Ensure no hardcoded DEV credentials in `app.config.js` or `integrations/supabase/client.ts`
+
+### Recent Updates
+- **2024-11**: Fixed routing timing issue causing blank screen on Expo web by adding `segments.length` check before redirects (prevents router.replace before segments mount)
+- **2024-11**: Migrated Supabase credentials from hardcoded fallbacks to EXPO_PUBLIC_ environment variables for production safety

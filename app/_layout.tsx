@@ -36,12 +36,17 @@ import { colors } from "@/styles/commonStyles";
 SplashScreen.preventAutoHideAsync();
 
 function AuthNavigator() {
-  const { session, user, isLoading, onboardingStatus } = useAuth();
+  const { session, user, isLoading, authReady, onboardingStatus } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (!navigationState?.key || isLoading) {
+    if (!navigationState?.key || isLoading || !authReady) {
+      return;
+    }
+
+    // Wait for router to mount segments before redirecting (prevents blank screen on web)
+    if (!segments.length) {
       return;
     }
 
@@ -79,7 +84,7 @@ function AuthNavigator() {
     }
 
     if (onboardingStatus === 'completed') {
-      if (inAuthGroup) {
+      if (!inTabGroup) {
         console.log('✅ Onboarding complete - redirecting to home');
         router.replace('/(tabs)/' as any);
       }
@@ -90,7 +95,7 @@ function AuthNavigator() {
       console.log(`🔄 Status=${onboardingStatus}, screen=${currentAuthScreen} not allowed. Redirecting to:`, statusConfig.required);
       router.replace(statusConfig.required as any);
     }
-  }, [session, onboardingStatus, segments, navigationState?.key, isLoading]);
+  }, [session, onboardingStatus, segments, navigationState?.key, isLoading, authReady]);
 
   return null;
 }
