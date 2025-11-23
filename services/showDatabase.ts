@@ -298,6 +298,29 @@ export async function getShowByTraktId(traktId: number): Promise<DatabaseShow | 
   return data as DatabaseShow;
 }
 
+export async function updateEpisodeMetadata(
+  showId: string,
+  seasonNumber: number,
+  episodeNumber: number,
+  updates: {
+    title?: string;
+    description?: string;
+    thumbnail_url?: string;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from('episodes')
+    .update(updates)
+    .eq('show_id', showId)
+    .eq('season_number', seasonNumber)
+    .eq('episode_number', episodeNumber);
+
+  if (error) {
+    console.error('Error updating episode metadata:', error);
+    throw error;
+  }
+}
+
 export async function getEpisodesByShowId(showId: string): Promise<DatabaseEpisode[]> {
   const { data, error } = await supabase
     .from('episodes')

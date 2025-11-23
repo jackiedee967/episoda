@@ -34,7 +34,7 @@ import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode } from '@/services/showDatabase';
+import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, updateEpisodeMetadata } from '@/services/showDatabase';
 import { getAllEpisodes } from '@/services/trakt';
 import { getEpisode, getAllEpisodes as getAllTVMazeEpisodes } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
@@ -264,16 +264,32 @@ export default function ShowHub() {
               // Fetch thumbnails in the background if TVMaze ID is available
               if (dbShow.tvmaze_id) {
                 const episodesWithThumbnails = await Promise.all(
-                  mappedEpisodes.map(async (ep) => {
+                  mappedEpisodes.map(async (ep, index) => {
                     try {
+                      const traktEpisode = traktEpisodes[index];
                       const tvmazeEpisode = await getEpisode(
                         dbShow.tvmaze_id!,
                         ep.seasonNumber,
                         ep.episodeNumber
                       );
+                      const thumbnailUrl = tvmazeEpisode?.image?.original || null;
+                      
+                      // Save to database for persistence
+                      if (thumbnailUrl || traktEpisode.title || traktEpisode.overview) {
+                        try {
+                          await updateEpisodeMetadata(show.id, ep.seasonNumber, ep.episodeNumber, {
+                            title: traktEpisode.title || ep.title,
+                            description: traktEpisode.overview || ep.description,
+                            thumbnail_url: thumbnailUrl || undefined,
+                          });
+                        } catch (dbError) {
+                          console.error(`Failed to save metadata for S${ep.seasonNumber}E${ep.episodeNumber}:`, dbError);
+                        }
+                      }
+                      
                       return {
                         ...ep,
-                        thumbnail: tvmazeEpisode?.image?.original || undefined,
+                        thumbnail: thumbnailUrl || undefined,
                       };
                     } catch (error) {
                       console.error(`Error fetching thumbnail for S${ep.seasonNumber}E${ep.episodeNumber}:`, error);
@@ -336,6 +352,43 @@ export default function ShowHub() {
           }));
           setEpisodes(mappedEpisodes);
           console.log('✅ Loaded', mappedEpisodes.length, 'logged episodes from Supabase');
+          
+          // Background refresh: Check for missing thumbnails and update from TVMaze
+          if (dbShow.tvmaze_id) {
+            console.log('🔄 Refreshing episode metadata in background...');
+            Promise.all(
+              dbEpisodes.map(async (dbEp) => {
+                // Only fetch if thumbnail is missing
+                if (!dbEp.thumbnail_url) {
+                  try {
+                    const tvmazeEpisode = await getEpisode(
+                      dbShow.tvmaze_id!,
+                      dbEp.season_number,
+                      dbEp.episode_number
+                    );
+                    const thumbnailUrl = tvmazeEpisode?.image?.original || null;
+                    
+                    if (thumbnailUrl) {
+                      await updateEpisodeMetadata(show.id, dbEp.season_number, dbEp.episode_number, {
+                        thumbnail_url: thumbnailUrl,
+                      });
+                      
+                      // Update the displayed episode
+                      setEpisodes(prev => prev.map(ep => 
+                        ep.seasonNumber === dbEp.season_number && ep.episodeNumber === dbEp.episode_number
+                          ? { ...ep, thumbnail: thumbnailUrl }
+                          : ep
+                      ));
+                    }
+                  } catch (error) {
+                    console.error(`Error refreshing S${dbEp.season_number}E${dbEp.episode_number}:`, error);
+                  }
+                }
+              })
+            ).then(() => {
+              console.log('✅ Background metadata refresh complete');
+            });
+          }
         } else {
           console.log('⚠️ No episodes found in database');
           setEpisodes([]);
