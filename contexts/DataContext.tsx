@@ -951,7 +951,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     console.log(`💾 Saving show "${show.title}" to database to get UUID...`);
     
     try {
-      const { saveOrUpdateShow } = await import('@/services/showDatabase');
+      const { upsertShowFromAppModel } = await import('@/services/showDatabase');
       const { getShowDetails } = await import('@/services/trakt');
       const { showEnrichmentManager } = await import('@/services/showEnrichment');
 
@@ -974,16 +974,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       // Save to database
-      const dbShow = await saveOrUpdateShow({
-        trakt_id: traktId,
+      const dbShow = await upsertShowFromAppModel({
+        traktId: traktId,
         title: show.title,
         description: show.description || '',
-        poster_url: posterUrl,
-        backdrop_url: show.backdrop || null,
+        posterUrl: posterUrl,
+        backdropUrl: show.backdrop || null,
         rating: show.rating || 0,
-        total_seasons: show.totalSeasons || 0,
-        total_episodes: show.totalEpisodes || 0,
-        color_scheme: show.colorScheme || null,
+        totalSeasons: show.totalSeasons || 0,
+        totalEpisodes: show.totalEpisodes || 0,
       });
 
       const uuid = dbShow.id;
