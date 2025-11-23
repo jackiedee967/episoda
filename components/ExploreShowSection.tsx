@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   genreTitle: {
-    ...tokens.typography.p2M,
+    ...tokens.typography.p1M,
     color: tokens.colors.greenHighlight,
     fontSize: 15,
     fontWeight: '600',
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: tokens.colors.imageStroke,
-    backgroundColor: tokens.colors.card,
+    backgroundColor: tokens.colors.cardBackground,
   },
   saveIcon: {
     position: 'absolute',
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.9 }],
   },
   showTitle: {
-    ...tokens.typography.p3,
+    ...tokens.typography.p3R,
     color: tokens.colors.almostWhite,
     fontSize: 13,
     lineHeight: 16,

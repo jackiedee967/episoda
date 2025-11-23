@@ -39,11 +39,28 @@ export async function getUserInterests(userId: string): Promise<UserInterests> {
       return { genres: [], shows: [] };
     }
     
-    // Fetch show details from database
-    const { data: shows, error: showsError } = await supabase
+    // Fetch show details from database including genres
+    // Note: Try with genres first, fallback to without if schema cache not refreshed
+    let shows = null;
+    let showsError = null;
+    
+    const result = await supabase
       .from('shows')
-      .select('id, title, trakt_id')
+      .select('id, title, trakt_id, genres')
       .in('id', postedShowIds);
+    
+    if (result.error && result.error.message?.includes('genres')) {
+      console.warn('⚠️ Schema cache issue - genres column not in PostgREST cache, falling back without genres');
+      const fallbackResult = await supabase
+        .from('shows')
+        .select('id, title, trakt_id')
+        .in('id', postedShowIds);
+      shows = fallbackResult.data;
+      showsError = fallbackResult.error;
+    } else {
+      shows = result.data;
+      showsError = result.error;
+    }
     
     if (showsError) {
       console.error('Error fetching shows:', showsError);
@@ -54,14 +71,20 @@ export async function getUserInterests(userId: string): Promise<UserInterests> {
       id: show.id,
       title: show.title,
       traktId: show.trakt_id,
-      genres: []
+      genres: (show.genres || []) as string[]
     }));
     
-    console.log(`✅ User interests: ${userShows.length} shows found (genre data not available)`);
-    console.log('  ℹ️ No genre interests, using trending shows as fallback');
+    // Extract unique genres from all user shows
+    const allGenres = new Set<string>();
+    userShows.forEach(show => {
+      (show.genres || []).forEach(genre => allGenres.add(genre));
+    });
+    
+    const uniqueGenres = Array.from(allGenres);
+    console.log(`✅ User interests: ${userShows.length} shows, ${uniqueGenres.length} unique genres:`, uniqueGenres.join(', '));
     
     return {
-      genres: [],
+      genres: uniqueGenres,
       shows: userShows
     };
   } catch (error) {

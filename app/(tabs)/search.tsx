@@ -375,10 +375,19 @@ export default function SearchScreen() {
               console.warn(`  ⚠️ Trakt related failed:`, error);
             }
             
+            // Fetch seed show from Trakt to get fresh genres/year data (bypasses PostgREST cache)
+            const seedTraktShow = await (async () => {
+              try {
+                const { getShowDetails } = await import('@/services/trakt');
+                return await getShowDetails(show.traktId);
+              } catch (error) {
+                console.warn(`  ⚠️ Failed to fetch seed show from Trakt, using database version:`, error);
+                return mapDatabaseShowToTraktShow(show);
+              }
+            })();
+            
             // Get seed show enrichment data for scoring
-            const seedEnrichment = await showEnrichmentManager.enrichShow(
-              mapDatabaseShowToTraktShow(show)
-            );
+            const seedEnrichment = await showEnrichmentManager.enrichShow(seedTraktShow);
             
             // TODO: Add TMDB recommendations/similar shows later after implementing efficient TMDB→Trakt mapping
             // For now, using Trakt related shows only (collaborative filtering)
@@ -386,9 +395,34 @@ export default function SearchScreen() {
             const candidates = Array.from(candidatesMap.values());
             console.log(`  📊 Total candidates: ${candidates.length}`);
             
-            // Step 2: Enrich all candidates (needed for keyword-based scoring)
+            // Step 1.5: Apply hard filters for genre and year (production-grade relevance filters)
+            // Use Trakt data (not database) to ensure we have genres/year even if PostgREST cache is stale
+            const seedGenres = seedTraktShow.genres || [];
+            const seedYear = seedTraktShow.year || 0;
+            
+            const filteredCandidates = candidates.filter(candidate => {
+              // Filter 1: Must share at least one genre with seed show
+              const candidateGenres = candidate.genres || [];
+              const hasSharedGenre = seedGenres.length === 0 || candidateGenres.length === 0 || 
+                candidateGenres.some(genre => seedGenres.includes(genre));
+              
+              // Filter 2: Must be within ±10 years of seed show
+              const candidateYear = candidate.year || 0;
+              const withinYearRange = seedYear === 0 || candidateYear === 0 || 
+                Math.abs(candidateYear - seedYear) <= 10;
+              
+              return hasSharedGenre && withinYearRange;
+            });
+            
+            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (genre + year filters)`);
+            if (filteredCandidates.length < candidates.length) {
+              const filtered = candidates.filter(c => !filteredCandidates.includes(c));
+              console.log(`  ❌ Filtered out: ${filtered.slice(0, 3).map(c => `${c.title} (${c.year})`).join(', ')}`);
+            }
+            
+            // Step 2: Enrich filtered candidates (needed for keyword-based scoring)
             const enrichedCandidates = await Promise.all(
-              candidates.map(async (traktShow) => {
+              filteredCandidates.map(async (traktShow) => {
                 const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
                 return {
                   show: mapTraktShowToShow(traktShow, {
@@ -1609,7 +1643,7 @@ export default function SearchScreen() {
             </View>
             <View style={styles.showInfo}>
               <Text style={styles.showTitle} numberOfLines={1}>
-                {show.title}{show.year ? ` (${show.year})` : ''}
+                {show.title}
               </Text>
               <Text style={styles.showDescription} numberOfLines={2}>
                 {show.description}
