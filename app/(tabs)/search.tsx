@@ -31,7 +31,7 @@ import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
 import { ScrollView as RNScrollView } from 'react-native';
 import { getShowRecommendations, getSimilarShows } from '@/services/tmdb';
-import { rankCandidates } from '@/services/recommendationScoring';
+import { rankCandidates, applyHardFilters } from '@/services/recommendationScoring';
 import { discoverShows, type TMDBDiscoverParams, type TMDBShow } from '@/services/tmdb';
 
 type SearchCategory = 'shows' | 'users' | 'posts' | 'comments';
@@ -368,7 +368,7 @@ export default function SearchScreen() {
             
             // Source 1: Trakt related shows (collaborative filtering)
             try {
-              const relatedShows = await getRelatedShows(show.traktId, 30);
+              const relatedShows = await getRelatedShows(show.traktId, 100);
               relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
               console.log(`  ✓ Trakt related: ${relatedShows.length} shows`);
             } catch (error) {
@@ -395,29 +395,13 @@ export default function SearchScreen() {
             const candidates = Array.from(candidatesMap.values());
             console.log(`  📊 Total candidates: ${candidates.length}`);
             
-            // Step 1.5: Apply hard filters for genre and year (production-grade relevance filters)
-            // Use Trakt data (not database) to ensure we have genres/year even if PostgREST cache is stale
-            const seedGenres = seedTraktShow.genres || [];
-            const seedYear = seedTraktShow.year || 0;
+            // Step 1.5: Apply hard filters (primary genre + ≥2 overlap + ±5 years)
+            const filteredCandidates = applyHardFilters(seedTraktShow, candidates);
             
-            const filteredCandidates = candidates.filter(candidate => {
-              // Filter 1: Must share at least one genre with seed show
-              const candidateGenres = candidate.genres || [];
-              const hasSharedGenre = seedGenres.length === 0 || candidateGenres.length === 0 || 
-                candidateGenres.some(genre => seedGenres.includes(genre));
-              
-              // Filter 2: Must be within ±10 years of seed show
-              const candidateYear = candidate.year || 0;
-              const withinYearRange = seedYear === 0 || candidateYear === 0 || 
-                Math.abs(candidateYear - seedYear) <= 10;
-              
-              return hasSharedGenre && withinYearRange;
-            });
-            
-            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (genre + year filters)`);
+            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (primary genre + ≥2 overlap + ±5yr)`);
             if (filteredCandidates.length < candidates.length) {
               const filtered = candidates.filter(c => !filteredCandidates.includes(c));
-              console.log(`  ❌ Filtered out: ${filtered.slice(0, 3).map(c => `${c.title} (${c.year})`).join(', ')}`);
+              console.log(`  ❌ Filtered out: ${filtered.slice(0, 3).map(c => `${c.title} (${c.year || 'unknown'})`).join(', ')}`);
             }
             
             // Step 2: Enrich filtered candidates (needed for keyword-based scoring)
@@ -458,8 +442,8 @@ export default function SearchScreen() {
               console.log(`  ⚠️ All candidates scored too low. Sample scores:`, allScores);
             }
             
-            // Step 4: Take top 12 recommendations
-            const topRecommendations = ranked.slice(0, 12).map(item => ({
+            // Step 4: Take ALL ranked recommendations (no limit)
+            const topRecommendations = ranked.map(item => ({
               ...item.show,
               id: item.show.id || `trakt-${item.traktShow.ids.trakt}`,
               traktId: item.traktShow.ids.trakt,
@@ -477,8 +461,8 @@ export default function SearchScreen() {
         });
         
         const becauseYouWatched = await Promise.all(becauseYouWatchedPromises);
-        // Only show rows with 6+ recommendations (high-quality threshold)
-        setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length >= 6));
+        // Show rows with 3+ recommendations (lowered threshold)
+        setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length >= 3));
         
         // 6. Popular Rewatches
         const { data: playedShows } = await getPlayedShows('monthly', 12);
@@ -777,7 +761,7 @@ export default function SearchScreen() {
             })
           );
         } else if (sectionParam === 'because-you-watched') {
-          // Refetch full recommendations with proper scoring
+          // Fetch ALL recommendations with proper filtering (no pagination - loads everything upfront)
           // Note: useLocalSearchParams already decodes values, don't decode again to avoid crashes
           const seedShowTraktId = parseInt(params.seedShowTraktId as string);
           const seedShowTitle = params.seedShowTitle as string || '';
@@ -791,32 +775,32 @@ export default function SearchScreen() {
             console.log(`🎯 Fetching full recommendations for "${seedShowTitle}" (${seedShowYear || 'unknown year'})...`);
             console.log(`  Seed genres: ${seedShowGenres.join(', ') || 'none'}`);
             
-            // Fetch seed show details for proper scoring
+            // Fetch seed show from Trakt to get fresh data
+            const { getShowDetails } = await import('@/services/trakt');
+            const seedTraktShow = await getShowDetails(seedShowTraktId);
+            
+            // Step 1: Gather 100 candidates from Trakt related shows
             const candidatesMap = new Map<number, any>();
             
             try {
-              // Source 1: Trakt related shows (collaborative filtering)
-              const relatedShows = await getRelatedShows(seedShowTraktId, 50);
+              const relatedShows = await getRelatedShows(seedShowTraktId, 100);
               relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
-              console.log(`  Found ${relatedShows.length} related shows from Trakt`);
+              console.log(`  ✓ Trakt related: ${relatedShows.length} shows`);
             } catch (error) {
-              console.error('  Error fetching related shows:', error);
+              console.error('  ⚠️ Error fetching related shows:', error);
             }
             
-            try {
-              // Source 2: TMDB similar shows
-              const similarShows = await getSimilarShows(seedShowTraktId, 50);
-              similarShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
-              console.log(`  Found ${similarShows.length} similar shows from TMDB`);
-            } catch (error) {
-              console.error('  Error fetching similar shows:', error);
-            }
+            const candidates = Array.from(candidatesMap.values());
+            console.log(`  📊 Total candidates: ${candidates.length}`);
             
-            const allCandidates = Array.from(candidatesMap.values());
+            // Step 2: Apply hard filters (primary genre + ≥2 overlap + ±5 years)
+            const filteredCandidates = applyHardFilters(seedTraktShow, candidates);
             
-            // Enrich candidates with posters
+            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (primary genre + ≥2 overlap + ±5yr)`);
+            
+            // Step 3: Enrich candidates with posters
             const enrichedCandidates = await Promise.all(
-              allCandidates.map(async (traktShow) => {
+              filteredCandidates.map(async (traktShow) => {
                 const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
                 return {
                   show: mapTraktShowToShow(traktShow, {
@@ -829,22 +813,15 @@ export default function SearchScreen() {
               })
             );
             
-            // Create seed show object for scoring with actual genres
+            // Step 4: Get seed enrichment and apply similarity scoring
+            const seedEnrichment = await showEnrichmentManager.enrichShow(seedTraktShow);
             const seedShow = {
-              traktShow: {
-                title: seedShowTitle,
-                year: seedShowYear || 0,
-                rating: seedShowRating || 0,
-                ids: { trakt: seedShowTraktId, slug: '', tvdb: null, imdb: null, tmdb: null },
-                genres: seedShowGenres,
-              },
-              enrichedData: undefined,
+              traktShow: seedTraktShow,
+              enrichedData: seedEnrichment,
             };
             
-            // Apply similarity scoring with enhanced demographic filtering
             const rankedShows = rankCandidates(seedShow, enrichedCandidates, 20);
-            
-            console.log(`✅ Ranked ${rankedShows.length} quality recommendations (min score: 20)`);
+            console.log(`  ⭐ High-quality matches: ${rankedShows.length} (min score 20)`);
             
             shows = rankedShows.map(scored => ({
               ...scored.show,
@@ -853,6 +830,9 @@ export default function SearchScreen() {
               traktShow: scored.traktShow,
               score: scored.score,
             }));
+            
+            // Disable pagination for "because-you-watched" since we load all results upfront
+            setHasMoreSectionShows(false);
           }
         }
         
@@ -871,6 +851,12 @@ export default function SearchScreen() {
   // Load more section shows with retry logic for production reliability
   const loadMoreSectionShows = useCallback(async () => {
     if (!sectionParam || isLoadingSection || !hasMoreSectionShows) return;
+    
+    // "because-you-watched" loads all results upfront, no pagination
+    if (sectionParam === 'because-you-watched') {
+      setHasMoreSectionShows(false);
+      return;
+    }
 
     const nextPage = sectionPage + 1;
     

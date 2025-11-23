@@ -9,6 +9,55 @@ export interface ScoredShow {
 }
 
 /**
+ * Apply hard filters to recommendation candidates (Production-Grade Relevance Filters)
+ * 
+ * Filters:
+ * 1. Primary genre MUST match (first genre in seed show's genres array)
+ * 2. For multi-genre shows: require ≥2 genre overlap
+ * 3. Must be within ±5 years of seed show
+ * 
+ * These filters prevent irrelevant recommendations like anime/foreign/vintage content
+ * for modern shows (e.g., "I Love LA" 2025 comedy shouldn't show 1990s anime).
+ */
+export function applyHardFilters(
+  seedShow: TraktShow,
+  candidates: TraktShow[]
+): TraktShow[] {
+  const seedGenres = seedShow.genres || [];
+  const seedYear = seedShow.year || 0;
+  const primaryGenre = seedGenres[0]; // First genre is primary
+  
+  return candidates.filter(candidate => {
+    const candidateGenres = candidate.genres || [];
+    const candidateYear = candidate.year || 0;
+    
+    // Skip filter if genres/year missing
+    if (seedGenres.length === 0 || candidateGenres.length === 0) {
+      return true;
+    }
+    
+    // Filter 1: Primary genre MUST match
+    const primaryGenreMatch = candidateGenres.includes(primaryGenre);
+    if (!primaryGenreMatch) {
+      return false;
+    }
+    
+    // Filter 2: For multi-genre shows, require ≥2 genre overlap
+    const sharedGenres = candidateGenres.filter(g => seedGenres.includes(g));
+    const multiGenreMatch = seedGenres.length === 1 || sharedGenres.length >= 2;
+    if (!multiGenreMatch) {
+      return false;
+    }
+    
+    // Filter 3: Must be within ±5 years
+    const withinYearRange = seedYear === 0 || candidateYear === 0 || 
+      Math.abs(candidateYear - seedYear) <= 5;
+    
+    return withinYearRange;
+  });
+}
+
+/**
  * Calculate similarity score between two shows
  * Uses weighted attribute matching for intelligent recommendations
  * 
