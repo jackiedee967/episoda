@@ -1866,6 +1866,7 @@ export default function SearchScreen() {
             contentContainerStyle={styles.detailContainer}
             data={genreShows}
             numColumns={3}
+            columnWrapperStyle={styles.detailColumnWrapper}
             keyExtractor={(item, index) => `${item.id}-${index}`}
             ListHeaderComponent={
               <View style={styles.detailHeader}>
@@ -1927,6 +1928,7 @@ export default function SearchScreen() {
             contentContainerStyle={styles.detailContainer}
             data={sectionShows}
             numColumns={3}
+            columnWrapperStyle={styles.detailColumnWrapper}
             keyExtractor={(item, index) => `${item.id}-${index}`}
             ListHeaderComponent={
               <View style={styles.detailHeader}>
@@ -2537,10 +2539,14 @@ const styles = StyleSheet.create({
   detailContainer: {
     paddingTop: 18,
     paddingBottom: 100,
+    paddingHorizontal: 20,
   },
   detailHeader: {
-    paddingHorizontal: 20,
     marginBottom: 20,
+  },
+  detailColumnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   backButton: {
     flexDirection: 'row',
@@ -2597,8 +2603,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   gridItem: {
-    width: '31%',
-    marginBottom: 10,
+    width: '31.5%',
   },
   gridPoster: {
     width: '100%',
