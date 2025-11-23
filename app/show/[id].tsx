@@ -611,8 +611,8 @@ export default function ShowHub() {
   };
 
   const renderShowInfo = () => {
-    const totalSeasons = show.totalSeasons || calculateSeasonCount();
-    const totalEpisodes = show.totalEpisodes || calculateEpisodeCount();
+    const totalSeasons = calculateSeasonCount() || show.totalSeasons || 0;
+    const totalEpisodes = calculateEpisodeCount() || show.totalEpisodes || 0;
 
     return (
       <View style={styles.showInfoContainer}>
