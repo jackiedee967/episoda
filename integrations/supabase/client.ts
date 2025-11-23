@@ -12,8 +12,7 @@ const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY ||
                           (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
                           process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-// PRODUCTION GUARD: Fail-fast if credentials missing or using DEV instance
-const DEV_URL = 'https://mbwuoqoktdgudzaemjhx.supabase.co';
+// PRODUCTION GUARD: Fail-fast if credentials missing
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error(
     '🚨 CRITICAL: Missing Supabase credentials!\n' +
@@ -22,17 +21,9 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-if (SUPABASE_URL === DEV_URL) {
-  throw new Error(
-    '🚨 CRITICAL: App is using DEV Supabase instance!\n' +
-    'This will break 2FA and user data. Check your EXPO_PUBLIC_SUPABASE_URL environment variable.'
-  );
-}
-
 console.log('✅ Supabase Client initialized:', {
   url: SUPABASE_URL.substring(0, 30) + '...',
-  keyLength: SUPABASE_ANON_KEY.length,
-  isProd: SUPABASE_URL !== DEV_URL
+  keyLength: SUPABASE_ANON_KEY.length
 });
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
