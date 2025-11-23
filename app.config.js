@@ -1,8 +1,18 @@
 const traktClientId = process.env.TRAKT_CLIENT_ID || '235d184cb03ded3292ed89fe4347e3452a3087027d76f5edd13bdb65ccf2d456';
 const omdbApiKey = process.env.OMDB_API_KEY || '';
 const tmdbApiKey = process.env.TMDB_API_KEY || '';
-const supabaseUrl = process.env.SUPABASE_URL || 'https://mbwuoqoktdgudzaemjhx.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1id3VvcW9rdGRndWR6YWVtamh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTE4MzAsImV4cCI6MjA3NjE4NzgzMH0.aAWDr1SkB-isZUJGMFHGPrcLIQaa9zOGwOif3Btz7-0';
+
+// PRODUCTION CREDENTIALS - No fallbacks to prevent silent DEV instance usage
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'CRITICAL: Missing Supabase credentials. ' +
+    'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set in environment variables. ' +
+    'Production builds will fail without these.'
+  );
+}
 
 module.exports = {
   expo: {

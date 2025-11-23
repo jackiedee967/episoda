@@ -3,13 +3,36 @@ import type { Database } from './types';
 import { createClient } from '@supabase/supabase-js'
 import Constants from 'expo-constants';
 
-const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || (Constants as any).manifest?.extra?.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || "https://mbwuoqoktdgudzaemjhx.supabase.co";
-const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY || (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1id3VvcW9rdGRndWR6YWVtamh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTE4MzAsImV4cCI6MjA3NjE4NzgzMH0.aAWDr1SkB-isZUJGMFHGPrcLIQaa9zOGwOif3Btz7-0";
+// PRODUCTION CREDENTIALS - Use EXPO_PUBLIC_ env vars accessible to Expo bundler
+const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || 
+                     (Constants as any).manifest?.extra?.SUPABASE_URL || 
+                     process.env.EXPO_PUBLIC_SUPABASE_URL;
 
-console.log('🔧 Supabase Client Config:', {
-  url: SUPABASE_URL,
-  keyLength: SUPABASE_ANON_KEY?.length,
-  source: Constants.expoConfig?.extra?.SUPABASE_URL ? 'expoConfig' : (Constants as any).manifest?.extra?.SUPABASE_URL ? 'manifest' : process.env.EXPO_PUBLIC_SUPABASE_URL ? 'env' : 'fallback'
+const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY || 
+                          (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
+                          process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+// PRODUCTION GUARD: Fail-fast if credentials missing or using DEV instance
+const DEV_URL = 'https://mbwuoqoktdgudzaemjhx.supabase.co';
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    '🚨 CRITICAL: Missing Supabase credentials!\n' +
+    'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set.\n' +
+    'Add them to your environment variables (Replit Secrets or .env file).'
+  );
+}
+
+if (SUPABASE_URL === DEV_URL) {
+  throw new Error(
+    '🚨 CRITICAL: App is using DEV Supabase instance!\n' +
+    'This will break 2FA and user data. Check your EXPO_PUBLIC_SUPABASE_URL environment variable.'
+  );
+}
+
+console.log('✅ Supabase Client initialized:', {
+  url: SUPABASE_URL.substring(0, 30) + '...',
+  keyLength: SUPABASE_ANON_KEY.length,
+  isProd: SUPABASE_URL !== DEV_URL
 });
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
