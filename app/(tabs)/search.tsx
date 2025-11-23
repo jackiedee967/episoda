@@ -266,42 +266,30 @@ export default function SearchScreen() {
       
       if (showTraktIds.length === 0) return shows;
       
-      // Fetch ONLY posts from friends for the displayed shows (optimized query)
+      // First, find which of our displayed shows exist in the database
       const { data: showsData } = await supabase
         .from('shows')
         .select('id, trakt_id')
         .in('trakt_id', showTraktIds);
       
-      let friendsPosts: any[] = [];
-      
-      // If showsData is empty, fall back to fetching all friend posts and filtering by traktId
+      // If no shows found in DB, no posts can exist (foreign key constraint)
       if (!showsData || showsData.length === 0) {
-        // Fetch all friend posts
-        const { data: allFriendsPosts } = await supabase
-          .from('posts')
-          .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
-          .in('user_id', friendIds);
-        
-        // Filter posts to only those matching our show Trakt IDs
-        friendsPosts = (allFriendsPosts || []).filter(post => {
-          if (!post.shows) return false;
-          const showTraktId = (post.shows as any).trakt_id;
-          return showTraktId && showTraktIds.includes(showTraktId);
-        });
-      } else {
-        // Filter out null/undefined IDs before querying
-        const showDbIds = showsData.map(s => s.id).filter(id => id != null);
-        
-        if (showDbIds.length > 0) {
-          const { data: posts } = await supabase
-            .from('posts')
-            .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
-            .in('user_id', friendIds)
-            .in('show_id', showDbIds);
-          
-          friendsPosts = posts || [];
-        }
+        return shows;
       }
+      
+      // Filter out null/undefined IDs and query posts for these specific shows
+      const showDbIds = showsData.map(s => s.id).filter(id => id != null);
+      
+      if (showDbIds.length === 0) {
+        return shows;
+      }
+      
+      // Fetch friend posts for ONLY the displayed shows (targeted query, avoids pagination issues)
+      const { data: friendsPosts } = await supabase
+        .from('posts')
+        .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
+        .in('user_id', friendIds)
+        .in('show_id', showDbIds);
       
       // Create maps for both traktId and UUID-based lookups
       const showFriendsByTraktId = new Map<number, Array<{ id: string; avatar?: string; displayName?: string; username?: string }>>();
@@ -1337,8 +1325,12 @@ export default function SearchScreen() {
         );
 
         const validShows = enrichedShows.filter(show => show !== null);
-        if (validShows.length > 0) {
-          setGenreShows(prev => [...prev, ...validShows]);
+        
+        // Enrich with mutual friends watching before appending
+        const enrichedGenreShows = await enrichShowsWithMutualFriends(validShows);
+        
+        if (enrichedGenreShows.length > 0) {
+          setGenreShows(prev => [...prev, ...enrichedGenreShows]);
         }
         setGenrePage(nextPage);
         setLastSuccessfulGenrePage(nextPage); // Track last successful fetch
