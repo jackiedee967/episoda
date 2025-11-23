@@ -363,19 +363,7 @@ export default function SearchScreen() {
           try {
             console.log(`🎯 Fetching recommendations for "${show.title}"...`);
             
-            // Step 1: Gather candidates from multiple sources
-            const candidatesMap = new Map<number, TraktShow>();
-            
-            // Source 1: Trakt related shows (collaborative filtering)
-            try {
-              const relatedShows = await getRelatedShows(show.traktId, 100);
-              relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
-              console.log(`  ✓ Trakt related: ${relatedShows.length} shows`);
-            } catch (error) {
-              console.warn(`  ⚠️ Trakt related failed:`, error);
-            }
-            
-            // Fetch seed show from Trakt to get fresh genres/year data (bypasses PostgREST cache)
+            // Step 0: Fetch seed show from Trakt to get fresh genres/year data (bypasses PostgREST cache)
             const seedTraktShow = await (async () => {
               try {
                 const { getShowDetails } = await import('@/services/trakt');
@@ -385,6 +373,27 @@ export default function SearchScreen() {
                 return mapDatabaseShowToTraktShow(show);
               }
             })();
+            
+            // Step 1: Gather candidates from multiple sources (target: ≥60 raw candidates)
+            const candidatesMap = new Map<number, TraktShow>();
+            
+            // Source 1: Trakt related shows (collaborative filtering) - fetch multiple batches if needed
+            try {
+              let relatedShows = await getRelatedShows(show.traktId, 100);
+              relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
+              console.log(`  ✓ Trakt related: ${relatedShows.length} shows`);
+              
+              // If Trakt returned <60 candidates, blend in popular shows from seed's genres as fallback
+              if (relatedShows.length < 60 && seedTraktShow.genres && seedTraktShow.genres.length > 0) {
+                console.log(`  ⚡ Expanding pool with popular ${seedTraktShow.genres[0]} shows (got ${relatedShows.length}, target 60+)...`);
+                const { getPopularShowsByGenre } = await import('@/services/trakt');
+                const popularInGenre = await getPopularShowsByGenre(seedTraktShow.genres[0].toLowerCase(), 50);
+                popularInGenre.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
+                console.log(`  ✓ Added ${popularInGenre.length} popular shows, total pool: ${candidatesMap.size}`);
+              }
+            } catch (error) {
+              console.warn(`  ⚠️ Trakt related failed:`, error);
+            }
             
             // Get seed show enrichment data for scoring
             const seedEnrichment = await showEnrichmentManager.enrichShow(seedTraktShow);
@@ -396,9 +405,18 @@ export default function SearchScreen() {
             console.log(`  📊 Total candidates: ${candidates.length}`);
             
             // Step 1.5: Apply hard filters (genre + year + animation + language + rating)
-            const filteredCandidates = applyHardFilters(seedTraktShow, candidates);
+            let filteredCandidates = applyHardFilters(seedTraktShow, candidates);
             
-            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (genre + year + animation + language + rating)`);
+            console.log(`  🎯 Strict filtered: ${filteredCandidates.length}/${candidates.length} candidates`);
+            
+            // Step 1.6: Progressive relaxation - if <20 survivors, apply relaxed filters
+            if (filteredCandidates.length < 20) {
+              const { applyRelaxedFilters } = await import('@/services/recommendationScoring');
+              const relaxedCandidates = applyRelaxedFilters(seedTraktShow, candidates, filteredCandidates);
+              console.log(`  ⚡ Applied relaxed filters (+${relaxedCandidates.length} more) → Total: ${filteredCandidates.length + relaxedCandidates.length}`);
+              filteredCandidates = [...filteredCandidates, ...relaxedCandidates];
+            }
+            
             if (filteredCandidates.length < candidates.length) {
               const filtered = candidates.filter(c => !filteredCandidates.includes(c));
               const animated = filtered.filter(c => c.genres?.some(g => g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'));
@@ -428,7 +446,7 @@ export default function SearchScreen() {
             
             // Step 3: Apply similarity scoring and rank
             const seedShow = {
-              traktShow: mapDatabaseShowToTraktShow(show),
+              traktShow: seedTraktShow, // Use fresh Trakt data with genres/year, not stale database version
               enrichedData: seedEnrichment
             };
             
@@ -786,13 +804,22 @@ export default function SearchScreen() {
             const { getShowDetails } = await import('@/services/trakt');
             const seedTraktShow = await getShowDetails(seedShowTraktId);
             
-            // Step 1: Gather 100 candidates from Trakt related shows
+            // Step 1: Gather candidates from multiple sources (target: ≥60 raw candidates)
             const candidatesMap = new Map<number, any>();
             
             try {
-              const relatedShows = await getRelatedShows(seedShowTraktId, 100);
+              let relatedShows = await getRelatedShows(seedShowTraktId, 100);
               relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
               console.log(`  ✓ Trakt related: ${relatedShows.length} shows`);
+              
+              // If Trakt returned <60 candidates, blend in popular shows from seed's genres as fallback
+              if (relatedShows.length < 60 && seedTraktShow.genres && seedTraktShow.genres.length > 0) {
+                console.log(`  ⚡ Expanding pool with popular ${seedTraktShow.genres[0]} shows (got ${relatedShows.length}, target 60+)...`);
+                const { getPopularShowsByGenre } = await import('@/services/trakt');
+                const popularInGenre = await getPopularShowsByGenre(seedTraktShow.genres[0].toLowerCase(), 50);
+                popularInGenre.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
+                console.log(`  ✓ Added ${popularInGenre.length} popular shows, total pool: ${candidatesMap.size}`);
+              }
             } catch (error) {
               console.error('  ⚠️ Error fetching related shows:', error);
             }
@@ -801,9 +828,18 @@ export default function SearchScreen() {
             console.log(`  📊 Total candidates: ${candidates.length}`);
             
             // Step 2: Apply hard filters (genre + year + animation + language + rating)
-            const filteredCandidates = applyHardFilters(seedTraktShow, candidates);
+            let filteredCandidates = applyHardFilters(seedTraktShow, candidates);
             
-            console.log(`  🎯 Filtered candidates: ${filteredCandidates.length}/${candidates.length} (genre + year + animation + language + rating)`);
+            console.log(`  🎯 Strict filtered: ${filteredCandidates.length}/${candidates.length} candidates`);
+            
+            // Step 2.5: Progressive relaxation - if <20 survivors, apply relaxed filters
+            if (filteredCandidates.length < 20) {
+              const { applyRelaxedFilters } = await import('@/services/recommendationScoring');
+              const relaxedCandidates = applyRelaxedFilters(seedTraktShow, candidates, filteredCandidates);
+              console.log(`  ⚡ Applied relaxed filters (+${relaxedCandidates.length} more) → Total: ${filteredCandidates.length + relaxedCandidates.length}`);
+              filteredCandidates = [...filteredCandidates, ...relaxedCandidates];
+            }
+            
             if (filteredCandidates.length < candidates.length) {
               const filtered = candidates.filter(c => !filteredCandidates.includes(c));
               const animated = filtered.filter(c => c.genres?.some(g => g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'));

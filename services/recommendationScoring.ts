@@ -9,6 +9,72 @@ export interface ScoredShow {
 }
 
 /**
+ * Apply relaxed filters to expand candidate pool when strict filters yield too few results
+ * Used as fallback when <20 survivors after strict filtering
+ */
+export function applyRelaxedFilters(
+  seedShow: TraktShow,
+  candidates: TraktShow[],
+  strictSurvivors: TraktShow[]
+): TraktShow[] {
+  const strictTraktIds = new Set(strictSurvivors.map(s => s.ids.trakt));
+  const seedGenres = seedShow.genres || [];
+  const seedYear = seedShow.year || 0;
+  const primaryGenre = seedGenres[0];
+  
+  const seedIsAnimated = seedGenres.some(g => 
+    g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'
+  );
+  
+  return candidates.filter(candidate => {
+    // Skip if already in strict survivors
+    if (strictTraktIds.has(candidate.ids.trakt)) {
+      return false;
+    }
+    
+    const candidateGenres = candidate.genres || [];
+    const candidateYear = candidate.year || 0;
+    
+    // KEEP Universal filters (animation, language, rating) - these NEVER relax
+    if (!seedIsAnimated) {
+      const candidateIsAnimated = candidateGenres.some(g => 
+        g.toLowerCase() === 'animation' || g.toLowerCase() === 'anime'
+      );
+      if (candidateIsAnimated) return false;
+    }
+    
+    const language = candidate.language?.toLowerCase();
+    const country = candidate.country?.toLowerCase();
+    const englishSpeakingCountries = ['us', 'gb', 'ca', 'au'];
+    if (language && language !== 'en') return false;
+    if (country && !englishSpeakingCountries.includes(country)) return false;
+    
+    const rating = candidate.rating || 0;
+    if (rating > 0 && rating < 6.0) return false; // Relaxed from 6.5 to 6.0
+    
+    // Skip genre/year checks if metadata missing
+    if (seedGenres.length === 0 || candidateGenres.length === 0) {
+      return true;
+    }
+    
+    // RELAXED: Accept ANY genre overlap (removed primary genre requirement)
+    const sharedGenres = candidateGenres.filter(g => seedGenres.includes(g));
+    if (sharedGenres.length === 0) {
+      return false;
+    }
+    
+    // RELAXED: ±10 years instead of ±5
+    const withinRelaxedYearRange = seedYear === 0 || candidateYear === 0 || 
+      Math.abs(candidateYear - seedYear) <= 10;
+    if (!withinRelaxedYearRange) {
+      return false;
+    }
+    
+    return true;
+  });
+}
+
+/**
  * Apply hard filters to recommendation candidates (Production-Grade Relevance Filters)
  * 
  * Filters:
@@ -17,7 +83,7 @@ export interface ScoredShow {
  * 3. Must be within ±5 years of seed show
  * 4. Block animation/anime (unless seed is animated)
  * 5. Require English language (en) OR English-speaking country (US/GB/CA/AU)
- * 6. Minimum Trakt rating ≥7.0
+ * 6. Minimum Trakt rating ≥6.5
  * 
  * These filters prevent irrelevant recommendations like anime/foreign/vintage content
  * for modern shows (e.g., "I Love LA" 2025 comedy shouldn't show Japanese anime).
