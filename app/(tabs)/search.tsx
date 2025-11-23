@@ -243,6 +243,22 @@ export default function SearchScreen() {
     addSearchToHistory(trimmedQuery);
   };
 
+  // ⚠️ TEMPORARY: Add placeholder mutual friends for styling (REMOVE AFTER STYLING)
+  const addPlaceholderMutualFriends = (shows: any[]) => {
+    const placeholderFriends = [
+      { id: '1', displayName: 'Emma Wilson', username: 'emmaw' },
+      { id: '2', displayName: 'James Chen', username: 'jchen' },
+      { id: '3', displayName: 'Sarah Kim', username: 'sarahk' },
+    ];
+    
+    return shows.map((show, index) => ({
+      ...show,
+      mutualFriendsWatching: index % 3 === 0 ? placeholderFriends : 
+                              index % 3 === 1 ? placeholderFriends.slice(0, 2) :
+                              placeholderFriends.slice(0, 1)
+    }));
+  };
+
   // Function to enrich shows with mutual friends watching data (optimized)
   const enrichShowsWithMutualFriends = async (shows: any[]) => {
     if (!currentUser?.id || shows.length === 0) return shows;
@@ -426,7 +442,9 @@ export default function SearchScreen() {
         
         // Enrich with mutual friends watching
         const enrichedForYou = await enrichShowsWithMutualFriends(mixedForYou);
-        setForYouShows(enrichedForYou);
+        // ⚠️ TEMPORARY: Add placeholder data for styling
+        const forYouWithPlaceholders = addPlaceholderMutualFriends(enrichedForYou);
+        setForYouShows(forYouWithPlaceholders);
         
         // 2. Trending
         const enrichedTrending = await Promise.all(
@@ -447,7 +465,9 @@ export default function SearchScreen() {
         
         // Enrich with mutual friends watching
         const enrichedTrendingWithFriends = await enrichShowsWithMutualFriends(enrichedTrending);
-        setTrendingShows(enrichedTrendingWithFriends);
+        // ⚠️ TEMPORARY: Add placeholder data for styling
+        const trendingWithPlaceholders = addPlaceholderMutualFriends(enrichedTrendingWithFriends);
+        setTrendingShows(trendingWithPlaceholders);
         
         // 3-5. Because You Watched - Get user's 3 most recently logged shows
         const userPosts = posts
@@ -608,8 +628,14 @@ export default function SearchScreen() {
           }))
         );
         
+        // ⚠️ TEMPORARY: Add placeholder data for styling to "Because You Watched" sections
+        const becauseYouWatchedWithPlaceholders = enrichedBecauseYouWatched.map(section => ({
+          ...section,
+          relatedShows: addPlaceholderMutualFriends(section.relatedShows)
+        }));
+        
         // Show rows with 3+ recommendations (lowered threshold)
-        setBecauseYouWatchedSections(enrichedBecauseYouWatched.filter(section => section.relatedShows.length >= 3));
+        setBecauseYouWatchedSections(becauseYouWatchedWithPlaceholders.filter(section => section.relatedShows.length >= 3));
         
         // 6. Popular Rewatches
         const { data: playedShows } = await getPlayedShows('monthly', 12);
@@ -631,7 +657,9 @@ export default function SearchScreen() {
         
         // Enrich with mutual friends watching
         const enrichedPlayedWithFriends = await enrichShowsWithMutualFriends(enrichedPlayed);
-        setPopularRewatchesShows(enrichedPlayedWithFriends);
+        // ⚠️ TEMPORARY: Add placeholder data for styling
+        const popularRewatchesWithPlaceholders = addPlaceholderMutualFriends(enrichedPlayedWithFriends);
+        setPopularRewatchesShows(popularRewatchesWithPlaceholders);
         
       } catch (error) {
         console.error('Error loading curated content:', error);
@@ -710,7 +738,9 @@ export default function SearchScreen() {
         .slice(0, 12);
       
       const enrichedForYou = await enrichShowsWithMutualFriends(mixedForYou);
-      setForYouShows(enrichedForYou);
+      // ⚠️ TEMPORARY: Add placeholder data for styling
+      const forYouWithPlaceholders = addPlaceholderMutualFriends(enrichedForYou);
+      setForYouShows(forYouWithPlaceholders);
       
       // Reload trending shows
       const enrichedTrending = await Promise.all(
@@ -731,7 +761,9 @@ export default function SearchScreen() {
       
       // Enrich with mutual friends watching
       const enrichedTrendingWithFriends = await enrichShowsWithMutualFriends(enrichedTrending);
-      setTrendingShows(enrichedTrendingWithFriends);
+      // ⚠️ TEMPORARY: Add placeholder data for styling
+      const trendingWithPlaceholders = addPlaceholderMutualFriends(enrichedTrendingWithFriends);
+      setTrendingShows(trendingWithPlaceholders);
       
       // Reload popular rewatches
       const { data: playedShows } = await getPlayedShows('monthly', 12);
@@ -753,7 +785,9 @@ export default function SearchScreen() {
       
       // Enrich with mutual friends watching
       const enrichedPlayedWithFriends = await enrichShowsWithMutualFriends(enrichedPlayed);
-      setPopularRewatchesShows(enrichedPlayedWithFriends);
+      // ⚠️ TEMPORARY: Add placeholder data for styling
+      const popularRewatchesWithPlaceholders = addPlaceholderMutualFriends(enrichedPlayedWithFriends);
+      setPopularRewatchesShows(popularRewatchesWithPlaceholders);
       
     } catch (error) {
       console.error('Error refreshing explore page:', error);
@@ -811,7 +845,9 @@ export default function SearchScreen() {
             
             // Enrich with mutual friends watching
             const enrichedMixedForYou = await enrichShowsWithMutualFriends(mixedForYou);
-            setForYouShows(enrichedMixedForYou);
+            // ⚠️ TEMPORARY: Add placeholder data for styling
+            const forYouWithPlaceholders = addPlaceholderMutualFriends(enrichedMixedForYou);
+            setForYouShows(forYouWithPlaceholders);
           }
         } catch (error) {
           console.error('Error auto-refreshing explore page:', error);
