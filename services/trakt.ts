@@ -228,8 +228,12 @@ export async function fetchShowEndYear(
   seasons?: TraktSeason[]
 ): Promise<number | undefined> {
   try {
+    // Debug: log status
+    console.log(`🔍 fetchShowEndYear for "${traktShow.title}": status="${traktShow.status}", year=${traktShow.year}`);
+    
     // Only set endYear for ended/canceled shows
     if (traktShow.status !== 'ended' && traktShow.status !== 'canceled') {
+      console.log(`⏭️ Skipping endYear for "${traktShow.title}" - status is "${traktShow.status}"`);
       return undefined;
     }
     
