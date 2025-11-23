@@ -94,11 +94,16 @@ const getGenreEmoji = (genre: string): string => {
 };
 
 // Get section title
-const getSectionTitle = (sectionKey: string): string => {
+const getSectionTitle = (sectionKey: string, params?: any): string => {
   if (sectionKey === 'for-you') return 'For You';
   if (sectionKey === 'trending') return 'Trending';
   if (sectionKey === 'popular-rewatches') return 'Popular Rewatches';
-  if (sectionKey.startsWith('because-you-watched-')) {
+  if (sectionKey === 'because-you-watched') {
+    const seedShowTitle = params?.seedShowTitle;
+    if (seedShowTitle) {
+      // Note: useLocalSearchParams already decodes the value, no need to decode again
+      return `Because You Watched ${seedShowTitle}`;
+    }
     return 'Because You Watched';
   }
   return 'Section';
@@ -737,11 +742,83 @@ export default function SearchScreen() {
               };
             })
           );
-        } else if (sectionParam.startsWith('because-you-watched-')) {
-          // For because-you-watched sections, use the related shows from the state
-          const index = parseInt(sectionParam.replace('because-you-watched-', ''), 10);
-          if (!isNaN(index) && index >= 0 && index < becauseYouWatchedSections.length) {
-            shows = becauseYouWatchedSections[index].relatedShows;
+        } else if (sectionParam === 'because-you-watched') {
+          // Refetch full recommendations with proper scoring
+          // Note: useLocalSearchParams already decodes values, don't decode again to avoid crashes
+          const seedShowTraktId = parseInt(params.seedShowTraktId as string);
+          const seedShowTitle = params.seedShowTitle as string || '';
+          const seedShowYear = parseInt(params.seedShowYear as string) || undefined;
+          const seedShowRating = parseFloat(params.seedShowRating as string) || undefined;
+          const seedShowGenres = params.seedShowGenres 
+            ? JSON.parse(params.seedShowGenres as string)
+            : [];
+          
+          if (seedShowTraktId && seedShowTitle) {
+            console.log(`🎯 Fetching full recommendations for "${seedShowTitle}" (${seedShowYear || 'unknown year'})...`);
+            console.log(`  Seed genres: ${seedShowGenres.join(', ') || 'none'}`);
+            
+            // Fetch seed show details for proper scoring
+            const candidatesMap = new Map<number, any>();
+            
+            try {
+              // Source 1: Trakt related shows (collaborative filtering)
+              const relatedShows = await getRelatedShows(seedShowTraktId, 50);
+              relatedShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
+              console.log(`  Found ${relatedShows.length} related shows from Trakt`);
+            } catch (error) {
+              console.error('  Error fetching related shows:', error);
+            }
+            
+            try {
+              // Source 2: TMDB similar shows
+              const similarShows = await getSimilarShows(seedShowTraktId, 50);
+              similarShows.forEach(ts => candidatesMap.set(ts.ids.trakt, ts));
+              console.log(`  Found ${similarShows.length} similar shows from TMDB`);
+            } catch (error) {
+              console.error('  Error fetching similar shows:', error);
+            }
+            
+            const allCandidates = Array.from(candidatesMap.values());
+            
+            // Enrich candidates with posters
+            const enrichedCandidates = await Promise.all(
+              allCandidates.map(async (traktShow) => {
+                const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                return {
+                  show: mapTraktShowToShow(traktShow, {
+                    posterUrl: enrichedData.posterUrl,
+                    totalSeasons: enrichedData.totalSeasons,
+                  }),
+                  traktShow,
+                  enrichedData,
+                };
+              })
+            );
+            
+            // Create seed show object for scoring with actual genres
+            const seedShow = {
+              traktShow: {
+                title: seedShowTitle,
+                year: seedShowYear || 0,
+                rating: seedShowRating || 0,
+                ids: { trakt: seedShowTraktId, slug: '', tvdb: null, imdb: null, tmdb: null },
+                genres: seedShowGenres,
+              },
+              enrichedData: undefined,
+            };
+            
+            // Apply similarity scoring with enhanced demographic filtering
+            const rankedShows = rankCandidates(seedShow, enrichedCandidates, 20);
+            
+            console.log(`✅ Ranked ${rankedShows.length} quality recommendations (min score: 20)`);
+            
+            shows = rankedShows.map(scored => ({
+              ...scored.show,
+              id: scored.show.id || `trakt-${scored.traktShow.ids.trakt}`,
+              traktId: scored.traktShow.ids.trakt,
+              traktShow: scored.traktShow,
+              score: scored.score,
+            }));
           }
         }
         
@@ -755,7 +832,7 @@ export default function SearchScreen() {
     };
 
     loadSectionShows();
-  }, [sectionParam, becauseYouWatchedSections]);
+  }, [sectionParam]);
 
   // Load more section shows with retry logic for production reliability
   const loadMoreSectionShows = useCallback(async () => {
@@ -1937,7 +2014,7 @@ export default function SearchScreen() {
                   <IconSymbol name="chevron.left" size={20} color={tokens.colors.almostWhite} />
                   <Text style={styles.backButtonText}>Back</Text>
                 </Pressable>
-                <Text style={styles.detailTitle}>{getSectionTitle(params.section as string)}</Text>
+                <Text style={styles.detailTitle}>{getSectionTitle(params.section as string, params)}</Text>
               </View>
             }
             renderItem={({ item: show }) => (
@@ -2055,6 +2132,14 @@ export default function SearchScreen() {
                   key={`because-you-watched-${section.show.id}-${index}`}
                   title={`Because You Watched ${section.show.title}`}
                   shows={section.relatedShows}
+                  seedShow={{
+                    id: section.show.id,
+                    title: section.show.title,
+                    traktId: section.show.traktId,
+                    year: section.show.year,
+                    rating: section.show.rating,
+                    genres: section.show.genres,
+                  }}
                   onShowPress={async (show) => {
                     const uuid = await ensureShowUuid(show, show.traktShow);
                     router.push(`/show/${uuid}`);
@@ -2064,7 +2149,7 @@ export default function SearchScreen() {
                     setPlaylistModalVisible(true);
                   }}
                   isShowSaved={isShowSaved}
-                  onViewMore={() => router.push(`/search?tab=shows&section=because-you-watched-${index}`)}
+                  onViewMore={() => router.push(`/search?tab=shows&section=because-you-watched&seedShowId=${section.show.id}&seedShowTitle=${encodeURIComponent(section.show.title)}&seedShowTraktId=${section.show.traktId}&seedShowYear=${section.show.year || ''}&seedShowRating=${section.show.rating || ''}&seedShowGenres=${encodeURIComponent(JSON.stringify(section.show.genres || []))}`)}
                 />
               ))}
 

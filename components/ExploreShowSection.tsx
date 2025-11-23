@@ -12,6 +12,18 @@ interface Show {
   title: string;
   poster?: string | null;
   traktId?: number;
+  year?: number;
+  rating?: number;
+  genres?: string[];
+}
+
+interface SeedShow {
+  id: string;
+  title: string;
+  traktId: number;
+  year?: number;
+  rating?: number;
+  genres?: string[];
 }
 
 interface ExploreShowSectionProps {
@@ -23,6 +35,7 @@ interface ExploreShowSectionProps {
   onBookmarkPress?: (show: Show) => void;
   isShowSaved?: (showId: string) => boolean;
   onViewMore?: () => void;
+  seedShow?: SeedShow; // For "Because You Watched" sections
 }
 
 export default function ExploreShowSection({
@@ -33,7 +46,8 @@ export default function ExploreShowSection({
   onShowPress,
   onBookmarkPress,
   isShowSaved,
-  onViewMore
+  onViewMore,
+  seedShow
 }: ExploreShowSectionProps) {
   const router = useRouter();
 

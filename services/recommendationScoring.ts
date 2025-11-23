@@ -12,12 +12,17 @@ export interface ScoredShow {
  * Calculate similarity score between two shows
  * Uses weighted attribute matching for intelligent recommendations
  * 
- * Weights (Phase 1 - Trakt-only, keyword-sparse optimized):
- * - Genres: 50% (increased from 35% due to sparse keyword data)
- * - Keywords: 15% (reduced from 25% until enrichment improves)
+ * Weights (Enhanced with Demographic Filtering - Nov 23, 2025):
+ * - Genres: 50% (primary signal for Trakt recommendations)
+ * - Keywords: 15% (reduced until enrichment improves)
  * - Demographics (network/country): 15%
- * - Era (release year proximity): 10%
- * - Rating similarity: 10% (reduced from 15%)
+ * - Era (release year proximity): 10% (ENHANCED with ±5 year bonus, >20 year penalty)
+ * - Rating similarity: 10% (ENHANCED with tier matching penalties)
+ * 
+ * Demographic Filtering (Pre-scoring):
+ * - Filter kids shows (Children, Kids, Family, Animation genres + Disney/Nick networks) for adult content
+ * - Release date similarity: ±5 years bonus, >20 years strong penalty
+ * - Rating tier matching: Penalize quality mismatches (e.g., 8.5 → 3.0)
  */
 export function scoreShowSimilarity(
   seedShow: {
@@ -153,8 +158,12 @@ function calculateDemographicScore(seedShow: TraktShow, candidateShow: TraktShow
 }
 
 /**
- * Calculate era proximity score (0-100)
+ * Calculate era proximity score (0-100) with enhanced release date similarity
  * Shows from similar time periods often have similar production values and cultural context
+ * Enhanced with:
+ * - Bonus for ±5 years (sweet spot for similar era)
+ * - Penalty for >10 years difference (different cultural context)
+ * - Recency bias penalty for very old shows (>20 years difference)
  */
 function calculateEraScore(seedYear: number | null, candidateYear: number | null): number {
   if (!seedYear || !candidateYear) {
@@ -163,17 +172,22 @@ function calculateEraScore(seedYear: number | null, candidateYear: number | null
 
   const yearDiff = Math.abs(seedYear - candidateYear);
 
-  if (yearDiff === 0) return 100; // Same year
-  if (yearDiff <= 2) return 90;   // Within 2 years
-  if (yearDiff <= 5) return 75;   // Within 5 years
-  if (yearDiff <= 10) return 50;  // Within decade
-  if (yearDiff <= 20) return 25;  // Within 2 decades
-  return 10; // Older shows
+  // Enhanced scoring with bonuses and penalties
+  if (yearDiff === 0) return 100;  // Same year - perfect match
+  if (yearDiff <= 2) return 95;    // Within 2 years - excellent match
+  if (yearDiff <= 5) return 85;    // Within 5 years - BONUS for similar era
+  if (yearDiff <= 10) return 60;   // Within decade - good match
+  if (yearDiff <= 15) return 35;   // Within 15 years - acceptable
+  if (yearDiff <= 20) return 20;   // Within 2 decades - PENALTY for different era
+  return 5; // >20 years - STRONG PENALTY for vastly different cultural context
 }
 
 /**
- * Calculate rating similarity score (0-100)
+ * Calculate rating similarity score (0-100) with tier matching
  * Users tend to enjoy shows of similar quality levels
+ * Enhanced with:
+ * - Rating tier matching (don't recommend 3.0 shows for 8.5 seeds)
+ * - Penalty for crossing quality tiers (great → poor)
  */
 function calculateRatingScore(seedRating: number | null, candidateRating: number | null): number {
   if (!seedRating || !candidateRating) {
@@ -182,16 +196,45 @@ function calculateRatingScore(seedRating: number | null, candidateRating: number
 
   const ratingDiff = Math.abs(seedRating - candidateRating);
 
-  if (ratingDiff <= 0.5) return 100; // Very similar ratings
-  if (ratingDiff <= 1.0) return 85;  // Close ratings
-  if (ratingDiff <= 1.5) return 65;  // Somewhat similar
-  if (ratingDiff <= 2.0) return 40;  // Different but acceptable
-  return 20; // Very different quality levels
+  // Enhanced tier matching with stronger penalties for quality mismatches
+  if (ratingDiff <= 0.5) return 100;  // Very similar ratings - perfect
+  if (ratingDiff <= 1.0) return 85;   // Close ratings - excellent
+  if (ratingDiff <= 1.5) return 65;   // Somewhat similar - good
+  if (ratingDiff <= 2.0) return 40;   // Different but acceptable
+  if (ratingDiff <= 3.0) return 20;   // Different tier - penalty
+  return 5; // Very different quality levels - STRONG PENALTY (e.g., 8.5 → 3.0)
 }
 
 /**
- * Filter and rank candidates by similarity score
+ * Detect if a show is targeted at children
+ * Based on genres, network, and content indicators
+ */
+function isKidsShow(traktShow: TraktShow): boolean {
+  const genres = traktShow.genres?.map(g => g.toLowerCase()) || [];
+  const network = traktShow.network?.toLowerCase() || '';
+  
+  // Kids-specific genres
+  const kidsGenres = ['children', 'kids', 'family', 'animation'];
+  if (genres.some(g => kidsGenres.includes(g))) {
+    return true;
+  }
+  
+  // Kids-specific networks
+  const kidsNetworks = ['nickelodeon', 'disney', 'cartoon network', 'nick jr', 'disney junior', 'pbs kids'];
+  if (kidsNetworks.some(kn => network.includes(kn))) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Filter and rank candidates by similarity score with demographic filtering
  * Returns only candidates above the threshold, sorted by score
+ * Enhanced with:
+ * - Demographic filtering (exclude kids shows for adult content)
+ * - Rating tier validation
+ * - Era proximity enforcement
  */
 export function rankCandidates(
   seedShow: {
@@ -205,7 +248,17 @@ export function rankCandidates(
   }>,
   minScore: number = 40 // Minimum similarity score threshold
 ): ScoredShow[] {
-  const scored = candidates
+  // First, apply demographic filtering
+  let filteredCandidates = candidates;
+  
+  // Filter out kids shows if seed show is not for kids
+  const seedIsKids = isKidsShow(seedShow.traktShow);
+  if (!seedIsKids) {
+    filteredCandidates = filteredCandidates.filter(candidate => !isKidsShow(candidate.traktShow));
+  }
+  
+  // Then score and rank
+  const scored = filteredCandidates
     .map(candidate => {
       const score = scoreShowSimilarity(seedShow, candidate);
       return {
