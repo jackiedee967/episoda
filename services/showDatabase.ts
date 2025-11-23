@@ -298,25 +298,44 @@ export async function getShowByTraktId(traktId: number): Promise<DatabaseShow | 
   return data as DatabaseShow;
 }
 
-export async function updateEpisodeMetadata(
+export async function upsertEpisodeMetadata(
   showId: string,
   seasonNumber: number,
   episodeNumber: number,
-  updates: {
-    title?: string;
-    description?: string;
+  metadata: {
+    title: string;
+    description: string;
     thumbnail_url?: string;
+    trakt_id?: number;
+    imdb_id?: string;
+    tvdb_id?: number;
+    tmdb_id?: number;
+    rating?: number;
   }
 ): Promise<void> {
+  const episodeData = {
+    show_id: showId,
+    season_number: seasonNumber,
+    episode_number: episodeNumber,
+    title: metadata.title,
+    description: metadata.description,
+    thumbnail_url: metadata.thumbnail_url || null,
+    trakt_id: metadata.trakt_id || null,
+    imdb_id: metadata.imdb_id || null,
+    tvdb_id: metadata.tvdb_id || null,
+    tmdb_id: metadata.tmdb_id || null,
+    rating: metadata.rating || null,
+  };
+
   const { error } = await supabase
     .from('episodes')
-    .update(updates)
-    .eq('show_id', showId)
-    .eq('season_number', seasonNumber)
-    .eq('episode_number', episodeNumber);
+    .upsert(episodeData, {
+      onConflict: 'show_id,season_number,episode_number',
+      ignoreDuplicates: false
+    });
 
   if (error) {
-    console.error('Error updating episode metadata:', error);
+    console.error('Error upserting episode metadata:', error);
     throw error;
   }
 }

@@ -34,7 +34,7 @@ import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, updateEpisodeMetadata } from '@/services/showDatabase';
+import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, upsertEpisodeMetadata } from '@/services/showDatabase';
 import { getAllEpisodes } from '@/services/trakt';
 import { getEpisode, getAllEpisodes as getAllTVMazeEpisodes } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
@@ -274,17 +274,20 @@ export default function ShowHub() {
                       );
                       const thumbnailUrl = tvmazeEpisode?.image?.original || null;
                       
-                      // Save to database for persistence
-                      if (thumbnailUrl || traktEpisode.title || traktEpisode.overview) {
-                        try {
-                          await updateEpisodeMetadata(show.id, ep.seasonNumber, ep.episodeNumber, {
-                            title: traktEpisode.title || ep.title,
-                            description: traktEpisode.overview || ep.description,
-                            thumbnail_url: thumbnailUrl || undefined,
-                          });
-                        } catch (dbError) {
-                          console.error(`Failed to save metadata for S${ep.seasonNumber}E${ep.episodeNumber}:`, dbError);
-                        }
+                      // Save to database for persistence (upsert creates if missing)
+                      try {
+                        await upsertEpisodeMetadata(show.id, ep.seasonNumber, ep.episodeNumber, {
+                          title: traktEpisode.title || ep.title,
+                          description: traktEpisode.overview || ep.description,
+                          thumbnail_url: thumbnailUrl || undefined,
+                          trakt_id: traktEpisode.ids.trakt,
+                          imdb_id: traktEpisode.ids.imdb,
+                          tvdb_id: traktEpisode.ids.tvdb,
+                          tmdb_id: traktEpisode.ids.tmdb,
+                          rating: traktEpisode.rating ? Number(traktEpisode.rating.toFixed(1)) : undefined,
+                        });
+                      } catch (dbError) {
+                        console.error(`Failed to save metadata for S${ep.seasonNumber}E${ep.episodeNumber}:`, dbError);
                       }
                       
                       return {
@@ -353,36 +356,83 @@ export default function ShowHub() {
           setEpisodes(mappedEpisodes);
           console.log('✅ Loaded', mappedEpisodes.length, 'logged episodes from Supabase');
           
-          // Background refresh: Check for missing thumbnails and update from TVMaze
-          if (dbShow.tvmaze_id) {
+          // Background refresh: Update ALL metadata (titles, descriptions, thumbnails) from Trakt + TVMaze
+          if (dbShow.trakt_id || dbShow.tvmaze_id) {
             console.log('🔄 Refreshing episode metadata in background...');
+            
+            // Fetch all Trakt episodes once (not per episode)
+            let traktEpisodesMap: Map<string, any> | null = null;
+            if (dbShow.trakt_id) {
+              try {
+                const allEpisodes = await getAllEpisodes(dbShow.trakt_id);
+                if (allEpisodes) {
+                  traktEpisodesMap = new Map(
+                    allEpisodes.map(ep => [`S${ep.season}E${ep.number}`, ep])
+                  );
+                }
+              } catch (traktError) {
+                console.error('Error fetching all Trakt episodes:', traktError);
+              }
+            }
+            
             Promise.all(
               dbEpisodes.map(async (dbEp) => {
-                // Only fetch if thumbnail is missing
-                if (!dbEp.thumbnail_url) {
-                  try {
+                try {
+                  let updatedTitle = dbEp.title;
+                  let updatedDescription = dbEp.description;
+                  let updatedThumbnail = dbEp.thumbnail_url;
+                  let shouldUpdate = false;
+                  
+                  // Get fresh metadata from Trakt map
+                  if (traktEpisodesMap) {
+                    const traktEpisode = traktEpisodesMap.get(`S${dbEp.season_number}E${dbEp.episode_number}`);
+                    if (traktEpisode) {
+                      updatedTitle = traktEpisode.title || dbEp.title;
+                      updatedDescription = traktEpisode.overview || dbEp.description;
+                      shouldUpdate = true;
+                    }
+                  }
+                  
+                  // Always fetch thumbnail from TVMaze to ensure continuous updates
+                  if (dbShow.tvmaze_id) {
                     const tvmazeEpisode = await getEpisode(
-                      dbShow.tvmaze_id!,
+                      dbShow.tvmaze_id,
                       dbEp.season_number,
                       dbEp.episode_number
                     );
-                    const thumbnailUrl = tvmazeEpisode?.image?.original || null;
-                    
-                    if (thumbnailUrl) {
-                      await updateEpisodeMetadata(show.id, dbEp.season_number, dbEp.episode_number, {
-                        thumbnail_url: thumbnailUrl,
-                      });
-                      
-                      // Update the displayed episode
-                      setEpisodes(prev => prev.map(ep => 
-                        ep.seasonNumber === dbEp.season_number && ep.episodeNumber === dbEp.episode_number
-                          ? { ...ep, thumbnail: thumbnailUrl }
-                          : ep
-                      ));
-                    }
-                  } catch (error) {
-                    console.error(`Error refreshing S${dbEp.season_number}E${dbEp.episode_number}:`, error);
+                    const freshThumbnail = tvmazeEpisode?.image?.original || null;
+                    // Always persist the latest fetch (even if unchanged) to guarantee freshness
+                    updatedThumbnail = freshThumbnail;
+                    shouldUpdate = true;
                   }
+                  
+                  // Update database if we have new metadata
+                  if (shouldUpdate) {
+                    await upsertEpisodeMetadata(show.id, dbEp.season_number, dbEp.episode_number, {
+                      title: updatedTitle,
+                      description: updatedDescription || '',
+                      thumbnail_url: updatedThumbnail || undefined,
+                      trakt_id: dbEp.trakt_id || undefined,
+                      imdb_id: dbEp.imdb_id || undefined,
+                      tvdb_id: dbEp.tvdb_id || undefined,
+                      tmdb_id: dbEp.tmdb_id || undefined,
+                      rating: dbEp.rating || undefined,
+                    });
+                    
+                    // Update the displayed episode
+                    setEpisodes(prev => prev.map(ep => 
+                      ep.seasonNumber === dbEp.season_number && ep.episodeNumber === dbEp.episode_number
+                        ? { 
+                            ...ep, 
+                            title: updatedTitle,
+                            description: updatedDescription || '',
+                            thumbnail: updatedThumbnail || undefined 
+                          }
+                        : ep
+                    ));
+                  }
+                } catch (error) {
+                  console.error(`Error refreshing S${dbEp.season_number}E${dbEp.episode_number}:`, error);
                 }
               })
             ).then(() => {
