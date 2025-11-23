@@ -126,6 +126,17 @@ export default function ExploreShowSection({
                 cachePolicy="memory-disk"
               />
               
+              {/* Mutual Friends Watching - Top Right */}
+              {show.mutualFriendsWatching && show.mutualFriendsWatching.length > 0 && (
+                <View style={styles.mutualFriendsOverlay}>
+                  <BaseFriends
+                    prop="Small"
+                    state="Mutual_Friends"
+                    friends={show.mutualFriendsWatching}
+                  />
+                </View>
+              )}
+              
               {/* Bookmark Button */}
               {onBookmarkPress && isShowSaved ? (
                 <Pressable
@@ -155,17 +166,6 @@ export default function ExploreShowSection({
                   ? `${show.year}-${show.endYear}` 
                   : show.year}
               </Text>
-            )}
-            
-            {/* Mutual Friends Watching */}
-            {show.mutualFriendsWatching && show.mutualFriendsWatching.length > 0 && (
-              <View style={styles.mutualFriendsContainer}>
-                <BaseFriends
-                  prop="Small"
-                  state="Mutual_Friends"
-                  friends={show.mutualFriendsWatching}
-                />
-              </View>
             )}
           </Pressable>
         ))}
@@ -259,8 +259,10 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginTop: 2,
   },
-  mutualFriendsContainer: {
-    marginTop: 6,
-    alignItems: 'flex-start',
+  mutualFriendsOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 10,
   },
 });

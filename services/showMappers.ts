@@ -8,15 +8,47 @@ export interface ShowOverrides {
   totalEpisodes?: number;
 }
 
+/**
+ * Calculate end year from Trakt show data
+ * For ended/canceled shows, estimate end year from first_aired date and episode count
+ */
+function calculateEndYear(traktShow: TraktShow): number | undefined {
+  // If show is still airing, no end year
+  if (traktShow.status === 'returning series' || traktShow.status === 'in production') {
+    return undefined;
+  }
+  
+  // If show ended/canceled, try to estimate end year
+  if (traktShow.status === 'ended' || traktShow.status === 'canceled') {
+    // If we have first_aired date and episode count, estimate
+    if (traktShow.first_aired && traktShow.aired_episodes) {
+      const startYear = new Date(traktShow.first_aired).getFullYear();
+      // Most TV shows run ~12 episodes per season, with ~1 season per year
+      // For long-running shows (>50 episodes), assume they ran for multiple years
+      const estimatedSeasons = Math.ceil(traktShow.aired_episodes / 12);
+      // Add years (minus 1 since first year is already counted)
+      const endYear = startYear + Math.max(0, estimatedSeasons - 1);
+      
+      // Only return endYear if it's different from startYear
+      return endYear > startYear ? endYear : undefined;
+    }
+  }
+  
+  return undefined;
+}
+
 export function mapTraktShowToShow(
   traktShow: TraktShow, 
   overrides: ShowOverrides = {}
 ): Show {
+  const endYear = calculateEndYear(traktShow);
+  
   return {
     id: `trakt-${traktShow.ids.trakt}`,
     traktId: traktShow.ids.trakt,
     title: traktShow.title,
     year: traktShow.year,
+    endYear: endYear,
     poster: overrides.posterUrl ?? null,
     description: traktShow.overview || '',
     rating: traktShow.rating || 0,

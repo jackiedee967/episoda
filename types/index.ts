@@ -24,6 +24,7 @@ export interface Show {
   traktId: number;
   title: string;
   year?: number;
+  endYear?: number;
   poster: string | null;
   backdrop?: string | null;
   description: string;
