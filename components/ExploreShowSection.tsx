@@ -6,6 +6,7 @@ import tokens from '@/styles/tokens';
 import { Bookmark } from 'lucide-react-native';
 import { IconSymbol } from './IconSymbol';
 import * as Haptics from 'expo-haptics';
+import { Friends as BaseFriends } from './ui-pages/base/friends';
 
 interface Show {
   id: string;
@@ -13,8 +14,15 @@ interface Show {
   poster?: string | null;
   traktId?: number;
   year?: number;
+  endYear?: number | null;
   rating?: number;
   genres?: string[];
+  mutualFriendsWatching?: Array<{
+    id: string;
+    avatar?: string;
+    displayName?: string;
+    username?: string;
+  }>;
 }
 
 interface SeedShow {
@@ -139,6 +147,26 @@ export default function ExploreShowSection({
             <Text style={styles.showTitle} numberOfLines={2}>
               {show.title}
             </Text>
+            
+            {/* Year or Year Range */}
+            {show.year && (
+              <Text style={styles.showYear}>
+                {show.endYear && show.endYear !== show.year 
+                  ? `${show.year}-${show.endYear}` 
+                  : show.year}
+              </Text>
+            )}
+            
+            {/* Mutual Friends Watching */}
+            {show.mutualFriendsWatching && show.mutualFriendsWatching.length > 0 && (
+              <View style={styles.mutualFriendsContainer}>
+                <BaseFriends
+                  prop="Small"
+                  state="Mutual_Friends"
+                  friends={show.mutualFriendsWatching}
+                />
+              </View>
+            )}
           </Pressable>
         ))}
       </ScrollView>
@@ -222,5 +250,17 @@ const styles = StyleSheet.create({
     color: tokens.colors.almostWhite,
     fontSize: 13,
     lineHeight: 16,
+  },
+  showYear: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.almostWhite,
+    fontSize: 11,
+    lineHeight: 14,
+    opacity: 0.6,
+    marginTop: 2,
+  },
+  mutualFriendsContainer: {
+    marginTop: 6,
+    alignItems: 'flex-start',
   },
 });

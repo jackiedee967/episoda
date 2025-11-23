@@ -243,6 +243,67 @@ export default function SearchScreen() {
     addSearchToHistory(trimmedQuery);
   };
 
+  // Function to enrich shows with mutual friends watching data
+  const enrichShowsWithMutualFriends = async (shows: any[]) => {
+    if (!currentUser?.id || shows.length === 0) return shows;
+    
+    try {
+      // Get list of user's friends (followers who they also follow back)
+      const { data: followers } = await supabase
+        .from('follows')
+        .select('follower_id')
+        .eq('following_id', currentUser.id);
+      
+      const followerIds = new Set((followers || []).map(f => f.follower_id));
+      const friendIds = (currentUser.following || []).filter(id => followerIds.has(id));
+      
+      if (friendIds.length === 0) return shows;
+      
+      // Fetch all posts from friends
+      const { data: friendsPosts } = await supabase
+        .from('posts')
+        .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
+        .in('user_id', friendIds);
+      
+      // Create a map of show ID -> mutual friends watching
+      const showFriendsMap = new Map<string, Array<{ id: string; avatar?: string; displayName?: string; username?: string }>>();
+      
+      (friendsPosts || []).forEach(post => {
+        if (!post.shows || !post.profiles) return;
+        
+        const showTraktId = (post.shows as any).trakt_id;
+        if (!showTraktId) return;
+        
+        const key = `trakt-${showTraktId}`;
+        const existing = showFriendsMap.get(key) || [];
+        
+        // Check if friend already added for this show
+        if (!existing.some(f => f.id === post.profiles.id)) {
+          existing.push({
+            id: post.profiles.id,
+            avatar: post.profiles.avatar || undefined,
+            displayName: post.profiles.display_name || undefined,
+            username: post.profiles.username || undefined,
+          });
+        }
+        
+        showFriendsMap.set(key, existing);
+      });
+      
+      // Enrich shows with mutual friends data
+      return shows.map(show => {
+        const mutualFriendsWatching = showFriendsMap.get(show.id) || [];
+        return {
+          ...show,
+          mutualFriendsWatching,
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching mutual friends watching:', error);
+      return shows;
+    }
+  };
+
   // Load curated content when search is empty
   useEffect(() => {
     if (searchQuery.trim().length > 0 || !currentUser?.id) return;
@@ -316,7 +377,9 @@ export default function SearchScreen() {
           .sort((a, b) => (b.rating || 0) - (a.rating || 0))
           .slice(0, 12);
         
-        setForYouShows(mixedForYou);
+        // Enrich with mutual friends watching
+        const enrichedForYou = await enrichShowsWithMutualFriends(mixedForYou);
+        setForYouShows(enrichedForYou);
         
         // 2. Trending
         const enrichedTrending = await Promise.all(
@@ -334,7 +397,10 @@ export default function SearchScreen() {
             };
           })
         );
-        setTrendingShows(enrichedTrending);
+        
+        // Enrich with mutual friends watching
+        const enrichedTrendingWithFriends = await enrichShowsWithMutualFriends(enrichedTrending);
+        setTrendingShows(enrichedTrendingWithFriends);
         
         // 3-5. Because You Watched - Get user's 3 most recently logged shows
         const userPosts = posts
@@ -486,8 +552,17 @@ export default function SearchScreen() {
         });
         
         const becauseYouWatched = await Promise.all(becauseYouWatchedPromises);
+        
+        // Enrich each section's shows with mutual friends watching
+        const enrichedBecauseYouWatched = await Promise.all(
+          becauseYouWatched.map(async (section) => ({
+            ...section,
+            relatedShows: await enrichShowsWithMutualFriends(section.relatedShows)
+          }))
+        );
+        
         // Show rows with 3+ recommendations (lowered threshold)
-        setBecauseYouWatchedSections(becauseYouWatched.filter(section => section.relatedShows.length >= 3));
+        setBecauseYouWatchedSections(enrichedBecauseYouWatched.filter(section => section.relatedShows.length >= 3));
         
         // 6. Popular Rewatches
         const { data: playedShows } = await getPlayedShows('monthly', 12);
@@ -506,7 +581,10 @@ export default function SearchScreen() {
             };
           })
         );
-        setPopularRewatchesShows(enrichedPlayed);
+        
+        // Enrich with mutual friends watching
+        const enrichedPlayedWithFriends = await enrichShowsWithMutualFriends(enrichedPlayed);
+        setPopularRewatchesShows(enrichedPlayedWithFriends);
         
       } catch (error) {
         console.error('Error loading curated content:', error);
@@ -544,7 +622,10 @@ export default function SearchScreen() {
           };
         })
       );
-      setTrendingShows(enrichedTrending);
+      
+      // Enrich with mutual friends watching
+      const enrichedTrendingWithFriends = await enrichShowsWithMutualFriends(enrichedTrending);
+      setTrendingShows(enrichedTrendingWithFriends);
       
       // Reload popular rewatches
       const { data: playedShows } = await getPlayedShows('monthly', 12);
@@ -563,7 +644,10 @@ export default function SearchScreen() {
           };
         })
       );
-      setPopularRewatchesShows(enrichedPlayed);
+      
+      // Enrich with mutual friends watching
+      const enrichedPlayedWithFriends = await enrichShowsWithMutualFriends(enrichedPlayed);
+      setPopularRewatchesShows(enrichedPlayedWithFriends);
       
     } catch (error) {
       console.error('Error refreshing explore page:', error);
