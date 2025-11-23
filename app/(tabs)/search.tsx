@@ -834,7 +834,7 @@ export default function SearchScreen() {
               console.warn('⚠️ Trakt API rate limit detected - keeping pagination alive for retry');
               Alert.alert(
                 'Slow Down There!',
-                'Trakt needs a quick breather. Scroll again in a moment to load more shows.',
+                'Episoda needs a quick breather. Scroll again in a moment to load more shows.',
                 [{ text: 'Got It', style: 'default' }]
               );
               setIsLoadingSection(false);
