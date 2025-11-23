@@ -26,6 +26,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
+import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo, getShowsByGenre } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
@@ -1630,7 +1631,10 @@ export default function SearchScreen() {
   const getKeyExtractor = useCallback((item: any, index: number) => {
     switch (activeCategory) {
       case 'shows':
-        return item.id || `show-${index}`;
+        // Generate stable keys - try show.id first, then traktId from multiple sources
+        if (item.id) return item.id;
+        const traktId = item.traktId ?? item.traktShow?.ids?.trakt ?? item.traktDetails?.ids?.trakt;
+        return traktId ? `trakt-${traktId}` : `show-${index}`;
       case 'posts':
         return item.id || `post-${index}`;
       case 'comments':
@@ -1864,31 +1868,39 @@ export default function SearchScreen() {
 
       case 'shows':
         const show = item;
-        const traktId = traktShowResults.results.find(r => r.show.id === show.id)?.traktShow.ids.trakt;
-        const isEnriching = traktId ? enrichingShows.has(traktId) : false;
+        // Derive stable traktId directly from item
+        const stableTraktId = show.traktId ?? show.traktShow?.ids?.trakt ?? show.traktDetails?.ids?.trakt;
+        const isEnriching = stableTraktId ? enrichingShows.has(stableTraktId) : false;
+        const mutualFriendsWatching = show.mutualFriendsWatching || [];
+        const traktShow = show.traktShow ?? traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
+        // Robust year fallback: try multiple sources
+        const releaseYear = traktShow?.year || show.releaseYear || show.year || (show.firstAired ? new Date(show.firstAired).getFullYear() : undefined);
 
+        // Use stable ID for key and bookmark state
+        const stableKey = show.id || (stableTraktId ? `trakt-${stableTraktId}` : `show-${index}`);
+        
         return (
-          <FadeInView key={show.id} delay={index * 30}>
+          <FadeInView key={stableKey} delay={index * 30}>
             <Pressable
-              style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.searchShowCard, pressed && styles.pressed]}
               onPress={async () => {
               console.log('🎬 Show card pressed:', show.title);
               console.log('📊 Show data:', JSON.stringify(show, null, 2));
               
               try {
                 setIsSavingShow(true);
-                const traktShow = traktShowResults.results.find(r => r.show.id === show.id)?.traktShow;
+                const traktShowData = traktShow || traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
                 
-                if (!traktShow) {
+                if (!traktShowData) {
                   console.error('❌ Trakt show data not found for:', show.title);
                   setIsSavingShow(false);
                   return;
                 }
 
-                const enrichedInfo = traktShowResults.results.find(r => r.show.id === show.id)?.enrichedData;
+                const enrichedInfo = traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.enrichedData;
                 
                 console.log('💾 Saving show to database (quick save with retry logic)...');
-                const dbShow = await saveShow(traktShow, {
+                const dbShow = await saveShow(traktShowData, {
                   enrichedPosterUrl: enrichedInfo?.posterUrl,
                   enrichedBackdropUrl: enrichedInfo?.backdropUrl,
                   enrichedSeasonCount: enrichedInfo?.totalSeasons,
@@ -1906,10 +1918,10 @@ export default function SearchScreen() {
               }
             }}
           >
-            <View style={styles.showPosterContainer}>
+            <View style={styles.searchPosterContainer}>
               <FadeInImage 
                 source={{ uri: getPosterUrl(show.poster, show.title) }} 
-                style={styles.showPoster}
+                style={styles.searchPoster}
                 priority="high"
                 cachePolicy="memory-disk"
                 contentFit="cover"
@@ -1919,40 +1931,40 @@ export default function SearchScreen() {
                   <ActivityIndicator size="small" color={tokens.colors.green} />
                 </View>
               ) : null}
+              
+              {/* Mutual Friends Watching - Top Left */}
+              {mutualFriendsWatching.length > 0 && (
+                <View style={styles.searchMutualFriendsOverlay}>
+                  <BaseFriends
+                    prop="Small"
+                    state="Mutual_Friends"
+                    friends={mutualFriendsWatching}
+                  />
+                </View>
+              )}
+              
               <Pressable
                 style={styles.saveButton}
                 onPress={(e) => handleSavePress(show, e)}
               >
                 <IconSymbol
-                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"}
+                  name={isShowSaved(show.id || stableKey) ? "bookmark.fill" : "bookmark"}
                   size={20}
-                  color={isShowSaved(show.id) ? tokens.colors.green : tokens.colors.grey1}
+                  color={isShowSaved(show.id || stableKey) ? tokens.colors.green : tokens.colors.grey1}
                 />
               </Pressable>
             </View>
-            <View style={styles.showInfo}>
-              <Text style={styles.showTitle} numberOfLines={1}>
+            
+            {/* Title & Year below poster - matching Explore format */}
+            <View style={styles.searchShowInfo}>
+              <Text style={styles.searchShowTitle} numberOfLines={2}>
                 {show.title}
               </Text>
-              <Text style={styles.showDescription} numberOfLines={2}>
-                {show.description}
-              </Text>
-              <View style={styles.showStats}>
-                <View style={styles.stat}>
-                  <IconSymbol name="star.fill" size={14} color="#8bfc76" />
-                  <Text style={styles.statText}>{convertToFiveStarRating(show.rating).toFixed(1)}</Text>
-                </View>
-                <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
-                <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
-              </View>
-              {show.friendsWatching > 0 ? (
-                <View style={styles.friendsRow}>
-                  <IconSymbol name="person.2.fill" size={12} color={tokens.colors.grey1} />
-                  <Text style={styles.friendsText}>{show.friendsWatching} friends watching</Text>
-                </View>
+              {releaseYear ? (
+                <Text style={styles.searchShowYear}>{releaseYear}</Text>
               ) : null}
             </View>
-            </Pressable>
+          </Pressable>
           </FadeInView>
         );
 
@@ -2557,6 +2569,9 @@ export default function SearchScreen() {
             style={styles.scrollView}
             contentContainerStyle={styles.resultsContainer}
             showsVerticalScrollIndicator={false}
+            numColumns={activeCategory === 'shows' ? 2 : 1}
+            key={activeCategory === 'shows' ? 'grid' : 'list'}
+            columnWrapperStyle={activeCategory === 'shows' ? styles.searchColumnWrapper : undefined}
             ListEmptyComponent={renderEmptyState}
             ListFooterComponent={renderFooter}
             onEndReached={activeCategory === 'shows' ? handleEndReached : undefined}
@@ -2718,37 +2733,24 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
     textAlign: 'center',
   },
-  showCard: {
-    flexDirection: 'row',
-    backgroundColor: tokens.colors.cardBackground,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.cardStroke,
-    padding: 11,
-    gap: 17,
-  },
   pressed: {
     opacity: 0.8,
   },
-  showPosterContainer: {
+  // Vertical poster layout for search results (matching Explore format)
+  searchShowCard: {
+    width: 143,
+    marginBottom: 20,
+  },
+  searchPosterContainer: {
     position: 'relative',
-    width: 80.34,
-    height: 98.79,
+    width: 143,
+    height: 175.76,
+    marginBottom: 8,
   },
-  showPoster: {
-    width: 80.34,
-    height: 98.79,
+  searchPoster: {
+    width: 143,
+    height: 175.76,
     borderRadius: 8,
-  },
-  placeholderPoster: {
-    width: 80.34,
-    height: 98.79,
-    borderRadius: 8,
-    backgroundColor: tokens.colors.cardBackground,
-    borderWidth: 0.5,
-    borderColor: tokens.colors.cardStroke,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   enrichingOverlay: {
     position: 'absolute',
@@ -2776,43 +2778,28 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
   },
-  showInfo: {
-    flex: 1,
+  searchMutualFriendsOverlay: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    zIndex: 10,
   },
-  showTitle: {
-    ...tokens.typography.subtitle,
+  searchShowTitle: {
+    ...tokens.typography.p1SB,
     color: tokens.colors.pureWhite,
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  showDescription: {
-    ...tokens.typography.p1,
+  searchShowInfo: {
+    width: '100%',
+  },
+  searchShowYear: {
+    ...tokens.typography.p3M,
     color: tokens.colors.grey1,
-    lineHeight: 15.6,
+  },
+  searchColumnWrapper: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     marginBottom: 8,
-  },
-  showStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statText: {
-    ...tokens.typography.p3M,
-    color: tokens.colors.grey1,
-  },
-  friendsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-  },
-  friendsText: {
-    ...tokens.typography.p3M,
-    color: tokens.colors.grey1,
   },
   userCardWrapper: {
     marginBottom: 12,

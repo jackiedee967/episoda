@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
+import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Post } from '@/types';
 import { getCommunityPosts } from '@/services/communityPosts';
@@ -621,6 +622,22 @@ export default function HomeScreen() {
                     style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
                   />
                   
+                  {/* Mutual Friends Watching - Top Left */}
+                  {friendsWatching.length > 0 && (
+                    <View style={styles.mutualFriendsOverlay}>
+                      <BaseFriends
+                        prop="Small"
+                        state="Mutual_Friends"
+                        friends={friendsWatching.map(user => ({
+                          id: user.id,
+                          avatar: user.avatar,
+                          displayName: user.displayName,
+                          username: user.username,
+                        }))}
+                      />
+                    </View>
+                  )}
+                  
                   <Pressable 
                     style={({ pressed }) => [
                       styles.saveIcon,
@@ -640,24 +657,6 @@ export default function HomeScreen() {
                       color={tokens.colors.pureWhite} 
                     />
                   </Pressable>
-
-                  {friendCount > 0 ? (
-                    <View style={[styles.friendsBar, { width: posterDimensions.overlayWidth }]}>
-                      <View style={styles.friendAvatars}>
-                        {friendsWatching.map((user, index) => (
-                          <Image
-                            key={user.id}
-                            source={{ uri: user.avatar }}
-                            style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-                          />
-                        ))}
-                      </View>
-                      <View style={styles.friendsWatchingTextContainer}>
-                        <Text style={styles.friendsWatchingNumber}>{friendCount}</Text>
-                        <Text style={styles.friendsWatchingLabel}> friends watching</Text>
-                      </View>
-                    </View>
-                  ) : null}
                 </View>
               </Pressable>
             );
@@ -1028,43 +1027,11 @@ const styles = StyleSheet.create({
     ...tokens.typography.p3M,
     color: tokens.colors.black,
   },
-  friendsBar: {
+  mutualFriendsOverlay: {
     position: 'absolute',
+    top: 12,
     left: 12,
-    bottom: 12,
-    width: 116,
-    height: 38,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: tokens.colors.cardStroke,
-    backgroundColor: tokens.colors.cardBackground,
-  },
-  friendAvatars: {
-    flexDirection: 'row',
-  },
-  friendAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  friendsWatchingTextContainer: {
-    height: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  friendsWatchingNumber: {
-    ...tokens.typography.p3M,
-    color: tokens.colors.greenHighlight,
-  },
-  friendsWatchingLabel: {
-    ...tokens.typography.p3R,
-    color: tokens.colors.almostWhite,
+    zIndex: 10,
   },
   
   // You May Know - exact specs
