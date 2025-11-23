@@ -243,7 +243,7 @@ export default function SearchScreen() {
     addSearchToHistory(trimmedQuery);
   };
 
-  // Function to enrich shows with mutual friends watching data
+  // Function to enrich shows with mutual friends watching data (optimized)
   const enrichShowsWithMutualFriends = async (shows: any[]) => {
     if (!currentUser?.id || shows.length === 0) return shows;
     
@@ -259,40 +259,99 @@ export default function SearchScreen() {
       
       if (friendIds.length === 0) return shows;
       
-      // Fetch all posts from friends
-      const { data: friendsPosts } = await supabase
-        .from('posts')
-        .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
-        .in('user_id', friendIds);
+      // Extract Trakt IDs from shows for targeted query
+      const showTraktIds = shows
+        .map(s => s.traktId)
+        .filter(id => id != null);
       
-      // Create a map of show ID -> mutual friends watching
-      const showFriendsMap = new Map<string, Array<{ id: string; avatar?: string; displayName?: string; username?: string }>>();
+      if (showTraktIds.length === 0) return shows;
+      
+      // Fetch ONLY posts from friends for the displayed shows (optimized query)
+      const { data: showsData } = await supabase
+        .from('shows')
+        .select('id, trakt_id')
+        .in('trakt_id', showTraktIds);
+      
+      let friendsPosts: any[] = [];
+      
+      // If showsData is empty, fall back to fetching all friend posts and filtering by traktId
+      if (!showsData || showsData.length === 0) {
+        // Fetch all friend posts
+        const { data: allFriendsPosts } = await supabase
+          .from('posts')
+          .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
+          .in('user_id', friendIds);
+        
+        // Filter posts to only those matching our show Trakt IDs
+        friendsPosts = (allFriendsPosts || []).filter(post => {
+          if (!post.shows) return false;
+          const showTraktId = (post.shows as any).trakt_id;
+          return showTraktId && showTraktIds.includes(showTraktId);
+        });
+      } else {
+        // Filter out null/undefined IDs before querying
+        const showDbIds = showsData.map(s => s.id).filter(id => id != null);
+        
+        if (showDbIds.length > 0) {
+          const { data: posts } = await supabase
+            .from('posts')
+            .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
+            .in('user_id', friendIds)
+            .in('show_id', showDbIds);
+          
+          friendsPosts = posts || [];
+        }
+      }
+      
+      // Create maps for both traktId and UUID-based lookups
+      const showFriendsByTraktId = new Map<number, Array<{ id: string; avatar?: string; displayName?: string; username?: string }>>();
+      const showFriendsByUuid = new Map<string, Array<{ id: string; avatar?: string; displayName?: string; username?: string }>>();
       
       (friendsPosts || []).forEach(post => {
         if (!post.shows || !post.profiles) return;
         
         const showTraktId = (post.shows as any).trakt_id;
-        if (!showTraktId) return;
+        const showUuid = (post.shows as any).id;
         
-        const key = `trakt-${showTraktId}`;
-        const existing = showFriendsMap.get(key) || [];
+        const friendData = {
+          id: post.profiles.id,
+          avatar: post.profiles.avatar || undefined,
+          displayName: post.profiles.display_name || undefined,
+          username: post.profiles.username || undefined,
+        };
         
-        // Check if friend already added for this show
-        if (!existing.some(f => f.id === post.profiles.id)) {
-          existing.push({
-            id: post.profiles.id,
-            avatar: post.profiles.avatar || undefined,
-            displayName: post.profiles.display_name || undefined,
-            username: post.profiles.username || undefined,
-          });
+        // Index by Trakt ID for trakt-based shows
+        if (showTraktId) {
+          const existing = showFriendsByTraktId.get(showTraktId) || [];
+          if (!existing.some(f => f.id === friendData.id)) {
+            existing.push(friendData);
+          }
+          showFriendsByTraktId.set(showTraktId, existing);
         }
         
-        showFriendsMap.set(key, existing);
+        // Index by UUID for DB-based shows
+        if (showUuid) {
+          const existing = showFriendsByUuid.get(showUuid) || [];
+          if (!existing.some(f => f.id === friendData.id)) {
+            existing.push(friendData);
+          }
+          showFriendsByUuid.set(showUuid, existing);
+        }
       });
       
-      // Enrich shows with mutual friends data
+      // Enrich shows with mutual friends data (handle both UUID and traktId-based shows)
       return shows.map(show => {
-        const mutualFriendsWatching = showFriendsMap.get(show.id) || [];
+        let mutualFriendsWatching: Array<{ id: string; avatar?: string; displayName?: string; username?: string }> = [];
+        
+        // Try to match by UUID first (for DB-sourced shows)
+        if (showFriendsByUuid.has(show.id)) {
+          mutualFriendsWatching = showFriendsByUuid.get(show.id) || [];
+        }
+        // Fall back to traktId lookup (for trakt-based shows with id = "trakt-{traktId}")
+        else if (show.traktId && showFriendsByTraktId.has(show.traktId)) {
+          mutualFriendsWatching = showFriendsByTraktId.get(show.traktId) || [];
+        }
+        
         return {
           ...show,
           mutualFriendsWatching,
@@ -605,8 +664,67 @@ export default function SearchScreen() {
     
     setRefreshing(true);
     try {
-      // Reload trending shows only (fast refresh)
+      // Recompute friend shows for For You
+      const followingIds = currentUser.following || [];
+      const friendsPosts = posts.filter(post => 
+        followingIds.includes(post.user.id) && post.show
+      );
+      
+      const showFriendCounts = new Map();
+      friendsPosts.forEach(post => {
+        const traktId = post.show.traktId;
+        if (!traktId) return;
+        
+        const existing = showFriendCounts.get(traktId);
+        if (existing) {
+          existing.friendIds.add(post.user.id);
+          existing.friendCount = existing.friendIds.size;
+        } else {
+          showFriendCounts.set(traktId, {
+            show: post.show,
+            friendCount: 1,
+            friendIds: new Set([post.user.id])
+          });
+        }
+      });
+      
+      const friendShows = Array.from(showFriendCounts.values())
+        .sort((a, b) => b.friendCount - a.friendCount)
+        .map(item => ({
+          ...item.show,
+          id: item.show.id || `trakt-${item.show.traktId}`,
+          rating: item.show.rating || 0
+        }))
+        .slice(0, 6);
+      
+      // Reload trending shows (fast refresh)
       const { data: trending } = await getTrendingShows(12);
+      const enrichedTrendingForYou = await Promise.all(
+        trending.map(async (traktShow) => {
+          const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+          const show = mapTraktShowToShow(traktShow, {
+            posterUrl: enrichedData.posterUrl,
+            totalSeasons: enrichedData.totalSeasons,
+          });
+          return {
+            ...show,
+            id: show.id || `trakt-${traktShow.ids.trakt}`,
+            traktId: traktShow.ids.trakt,
+            rating: traktShow.rating || 0,
+            traktShow
+          };
+        })
+      );
+      
+      // Mix friend shows with trending and enrich with mutual friends
+      const mixedForYou = [...friendShows, ...enrichedTrendingForYou]
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 12);
+      
+      const enrichedForYou = await enrichShowsWithMutualFriends(mixedForYou);
+      setForYouShows(enrichedForYou);
+      
+      // Reload trending shows
       const enrichedTrending = await Promise.all(
         trending.map(async (traktShow) => {
           const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
@@ -702,7 +820,10 @@ export default function SearchScreen() {
             const mixedForYou = [...friendShows, ...forYouShows.slice(6)]
               .sort((a, b) => (b.rating || 0) - (a.rating || 0))
               .slice(0, 12);
-            setForYouShows(mixedForYou);
+            
+            // Enrich with mutual friends watching
+            const enrichedMixedForYou = await enrichShowsWithMutualFriends(mixedForYou);
+            setForYouShows(enrichedMixedForYou);
           }
         } catch (error) {
           console.error('Error auto-refreshing explore page:', error);
@@ -770,7 +891,10 @@ export default function SearchScreen() {
         );
 
         const validShows = enrichedShows.filter(show => show !== null);
-        setGenreShows(validShows);
+        
+        // Enrich with mutual friends watching
+        const enrichedGenreShows = await enrichShowsWithMutualFriends(validShows);
+        setGenreShows(enrichedGenreShows);
         setGenrePage(2); // Set to page 2 since we loaded pages 1-2
         setLastSuccessfulGenrePage(2); // Track initial successful load (loaded pages 1-2)
       } catch (error) {
@@ -974,7 +1098,9 @@ export default function SearchScreen() {
           }
         }
         
-        setSectionShows(shows);
+        // Enrich with mutual friends watching
+        const enrichedSectionShows = await enrichShowsWithMutualFriends(shows);
+        setSectionShows(enrichedSectionShows);
         setLastSuccessfulSectionPage(1); // Track initial successful load
       } catch (error) {
         console.error('Error loading section shows:', error);
@@ -1096,8 +1222,11 @@ export default function SearchScreen() {
           })
         );
         
+        // Enrich with mutual friends watching before appending
+        const enrichedNewShows = await enrichShowsWithMutualFriends(newShows);
+        
         // Only increment page and append data after successful fetch and enrichment
-        setSectionShows(prev => [...prev, ...newShows]);
+        setSectionShows(prev => [...prev, ...enrichedNewShows]);
         setSectionPage(nextPage); // Only incremented on success
         setLastSuccessfulSectionPage(nextPage); // Track last successful fetch
         
