@@ -163,7 +163,7 @@ export default function ExploreShowSection({
             {show.year && (
               <Text style={styles.showYear}>
                 {show.endYear && show.endYear !== show.year 
-                  ? `${show.year}-${show.endYear}` 
+                  ? `${show.year} - ${show.endYear}` 
                   : show.year}
               </Text>
             )}
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   showCard: {
     width: 130, // Narrower than homepage (215) to fit 2.5 shows
-    gap: 8,
+    gap: 6,
   },
   showCardPressed: {
     opacity: 0.7,
@@ -257,7 +257,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     opacity: 0.6,
-    marginTop: 2,
   },
   mutualFriendsOverlay: {
     position: 'absolute',
