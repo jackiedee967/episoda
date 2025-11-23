@@ -4,7 +4,14 @@
 EPISODA is a social media application for TV show enthusiasts, built with Expo and React Native. It enables users to share watching experiences, create show playlists, follow friends, and engage through posts, likes, comments, and reposts. The project aims to foster a vibrant community for TV show discussions and recommendations, with a focus on a pixel-perfect UI and robust data integration. The business vision is to become the leading social platform for TV show fans, offering a unique blend of community interaction and personalized content discovery.
 
 ## User Preferences
-I prefer iterative development, focusing on one feature or fix at a time. Please ask for confirmation before making large-scale changes or refactoring. I value clear, concise explanations and prefer to focus on high-level architectural decisions and critical features rather than minor implementation details. Do not make changes to files related to authentication without explicit instruction.
+I prefer iterative development, focusing on one feature or fix at a time. Please ask for confirmation before making large-scale changes or refactoring. I value clear, concise explanations and prefer to focus on high-level architectural decisions and critical features rather than minor implementation details. 
+
+**CRITICAL - ZERO TOLERANCE FOR REGRESSIONS:**
+- Do not make changes to files related to authentication without explicit instruction
+- Do not modify `integrations/supabase/client.ts` without explicit approval
+- Do not modify `app.config.js` without understanding production vs dev implications
+- This is an ACTIVE PRODUCTION APP with users - breaking changes are unacceptable
+- See `CRITICAL_DO_NOT_MODIFY.md` for complete list of protected files
 
 ## System Architecture
 
