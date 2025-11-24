@@ -636,7 +636,7 @@ export default function ProfileScreen() {
             const showCount = playlist.showCount || 0;
             const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
-              <View key={playlist.id} style={styles.playlistContainer}>
+              <View key={playlist.id} style={styles.playlistContainer} pointerEvents="box-none">
                 <Pressable
                   style={({ pressed }) => [
                     styles.playlistItem,
@@ -653,13 +653,18 @@ export default function ProfileScreen() {
                   {isOwnPlaylist && <View style={styles.playlistSpacer} />}
                 </Pressable>
                 {isOwnPlaylist && (
-                  <Pressable
-                    style={styles.playlistMenuButton}
-                    onPress={() => handleDeletePlaylist(playlist.id, playlist.name)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <MoreHorizontal size={20} color={colors.almostWhite} />
-                  </Pressable>
+                  <View pointerEvents="box-only" style={styles.playlistMenuWrapper}>
+                    <Pressable
+                      style={styles.playlistMenuButton}
+                      onPress={() => {
+                        console.log('🔥 Three dots clicked for playlist:', playlist.id);
+                        handleDeletePlaylist(playlist.id, playlist.name);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <MoreHorizontal size={20} color={colors.almostWhite} />
+                    </Pressable>
+                  </View>
                 )}
               </View>
             );
@@ -1088,12 +1093,17 @@ const styles = StyleSheet.create({
   playlistItemPressed: {
     opacity: 0.7,
   },
-  playlistMenuButton: {
+  playlistMenuWrapper: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    padding: 8,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingRight: 12,
     zIndex: 10,
+  },
+  playlistMenuButton: {
+    padding: 8,
   },
   playlistSpacer: {
     width: 40,
