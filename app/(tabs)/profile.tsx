@@ -800,6 +800,31 @@ export default function ProfileScreen() {
         <InviteFriendsModal
           visible={showInviteFriendsModal}
           onClose={() => setShowInviteFriendsModal(false)}
+          onInvite={async () => {
+            // Trigger iOS share sheet
+            const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
+            const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
+            
+            try {
+              const { Share } = await import('react-native');
+              const result = await Share.share({
+                message: message,
+                url: APP_STORE_URL,
+              });
+
+              if (result.action === Share.sharedAction) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                setShowInviteFriendsModal(false);
+              }
+            } catch (error) {
+              console.error('Error sharing:', error);
+              if (Platform.OS === 'web') {
+                window.alert('Failed to share. Link copied to clipboard.');
+              } else {
+                Alert.alert('Error', 'Failed to share.');
+              }
+            }
+          }}
         />
 
         {showPlaylistModal ? (
