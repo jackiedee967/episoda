@@ -270,7 +270,8 @@ export default function HomeScreen() {
         id: item.show.id || `trakt-${item.show.traktId}`,
         traktId: item.show.traktId,
         title: item.show.title,
-        poster: item.show.poster || item.show.posterUrl || null
+        poster: item.show.poster || item.show.posterUrl || null,
+        year: item.show.year
       }));
 
       const normalizedInterestShows = recommendations
@@ -280,7 +281,7 @@ export default function HomeScreen() {
           traktId: rec.traktId!,
           title: rec.show!.title,
           poster: rec.show!.poster,
-          traktShow: rec.traktShow  // Include raw Trakt data
+          year: rec.traktShow?.year
         }));
 
       // 4. Merge: friends' shows first (by friend count), then interest-based
@@ -594,11 +595,7 @@ export default function HomeScreen() {
                 </Text>
                 
                 {show.year && (
-                  <Text style={styles.showYear}>
-                    {show.endYear && show.endYear !== show.year 
-                      ? `${show.year} - ${show.endYear}` 
-                      : show.year}
-                  </Text>
+                  <Text style={styles.showYear}>{show.year}</Text>
                 )}
               </Pressable>
             );
@@ -710,12 +707,8 @@ export default function HomeScreen() {
                   {show.title}
                 </Text>
                 
-                {show.traktShow?.year && (
-                  <Text style={styles.showYear}>
-                    {show.traktShow.endYear && show.traktShow.endYear !== show.traktShow.year 
-                      ? `${show.traktShow.year} - ${show.traktShow.endYear}` 
-                      : show.traktShow.year}
-                  </Text>
+                {show.year && (
+                  <Text style={styles.showYear}>{show.year}</Text>
                 )}
               </Pressable>
             );
