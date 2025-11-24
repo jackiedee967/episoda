@@ -48,6 +48,9 @@ interface DataContextType {
   hasUserReposted: (postId: string) => boolean;
   getUserReposts: () => Post[];
   allReposts: { post: Post; repostedBy: User; timestamp: Date }[];
+  reportedPostIds: Set<string>;
+  hasUserReportedPost: (postId: string) => boolean;
+  unreportPost: (postId: string) => Promise<void>;
   currentUser: User;
   followUser: (userId: string) => Promise<void>;
   unfollowUser: (userId: string) => Promise<void>;
@@ -127,6 +130,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [traktIdToUuidMap, setTraktIdToUuidMap] = useState<Map<number, string>>(new Map());
+  const [reportedPostIds, setReportedPostIds] = useState<Set<string>>(new Set());
   
   // Memoize currentUser to prevent recreation on every render
   const currentUser = useMemo(() => ({
@@ -1411,8 +1415,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (authUserId) {
       loadPosts();
       loadPlaylists();
+      loadReportedPosts();
     }
-  }, [authUserId, loadPosts, loadPlaylists]);
+  }, [authUserId, loadPosts, loadPlaylists, loadReportedPosts]);
 
   const createPost = useCallback(async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
     // Create temporary post with fake ID for optimistic UI
@@ -1909,6 +1914,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .map(r => r.postId);
     return posts.filter(p => userRepostIds.includes(p.id));
   }, [posts, reposts, currentUser.id]);
+
+  const loadReportedPosts = useCallback(async () => {
+    if (!authUserId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('post_reports')
+        .select('post_id')
+        .eq('reporter_id', authUserId);
+      
+      if (error) {
+        console.error('Error loading reported posts:', error);
+        return;
+      }
+      
+      if (data) {
+        const reportedIds = new Set(data.map(r => r.post_id));
+        setReportedPostIds(reportedIds);
+      }
+    } catch (error) {
+      console.error('Error loading reported posts:', error);
+    }
+  }, [authUserId]);
+
+  const hasUserReportedPost = useCallback((postId: string): boolean => {
+    return reportedPostIds.has(postId);
+  }, [reportedPostIds]);
+
+  const unreportPost = useCallback(async (postId: string) => {
+    if (!authUserId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('post_reports')
+        .delete()
+        .eq('reporter_id', authUserId)
+        .eq('post_id', postId);
+      
+      if (error) {
+        console.error('Error unreporting post:', error);
+        return;
+      }
+      
+      setReportedPostIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error unreporting post:', error);
+    }
+  }, [authUserId]);
 
   const allReposts = useMemo(() => {
     return reposts
@@ -2451,7 +2508,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     cachedRecommendations,
     isLoadingRecommendations,
     userProfileCache,
-  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId, cachedRecommendations, isLoadingRecommendations, userProfileCache]);
+    reportedPostIds,
+  }), [posts, reposts, playlists, userData, currentUserData, isLoading, isDeletingPost, authUserId, cachedRecommendations, isLoadingRecommendations, userProfileCache, reportedPostIds]);
 
   // LAYER 2: Selectors - Memoized derived data and read operations
   const selectors = useMemo(() => ({
@@ -2462,11 +2520,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getPost,
     hasUserReposted,
     getUserReposts,
+    hasUserReportedPost,
     isFollowing,
     recommendationsReady,
     getProfileFeed,
     getHomeFeed,
-  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, isFollowing, recommendationsReady, getProfileFeed, getHomeFeed]);
+  }), [currentUser, allReposts, getWatchHistory, isShowInPlaylist, getPost, hasUserReposted, getUserReposts, hasUserReportedPost, isFollowing, recommendationsReady, getProfileFeed, getHomeFeed]);
 
   // LAYER 3: Actions - All mutation callbacks (already stable via useCallback)
   const actions = useMemo(() => ({
@@ -2482,6 +2541,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     unlikePost,
     repostPost,
     unrepostPost,
+    unreportPost,
     updateCommentCount,
     followUser,
     unfollowUser,
@@ -2506,6 +2566,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     unlikePost,
     repostPost,
     unrepostPost,
+    unreportPost,
     updateCommentCount,
     followUser,
     unfollowUser,
