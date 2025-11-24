@@ -513,6 +513,8 @@ const styles = StyleSheet.create({
   },
   outerContainer: {
     flex: 1,
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
   },
   container: {
     flex: 1,
@@ -529,6 +531,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: 0,
   },
   scrollContent: {
     paddingBottom: 100,
