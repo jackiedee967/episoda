@@ -792,7 +792,7 @@ export default function PostDetail() {
                   <View style={styles.engagementButton}>
                     <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
                     <Text style={styles.engagementText}>{rawComments.length}</Text>
-                  </Pressable>
+                  </View>
 
                   <Pressable onPress={handleRepost} style={styles.engagementButton}>
                     <RefreshCw

@@ -1410,6 +1410,58 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [authUserId]);
 
+  const loadReportedPosts = useCallback(async () => {
+    if (!authUserId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('post_reports')
+        .select('post_id')
+        .eq('reporter_id', authUserId);
+      
+      if (error) {
+        console.error('Error loading reported posts:', error);
+        return;
+      }
+      
+      if (data) {
+        const reportedIds = new Set(data.map(r => r.post_id));
+        setReportedPostIds(reportedIds);
+      }
+    } catch (error) {
+      console.error('Error loading reported posts:', error);
+    }
+  }, [authUserId]);
+
+  const hasUserReportedPost = useCallback((postId: string): boolean => {
+    return reportedPostIds.has(postId);
+  }, [reportedPostIds]);
+
+  const unreportPost = useCallback(async (postId: string) => {
+    if (!authUserId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('post_reports')
+        .delete()
+        .eq('reporter_id', authUserId)
+        .eq('post_id', postId);
+      
+      if (error) {
+        console.error('Error unreporting post:', error);
+        return;
+      }
+      
+      setReportedPostIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(postId);
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error unreporting post:', error);
+    }
+  }, [authUserId]);
+
   // Load posts and playlists when authUserId is set
   useEffect(() => {
     if (authUserId) {
@@ -1914,58 +1966,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       .map(r => r.postId);
     return posts.filter(p => userRepostIds.includes(p.id));
   }, [posts, reposts, currentUser.id]);
-
-  const loadReportedPosts = useCallback(async () => {
-    if (!authUserId) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('post_reports')
-        .select('post_id')
-        .eq('reporter_id', authUserId);
-      
-      if (error) {
-        console.error('Error loading reported posts:', error);
-        return;
-      }
-      
-      if (data) {
-        const reportedIds = new Set(data.map(r => r.post_id));
-        setReportedPostIds(reportedIds);
-      }
-    } catch (error) {
-      console.error('Error loading reported posts:', error);
-    }
-  }, [authUserId]);
-
-  const hasUserReportedPost = useCallback((postId: string): boolean => {
-    return reportedPostIds.has(postId);
-  }, [reportedPostIds]);
-
-  const unreportPost = useCallback(async (postId: string) => {
-    if (!authUserId) return;
-    
-    try {
-      const { error } = await supabase
-        .from('post_reports')
-        .delete()
-        .eq('reporter_id', authUserId)
-        .eq('post_id', postId);
-      
-      if (error) {
-        console.error('Error unreporting post:', error);
-        return;
-      }
-      
-      setReportedPostIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(postId);
-        return newSet;
-      });
-    } catch (error) {
-      console.error('Error unreporting post:', error);
-    }
-  }, [authUserId]);
 
   const allReposts = useMemo(() => {
     return reposts
