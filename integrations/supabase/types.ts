@@ -553,6 +553,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          new_follower: boolean
+          post_liked: boolean
+          post_commented: boolean
+          comment_replied: boolean
+          mentioned: boolean
+          friend_posted: boolean
+          friend_activity: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          new_follower?: boolean
+          post_liked?: boolean
+          post_commented?: boolean
+          comment_replied?: boolean
+          mentioned?: boolean
+          friend_posted?: boolean
+          friend_activity?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          new_follower?: boolean
+          post_liked?: boolean
+          post_commented?: boolean
+          comment_replied?: boolean
+          mentioned?: boolean
+          friend_posted?: boolean
+          friend_activity?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comment_mentions: {
         Row: {
           id: string
