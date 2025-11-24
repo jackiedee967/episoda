@@ -73,11 +73,6 @@ export default function HelpDeskScreen() {
     router.push(`/settings/help/post/${postId}`);
   };
 
-  const handleProfilePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/profile');
-  };
-
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -198,21 +193,13 @@ export default function HelpDeskScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'The Help Desk',
+          title: '',
           headerBackTitle: 'Back',
           headerStyle: {
             backgroundColor: colors.background,
           },
           headerTintColor: colors.text,
           headerShadowVisible: false,
-          headerRight: () => (
-            <Pressable onPress={handleProfilePress} style={{ marginRight: 8 }}>
-              <Image
-                source={{ uri: currentUser.avatar }}
-                style={styles.headerAvatar}
-              />
-            </Pressable>
-          ),
         }}
       />
       <ScrollView
@@ -305,11 +292,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
-  },
-  headerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
   },
   section: {
     marginTop: 8,
