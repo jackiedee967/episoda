@@ -233,7 +233,7 @@ export default function HelpDeskPostDetailScreen() {
           post_id: post.id,
           user_id: userId,
           username,
-          text: commentText.trim(),
+          comment_text: commentText.trim(),
         })
         .select()
         .single();
@@ -442,7 +442,7 @@ export default function HelpDeskPostDetailScreen() {
                       </Text>
                     </View>
                     <MentionText 
-                      text={comment.text} 
+                      text={comment.comment_text} 
                       style={styles.commentText}
                       mentionColor={colors.greenHighlight}
                     />
