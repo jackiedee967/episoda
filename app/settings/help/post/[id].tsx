@@ -682,8 +682,12 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   commentInputContainer: {
-    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 12,
     backgroundColor: tokens.colors.pureWhite,
     borderTopWidth: 1,
     borderTopColor: tokens.colors.grey2,
