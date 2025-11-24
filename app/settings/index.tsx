@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionTitle: {
-    ...typography.p3B,
+    ...typography.p3Bold,
     color: colors.textSecondary,
     textTransform: 'uppercase',
     paddingHorizontal: 16,

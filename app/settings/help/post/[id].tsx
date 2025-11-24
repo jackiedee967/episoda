@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   adminBadgeText: {
-    ...typography.p3B,
+    ...typography.p3Bold,
     color: colors.background,
   },
   timestamp: {
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     marginLeft: 20,
   },
   categoryTagText: {
-    ...typography.p1B,
+    ...typography.p1Bold,
   },
   title: {
     ...typography.title,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   commentUsername: {
-    ...typography.p1B,
+    ...typography.p1Bold,
     color: colors.text,
   },
   adminBadgeSmall: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   adminBadgeTextSmall: {
-    ...typography.p3B,
+    ...typography.p3Bold,
     color: colors.background,
   },
   commentTimestamp: {
