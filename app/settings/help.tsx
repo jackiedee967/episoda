@@ -314,6 +314,14 @@ export default function HelpDeskScreen() {
         style={styles.adminCard}
         onPress={() => handlePostPress(post.id)}
       >
+        {/* Click-away overlay when menu is open - render FIRST */}
+        {showMenu && (
+          <Pressable 
+            style={styles.clickAwayOverlay}
+            onPress={() => setActiveMenuPostId(null)}
+          />
+        )}
+
         <View style={styles.adminCardHeader}>
           <Text style={styles.adminCardTitle}>{post.title}</Text>
           {canDelete && (
@@ -360,14 +368,6 @@ export default function HelpDeskScreen() {
             <Text style={styles.adminCardStatText}>{post.comments_count}</Text>
           </View>
         </View>
-
-        {/* Click-away overlay when menu is open */}
-        {showMenu && (
-          <Pressable 
-            style={styles.clickAwayOverlay}
-            onPress={() => setActiveMenuPostId(null)}
-          />
-        )}
       </Pressable>
     );
   };
@@ -383,6 +383,14 @@ export default function HelpDeskScreen() {
         style={styles.communityPost}
         onPress={() => handlePostPress(post.id)}
       >
+        {/* Click-away overlay when menu is open - render FIRST */}
+        {showMenu && (
+          <Pressable 
+            style={styles.clickAwayOverlay}
+            onPress={() => setActiveMenuPostId(null)}
+          />
+        )}
+
         <View style={styles.communityPostHeader}>
           <Image
             source={{ uri: currentUser.avatar }}
@@ -460,14 +468,6 @@ export default function HelpDeskScreen() {
             <Text style={styles.communityPostStatText}>{post.comments_count}</Text>
           </View>
         </View>
-
-        {/* Click-away overlay when menu is open */}
-        {showMenu && (
-          <Pressable 
-            style={styles.clickAwayOverlay}
-            onPress={() => setActiveMenuPostId(null)}
-          />
-        )}
       </Pressable>
     );
   };
