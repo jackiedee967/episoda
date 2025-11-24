@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import { User, Bell, HelpCircle, LogOut } from 'lucide-react-native';
@@ -8,6 +8,9 @@ import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { Asset } from 'expo-asset';
+
+const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -54,8 +57,13 @@ export default function SettingsScreen() {
           headerShadowVisible: false,
         }} 
       />
-      <View style={styles.container}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        <View style={styles.container}>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Account Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>ACCOUNT</Text>
@@ -133,14 +141,18 @@ export default function SettingsScreen() {
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
+      </ImageBackground>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,

@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '@/styles/commonStyles';
 import { Heart, MessageCircle, Plus } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
+import { Asset } from 'expo-asset';
 import {
   View,
   Text,
@@ -13,7 +14,10 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  ImageBackground,
 } from 'react-native';
+
+const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { supabase } from '@/integrations/supabase/client';
 import { HelpDeskPost } from '@/types';
 import React, { useState, useEffect } from 'react';
@@ -202,13 +206,18 @@ export default function HelpDeskScreen() {
           headerShadowVisible: false,
         }}
       />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.purple} />
-        }
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.purple} />
+          }
+        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>THE HELP DESK</Text>
@@ -260,14 +269,18 @@ export default function HelpDeskScreen() {
           </View>
         </View>
       </ScrollView>
+      </ImageBackground>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
