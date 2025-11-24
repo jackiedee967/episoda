@@ -34,7 +34,7 @@ export default function NotificationsSettingsScreen() {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('notification_preferences')
         .select('*')
         .eq('user_id', user.id)
@@ -74,7 +74,7 @@ export default function NotificationsSettingsScreen() {
       // Convert camelCase to snake_case for database
       const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
 
-      const { data: existing, error: checkError } = await supabase
+      const { data: existing, error: checkError } = await (supabase as any)
         .from('notification_preferences')
         .select('id')
         .eq('user_id', user.id)
@@ -85,7 +85,7 @@ export default function NotificationsSettingsScreen() {
       }
 
       if (existing) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('notification_preferences')
           .update({
             [dbKey]: value,
@@ -95,7 +95,7 @@ export default function NotificationsSettingsScreen() {
 
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await supabase
+        const { error: insertError } = await (supabase as any)
           .from('notification_preferences')
           .insert({
             user_id: user.id,
