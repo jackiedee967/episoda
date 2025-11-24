@@ -401,8 +401,8 @@ export default function HelpDeskPostDetailScreen() {
             <Pressable style={styles.actionButton} onPress={handleLike}>
               <Heart 
                 size={20} 
-                color={isLiked ? colors.error : colors.textSecondary}
-                fill={isLiked ? colors.error : 'none'}
+                color={isLiked ? colors.green : colors.textSecondary}
+                fill={isLiked ? colors.green : 'none'}
               />
               <Text style={styles.actionText}>{post.likes_count}</Text>
             </Pressable>

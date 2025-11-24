@@ -306,6 +306,7 @@ export default function HelpDeskScreen() {
   const renderAdminCard = (post: HelpDeskPost) => {
     const isLiked = likedPosts.has(post.id);
     const canDelete = currentUser.id === post.user_id;
+    const showMenu = activeMenuPostId === post.id;
     
     return (
       <Pressable
@@ -316,12 +317,24 @@ export default function HelpDeskScreen() {
         <View style={styles.adminCardHeader}>
           <Text style={styles.adminCardTitle}>{post.title}</Text>
           {canDelete && (
-            <Pressable
-              style={styles.deleteButton}
-              onPress={(e) => handleMenuPress(post.id, e)}
-            >
-              <MoreVertical size={16} color={colors.textSecondary} />
-            </Pressable>
+            <View>
+              <Pressable
+                style={styles.deleteButton}
+                onPress={(e) => handleMenuPress(post.id, e)}
+              >
+                <MoreVertical size={16} color={colors.textSecondary} />
+              </Pressable>
+              {showMenu && (
+                <View style={styles.deleteMenuPositioned}>
+                  <Pressable 
+                    onPress={() => handleDeletePost(post.id)} 
+                    style={styles.deleteMenuItem}
+                  >
+                    <Text style={styles.deleteMenuText}>Delete Post</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           )}
         </View>
         <Text style={styles.adminCardPreview}>
@@ -334,8 +347,8 @@ export default function HelpDeskScreen() {
           >
             <Heart 
               size={14} 
-              color={isLiked ? colors.error : colors.textSecondary}
-              fill={isLiked ? colors.error : 'none'}
+              color={isLiked ? colors.green : colors.textSecondary}
+              fill={isLiked ? colors.green : 'none'}
             />
             <Text style={styles.adminCardStatText}>{post.likes_count}</Text>
           </Pressable>
@@ -344,6 +357,14 @@ export default function HelpDeskScreen() {
             <Text style={styles.adminCardStatText}>{post.comments_count}</Text>
           </View>
         </View>
+
+        {/* Click-away overlay when menu is open */}
+        {showMenu && (
+          <Pressable 
+            style={styles.clickAwayOverlay}
+            onPress={() => setActiveMenuPostId(null)}
+          />
+        )}
       </Pressable>
     );
   };
@@ -351,6 +372,7 @@ export default function HelpDeskScreen() {
   const renderCommunityPost = (post: HelpDeskPost) => {
     const isLiked = likedPosts.has(post.id);
     const canDelete = currentUser.id === post.user_id;
+    const showMenu = activeMenuPostId === post.id;
     
     return (
       <Pressable
@@ -377,12 +399,24 @@ export default function HelpDeskScreen() {
             </Text>
           </View>
           {canDelete && (
-            <Pressable
-              style={styles.deleteButton}
-              onPress={(e) => handleMenuPress(post.id, e)}
-            >
-              <MoreVertical size={16} color={colors.textSecondary} />
-            </Pressable>
+            <View>
+              <Pressable
+                style={styles.deleteButton}
+                onPress={(e) => handleMenuPress(post.id, e)}
+              >
+                <MoreVertical size={16} color={colors.textSecondary} />
+              </Pressable>
+              {showMenu && (
+                <View style={styles.deleteMenuPositioned}>
+                  <Pressable 
+                    onPress={() => handleDeletePost(post.id)} 
+                    style={styles.deleteMenuItem}
+                  >
+                    <Text style={styles.deleteMenuText}>Delete Post</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           )}
         </View>
 
@@ -411,8 +445,8 @@ export default function HelpDeskScreen() {
             >
               <Heart 
                 size={14} 
-                color={isLiked ? colors.error : colors.textSecondary}
-                fill={isLiked ? colors.error : 'none'}
+                color={isLiked ? colors.green : colors.textSecondary}
+                fill={isLiked ? colors.green : 'none'}
               />
               <Text style={styles.communityPostStatText}>{post.likes_count}</Text>
             </Pressable>
@@ -420,6 +454,14 @@ export default function HelpDeskScreen() {
             <Text style={styles.communityPostStatText}>{post.comments_count}</Text>
           </View>
         </View>
+
+        {/* Click-away overlay when menu is open */}
+        {showMenu && (
+          <Pressable 
+            style={styles.clickAwayOverlay}
+            onPress={() => setActiveMenuPostId(null)}
+          />
+        )}
       </Pressable>
     );
   };
@@ -512,20 +554,6 @@ export default function HelpDeskScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Delete Menu */}
-      {activeMenuPostId && (
-        <Pressable 
-          style={styles.menuOverlay} 
-          onPress={() => setActiveMenuPostId(null)}
-        >
-          <View style={styles.deleteMenu}>
-            <Pressable onPress={() => handleDeletePost(activeMenuPostId)} style={styles.deleteMenuItem}>
-              <Text style={styles.deleteMenuText}>Delete Post</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      )}
       </ImageBackground>
     </>
   );
@@ -739,18 +767,10 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
   },
-  menuOverlay: {
+  deleteMenuPositioned: {
     position: 'absolute',
-    top: 0,
-    left: 0,
+    top: 24,
     right: 0,
-    bottom: 0,
-    zIndex: 1000,
-    alignItems: 'flex-end',
-    paddingTop: 60,
-    paddingRight: 20,
-  },
-  deleteMenu: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
     shadowColor: '#000',
@@ -759,6 +779,15 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     minWidth: 150,
+    zIndex: 1000,
+  },
+  clickAwayOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
   deleteMenuItem: {
     paddingVertical: 12,
