@@ -244,38 +244,44 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               <View style={styles.showsGrid}>
                 {playlistShows.map((show) => (
                   <View key={show.id} style={styles.showItem}>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.showPosterContainer,
-                        pressed ? styles.showPosterPressed : null,
-                      ]}
-                      onPress={() => handleShowPress(show.id)}
-                    >
-                      <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
+                    <View style={styles.showPosterWrapper} pointerEvents="box-none">
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.showPosterContainer,
+                          pressed ? styles.showPosterPressed : null,
+                        ]}
+                        onPress={() => handleShowPress(show.id)}
+                      >
+                        <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
+                      </Pressable>
                       
                       {isOwnPlaylist ? (
-                        <Pressable
-                          style={styles.removeButton}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleRemoveShow(show.id);
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Trash2 size={18} color="#EF4444" />
-                        </Pressable>
+                        <View pointerEvents="box-only" style={styles.removeButtonWrapper}>
+                          <Pressable
+                            style={styles.removeButton}
+                            onPress={() => {
+                              console.log('🔥 Trash icon clicked for show:', show.id);
+                              handleRemoveShow(show.id);
+                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Trash2 size={18} color="#EF4444" />
+                          </Pressable>
+                        </View>
                       ) : (
-                        <Pressable
-                          style={styles.bookmarkIconContainer}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Bookmark size={18} color={tokens.colors.black} fill={tokens.colors.black} />
-                        </Pressable>
+                        <View pointerEvents="box-only" style={styles.bookmarkIconWrapper}>
+                          <Pressable
+                            style={styles.bookmarkIconContainer}
+                            onPress={() => {
+                              console.log('🔥 Bookmark icon clicked');
+                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <Bookmark size={18} color={tokens.colors.black} fill={tokens.colors.black} />
+                          </Pressable>
+                        </View>
                       )}
-                    </Pressable>
+                    </View>
                     <Text style={styles.showTitle} numberOfLines={2}>
                       {show.title}
                     </Text>
@@ -384,9 +390,12 @@ const styles = StyleSheet.create({
   showItem: {
     width: '30%',
   },
-  showPosterContainer: {
+  showPosterWrapper: {
     position: 'relative',
     marginBottom: 8,
+  },
+  showPosterContainer: {
+    width: '100%',
   },
   showPosterPressed: {
     opacity: 0.7,
@@ -396,18 +405,24 @@ const styles = StyleSheet.create({
     aspectRatio: 2 / 3,
     borderRadius: 12,
   },
-  removeButton: {
+  removeButtonWrapper: {
     position: 'absolute',
     top: 6,
     right: 6,
+    zIndex: 10,
+  },
+  removeButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 12,
     padding: 6,
   },
-  bookmarkIconContainer: {
+  bookmarkIconWrapper: {
     position: 'absolute',
     top: 6,
     right: 6,
+    zIndex: 10,
+  },
+  bookmarkIconContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 6,
