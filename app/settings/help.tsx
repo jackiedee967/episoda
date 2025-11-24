@@ -358,9 +358,7 @@ export default function HelpDeskScreen() {
             </View>
           )}
         </View>
-        <MentionText style={styles.adminCardPreview} numberOfLines={3}>
-          {post.details}
-        </MentionText>
+        <MentionText text={post.details || ''} style={styles.adminCardPreview} numberOfLines={3} />
         <View style={styles.adminCardFooter}>
           <Pressable 
             style={styles.adminCardStats}
@@ -440,9 +438,7 @@ export default function HelpDeskScreen() {
         </View>
 
         <Text style={styles.communityPostTitle}>{post.title}</Text>
-        <MentionText style={styles.communityPostPreview} numberOfLines={2}>
-          {post.details}
-        </MentionText>
+        <MentionText text={post.details || ''} style={styles.communityPostPreview} numberOfLines={2} />
 
         <View style={styles.communityPostFooter}>
           <View style={[
