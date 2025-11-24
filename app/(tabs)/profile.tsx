@@ -15,7 +15,7 @@ import Button from '@/components/Button';
 import WatchHistoryCard from '@/components/WatchHistoryCard';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { Instagram, Music, Globe } from 'lucide-react-native';
+import { Instagram, Music, Globe, MoreHorizontal } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +36,8 @@ export default function ProfileScreen() {
     isFollowing, 
     allReposts, 
     playlists, 
-    loadPlaylists, 
+    loadPlaylists,
+    deletePlaylist,
     getFollowers,
     getFollowing,
     getTopFollowers,
@@ -305,6 +306,32 @@ export default function ProfileScreen() {
   const handlePlaylistPress = (playlistId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowPlaylistViewModal(playlistId);
+  };
+
+  const handleDeletePlaylist = (playlistId: string, playlistName: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Alert.alert(
+      'Delete Playlist',
+      `Are you sure you want to delete "${playlistName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePlaylist(playlistId);
+              await loadPlaylists();
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (error) {
+              console.error('Error deleting playlist:', error);
+              Alert.alert('Error', 'Failed to delete playlist');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleFollowToggle = async (userId: string) => {
@@ -607,22 +634,36 @@ export default function ProfileScreen() {
         <>
           {playlists.map((playlist) => {
             const showCount = playlist.showCount || 0;
+            const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
-              <Pressable
-                key={playlist.id}
-                style={({ pressed }) => [
-                  styles.playlistItem,
-                  pressed ? styles.playlistItemPressed : null,
-                ]}
-                onPress={() => handlePlaylistPress(playlist.id)}
-              >
-                <View style={styles.playlistInfo}>
-                  <Text style={styles.playlistName}>{playlist.name}</Text>
-                  <Text style={styles.playlistCount}>
-                    {showCount} {showCount === 1 ? 'show' : 'shows'}
-                  </Text>
-                </View>
-              </Pressable>
+              <View key={playlist.id} style={styles.playlistRow}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.playlistItem,
+                    pressed ? styles.playlistItemPressed : null,
+                  ]}
+                  onPress={() => handlePlaylistPress(playlist.id)}
+                >
+                  <View style={styles.playlistInfo}>
+                    <Text style={styles.playlistName}>{playlist.name}</Text>
+                    <Text style={styles.playlistCount}>
+                      {showCount} {showCount === 1 ? 'show' : 'shows'}
+                    </Text>
+                  </View>
+                </Pressable>
+                {isOwnPlaylist && (
+                  <Pressable
+                    style={styles.playlistMenuButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeletePlaylist(playlist.id, playlist.name);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <MoreHorizontal size={20} color={colors.textSecondary} />
+                  </Pressable>
+                )}
+              </View>
             );
           })}
         </>
@@ -1032,7 +1073,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  playlistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   playlistItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1041,10 +1088,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
-    marginBottom: 12,
   },
   playlistItemPressed: {
     opacity: 0.7,
+  },
+  playlistMenuButton: {
+    padding: 15,
+    marginLeft: 8,
   },
   playlistInfo: {
     flex: 1,

@@ -814,6 +814,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('📝 Removing show from playlist:', playlistId, showId);
 
       if (authUserId) {
+        // First verify ownership of the playlist
+        const { data: playlist, error: fetchError } = await supabase
+          .from('playlists')
+          .select('user_id')
+          .eq('id', playlistId)
+          .eq('user_id', authUserId)
+          .single();
+
+        if (fetchError || !playlist) {
+          console.error('❌ Playlist not found or not owned by user:', fetchError);
+          throw new Error('You do not have permission to modify this playlist');
+        }
+
         const { error } = await supabase
           .from('playlist_shows')
           .delete()
@@ -835,7 +848,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           await supabase
             .from('playlists')
             .update({ show_count: Math.max(0, currentPlaylist.show_count - 1) })
-            .eq('id', playlistId);
+            .eq('id', playlistId)
+            .eq('user_id', authUserId);
         }
 
         console.log('✅ Show removed from playlist in Supabase');
@@ -867,7 +881,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase
           .from('playlists')
           .delete()
-          .eq('id', playlistId);
+          .eq('id', playlistId)
+          .eq('user_id', authUserId);
 
         if (error) {
           console.error('❌ Error deleting playlist in Supabase:', error);

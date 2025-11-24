@@ -16,7 +16,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
 import { Show, Playlist } from '@/types';
 import * as Haptics from 'expo-haptics';
-import { Trash2 } from 'lucide-react-native';
+import { Trash2, Bookmark } from 'lucide-react-native';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -273,7 +273,7 @@ export default function PlaylistDetailScreen() {
                   >
                     <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
                     
-                    {/* Remove button (only for own playlists) */}
+                    {/* Remove button (only for own playlists) or bookmark icon */}
                     {isOwnPlaylist ? (
                       <Pressable
                         style={styles.removeButton}
@@ -281,10 +281,21 @@ export default function PlaylistDetailScreen() {
                           e.stopPropagation();
                           handleRemoveShow(show.id);
                         }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <IconSymbol name="xmark.circle.fill" size={24} color="#EF4444" />
+                        <Trash2 size={18} color="#EF4444" />
                       </Pressable>
-                    ) : null}
+                    ) : (
+                      <Pressable
+                        style={styles.bookmarkIconContainer}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Bookmark size={18} color={colors.text} fill={colors.text} />
+                      </Pressable>
+                    )}
                   </Pressable>
                   <Text style={styles.showTitle} numberOfLines={2}>
                     {show.title}
@@ -391,6 +402,15 @@ const styles = StyleSheet.create({
     right: 6,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 12,
+    padding: 6,
+  },
+  bookmarkIconContainer: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 12,
+    padding: 6,
   },
   showTitle: {
     fontSize: 14,
