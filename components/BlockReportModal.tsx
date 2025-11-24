@@ -178,16 +178,18 @@ export default function BlockReportModal({
 
   const renderReportScreen = () => (
     <View style={styles.content}>
-      <Pressable
-        style={styles.backButton}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setSelectedAction(null);
-        }}
-      >
-        <IconSymbol name="chevron.left" size={20} color={colors.text} />
-        <Text style={styles.backButtonText}>Back</Text>
-      </Pressable>
+      {!reportOnly && (
+        <Pressable
+          style={styles.backButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setSelectedAction(null);
+          }}
+        >
+          <IconSymbol name="chevron.left" size={20} color={colors.text} />
+          <Text style={styles.backButtonText}>Back</Text>
+        </Pressable>
+      )}
 
       <Text style={styles.description}>
         Why are you reporting @{username}?
