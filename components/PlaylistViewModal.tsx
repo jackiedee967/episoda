@@ -244,7 +244,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               <View style={styles.showsGrid}>
                 {playlistShows.map((show) => (
                   <View key={show.id} style={styles.showItem}>
-                    <View style={styles.showPosterWrapper} pointerEvents="box-none">
+                    <View style={styles.showPosterWrapper}>
                       <Pressable
                         style={({ pressed }) => [
                           styles.showPosterContainer,
@@ -256,7 +256,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                       </Pressable>
                       
                       {isOwnPlaylist ? (
-                        <View pointerEvents="box-only" style={styles.removeButtonWrapper}>
+                        <View style={styles.removeButtonWrapper} pointerEvents="auto">
                           <Pressable
                             style={styles.removeButton}
                             onPress={() => {
@@ -269,7 +269,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                           </Pressable>
                         </View>
                       ) : (
-                        <View pointerEvents="box-only" style={styles.bookmarkIconWrapper}>
+                        <View style={styles.bookmarkIconWrapper} pointerEvents="auto">
                           <Pressable
                             style={styles.bookmarkIconContainer}
                             onPress={() => {
@@ -409,23 +409,35 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    zIndex: 10,
+    width: 30,
+    height: 30,
+    zIndex: 2,
   },
   removeButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     borderRadius: 12,
     padding: 6,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bookmarkIconWrapper: {
     position: 'absolute',
     top: 6,
     right: 6,
-    zIndex: 10,
+    width: 30,
+    height: 30,
+    zIndex: 2,
   },
   bookmarkIconContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 12,
     padding: 6,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   showTitle: {
     ...tokens.typography.smallSubtitle,

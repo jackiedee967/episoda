@@ -636,7 +636,7 @@ export default function ProfileScreen() {
             const showCount = playlist.showCount || 0;
             const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
-              <View key={playlist.id} style={styles.playlistContainer} pointerEvents="box-none">
+              <View key={playlist.id} style={styles.playlistContainer}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.playlistItem,
@@ -653,7 +653,7 @@ export default function ProfileScreen() {
                   {isOwnPlaylist && <View style={styles.playlistSpacer} />}
                 </Pressable>
                 {isOwnPlaylist && (
-                  <View pointerEvents="box-only" style={styles.playlistMenuWrapper}>
+                  <View style={styles.playlistMenuWrapper} pointerEvents="auto">
                     <Pressable
                       style={styles.playlistMenuButton}
                       onPress={() => {
@@ -1095,15 +1095,18 @@ const styles = StyleSheet.create({
   },
   playlistMenuWrapper: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    paddingRight: 12,
-    zIndex: 10,
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    zIndex: 2,
   },
   playlistMenuButton: {
     padding: 8,
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   playlistSpacer: {
     width: 40,
