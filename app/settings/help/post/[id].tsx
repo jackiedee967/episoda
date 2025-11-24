@@ -16,6 +16,7 @@ import {
 import { Heart, MessageCircle, Send, MoreVertical } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { colors, typography } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -460,9 +461,9 @@ export default function HelpDeskPostDetailScreen() {
             }}
             currentUserId={currentUser.id}
             placeholder="Write a comment..."
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={tokens.colors.grey1}
             style={styles.commentInput}
-            inputBackgroundColor={colors.background}
+            inputBackgroundColor={tokens.colors.almostWhite}
             multiline
             maxLength={500}
           />
@@ -472,9 +473,9 @@ export default function HelpDeskPostDetailScreen() {
             disabled={!commentText.trim() || submitting}
           >
             {submitting ? (
-              <ActivityIndicator size="small" color={colors.background} />
+              <ActivityIndicator size="small" color={tokens.colors.black} />
             ) : (
-              <Send size={20} color={colors.background} />
+              <Send size={20} color={tokens.colors.black} />
             )}
           </Pressable>
         </View>
@@ -682,23 +683,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 12,
-    padding: 16,
-    backgroundColor: colors.card,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: tokens.colors.pureWhite,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: tokens.colors.grey2,
   },
   commentInput: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: tokens.colors.almostWhite,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     ...typography.p1,
-    color: colors.text,
+    color: tokens.colors.black,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: colors.purple,
+    backgroundColor: tokens.colors.greenHighlight,
     width: 40,
     height: 40,
     borderRadius: 20,
