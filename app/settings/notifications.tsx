@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert } from 'react-native';
 import { Stack } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationPreferences } from '@/types';
@@ -304,11 +304,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   sectionDescription: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     paddingHorizontal: 16,
     marginBottom: 8,
-    lineHeight: 20,
   },
   notificationContainer: {
     backgroundColor: colors.card,
@@ -328,15 +327,13 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   notificationLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.subtitle,
     color: colors.text,
     marginBottom: 4,
   },
   notificationDescription: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
-    lineHeight: 18,
   },
   divider: {
     height: 1,

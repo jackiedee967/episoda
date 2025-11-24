@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    ...typography.p1B,
+    ...typography.p1Bold,
     color: colors.text,
   },
   input: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   modalTitle: {
-    ...typography.titleS,
+    ...typography.titleL,
     color: colors.text,
     marginBottom: 16,
   },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   checkmark: {
-    ...typography.titleS,
+    ...typography.titleL,
     color: colors.purple,
   },
 });

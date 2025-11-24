@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/integrations/supabase/client';
@@ -284,10 +284,8 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...typography.p3Bold,
     color: colors.textSecondary,
-    letterSpacing: 0,
     textTransform: 'uppercase',
     paddingHorizontal: 16,
     marginBottom: 8,
@@ -300,21 +298,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.p1Bold,
     color: colors.textSecondary,
     marginBottom: 6,
   },
   infoValue: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.subtitle,
     color: colors.text,
   },
   infoNote: {
-    fontSize: 13,
+    ...typography.p1,
     color: colors.textSecondary,
     marginTop: 8,
-    lineHeight: 18,
   },
   changeButton: {
     backgroundColor: colors.secondary,
@@ -325,8 +320,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   changeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.black,
   },
   dangerZone: {
@@ -338,16 +332,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 59, 48, 0.3)',
   },
   dangerZoneTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.subtitle,
     color: '#FF3B30',
     marginBottom: 8,
   },
   dangerZoneDescription: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     marginBottom: 16,
-    lineHeight: 20,
   },
   deleteButton: {
     backgroundColor: '#FF3B30',
@@ -356,8 +348,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: '#FFFFFF',
   },
 });

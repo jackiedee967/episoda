@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    ...typography.p1B,
+    ...typography.p1Bold,
     color: colors.text,
   },
   input: {
