@@ -220,7 +220,7 @@ export default function HelpDeskScreen() {
         >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>THE HELP DESK</Text>
+          <Text style={styles.headerTitle}>The Help Desk</Text>
           <Text style={styles.headerSubtitle}>
             Have a feature question, need support, or just wanna chat with the founders? This is your space. 
             We&apos;re building this platform with you, so let us know what matters!
@@ -289,10 +289,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
+    paddingTop: 0,
     paddingBottom: 100,
   },
   header: {
-    padding: 20,
+    paddingTop: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     gap: 12,
   },
   headerTitle: {

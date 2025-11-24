@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { Heart, MessageCircle, Send } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -20,6 +21,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { HelpDeskPost, HelpDeskComment } from '@/types';
 import { useData } from '@/contexts/DataContext';
+import { Asset } from 'expo-asset';
+
+const appBackground = Asset.fromModule(require('../../../../assets/images/app-background.jpg')).uri;
 
 export default function HelpDeskPostDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -197,11 +201,16 @@ export default function HelpDeskPostDetailScreen() {
           headerShadowVisible: false,
         }}
       />
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.backgroundImage}
+        resizeMode="cover"
       >
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={100}
+        >
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -307,14 +316,18 @@ export default function HelpDeskPostDetailScreen() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+      </ImageBackground>
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -330,7 +343,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingTop: 0,
+    paddingHorizontal: 20,
     paddingBottom: 100,
   },
   postHeader: {
