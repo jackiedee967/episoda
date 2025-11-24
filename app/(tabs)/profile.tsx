@@ -88,7 +88,7 @@ export default function ProfileScreen() {
     loadFollowData();
   }, [profileUser?.id]);
 
-  const loadProfileData = async () => {
+  const loadProfileData = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -108,15 +108,15 @@ export default function ProfileScreen() {
           // Only update profile-specific fields from Supabase
           setProfileUser(prev => {
             // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
-            let avatarUrl = profile.avatar_url || prev.avatar;
+            let avatarUrl = profile.avatar_url || prev?.avatar;
             if (!profile.avatar_url && profile.avatar_color_scheme && profile.avatar_icon) {
               avatarUrl = generateAvatarDataURI(profile.avatar_color_scheme, profile.avatar_icon);
             }
             
             return {
               ...prev,
-              username: profile.username || prev.username,
-              displayName: profile.display_name || prev.displayName,
+              username: profile.username || prev?.username,
+              displayName: profile.display_name || prev?.displayName,
               avatar: avatarUrl,
               bio: profile.bio || '',
               socialLinks: socialLinks?.map(link => ({
@@ -130,9 +130,9 @@ export default function ProfileScreen() {
     } catch (error) {
       console.error('Error loading profile data:', error);
     }
-  };
+  }, []);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!profileUser) return;
     setIsLoadingStats(true);
     try {
@@ -145,9 +145,9 @@ export default function ProfileScreen() {
     } finally {
       setIsLoadingStats(false);
     }
-  };
+  }, [profileUser?.id]);
 
-  const loadFollowData = async () => {
+  const loadFollowData = useCallback(async () => {
     if (!profileUser) return;
     try {
       const followersData = await getFollowers(profileUser.id);
@@ -166,7 +166,7 @@ export default function ProfileScreen() {
       setTopFollowers([]);
       setTopFollowing([]);
     }
-  };
+  }, [profileUser?.id]);
 
   const handleRefresh = useCallback(async () => {
     if (!profileUser) return;
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [profileUser]);
+  }, [profileUser?.id, loadProfileData, loadStats, loadFollowData, loadPlaylists]);
 
   // Silent auto-refresh when page comes into focus (no spinner)
   useFocusEffect(
@@ -208,7 +208,7 @@ export default function ProfileScreen() {
       };
       
       silentRefresh();
-    }, [profileUser])
+    }, [profileUser?.id, loadProfileData, loadStats, loadFollowData, loadPlaylists])
   );
 
   const allUserActivity = useMemo(() => {
