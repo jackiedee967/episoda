@@ -82,7 +82,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
     const uniqueShowIds = [...new Set(validPosts.map(p => p.show_id))];
     const allEpisodeIds = [...new Set(validPosts.flatMap(p => p.episode_ids || []))];
 
-    const [usersResult, socialLinksResult, showsResult, episodesResult, likesResult, userLikesResult, commentsResult, repostsResult] = await Promise.all([
+    const [usersResult, socialLinksResult, showsResult, episodesResult, likesResult, userLikesResult, commentsResult, repostsResult, followsResult] = await Promise.all([
       (supabase as any).from('profiles').select('*').in('user_id', uniqueUserIds),
       (supabase as any).from('social_links').select('*').in('user_id', uniqueUserIds),
       supabase.from('shows').select('*').in('id', uniqueShowIds),
@@ -91,6 +91,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
       (supabase as any).from('post_likes').select('post_id').eq('user_id', userId).in('post_id', postIds),
       (supabase as any).from('comments').select('post_id').in('post_id', postIds),
       (supabase as any).from('post_reposts').select('post_id').in('post_id', postIds),
+      (supabase as any).from('follows').select('following_id').eq('follower_id', userId),
     ]);
 
     // Group social links by user_id
@@ -121,6 +122,36 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
         following: [],
         followers: [],
       });
+    });
+
+    // Get the user's following list
+    const followingIds = new Set((followsResult.data || []).map((f: any) => f.following_id));
+
+    // Calculate mutual friends watching for each show
+    const showMutualFriendsMap = new Map<string, any[]>();
+    validPosts.forEach((post: any) => {
+      const showId = post.show_id;
+      const postUserId = post.user_id;
+      
+      // If the post author is someone the user follows, add them to the show's mutual friends
+      if (followingIds.has(postUserId)) {
+        if (!showMutualFriendsMap.has(showId)) {
+          showMutualFriendsMap.set(showId, []);
+        }
+        
+        const mutualFriends = showMutualFriendsMap.get(showId)!;
+        const userProfile = usersMap.get(postUserId);
+        
+        // Only add if not already in the list (avoid duplicates)
+        if (userProfile && !mutualFriends.some(f => f.id === postUserId)) {
+          mutualFriends.push({
+            id: userProfile.id,
+            avatar: userProfile.avatar,
+            displayName: userProfile.displayName,
+            username: userProfile.username,
+          });
+        }
+      }
     });
 
     const showsMap = new Map();
@@ -190,6 +221,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
           totalSeasons: showData?.total_seasons || 0,
           totalEpisodes: showData?.total_episodes || 0,
           friendsWatching: 0,
+          mutualFriendsWatching: showMutualFriendsMap.get(dbPost.show_id) || [],
           traktId: showData?.trakt_id,
           colorScheme: showData?.color_scheme || null,
         },
