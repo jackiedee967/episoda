@@ -511,7 +511,7 @@ export type Database = {
         }
         Relationships: []
       }
-      help_desk_post_likes: {
+      help_desk_likes: {
         Row: {
           id: string
           post_id: string

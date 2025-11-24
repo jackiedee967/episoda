@@ -2,7 +2,7 @@
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { colors, typography } from '@/styles/commonStyles';
-import { Heart, MessageCircle, Plus, Trash2 } from 'lucide-react-native';
+import { Heart, MessageCircle, Plus, MoreVertical } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Asset } from 'expo-asset';
 import {
@@ -16,6 +16,7 @@ import {
   RefreshControl,
   ImageBackground,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,6 +56,7 @@ export default function HelpDeskScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
   const userIsAdmin = isAdmin(currentUser?.id);
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export default function HelpDeskScreen() {
 
   useEffect(() => {
     if (refresh) {
+      setActiveMenuPostId(null); // Close any open menus
       loadPosts();
       loadUserLikes();
     }
@@ -97,7 +100,7 @@ export default function HelpDeskScreen() {
   const loadUserLikes = async () => {
     try {
       const { data, error } = await supabase
-        .from('help_desk_post_likes')
+        .from('help_desk_likes')
         .select('post_id')
         .eq('user_id', currentUser.id);
 
@@ -112,6 +115,7 @@ export default function HelpDeskScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setActiveMenuPostId(null); // Close any open menus
     await Promise.all([loadPosts(), loadUserLikes()]);
     setRefreshing(false);
   };
@@ -129,7 +133,7 @@ export default function HelpDeskScreen() {
       if (isLiked) {
         // Unlike
         const { error: deleteError } = await supabase
-          .from('help_desk_post_likes')
+          .from('help_desk_likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', currentUser.id);
@@ -157,7 +161,7 @@ export default function HelpDeskScreen() {
       } else {
         // Like
         const { error: insertError } = await supabase
-          .from('help_desk_post_likes')
+          .from('help_desk_likes')
           .insert({
             post_id: postId,
             user_id: currentUser.id,
@@ -200,42 +204,61 @@ export default function HelpDeskScreen() {
     router.push(`/settings/help/post/${postId}`);
   };
 
-  const handleDeletePost = async (postId: string, e?: any) => {
+  const handleMenuPress = (postId: string, e?: any) => {
     if (e) e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveMenuPostId(activeMenuPostId === postId ? null : postId);
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    setActiveMenuPostId(null);
     
-    Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              
-              const { error } = await supabase
-                .from('help_desk_posts')
-                .delete()
-                .eq('id', postId);
+    const confirmed = Platform.OS === 'web' 
+      ? window.confirm('Are you sure you want to delete this post? This action cannot be undone.')
+      : await new Promise((resolve) => {
+          Alert.alert(
+            'Delete Post',
+            'Are you sure you want to delete this post? This action cannot be undone.',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+                onPress: () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  resolve(false);
+                },
+              },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                  resolve(true);
+                },
+              },
+            ]
+          );
+        });
 
-              if (error) throw error;
+    if (!confirmed) return;
 
-              // Reload posts after deletion
-              await loadPosts();
-              await loadUserLikes();
-            } catch (error) {
-              console.error('Error deleting post:', error);
-              Alert.alert('Error', 'Failed to delete post. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      const { error } = await supabase
+        .from('help_desk_posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      // Reload posts after deletion
+      setActiveMenuPostId(null); // Close menu
+      await loadPosts();
+      await loadUserLikes();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      Alert.alert('Error', 'Failed to delete post. Please try again.');
+    }
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -290,9 +313,9 @@ export default function HelpDeskScreen() {
           {canDelete && (
             <Pressable
               style={styles.deleteButton}
-              onPress={(e) => handleDeletePost(post.id, e)}
+              onPress={(e) => handleMenuPress(post.id, e)}
             >
-              <Trash2 size={16} color={colors.textSecondary} />
+              <MoreVertical size={16} color={colors.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -351,9 +374,9 @@ export default function HelpDeskScreen() {
           {canDelete && (
             <Pressable
               style={styles.deleteButton}
-              onPress={(e) => handleDeletePost(post.id, e)}
+              onPress={(e) => handleMenuPress(post.id, e)}
             >
-              <Trash2 size={16} color={colors.textSecondary} />
+              <MoreVertical size={16} color={colors.textSecondary} />
             </Pressable>
           )}
         </View>
@@ -484,6 +507,20 @@ export default function HelpDeskScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Delete Menu */}
+      {activeMenuPostId && (
+        <Pressable 
+          style={styles.menuOverlay} 
+          onPress={() => setActiveMenuPostId(null)}
+        >
+          <View style={styles.deleteMenu}>
+            <Pressable onPress={() => handleDeletePost(activeMenuPostId)} style={styles.deleteMenuItem}>
+              <Text style={styles.deleteMenuText}>Delete Post</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
       </ImageBackground>
     </>
   );
@@ -696,5 +733,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
     paddingHorizontal: 20,
+  },
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+    alignItems: 'flex-end',
+    paddingTop: 60,
+    paddingRight: 20,
+  },
+  deleteMenu: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    minWidth: 150,
+  },
+  deleteMenuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  deleteMenuText: {
+    color: colors.error,
+    fontFamily: typography.p1Bold.fontFamily,
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
