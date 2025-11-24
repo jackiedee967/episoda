@@ -43,6 +43,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Modular & Component-Based**: Organized into logical directories with reusable UI components.
 - **PostModal Flow**: Guides users through selecting a show, fetching/validating episodes, saving to DB, creating a post, and redirecting. Supports custom tags and a half-star rating system.
 - **Account Management**: Account deletion and phone number change features.
+- **Invite Friends System**: Two-trigger invite modal: (1) Profile share button shows modal before iOS share sheet, (2) One-time automatic modal after 5 minutes cumulative app usage. Built with `InviteFriendsModal` component and `useAppUsageTracker` hook using AsyncStorage persistence and ref-based state tracking to prevent stale closures.
 
 ### System Design Choices
 - **Development vs Production**: Single Supabase production instance (mb wuoqoktdgudzaemjhx). Future recommendation: Create separate dev instance for safe testing.
@@ -94,3 +95,4 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 ### Recent Updates
 - **2024-11**: Fixed routing timing issue causing blank screen on Expo web by adding `segments.length` check before redirects (prevents router.replace before segments mount)
 - **2024-11**: Migrated Supabase credentials from hardcoded fallbacks to EXPO_PUBLIC_ environment variables for production safety
+- **2024-11**: Implemented invite friends feature with dual triggers: profile share button flow and one-time 5-minute usage milestone. Fixed critical stale closure bugs in usage tracker by using refs for authoritative state.
