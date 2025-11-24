@@ -255,26 +255,52 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                     </Pressable>
                     
                     {isOwnPlaylist ? (
-                      <Pressable
-                        style={styles.removeButton}
-                        onPress={() => {
+                      <div
+                        onClick={() => {
                           console.log('🔥 Trash icon clicked for show:', show.id);
                           handleRemoveShow(show.id);
                         }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          width: 30,
+                          height: 30,
+                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                          borderRadius: 12,
+                          padding: 6,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          zIndex: 100,
+                        }}
                       >
                         <Trash2 size={18} color="#EF4444" />
-                      </Pressable>
+                      </div>
                     ) : (
-                      <Pressable
-                        style={styles.bookmarkIconContainer}
-                        onPress={() => {
+                      <div
+                        onClick={() => {
                           console.log('🔥 Bookmark icon clicked');
                         }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          width: 30,
+                          height: 30,
+                          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                          borderRadius: 12,
+                          padding: 6,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          zIndex: 100,
+                        }}
                       >
                         <Bookmark size={18} color={tokens.colors.black} fill={tokens.colors.black} />
-                      </Pressable>
+                      </div>
                     )}
                     
                     <Text style={styles.showTitle} numberOfLines={2}>

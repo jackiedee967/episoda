@@ -654,16 +654,22 @@ export default function ProfileScreen() {
                 </Pressable>
                 {isOwnPlaylist && (
                   <View style={styles.playlistMenuWrapper}>
-                    <Pressable
-                      style={styles.playlistMenuButton}
-                      onPress={() => {
+                    <div
+                      onClick={() => {
                         console.log('🔥 Three dots clicked for playlist:', playlist.id);
                         handleDeletePlaylist(playlist.id, playlist.name);
                       }}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
                     >
                       <MoreHorizontal size={20} color={colors.almostWhite} />
-                    </Pressable>
+                    </div>
                   </View>
                 )}
               </View>
