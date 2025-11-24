@@ -637,34 +637,34 @@ export default function ProfileScreen() {
             const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
               <View key={playlist.id} style={styles.playlistRow}>
-                <View style={styles.playlistContainer}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.playlistItem,
-                      pressed ? styles.playlistItemPressed : null,
-                    ]}
-                    onPress={() => handlePlaylistPress(playlist.id)}
-                  >
-                    <View style={styles.playlistInfo}>
-                      <Text style={styles.playlistName}>{playlist.name}</Text>
-                      <Text style={styles.playlistCount}>
-                        {showCount} {showCount === 1 ? 'show' : 'shows'}
-                      </Text>
-                    </View>
-                    {isOwnPlaylist && <View style={styles.playlistSpacer} />}
-                  </Pressable>
-                </View>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.playlistItem,
+                    pressed ? styles.playlistItemPressed : null,
+                    isOwnPlaylist && styles.playlistItemWithMenu,
+                  ]}
+                  onPress={() => handlePlaylistPress(playlist.id)}
+                >
+                  <View style={styles.playlistInfo}>
+                    <Text style={styles.playlistName}>{playlist.name}</Text>
+                    <Text style={styles.playlistCount}>
+                      {showCount} {showCount === 1 ? 'show' : 'shows'}
+                    </Text>
+                  </View>
+                </Pressable>
                 {isOwnPlaylist && (
-                  <Pressable
-                    style={styles.playlistMenuButton}
-                    onPress={() => {
-                      console.log('🔥 Three dots clicked for playlist:', playlist.id);
-                      handleDeletePlaylist(playlist.id, playlist.name);
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <MoreHorizontal size={20} color={colors.almostWhite} />
-                  </Pressable>
+                  <View style={styles.playlistMenuWrapper}>
+                    <Pressable
+                      style={styles.playlistMenuButton}
+                      onPress={() => {
+                        console.log('🔥 Three dots clicked for playlist:', playlist.id);
+                        handleDeletePlaylist(playlist.id, playlist.name);
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <MoreHorizontal size={20} color={colors.almostWhite} />
+                    </Pressable>
+                  </View>
                 )}
               </View>
             );
@@ -1079,11 +1079,11 @@ const styles = StyleSheet.create({
   playlistRow: {
     position: 'relative',
     marginBottom: 12,
-  },
-  playlistContainer: {
-    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   playlistItem: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1093,21 +1093,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardStroke,
   },
+  playlistItemWithMenu: {
+    paddingRight: 56,
+  },
   playlistItemPressed: {
     opacity: 0.7,
   },
-  playlistMenuButton: {
+  playlistMenuWrapper: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playlistMenuButton: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
-  },
-  playlistSpacer: {
-    width: 40,
   },
   playlistInfo: {
     flex: 1,
