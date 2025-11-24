@@ -681,12 +681,12 @@ const styles = StyleSheet.create({
   },
   communityPostHeader: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   communityPostAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   communityPostHeaderText: {
     flex: 1,
@@ -695,24 +695,24 @@ const styles = StyleSheet.create({
   communityPostUserRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   communityPostUsername: {
-    ...typography.subtitle,
+    ...typography.p1M,
     color: colors.text,
   },
   adminBadge: {
     backgroundColor: colors.purple,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   adminBadgeText: {
-    ...typography.p3Bold,
+    ...typography.p3B,
     color: colors.background,
   },
   communityPostTimestamp: {
-    ...typography.p1,
+    ...typography.p3R,
     color: colors.textSecondary,
   },
   communityPostTitle: {
