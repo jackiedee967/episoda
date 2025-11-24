@@ -32,12 +32,6 @@ export interface Show {
   totalSeasons: number;
   totalEpisodes: number;
   friendsWatching: number;
-  mutualFriendsWatching?: Array<{
-    id: string;
-    avatar?: string;
-    displayName?: string;
-    username?: string;
-  }>;
   colorScheme?: string | null;
 }
 

@@ -38,8 +38,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Authentication Flow**: Robust 7-screen onboarding with progressive data collection.
 - **Episode Metadata Refresh System**: Production-grade automatic refresh system using `upsertEpisodeMetadata()` for constant synchronization. Background refresh fetches all metadata from Trakt API in a single batch, enriched with TVMaze artwork. Database-first approach for episode counts and optimized map-based lookups.
 - **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, and custom profile tab display.
-- **Standardized Poster Format (App-Wide)**: Consistent vertical poster layout across Homepage, Explore, and Search pages. Features mutual friends avatars in top-left corner using BaseFriends component, bookmark icon in top-right, show title below poster (2-line truncation), and release year below title with robust multi-source fallback. Uses stable traktId-based key generation for grid virtualization and correct bookmark state handling.
-- **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, Show Hub, Explore Page, and Search Page.
+- **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, Show Hub, and Explore Page.
 - **Modular & Component-Based**: Organized into logical directories with reusable UI components.
 - **PostModal Flow**: Guides users through selecting a show, fetching/validating episodes, saving to DB, creating a post, and redirecting. Supports custom tags and a half-star rating system.
 - **Account Management**: Account deletion and phone number change features.

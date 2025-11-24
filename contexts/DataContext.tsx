@@ -1170,7 +1170,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         // Step 3: Batch fetch all related data (scoped to these 100 posts)
-        const [usersResult, showsResult, episodesResult, likesResult, userLikesResult, followsResult] = await Promise.all([
+        const [usersResult, showsResult, episodesResult, likesResult, userLikesResult] = await Promise.all([
           // Fetch all user profiles
           supabase.from('profiles' as any).select('*').in('user_id', uniqueUserIds),
           // Fetch all shows
@@ -1181,8 +1181,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
           supabase.from('post_likes').select('post_id').in('post_id', postIds),
           // Fetch current user's likes ONLY for these posts
           supabase.from('post_likes').select('post_id').eq('user_id', authUserId).in('post_id', postIds),
-          // Fetch current user's following list
-          (supabase as any).from('follows').select('following_id').eq('follower_id', authUserId),
         ]);
         
         // Comments removed - no comments table in schema, count stored in posts.comments column
@@ -1255,35 +1253,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
             }
           });
         }
-
-        // Calculate mutual friends watching for each show
-        const followingIds = new Set((followsResult.data || []).map((f: any) => f.following_id));
-        const showMutualFriendsMap = new Map<string, any[]>();
-        
-        postsData.forEach((post: any) => {
-          const showId = post.show_id;
-          const postUserId = post.user_id;
-          
-          // If the post author is someone the user follows, add them to the show's mutual friends
-          if (followingIds.has(postUserId)) {
-            if (!showMutualFriendsMap.has(showId)) {
-              showMutualFriendsMap.set(showId, []);
-            }
-            
-            const mutualFriends = showMutualFriendsMap.get(showId)!;
-            const userProfile = usersMap.get(postUserId);
-            
-            // Only add if not already in the list (avoid duplicates)
-            if (userProfile && !mutualFriends.some(f => f.id === postUserId)) {
-              mutualFriends.push({
-                id: userProfile.id,
-                avatar: userProfile.avatar,
-                displayName: userProfile.displayName,
-                username: userProfile.username,
-              });
-            }
-          }
-        });
 
         const showsMap = new Map();
         (showsResult.data || []).forEach((show: any) => {
@@ -1371,7 +1340,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
               totalSeasons: showData?.total_seasons || 0,
               totalEpisodes: showData?.total_episodes || 0,
               friendsWatching: 0,
-              mutualFriendsWatching: showMutualFriendsMap.get(dbPost.show_id) || [],
               traktId: showData?.trakt_id,
               colorScheme: showData?.color_scheme || null,
             },

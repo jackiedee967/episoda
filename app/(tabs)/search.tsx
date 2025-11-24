@@ -26,7 +26,6 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
-import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo, getShowsByGenre } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
@@ -1631,10 +1630,7 @@ export default function SearchScreen() {
   const getKeyExtractor = useCallback((item: any, index: number) => {
     switch (activeCategory) {
       case 'shows':
-        // Generate stable keys - try show.id first, then traktId from multiple sources
-        if (item.id) return item.id;
-        const traktId = item.traktId ?? item.traktShow?.ids?.trakt ?? item.traktDetails?.ids?.trakt;
-        return traktId ? `trakt-${traktId}` : `show-${index}`;
+        return item.id || `show-${index}`;
       case 'posts':
         return item.id || `post-${index}`;
       case 'comments':
@@ -1868,91 +1864,94 @@ export default function SearchScreen() {
 
       case 'shows':
         const show = item;
-        const stableTraktId = show.traktId ?? show.traktShow?.ids?.trakt ?? show.traktDetails?.ids?.trakt;
-        const isEnriching = stableTraktId ? enrichingShows.has(stableTraktId) : false;
-        const mutualFriendsWatching = show.mutualFriendsWatching || [];
-        const traktShow = show.traktShow ?? traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
-        const releaseYear = traktShow?.year || show.releaseYear || show.year || (show.firstAired ? new Date(show.firstAired).getFullYear() : undefined);
-        const stableKey = show.id || (stableTraktId ? `trakt-${stableTraktId}` : `show-${index}`);
-        
-        return (
-          <FadeInView key={stableKey} delay={index * 30}>
-            <Pressable
-              style={({ pressed }) => [styles.searchShowCard, pressed && styles.pressed]}
-              onPress={async () => {
-                console.log('🎬 Show card pressed:', show.title);
-                console.log('📊 Show data:', JSON.stringify(show, null, 2));
-                
-                try {
-                  setIsSavingShow(true);
-                  const traktShowData = traktShow || traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
-                  
-                  if (!traktShowData) {
-                    console.error('❌ Trakt show data not found for:', show.title);
-                    setIsSavingShow(false);
-                    return;
-                  }
+        const traktId = traktShowResults.results.find(r => r.show.id === show.id)?.traktShow.ids.trakt;
+        const isEnriching = traktId ? enrichingShows.has(traktId) : false;
 
-                  const enrichedInfo = traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.enrichedData;
-                  
-                  console.log('💾 Saving show to database (quick save with retry logic)...');
-                  const dbShow = await saveShow(traktShowData, {
-                    enrichedPosterUrl: enrichedInfo?.posterUrl,
-                    enrichedBackdropUrl: enrichedInfo?.backdropUrl,
-                    enrichedSeasonCount: enrichedInfo?.totalSeasons,
-                    enrichedTVMazeId: enrichedInfo?.tvmazeId,
-                    enrichedImdbId: enrichedInfo?.imdbId
-                  });
-                  console.log('✅ Show saved with DB UUID:', dbShow.id);
-                  
-                  console.log('🚀 Navigating to ShowHub with UUID:', dbShow.id);
-                  router.push(`/show/${dbShow.id}`);
-                } catch (error) {
-                  console.error('❌ Error navigating to show:', error);
-                } finally {
-                  setIsSavingShow(false);
-                }
-              }}
-            >
-              <View style={styles.searchPosterContainer}>
-                <FadeInImage 
-                  source={{ uri: getPosterUrl(show.poster, show.title) }} 
-                  style={styles.searchPoster}
-                  priority="high"
-                  cachePolicy="memory-disk"
-                  contentFit="cover"
-                />
-                {isEnriching && (
-                  <View style={styles.enrichingOverlay}>
-                    <ActivityIndicator size="small" color={tokens.colors.green} />
-                  </View>
-                )}
-                
-                <Pressable
-                  style={styles.saveButton}
-                  onPress={(e) => handleSavePress(show, e)}
-                >
-                  <IconSymbol
-                    name={isShowSaved(show.id || stableKey) ? "bookmark.fill" : "bookmark"}
-                    size={20}
-                    color={isShowSaved(show.id || stableKey) ? tokens.colors.green : tokens.colors.grey1}
-                  />
-                </Pressable>
-              </View>
+        return (
+          <FadeInView key={show.id} delay={index * 30}>
+            <Pressable
+              style={({ pressed }) => [styles.showCard, pressed && styles.pressed]}
+              onPress={async () => {
+              console.log('🎬 Show card pressed:', show.title);
+              console.log('📊 Show data:', JSON.stringify(show, null, 2));
               
-              <View style={styles.searchShowInfo}>
-                <Text style={styles.searchShowTitle} numberOfLines={1}>
-                  {show.title}
-                </Text>
-                {releaseYear && (
-                  <Text style={styles.searchShowYear}>{releaseYear}</Text>
-                )}
-                {mutualFriendsWatching.length > 0 && (
-                  <Text style={styles.friendsWatchingText}>
-                    {mutualFriendsWatching.length} {mutualFriendsWatching.length === 1 ? 'friend' : 'friends'} watching
-                  </Text>
-                )}
+              try {
+                setIsSavingShow(true);
+                const traktShow = traktShowResults.results.find(r => r.show.id === show.id)?.traktShow;
+                
+                if (!traktShow) {
+                  console.error('❌ Trakt show data not found for:', show.title);
+                  setIsSavingShow(false);
+                  return;
+                }
+
+                const enrichedInfo = traktShowResults.results.find(r => r.show.id === show.id)?.enrichedData;
+                
+                console.log('💾 Saving show to database (quick save with retry logic)...');
+                const dbShow = await saveShow(traktShow, {
+                  enrichedPosterUrl: enrichedInfo?.posterUrl,
+                  enrichedBackdropUrl: enrichedInfo?.backdropUrl,
+                  enrichedSeasonCount: enrichedInfo?.totalSeasons,
+                  enrichedTVMazeId: enrichedInfo?.tvmazeId,
+                  enrichedImdbId: enrichedInfo?.imdbId
+                });
+                console.log('✅ Show saved with DB UUID:', dbShow.id);
+                
+                console.log('🚀 Navigating to ShowHub with UUID:', dbShow.id);
+                router.push(`/show/${dbShow.id}`);
+              } catch (error) {
+                console.error('❌ Error navigating to show:', error);
+              } finally {
+                setIsSavingShow(false);
+              }
+            }}
+          >
+            <View style={styles.showPosterContainer}>
+              <FadeInImage 
+                source={{ uri: getPosterUrl(show.poster, show.title) }} 
+                style={styles.showPoster}
+                priority="high"
+                cachePolicy="memory-disk"
+                contentFit="cover"
+              />
+              {isEnriching ? (
+                <View style={styles.enrichingOverlay}>
+                  <ActivityIndicator size="small" color={tokens.colors.green} />
+                </View>
+              ) : null}
+              <Pressable
+                style={styles.saveButton}
+                onPress={(e) => handleSavePress(show, e)}
+              >
+                <IconSymbol
+                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"}
+                  size={20}
+                  color={isShowSaved(show.id) ? tokens.colors.green : tokens.colors.grey1}
+                />
+              </Pressable>
+            </View>
+            <View style={styles.showInfo}>
+              <Text style={styles.showTitle} numberOfLines={1}>
+                {show.title}
+              </Text>
+              <Text style={styles.showDescription} numberOfLines={2}>
+                {show.description}
+              </Text>
+              <View style={styles.showStats}>
+                <View style={styles.stat}>
+                  <IconSymbol name="star.fill" size={14} color="#8bfc76" />
+                  <Text style={styles.statText}>{convertToFiveStarRating(show.rating).toFixed(1)}</Text>
+                </View>
+                <Text style={styles.statText}>{show.totalSeasons} Seasons</Text>
+                <Text style={styles.statText}>{show.totalEpisodes} Episodes</Text>
               </View>
+              {show.friendsWatching > 0 ? (
+                <View style={styles.friendsRow}>
+                  <IconSymbol name="person.2.fill" size={12} color={tokens.colors.grey1} />
+                  <Text style={styles.friendsText}>{show.friendsWatching} friends watching</Text>
+                </View>
+              ) : null}
+            </View>
             </Pressable>
           </FadeInView>
         );
@@ -2719,35 +2718,37 @@ const styles = StyleSheet.create({
     color: tokens.colors.grey1,
     textAlign: 'center',
   },
+  showCard: {
+    flexDirection: 'row',
+    backgroundColor: tokens.colors.cardBackground,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    padding: 11,
+    gap: 17,
+  },
   pressed: {
     opacity: 0.8,
   },
-  // Horizontal card layout for search results
-  searchShowCard: {
-    flexDirection: 'row',
-    width: '100%',
-    paddingTop: 9,
-    paddingLeft: 11,
-    paddingBottom: 9,
-    paddingRight: 11,
-    alignItems: 'center',
-    columnGap: 17,
-    borderRadius: 10,
-    borderWidth: 0.5,
-    borderStyle: 'solid',
-    borderColor: tokens.colors.cardStroke,
-    backgroundColor: tokens.colors.cardBackground,
-    marginBottom: 12,
-  },
-  searchPosterContainer: {
+  showPosterContainer: {
     position: 'relative',
-    width: 80,
-    height: 99,
+    width: 80.34,
+    height: 98.79,
   },
-  searchPoster: {
-    width: 80,
-    height: 99,
+  showPoster: {
+    width: 80.34,
+    height: 98.79,
     borderRadius: 8,
+  },
+  placeholderPoster: {
+    width: 80.34,
+    height: 98.79,
+    borderRadius: 8,
+    backgroundColor: tokens.colors.cardBackground,
+    borderWidth: 0.5,
+    borderColor: tokens.colors.cardStroke,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   enrichingOverlay: {
     position: 'absolute',
@@ -2775,25 +2776,43 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
   },
-  searchShowInfo: {
+  showInfo: {
     flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    rowGap: 4,
   },
-  searchShowTitle: {
-    ...tokens.typography.p1SB,
+  showTitle: {
+    ...tokens.typography.subtitle,
     color: tokens.colors.pureWhite,
-    width: '100%',
+    marginBottom: 4,
   },
-  searchShowYear: {
+  showDescription: {
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    lineHeight: 15.6,
+    marginBottom: 8,
+  },
+  showStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: {
     ...tokens.typography.p3M,
     color: tokens.colors.grey1,
   },
-  friendsWatchingText: {
+  friendsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  friendsText: {
     ...tokens.typography.p3M,
-    color: tokens.colors.grey2,
+    color: tokens.colors.grey1,
   },
   userCardWrapper: {
     marginBottom: 12,

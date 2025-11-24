@@ -9,20 +9,13 @@ import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import PlaylistModal from '@/components/PlaylistModal';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
-import { Friends as BaseFriends } from './ui-pages/base/friends';
 
 interface ShowCardProps {
   show: Show;
   friends?: User[];
-  mutualFriendsWatching?: Array<{
-    id: string;
-    avatar?: string;
-    displayName?: string;
-    username?: string;
-  }>;
 }
 
-export default function ShowCard({ show, friends = [], mutualFriendsWatching = [] }: ShowCardProps) {
+export default function ShowCard({ show, friends = [] }: ShowCardProps) {
   const router = useRouter();
   const [playlistModalVisible, setPlaylistModalVisible] = React.useState(false);
   const [isInPlaylist, setIsInPlaylist] = React.useState(false);
@@ -76,6 +69,60 @@ export default function ShowCard({ show, friends = [], mutualFriendsWatching = [
     console.log(`Show ${showId} added to playlist ${playlistId}`);
   };
 
+  const renderFriendsWatchingPill = () => {
+    const validFriends = friends.filter(f => f && f.id);
+    const displayFriends = validFriends.slice(0, 3);
+    const remainingCount = Math.max(0, (show?.friendsWatching || 0) - displayFriends.length);
+
+    if (displayFriends.length === 0) {
+      return null;
+    }
+
+    // Build the text
+    let friendsText = '';
+    if (displayFriends.length > 0) {
+      friendsText = displayFriends[0].displayName || 'Friend';
+      if (remainingCount > 0) {
+        friendsText += ` and ${remainingCount} friend${remainingCount > 1 ? 's' : ''} watching`;
+      } else if (displayFriends.length === 1) {
+        friendsText += ' watching';
+      } else {
+        friendsText += ` and ${displayFriends.length - 1} other${displayFriends.length - 1 > 1 ? 's' : ''} watching`;
+      }
+    }
+
+    return (
+      <View style={styles.friendsPill}>
+        <View style={styles.pillAvatarRow}>
+          {displayFriends.map((friend, index) => (
+            <Pressable
+              key={friend.id}
+              onPress={(e) => handleFriendPress(friend.id, e)}
+            >
+              {friend.avatar ? (
+                <Image
+                  source={{ uri: friend.avatar }}
+                  style={[styles.pillAvatar, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
+                />
+              ) : (
+                <View
+                  style={[styles.pillAvatar, styles.pillAvatarPlaceholder, { marginLeft: index > 0 ? -6 : 0, zIndex: displayFriends.length - index }]}
+                >
+                  <Text style={styles.pillAvatarPlaceholderText}>
+                    {friend.displayName?.charAt(0) || '?'}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.pillText} numberOfLines={1}>
+          {friendsText}
+        </Text>
+      </View>
+    );
+  };
+
   if (!show) {
     console.log('ShowCard: show is undefined');
     return null;
@@ -93,17 +140,6 @@ export default function ShowCard({ show, friends = [], mutualFriendsWatching = [
         <View style={styles.posterWrapper}>
           <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} />
           
-          {/* Mutual Friends Watching - Top Left */}
-          {mutualFriendsWatching && mutualFriendsWatching.length > 0 && (
-            <View style={styles.mutualFriendsOverlay}>
-              <BaseFriends
-                prop="Small"
-                state="Mutual_Friends"
-                friends={mutualFriendsWatching}
-              />
-            </View>
-          )}
-          
           {/* Save Icon */}
           <Pressable 
             style={({ pressed }) => [
@@ -118,6 +154,9 @@ export default function ShowCard({ show, friends = [], mutualFriendsWatching = [
               color={tokens.colors.pureWhite} 
             />
           </Pressable>
+
+          {/* Friends Watching Pill - Overlaid on poster */}
+          {renderFriendsWatchingPill()}
         </View>
       </Pressable>
 
@@ -174,10 +213,45 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
   },
-  mutualFriendsOverlay: {
+  // Friends Watching Pill - Overlaid on poster
+  friendsPill: {
     position: 'absolute',
-    top: 12,
+    bottom: 12,
     left: 12,
-    zIndex: 10,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    gap: 8,
+  },
+  pillAvatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pillAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: tokens.colors.pureWhite,
+  },
+  pillAvatarPlaceholder: {
+    backgroundColor: colors.purple,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pillAvatarPlaceholderText: {
+    color: tokens.colors.pureWhite,
+    fontSize: 9,
+    fontWeight: '600',
+  },
+  pillText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: tokens.colors.pureWhite,
+    flex: 1,
   },
 });

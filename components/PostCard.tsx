@@ -13,7 +13,6 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import FadeInImage from './FadeInImage';
 import { getShowColorScheme } from '@/utils/showColors';
-import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -163,16 +162,6 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
       <View style={styles.userPostInfo}>
         <Pressable onPress={handleShowPress} style={styles.showPosterContainer}>
           <FadeInImage source={{ uri: getPosterUrl(latestPost.show.poster, latestPost.show.title) }} style={styles.showPoster} contentFit="cover" />
-          
-          {latestPost.show.mutualFriendsWatching && latestPost.show.mutualFriendsWatching.length > 0 && (
-            <View style={styles.mutualFriendsOverlay}>
-              <BaseFriends
-                prop="Small"
-                state="Mutual_Friends"
-                friends={latestPost.show.mutualFriendsWatching}
-              />
-            </View>
-          )}
         </Pressable>
 
         <View style={styles.contentContainer}>
@@ -320,7 +309,6 @@ const styles = StyleSheet.create({
     gap: 13,
   },
   showPosterContainer: {
-    position: 'relative',
     width: 56,
     height: 75,
   },
@@ -328,12 +316,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 75,
     borderRadius: 8,
-  },
-  mutualFriendsOverlay: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    zIndex: 10,
   },
   contentContainer: {
     flex: 1,
