@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     ...typography.p1Bold,
   },
   title: {
-    ...typography.title,
+    ...typography.titleL,
     color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 20,
@@ -682,6 +682,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   commentInputContainer: {
+    width: '100%',
     paddingVertical: 12,
     backgroundColor: tokens.colors.pureWhite,
     borderTopWidth: 1,
