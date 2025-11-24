@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import { ChevronDown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/integrations/supabase/client';
@@ -234,8 +234,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.p1B,
     color: colors.text,
   },
   input: {
@@ -244,7 +243,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
-    fontSize: 15,
+    ...typography.p1,
     color: colors.text,
   },
   textArea: {
@@ -268,9 +267,8 @@ const styles = StyleSheet.create({
   },
   categoryButtonText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.p1,
     color: colors.text,
-    fontWeight: '500',
   },
   createButton: {
     backgroundColor: colors.purple,
@@ -283,8 +281,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   createButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.subtitle,
     color: colors.background,
   },
   modalOverlay: {
@@ -302,8 +299,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.titleS,
     color: colors.text,
     marginBottom: 16,
   },
@@ -316,13 +312,11 @@ const styles = StyleSheet.create({
   },
   categoryOptionText: {
     flex: 1,
-    fontSize: 15,
+    ...typography.p1,
     color: colors.text,
-    fontWeight: '500',
   },
   checkmark: {
-    fontSize: 18,
+    ...typography.titleS,
     color: colors.purple,
-    fontWeight: '700',
   },
 });

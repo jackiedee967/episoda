@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
 import { isAdmin } from '@/config/admins';
@@ -151,16 +151,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...typography.smallSubtitle,
     color: colors.error,
   },
   inputGroup: {
     gap: 8,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.p1B,
     color: colors.text,
   },
   input: {
@@ -169,7 +167,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 12,
     padding: 16,
-    fontSize: 15,
+    ...typography.p1,
     color: colors.text,
   },
   textArea: {
