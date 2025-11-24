@@ -83,7 +83,7 @@ export default function CreatePostScreen() {
       if (typeof window !== 'undefined') {
         window.alert('Your post has been created!');
       }
-      router.back();
+      router.replace('/settings/help?refresh=true');
     } catch (error) {
       console.error('Error creating post:', error);
       if (typeof window !== 'undefined') {

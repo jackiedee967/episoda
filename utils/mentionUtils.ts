@@ -112,6 +112,44 @@ export async function saveCommentMentions(
 }
 
 /**
+ * Save help desk comment mentions to database
+ */
+export async function saveHelpDeskCommentMentions(
+  commentId: string,
+  usernames: string[]
+): Promise<boolean> {
+  if (usernames.length === 0) {
+    return true;
+  }
+
+  try {
+    const userMap = await getUserIdsByUsernames(usernames);
+
+    const mentions = Array.from(userMap.entries()).map(([username, userId]) => ({
+      comment_id: commentId,
+      mentioned_user_id: userId,
+      mentioned_username: username,
+    }));
+
+    if (mentions.length > 0) {
+      const { error } = await supabase
+        .from('help_desk_comment_mentions')
+        .insert(mentions);
+
+      if (error) {
+        console.error('Error saving help desk comment mentions:', error);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in saveHelpDeskCommentMentions:', error);
+    return false;
+  }
+}
+
+/**
  * Create notifications for mentioned users
  */
 export async function createMentionNotifications(

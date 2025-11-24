@@ -1,8 +1,8 @@
 
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { colors, typography } from '@/styles/commonStyles';
-import { Heart, MessageCircle, Plus } from 'lucide-react-native';
+import { Heart, MessageCircle, Plus, Trash2 } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Asset } from 'expo-asset';
 import {
@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   ImageBackground,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -48,15 +49,25 @@ const normalizeCategory = (category: string): HelpDeskCategory => {
 export default function HelpDeskScreen() {
   const router = useRouter();
   const { currentUser } = useData();
+  const { refresh } = useLocalSearchParams();
   const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState<HelpDeskPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const userIsAdmin = isAdmin(currentUser?.id);
 
   useEffect(() => {
     loadPosts();
+    loadUserLikes();
   }, []);
+
+  useEffect(() => {
+    if (refresh) {
+      loadPosts();
+      loadUserLikes();
+    }
+  }, [refresh]);
 
   const loadPosts = async () => {
     try {
@@ -83,10 +94,95 @@ export default function HelpDeskScreen() {
     }
   };
 
+  const loadUserLikes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('help_desk_post_likes')
+        .select('post_id')
+        .eq('user_id', currentUser.id);
+
+      if (error) throw error;
+
+      const likedPostIds = new Set(data?.map(like => like.post_id) || []);
+      setLikedPosts(likedPostIds);
+    } catch (error) {
+      console.error('Error loading user likes:', error);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadPosts();
+    await Promise.all([loadPosts(), loadUserLikes()]);
     setRefreshing(false);
+  };
+
+  const handleLike = async (postId: string, e?: any) => {
+    if (e) e.stopPropagation();
+    
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      const isLiked = likedPosts.has(postId);
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (isLiked) {
+        // Unlike
+        const { error: deleteError } = await supabase
+          .from('help_desk_post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', currentUser.id);
+
+        if (deleteError) throw deleteError;
+
+        // Update likes_count in posts table
+        const { error: updateError } = await supabase
+          .from('help_desk_posts')
+          .update({ likes_count: post.likes_count - 1 })
+          .eq('id', postId);
+
+        if (updateError) throw updateError;
+
+        // Update local state
+        setLikedPosts(prev => {
+          const updated = new Set(prev);
+          updated.delete(postId);
+          return updated;
+        });
+
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, likes_count: p.likes_count - 1 } : p
+        ));
+      } else {
+        // Like
+        const { error: insertError } = await supabase
+          .from('help_desk_post_likes')
+          .insert({
+            post_id: postId,
+            user_id: currentUser.id,
+          });
+
+        if (insertError) throw insertError;
+
+        // Update likes_count in posts table
+        const { error: updateError } = await supabase
+          .from('help_desk_posts')
+          .update({ likes_count: post.likes_count + 1 })
+          .eq('id', postId);
+
+        if (updateError) throw updateError;
+
+        // Update local state
+        setLikedPosts(prev => new Set(prev).add(postId));
+
+        setPosts(prev => prev.map(p =>
+          p.id === postId ? { ...p, likes_count: p.likes_count + 1 } : p
+        ));
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
   };
 
   const handleCreatePost = () => {
@@ -102,6 +198,44 @@ export default function HelpDeskScreen() {
   const handlePostPress = (postId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(`/settings/help/post/${postId}`);
+  };
+
+  const handleDeletePost = async (postId: string, e?: any) => {
+    if (e) e.stopPropagation();
+    
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              
+              const { error } = await supabase
+                .from('help_desk_posts')
+                .delete()
+                .eq('id', postId);
+
+              if (error) throw error;
+
+              // Reload posts after deletion
+              await loadPosts();
+              await loadUserLikes();
+            } catch (error) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -141,75 +275,126 @@ export default function HelpDeskScreen() {
   const adminPosts = posts.filter(p => p.category === 'Admin Announcement');
   const communityPosts = posts.filter(p => p.category !== 'Admin Announcement');
 
-  const renderAdminCard = (post: HelpDeskPost) => (
-    <Pressable
-      key={post.id}
-      style={styles.adminCard}
-      onPress={() => handlePostPress(post.id)}
-    >
-      <Text style={styles.adminCardTitle}>{post.title}</Text>
-      <Text style={styles.adminCardPreview}>
-        {truncateText(post.details, 100)}
-      </Text>
-      <View style={styles.adminCardFooter}>
-        <View style={styles.adminCardStats}>
-          <Heart size={14} color={colors.textSecondary} />
-          <Text style={styles.adminCardStatText}>{post.likes_count}</Text>
+  const renderAdminCard = (post: HelpDeskPost) => {
+    const isLiked = likedPosts.has(post.id);
+    const canDelete = currentUser.id === post.user_id;
+    
+    return (
+      <Pressable
+        key={post.id}
+        style={styles.adminCard}
+        onPress={() => handlePostPress(post.id)}
+      >
+        <View style={styles.adminCardHeader}>
+          <Text style={styles.adminCardTitle}>{post.title}</Text>
+          {canDelete && (
+            <Pressable
+              style={styles.deleteButton}
+              onPress={(e) => handleDeletePost(post.id, e)}
+            >
+              <Trash2 size={16} color={colors.textSecondary} />
+            </Pressable>
+          )}
         </View>
-        <View style={styles.adminCardStats}>
-          <MessageCircle size={14} color={colors.textSecondary} />
-          <Text style={styles.adminCardStatText}>{post.comments_count}</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-
-  const renderCommunityPost = (post: HelpDeskPost) => (
-    <Pressable
-      key={post.id}
-      style={styles.communityPost}
-      onPress={() => handlePostPress(post.id)}
-    >
-      <View style={styles.communityPostHeader}>
-        <Image
-          source={{ uri: currentUser.avatar }}
-          style={styles.communityPostAvatar}
-        />
-        <View style={styles.communityPostHeaderText}>
-          <View style={styles.communityPostUserRow}>
-            <Text style={styles.communityPostUsername}>{post.username}</Text>
-            {post.username === 'jvckie' ? (
-              <View style={styles.adminBadge}>
-                <Text style={styles.adminBadgeText}>Team</Text>
-              </View>
-            ) : null}
+        <Text style={styles.adminCardPreview}>
+          {truncateText(post.details, 100)}
+        </Text>
+        <View style={styles.adminCardFooter}>
+          <Pressable 
+            style={styles.adminCardStats}
+            onPress={(e) => handleLike(post.id, e)}
+          >
+            <Heart 
+              size={14} 
+              color={isLiked ? colors.error : colors.textSecondary}
+              fill={isLiked ? colors.error : 'none'}
+            />
+            <Text style={styles.adminCardStatText}>{post.likes_count}</Text>
+          </Pressable>
+          <View style={styles.adminCardStats}>
+            <MessageCircle size={14} color={colors.textSecondary} />
+            <Text style={styles.adminCardStatText}>{post.comments_count}</Text>
           </View>
-          <Text style={styles.communityPostTimestamp}>
-            {formatTimestamp(post.created_at)}
-          </Text>
         </View>
-      </View>
+      </Pressable>
+    );
+  };
 
-      <Text style={styles.communityPostTitle}>{post.title}</Text>
-      <Text style={styles.communityPostPreview}>
-        {truncateText(post.details, 120)}
-      </Text>
+  const renderCommunityPost = (post: HelpDeskPost) => {
+    const isLiked = likedPosts.has(post.id);
+    const canDelete = currentUser.id === post.user_id;
+    
+    return (
+      <Pressable
+        key={post.id}
+        style={styles.communityPost}
+        onPress={() => handlePostPress(post.id)}
+      >
+        <View style={styles.communityPostHeader}>
+          <Image
+            source={{ uri: currentUser.avatar }}
+            style={styles.communityPostAvatar}
+          />
+          <View style={styles.communityPostHeaderText}>
+            <View style={styles.communityPostUserRow}>
+              <Text style={styles.communityPostUsername}>{post.username}</Text>
+              {post.username === 'jvckie' ? (
+                <View style={styles.adminBadge}>
+                  <Text style={styles.adminBadgeText}>Team</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={styles.communityPostTimestamp}>
+              {formatTimestamp(post.created_at)}
+            </Text>
+          </View>
+          {canDelete && (
+            <Pressable
+              style={styles.deleteButton}
+              onPress={(e) => handleDeletePost(post.id, e)}
+            >
+              <Trash2 size={16} color={colors.textSecondary} />
+            </Pressable>
+          )}
+        </View>
 
-      <View style={styles.communityPostFooter}>
-        <View style={[styles.categoryTag, { backgroundColor: getCategoryColor(post.category) + '20' }]}>
-          <Text style={[styles.categoryTagText, { color: getCategoryColor(post.category) }]}>
-            {post.category}
-          </Text>
+        <Text style={styles.communityPostTitle}>{post.title}</Text>
+        <Text style={styles.communityPostPreview}>
+          {truncateText(post.details, 120)}
+        </Text>
+
+        <View style={styles.communityPostFooter}>
+          <View style={[
+            styles.categoryTag,
+            {
+              backgroundColor: getCategoryColor(post.category) + '20',
+              borderWidth: 1,
+              borderColor: getCategoryColor(post.category)
+            }
+          ]}>
+            <Text style={[styles.categoryTagText, { color: getCategoryColor(post.category) }]}>
+              {post.category}
+            </Text>
+          </View>
+          <View style={styles.communityPostStats}>
+            <Pressable 
+              style={styles.likeButton}
+              onPress={(e) => handleLike(post.id, e)}
+            >
+              <Heart 
+                size={14} 
+                color={isLiked ? colors.error : colors.textSecondary}
+                fill={isLiked ? colors.error : 'none'}
+              />
+              <Text style={styles.communityPostStatText}>{post.likes_count}</Text>
+            </Pressable>
+            <MessageCircle size={14} color={colors.textSecondary} style={{ marginLeft: 12 }} />
+            <Text style={styles.communityPostStatText}>{post.comments_count}</Text>
+          </View>
         </View>
-        <View style={styles.communityPostStats}>
-          <Heart size={14} color={colors.textSecondary} />
-          <Text style={styles.communityPostStatText}>{post.likes_count}</Text>
-          <MessageCircle size={14} color={colors.textSecondary} style={{ marginLeft: 12 }} />
-          <Text style={styles.communityPostStatText}>{post.comments_count}</Text>
-        </View>
-      </View>
-    </Pressable>
-  );
+      </Pressable>
+    );
+  };
 
   if (loading) {
     return (
@@ -379,13 +564,21 @@ const styles = StyleSheet.create({
   adminCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: colors.border,
     padding: 16,
     width: 280,
     gap: 8,
   },
+  adminCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   adminCardTitle: {
     ...typography.subtitle,
     color: colors.text,
+    flex: 1,
   },
   adminCardPreview: {
     ...typography.p1,
@@ -412,8 +605,13 @@ const styles = StyleSheet.create({
   communityPost: {
     backgroundColor: colors.card,
     borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: colors.border,
     padding: 16,
     gap: 12,
+  },
+  deleteButton: {
+    padding: 4,
   },
   communityPostHeader: {
     flexDirection: 'row',
@@ -480,6 +678,11 @@ const styles = StyleSheet.create({
   communityPostStatText: {
     ...typography.p1,
     color: colors.textSecondary,
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   emptyText: {
     ...typography.p1,

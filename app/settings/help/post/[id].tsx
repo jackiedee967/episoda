@@ -13,7 +13,7 @@ import {
   Alert,
   ImageBackground,
 } from 'react-native';
-import { Heart, MessageCircle, Send } from 'lucide-react-native';
+import { Heart, MessageCircle, Send, Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { colors, typography } from '@/styles/commonStyles';
 import React, { useState, useEffect, useRef } from 'react';
@@ -24,6 +24,9 @@ import { useData } from '@/contexts/DataContext';
 import { Asset } from 'expo-asset';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MentionInput from '@/components/MentionInput';
+import MentionText from '@/components/MentionText';
+import { extractMentions, getUserIdsByUsernames, saveHelpDeskCommentMentions, createMentionNotifications } from '@/utils/mentionUtils';
 
 const appBackground = Asset.fromModule(require('../../../../assets/images/app-background.jpg')).uri;
 
@@ -36,13 +39,16 @@ export default function HelpDeskPostDetailScreen() {
   const [comments, setComments] = useState<HelpDeskComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
+  const [commentMentions, setCommentMentions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
   const commentInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     if (id) {
       loadPost();
       loadComments();
+      loadUserLike();
     }
   }, [id]);
 
@@ -81,25 +87,111 @@ export default function HelpDeskPostDetailScreen() {
     }
   };
 
+  const loadUserLike = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('help_desk_post_likes')
+        .select('id')
+        .eq('post_id', id)
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      setIsLiked(!!data);
+    } catch (error) {
+      console.error('Error loading user like:', error);
+    }
+  };
+
   const handleLike = async () => {
     if (!post) return;
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-      const newLikesCount = post.likes_count + 1;
+      if (isLiked) {
+        // Unlike
+        const { error: deleteError } = await supabase
+          .from('help_desk_post_likes')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', currentUser.id);
 
-      const { error } = await supabase
-        .from('help_desk_posts')
-        .update({ likes_count: newLikesCount })
-        .eq('id', post.id);
+        if (deleteError) throw deleteError;
 
-      if (error) throw error;
+        // Update likes_count in posts table
+        const { error: updateError } = await supabase
+          .from('help_desk_posts')
+          .update({ likes_count: post.likes_count - 1 })
+          .eq('id', post.id);
 
-      setPost({ ...post, likes_count: newLikesCount });
+        if (updateError) throw updateError;
+
+        setIsLiked(false);
+        setPost({ ...post, likes_count: post.likes_count - 1 });
+      } else {
+        // Like
+        const { error: insertError } = await supabase
+          .from('help_desk_post_likes')
+          .insert({
+            post_id: post.id,
+            user_id: currentUser.id,
+          });
+
+        if (insertError) throw insertError;
+
+        // Update likes_count in posts table
+        const { error: updateError } = await supabase
+          .from('help_desk_posts')
+          .update({ likes_count: post.likes_count + 1 })
+          .eq('id', post.id);
+
+        if (updateError) throw updateError;
+
+        setIsLiked(true);
+        setPost({ ...post, likes_count: post.likes_count + 1 });
+      }
     } catch (error) {
-      console.error('Error liking post:', error);
+      console.error('Error toggling like:', error);
     }
+  };
+
+  const handleDeletePost = async () => {
+    if (!post) return;
+    
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              
+              const { error } = await supabase
+                .from('help_desk_posts')
+                .delete()
+                .eq('id', post.id);
+
+              if (error) throw error;
+
+              // Navigate back after successful deletion
+              router.back();
+            } catch (error) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSubmitComment = async () => {
@@ -109,7 +201,7 @@ export default function HelpDeskPostDetailScreen() {
       setSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // AUTHENTICATION BYPASSED - Using mock user
+      // Use authenticated user from session
       const userId = currentUser.id;
       const username = currentUser.username;
 
@@ -126,6 +218,24 @@ export default function HelpDeskPostDetailScreen() {
 
       if (error) throw error;
 
+      // Save mentions to database
+      if (commentMentions.length > 0) {
+        await saveHelpDeskCommentMentions(data.id, commentMentions);
+        
+        // Get user IDs for mentioned users
+        const userMap = await getUserIdsByUsernames(commentMentions);
+        const mentionedUserIds = Array.from(userMap.values());
+        
+        // Create notifications for mentioned users
+        await createMentionNotifications(
+          mentionedUserIds,
+          userId,
+          'mention_comment',
+          post.id,
+          data.id
+        );
+      }
+
       // Update comments count
       const newCommentsCount = post.comments_count + 1;
       await supabase
@@ -136,6 +246,7 @@ export default function HelpDeskPostDetailScreen() {
       setPost({ ...post, comments_count: newCommentsCount });
       setComments([...comments, data]);
       setCommentText('');
+      setCommentMentions([]);
       commentInputRef.current?.blur();
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -220,6 +331,11 @@ export default function HelpDeskPostDetailScreen() {
               <IconSymbol name="chevron.left" size={24} color={colors.text} />
             </Pressable>
             <Text style={styles.pageTitle}>Post</Text>
+            {post && currentUser.id === post.user_id && (
+              <Pressable style={styles.deleteButtonHeader} onPress={handleDeletePost}>
+                <Trash2 size={20} color={colors.textSecondary} />
+              </Pressable>
+            )}
           </View>
 
           {/* Post Header */}
@@ -242,7 +358,14 @@ export default function HelpDeskPostDetailScreen() {
           </View>
 
           {/* Category Tag */}
-          <View style={[styles.categoryTag, { backgroundColor: getCategoryColor(post.category) + '20' }]}>
+          <View style={[
+            styles.categoryTag,
+            {
+              backgroundColor: getCategoryColor(post.category) + '20',
+              borderWidth: 1,
+              borderColor: getCategoryColor(post.category)
+            }
+          ]}>
             <Text style={[styles.categoryTagText, { color: getCategoryColor(post.category) }]}>
               {post.category}
             </Text>
@@ -255,7 +378,11 @@ export default function HelpDeskPostDetailScreen() {
           {/* Post Actions */}
           <View style={styles.actions}>
             <Pressable style={styles.actionButton} onPress={handleLike}>
-              <Heart size={20} color={colors.textSecondary} />
+              <Heart 
+                size={20} 
+                color={isLiked ? colors.error : colors.textSecondary}
+                fill={isLiked ? colors.error : 'none'}
+              />
               <Text style={styles.actionText}>{post.likes_count}</Text>
             </Pressable>
             <View style={styles.actionButton}>
@@ -288,7 +415,11 @@ export default function HelpDeskPostDetailScreen() {
                         {formatTimestamp(comment.created_at)}
                       </Text>
                     </View>
-                    <Text style={styles.commentText}>{comment.text}</Text>
+                    <MentionText 
+                      text={comment.text} 
+                      style={styles.commentText}
+                      mentionColor={colors.greenHighlight}
+                    />
                   </View>
                 </View>
               ))
@@ -300,13 +431,17 @@ export default function HelpDeskPostDetailScreen() {
 
         {/* Comment Input */}
         <View style={styles.commentInputContainer}>
-          <TextInput
-            ref={commentInputRef}
-            style={styles.commentInput}
+          <MentionInput
+            value={commentText}
+            onChangeText={(text, mentions) => {
+              setCommentText(text);
+              setCommentMentions(mentions);
+            }}
+            currentUserId={currentUser.id}
             placeholder="Write a comment..."
             placeholderTextColor={colors.textSecondary}
-            value={commentText}
-            onChangeText={setCommentText}
+            style={styles.commentInput}
+            inputBackgroundColor={colors.background}
             multiline
             maxLength={500}
           />
@@ -365,6 +500,10 @@ const styles = StyleSheet.create({
   pageTitle: {
     ...typography.subtitle,
     color: colors.text,
+    flex: 1,
+  },
+  deleteButtonHeader: {
+    padding: 4,
   },
   postHeader: {
     flexDirection: 'row',
@@ -373,9 +512,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   postHeaderText: {
     flex: 1,
@@ -387,7 +526,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   username: {
-    ...typography.subtitle,
+    ...typography.p1Bold,
     color: colors.text,
   },
   adminBadge: {
@@ -401,7 +540,7 @@ const styles = StyleSheet.create({
     color: colors.background,
   },
   timestamp: {
-    ...typography.p1,
+    ...typography.p2,
     color: colors.textSecondary,
   },
   categoryTag: {
