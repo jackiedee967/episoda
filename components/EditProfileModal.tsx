@@ -168,24 +168,41 @@ export default function EditProfileModal({
 
   const handlePickImage = async () => {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        if (typeof window !== 'undefined') {
-          window.alert('Permission to access photos is required!');
+      if (typeof window !== 'undefined' && window.document) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e: any) => {
+          const file = e.target?.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setAvatarUri(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        input.click();
+      } else {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        
+        if (permissionResult.granted === false) {
+          if (typeof window !== 'undefined') {
+            window.alert('Permission to access photos is required!');
+          }
+          return;
         }
-        return;
-      }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
 
-      if (!result.canceled && result.assets[0]) {
-        setAvatarUri(result.assets[0].uri);
+        if (!result.canceled && result.assets[0]) {
+          setAvatarUri(result.assets[0].uri);
+        }
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -202,14 +219,17 @@ export default function EditProfileModal({
 
       const response = await fetch(uri);
       const blob = await response.blob();
-      const fileExt = uri.split('.').pop() || 'jpg';
+
+      const fileExt = blob.type.split('/')[1] || 'jpg';
       const fileName = `avatar-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
+
+      console.log('Uploading avatar:', { filePath, type: blob.type, size: blob.size });
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, blob, {
-          contentType: `image/${fileExt}`,
+          contentType: blob.type || `image/${fileExt}`,
           upsert: true,
         });
 
@@ -225,6 +245,7 @@ export default function EditProfileModal({
         .from('avatars')
         .getPublicUrl(filePath);
 
+      console.log('Upload successful:', data.publicUrl);
       return data.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
