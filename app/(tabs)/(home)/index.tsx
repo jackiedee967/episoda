@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions, RefreshControl, Share, Alert } from 'react-native';
 import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
+import InviteFriendsModal from '@/components/InviteFriendsModal';
 import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
@@ -19,6 +20,7 @@ import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Post } from '@/types';
 import { getCommunityPosts } from '@/services/communityPosts';
+import { useAppUsageTracker } from '@/hooks/useAppUsageTracker';
 
 type SuggestedUser = User & {
   mutualFriends: Array<{
@@ -46,8 +48,12 @@ export default function HomeScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMorePosts, setHasMorePosts] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  // Track app usage for one-time invite modal
+  const { shouldShowInviteModal, markInviteModalShown } = useAppUsageTracker();
 
   // Calculate poster dimensions dynamically to show exactly 2.5 posters
   const posterDimensions = useMemo(() => {
@@ -115,6 +121,13 @@ export default function HomeScreen() {
     }, 100);
     return () => clearTimeout(timer);
   }, [posts]);
+
+  // Show invite modal after 5 minutes of usage (one time only)
+  useEffect(() => {
+    if (shouldShowInviteModal) {
+      setShowInviteModal(true);
+    }
+  }, [shouldShowInviteModal]);
 
   // Fetch suggested users with mutual friends
   useEffect(() => {
@@ -942,6 +955,39 @@ export default function HomeScreen() {
           onAddToPlaylist={() => {}}
         />
       ) : null}
+
+      <InviteFriendsModal
+        visible={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          markInviteModalShown();
+        }}
+        onInvite={async () => {
+          // Trigger iOS share sheet
+          const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
+          const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
+          
+          try {
+            const result = await Share.share({
+              message: message,
+              url: APP_STORE_URL,
+            });
+
+            if (result.action === Share.sharedAction) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setShowInviteModal(false);
+              markInviteModalShown();
+            }
+          } catch (error) {
+            console.error('Error sharing:', error);
+            if (Platform.OS === 'web') {
+              window.alert('Failed to share.');
+            } else {
+              Alert.alert('Error', 'Failed to share.');
+            }
+          }
+        }}
+      />
     </View>
   );
 }
