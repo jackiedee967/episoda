@@ -17,7 +17,7 @@ import { Heart, MessageCircle, RefreshCw, ChevronLeft, Send, MoreVertical } from
 import CommentCard from '@/components/CommentCard';
 import PostTags from '@/components/PostTags';
 import StarRatings from '@/components/StarRatings';
-import { Comment } from '@/types';
+import { Comment, ReportReason } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import tokens from '@/styles/tokens';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
@@ -30,6 +30,7 @@ import { getShowColorScheme } from '@/utils/showColors';
 import MentionInput from '@/components/MentionInput';
 import MentionText from '@/components/MentionText';
 import { saveCommentMentions, getUserIdsByUsernames, createMentionNotifications, extractMentions } from '@/utils/mentionUtils';
+import BlockReportModal from '@/components/BlockReportModal';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -55,11 +56,13 @@ export default function PostDetail() {
   const [commentMentions, setCommentMentions] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string; textPreview: string } | null>(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
   const canDelete = post && currentUser && post.user.id === currentUser.id;
+  const canReport = post && currentUser && post.user.id !== currentUser.id;
 
   // Load comments from Supabase with likes and replies
   const [rawComments, setRawComments] = useState<any[]>([]);
@@ -547,9 +550,13 @@ export default function PostDetail() {
     setReplyingTo(null);
   };
 
-  const handleDeletePress = () => {
+  const handleMenuPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowDeleteMenu(!showDeleteMenu);
+    if (canDelete) {
+      setShowDeleteMenu(!showDeleteMenu);
+    } else if (canReport) {
+      setShowReportModal(true);
+    }
   };
 
   const handleDeletePost = async () => {
@@ -598,6 +605,34 @@ export default function PostDetail() {
     }
   };
 
+  const handleReportPost = async (reason: ReportReason, details: string) => {
+    try {
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authUser) {
+        Alert.alert('Error', 'You must be logged in to report posts.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('post_reports')
+        .insert({
+          reporter_id: authUser.id,
+          post_id: id as string,
+          reason: reason,
+          details: details || null,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+
+      Alert.alert('Report Submitted', 'Thank you for helping keep our community safe.');
+    } catch (error) {
+      console.error('Error reporting post:', error);
+      Alert.alert('Error', 'Failed to submit report. Please try again.');
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -616,9 +651,9 @@ export default function PostDetail() {
               </Pressable>
               
               <View style={styles.headerRight}>
-                {canDelete ? (
+                {(canDelete || canReport) ? (
                   <Pressable 
-                    onPress={handleDeletePress} 
+                    onPress={handleMenuPress} 
                     style={[styles.menuButton, isDeletingPost && styles.menuButtonDisabled]}
                     disabled={isDeletingPost}
                   >
@@ -841,6 +876,15 @@ export default function PostDetail() {
             </View>
           </Pressable>
         ) : null}
+
+        {/* Report Modal for non-owners */}
+        <BlockReportModal
+          visible={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          username={post?.user.username || ''}
+          onBlock={() => {}} // No blocking for post reports
+          onReport={handleReportPost}
+        />
       </View>
     </>
   );
