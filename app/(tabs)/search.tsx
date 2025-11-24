@@ -29,6 +29,7 @@ import { isTraktHealthy } from '@/services/traktHealth';
 import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo, getShowsByGenre } from '@/services/trakt';
 import { getUserInterests, getAllGenres } from '@/services/userInterests';
 import ExploreShowSection from '@/components/ExploreShowSection';
+import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { ScrollView as RNScrollView } from 'react-native';
 import { getShowRecommendations, getSimilarShows } from '@/services/tmdb';
 import { rankCandidates, applyHardFilters } from '@/services/recommendationScoring';
@@ -2241,6 +2242,18 @@ export default function SearchScreen() {
                     style={styles.gridPoster}
                     contentFit="cover"
                   />
+                  
+                  {/* Mutual Friends Watching - Top Left */}
+                  {show.mutualFriendsWatching && show.mutualFriendsWatching.length > 0 && (
+                    <View style={styles.gridMutualFriendsOverlay}>
+                      <BaseFriends
+                        prop="Small"
+                        state="Mutual_Friends"
+                        friends={show.mutualFriendsWatching}
+                      />
+                    </View>
+                  )}
+                  
                   {/* Bookmark Icon */}
                   <Pressable
                     style={({ pressed }) => [
@@ -2262,7 +2275,13 @@ export default function SearchScreen() {
                   </Pressable>
                 </View>
                 <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
-                {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
+                {show.year && (
+                  <Text style={styles.gridYear}>
+                    {show.endYear && show.endYear !== show.year 
+                      ? `${show.year} - ${show.endYear}` 
+                      : show.year}
+                  </Text>
+                )}
               </Pressable>
             )}
             ListEmptyComponent={
@@ -2322,6 +2341,18 @@ export default function SearchScreen() {
                     style={styles.gridPoster}
                     contentFit="cover"
                   />
+                  
+                  {/* Mutual Friends Watching - Top Left */}
+                  {show.mutualFriendsWatching && show.mutualFriendsWatching.length > 0 && (
+                    <View style={styles.gridMutualFriendsOverlay}>
+                      <BaseFriends
+                        prop="Small"
+                        state="Mutual_Friends"
+                        friends={show.mutualFriendsWatching}
+                      />
+                    </View>
+                  )}
+                  
                   {/* Bookmark Icon */}
                   <Pressable
                     style={({ pressed }) => [
@@ -2343,7 +2374,13 @@ export default function SearchScreen() {
                   </Pressable>
                 </View>
                 <Text style={styles.gridTitle} numberOfLines={2}>{show.title}</Text>
-                {show.year && <Text style={styles.gridYear}>{show.year}</Text>}
+                {show.year && (
+                  <Text style={styles.gridYear}>
+                    {show.endYear && show.endYear !== show.year 
+                      ? `${show.year} - ${show.endYear}` 
+                      : show.year}
+                  </Text>
+                )}
               </Pressable>
             )}
             ListEmptyComponent={
@@ -3031,9 +3068,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   gridYear: {
-    ...tokens.typography.p3,
-    color: tokens.colors.grey1,
+    ...tokens.typography.p3R,
+    color: tokens.colors.almostWhite,
+    fontSize: 11,
+    lineHeight: 14,
+    opacity: 0.6,
     marginTop: 2,
+  },
+  gridMutualFriendsOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 10,
   },
   emptyContainer: {
     alignItems: 'center',
