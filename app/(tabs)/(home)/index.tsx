@@ -203,17 +203,25 @@ export default function HomeScreen() {
     // Get user's posts only
     const userPosts = posts.filter(post => post.user.id === currentUser.id && post.show);
     
-    // Extract unique shows (most recent first)
+    // Extract unique shows (most recent first) and enrich with year from cachedRecommendations if available
     const uniqueShows = new Map();
+    const recommendationsMap = new Map(
+      (cachedRecommendations || []).map(rec => [rec.traktId, rec.traktShow?.year])
+    );
+    
     for (const post of userPosts) {
       if (post.show && !uniqueShows.has(post.show.id)) {
-        uniqueShows.set(post.show.id, post.show);
+        const enrichedShow = {
+          ...post.show,
+          year: post.show.year || recommendationsMap.get(post.show.traktId)
+        };
+        uniqueShows.set(post.show.id, enrichedShow);
         if (uniqueShows.size >= 6) break;
       }
     }
     
     setCurrentlyWatchingShows(Array.from(uniqueShows.values()));
-  }, [currentUser?.id, posts]);
+  }, [currentUser?.id, posts, cachedRecommendations]);
 
   // Fetch recommended shows (friends' shows + cached interest-based recommendations)
   useEffect(() => {
