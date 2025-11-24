@@ -612,6 +612,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      search_users_for_mentions: {
+        Args: {
+          search_term: string
+          current_user_id: string
+          following_ids: string[]
+          result_limit?: number
+        }
+        Returns: {
+          user_id: string
+          username: string
+          display_name: string | null
+          avatar_url: string | null
+          avatar_color_scheme: number | null
+          avatar_icon: string | null
+          mutual_friends: number
+          is_following: boolean
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

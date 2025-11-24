@@ -42,11 +42,11 @@ export default function MentionInput({
   const [autocompleteUsers, setAutocompleteUsers] = useState<User[]>([]);
   const [mentionSearch, setMentionSearch] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [followingLoaded, setFollowingLoaded] = useState(false);
   const inputRef = useRef<TextInput>(null);
   
   // Cache follow list to avoid refetching on every keystroke
   const followingIdsRef = useRef<string[]>([]);
-  const followingLoadedRef = useRef(false);
 
   // Extract all @mentions from text
   const extractMentions = (text: string): string[] => {
@@ -65,11 +65,11 @@ export default function MentionInput({
           .eq('follower_id', currentUserId);
 
         followingIdsRef.current = following?.map(f => f.following_id) || [];
-        followingLoadedRef.current = true;
+        setFollowingLoaded(true);
       } catch (error) {
         console.error('Error loading following list:', error);
         followingIdsRef.current = [];
-        followingLoadedRef.current = true;
+        setFollowingLoaded(true);
       }
     };
 
@@ -78,16 +78,10 @@ export default function MentionInput({
 
   // Search for users when @ is detected (with debouncing)
   useEffect(() => {
-    // Debounce search by 300ms
-    const timeoutId = setTimeout(async () => {
+    const performSearch = async () => {
       if (!mentionSearch) {
         setAutocompleteUsers([]);
         setShowAutocomplete(false);
-        return;
-      }
-
-      // Wait for following list to load
-      if (!followingLoadedRef.current) {
         return;
       }
 
@@ -147,10 +141,18 @@ export default function MentionInput({
         setAutocompleteUsers([]);
         setShowAutocomplete(false);
       }
-    }, 300); // 300ms debounce
+    };
+
+    // Debounce search by 300ms
+    const timeoutId = setTimeout(() => {
+      // Only search if following list is loaded
+      if (followingLoaded) {
+        performSearch();
+      }
+    }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [mentionSearch, currentUserId]);
+  }, [mentionSearch, currentUserId, followingLoaded]);
 
   // Handle text change
   const handleTextChange = (text: string) => {
