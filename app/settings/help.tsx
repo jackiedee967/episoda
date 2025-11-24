@@ -312,16 +312,11 @@ export default function HelpDeskScreen() {
       <Pressable
         key={post.id}
         style={styles.adminCard}
-        onPress={() => handlePostPress(post.id)}
+        onPress={() => {
+          setActiveMenuPostId(null);
+          handlePostPress(post.id);
+        }}
       >
-        {/* Click-away overlay when menu is open - render FIRST */}
-        {showMenu && (
-          <Pressable 
-            style={styles.clickAwayOverlay}
-            onPress={() => setActiveMenuPostId(null)}
-          />
-        )}
-
         <View style={styles.adminCardHeader}>
           <Text style={styles.adminCardTitle}>{post.title}</Text>
           {canDelete && (
@@ -381,16 +376,11 @@ export default function HelpDeskScreen() {
       <Pressable
         key={post.id}
         style={styles.communityPost}
-        onPress={() => handlePostPress(post.id)}
+        onPress={() => {
+          setActiveMenuPostId(null);
+          handlePostPress(post.id);
+        }}
       >
-        {/* Click-away overlay when menu is open - render FIRST */}
-        {showMenu && (
-          <Pressable 
-            style={styles.clickAwayOverlay}
-            onPress={() => setActiveMenuPostId(null)}
-          />
-        )}
-
         <View style={styles.communityPostHeader}>
           <Image
             source={{ uri: currentUser.avatar }}
