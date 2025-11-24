@@ -23,6 +23,8 @@ export function useAppUsageTracker(): AppUsageTrackerReturn {
   
   const sessionStartTime = useRef<number | null>(null);
   const appState = useRef(AppState.currentState);
+  const totalUsageTimeRef = useRef(0);
+  const hasShownInviteRef = useRef(false);
 
   // Load saved data on mount
   useEffect(() => {
@@ -36,6 +38,8 @@ export function useAppUsageTracker(): AppUsageTrackerReturn {
         const parsedTime = savedTime ? parseInt(savedTime, 10) : 0;
         const hasShown = inviteShown === 'true';
 
+        totalUsageTimeRef.current = parsedTime;
+        hasShownInviteRef.current = hasShown;
         setTotalUsageTime(parsedTime);
         setHasShownInvite(hasShown);
 
@@ -53,12 +57,15 @@ export function useAppUsageTracker(): AppUsageTrackerReturn {
   useEffect(() => {
     const saveUsageTime = async (additionalTime: number) => {
       try {
-        const newTotal = totalUsageTime + additionalTime;
+        // Use ref to get latest value
+        const newTotal = totalUsageTimeRef.current + additionalTime;
+        totalUsageTimeRef.current = newTotal;
+        
         await AsyncStorage.setItem(USAGE_TIME_KEY, newTotal.toString());
         setTotalUsageTime(newTotal);
 
         // Check if we've hit 5 minutes and haven't shown invite yet
-        if (newTotal >= FIVE_MINUTES_MS && !hasShownInvite) {
+        if (newTotal >= FIVE_MINUTES_MS && !hasShownInviteRef.current) {
           setShouldShowInviteModal(true);
         }
       } catch (error) {
@@ -105,18 +112,20 @@ export function useAppUsageTracker(): AppUsageTrackerReturn {
       subscription.remove();
       clearInterval(interval);
 
-      // Save final session time on unmount
+      // Save final session time on unmount (call saveUsageTime to check threshold)
       if (sessionStartTime.current) {
         const sessionTime = Date.now() - sessionStartTime.current;
-        saveUsageTime(sessionTime);
+        // Fire async without awaiting - cleanup can't be async
+        void saveUsageTime(sessionTime);
       }
     };
-  }, [totalUsageTime, hasShownInvite]);
+  }, []); // No dependencies - refs are stable
 
   // Mark that invite modal has been shown
   const markInviteModalShown = async () => {
     try {
       await AsyncStorage.setItem(INVITE_SHOWN_KEY, 'true');
+      hasShownInviteRef.current = true;
       setHasShownInvite(true);
       setShouldShowInviteModal(false);
     } catch (error) {
