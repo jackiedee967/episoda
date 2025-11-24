@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
+import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Post } from '@/types';
 import { getCommunityPosts } from '@/services/communityPosts';
@@ -487,6 +488,31 @@ export default function HomeScreen() {
   const renderCurrentlyWatching = () => {
     if (currentlyWatchingShows.length === 0) return null;
 
+    // Pre-compute friend counts for Currently Watching shows
+    const followingIds = currentUser.following || [];
+    const currentlyWatchingFriendDataCache = new Map<number, { count: number; users: any[] }>();
+
+    // Single pass over posts to build cache
+    for (const post of posts) {
+      if (!followingIds.includes(post.user.id) || !post.show?.traktId) continue;
+      
+      const traktId = post.show.traktId;
+      const existing = currentlyWatchingFriendDataCache.get(traktId);
+      
+      if (existing) {
+        // Check if this friend already counted
+        if (!existing.users.find(u => u.id === post.user.id)) {
+          existing.users.push(post.user);
+          existing.count = existing.users.length;
+        }
+      } else {
+        currentlyWatchingFriendDataCache.set(traktId, {
+          count: 1,
+          users: [post.user]
+        });
+      }
+    }
+
     return (
       <View style={styles.currentlyWatchingSection}>
         <View style={styles.sectionHeader}>
@@ -498,57 +524,73 @@ export default function HomeScreen() {
           contentContainerStyle={styles.showsScroll}
           style={styles.showsScrollView}
         >
-          {currentlyWatchingShows.map((show) => (
-            <Pressable
-              key={show.id}
-              style={[
-                styles.showCard,
-                { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight },
-                navigatingShowId === show.id && { opacity: 0.5 }
-              ]}
-              onPress={() => handleShowPress(show)}
-              disabled={navigatingShowId === show.id}
-            >
-              <View style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}>
-                <Image 
-                  source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-                  style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
-                />
-                
-                <Pressable 
-                  style={({ pressed }) => [
-                    styles.saveIcon,
-                    pressed && styles.saveIconPressed,
-                  ]} 
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setSelectedShow(show);
-                    setSelectedTraktShow(show.traktShow || null);
-                    setPlaylistModalVisible(true);
-                  }}
-                >
-                  <IconSymbol 
-                    name={isShowSaved(show.id, show.traktId) ? "bookmark.fill" : "bookmark"} 
-                    size={18} 
-                    color={tokens.colors.pureWhite} 
-                  />
-                </Pressable>
+          {currentlyWatchingShows.map((show) => {
+            const friendData = currentlyWatchingFriendDataCache.get(show.traktId);
+            const mutualFriendsWatching = friendData?.users || [];
 
-                <Pressable 
-                  style={[styles.logEpisodeButton, { width: posterDimensions.overlayWidth }]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    setSelectedShow(show);
-                    setPostModalVisible(true);
-                  }}
-                >
-                  <Text style={styles.logEpisodeButtonText}>Log episode</Text>
-                </Pressable>
-              </View>
-            </Pressable>
-          ))}
+            return (
+              <Pressable
+                key={show.id}
+                style={[
+                  styles.showCard,
+                  { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight },
+                  navigatingShowId === show.id && { opacity: 0.5 }
+                ]}
+                onPress={() => handleShowPress(show)}
+                disabled={navigatingShowId === show.id}
+              >
+                <View style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}>
+                  <Image 
+                    source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
+                    style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
+                  />
+                  
+                  {/* Mutual Friends Badge - Top Left */}
+                  {mutualFriendsWatching.length > 0 && (
+                    <View style={styles.mutualFriendsOverlay}>
+                      <BaseFriends
+                        prop="Small"
+                        state="Mutual_Friends"
+                        friends={mutualFriendsWatching}
+                      />
+                    </View>
+                  )}
+                  
+                  <Pressable 
+                    style={({ pressed }) => [
+                      styles.saveIcon,
+                      pressed && styles.saveIconPressed,
+                    ]} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSelectedShow(show);
+                      setSelectedTraktShow(show.traktShow || null);
+                      setPlaylistModalVisible(true);
+                    }}
+                  >
+                    <IconSymbol 
+                      name={isShowSaved(show.id, show.traktId) ? "bookmark.fill" : "bookmark"} 
+                      size={18} 
+                      color={tokens.colors.pureWhite} 
+                    />
+                  </Pressable>
+
+                  <Pressable 
+                    style={[styles.logEpisodeButton, { width: posterDimensions.overlayWidth }]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setSelectedShow(show);
+                      setPostModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.logEpisodeButtonText}>Log episode</Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </View>
     );
@@ -601,8 +643,7 @@ export default function HomeScreen() {
         >
           {recommendedShows.map((show) => {
             const friendData = friendDataCache.get(show.traktId);
-            const friendCount = friendData?.count || 0;
-            const friendsWatching = friendData?.users.slice(0, 3) || [];
+            const mutualFriendsWatching = friendData?.users || [];
 
             return (
               <Pressable
@@ -620,6 +661,17 @@ export default function HomeScreen() {
                     source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
                     style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
                   />
+                  
+                  {/* Mutual Friends Badge - Top Left */}
+                  {mutualFriendsWatching.length > 0 && (
+                    <View style={styles.mutualFriendsOverlay}>
+                      <BaseFriends
+                        prop="Small"
+                        state="Mutual_Friends"
+                        friends={mutualFriendsWatching}
+                      />
+                    </View>
+                  )}
                   
                   <Pressable 
                     style={({ pressed }) => [
@@ -640,24 +692,6 @@ export default function HomeScreen() {
                       color={tokens.colors.pureWhite} 
                     />
                   </Pressable>
-
-                  {friendCount > 0 ? (
-                    <View style={[styles.friendsBar, { width: posterDimensions.overlayWidth }]}>
-                      <View style={styles.friendAvatars}>
-                        {friendsWatching.map((user, index) => (
-                          <Image
-                            key={user.id}
-                            source={{ uri: user.avatar }}
-                            style={[styles.friendAvatar, { marginLeft: index > 0 ? -8 : 0 }]}
-                          />
-                        ))}
-                      </View>
-                      <View style={styles.friendsWatchingTextContainer}>
-                        <Text style={styles.friendsWatchingNumber}>{friendCount}</Text>
-                        <Text style={styles.friendsWatchingLabel}> friends watching</Text>
-                      </View>
-                    </View>
-                  ) : null}
                 </View>
               </Pressable>
             );
@@ -1007,6 +1041,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 16,
   },
+  mutualFriendsOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 10,
+  },
   saveIconPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
@@ -1027,44 +1067,6 @@ const styles = StyleSheet.create({
   logEpisodeButtonText: {
     ...tokens.typography.p3M,
     color: tokens.colors.black,
-  },
-  friendsBar: {
-    position: 'absolute',
-    left: 12,
-    bottom: 12,
-    width: 116,
-    height: 38,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: tokens.colors.cardStroke,
-    backgroundColor: tokens.colors.cardBackground,
-  },
-  friendAvatars: {
-    flexDirection: 'row',
-  },
-  friendAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-  },
-  friendsWatchingTextContainer: {
-    height: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  friendsWatchingNumber: {
-    ...tokens.typography.p3M,
-    color: tokens.colors.greenHighlight,
-  },
-  friendsWatchingLabel: {
-    ...tokens.typography.p3R,
-    color: tokens.colors.almostWhite,
   },
   
   // You May Know - exact specs
