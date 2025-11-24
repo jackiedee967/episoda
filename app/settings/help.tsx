@@ -681,6 +681,7 @@ const styles = StyleSheet.create({
   },
   communityPostHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   communityPostAvatar: {
@@ -698,7 +699,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   communityPostUsername: {
-    ...typography.p1M,
+    ...typography.p1Medium,
     color: colors.text,
   },
   adminBadge: {
@@ -708,11 +709,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   adminBadgeText: {
-    ...typography.p3B,
+    ...typography.p3Bold,
     color: colors.background,
   },
   communityPostTimestamp: {
-    ...typography.p3R,
+    ...typography.p4,
     color: colors.textSecondary,
   },
   communityPostTitle: {

@@ -69,6 +69,7 @@ export const typography = {
   smallSubtitle: tokens.typography.smallSubtitle,
   buttonSmall: tokens.typography.buttonSmall,
   p1Bold: tokens.typography.p1B,
+  p1Medium: tokens.typography.p1M,
   p1: tokens.typography.p1,
   p2Bold: tokens.typography.p3B,
   p2Medium: tokens.typography.p3M,
