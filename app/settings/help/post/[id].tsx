@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 12,
-    paddingHorizontal: Platform.select({ web: 0, default: 16 }),
+    paddingHorizontal: 16,
   },
   commentInput: {
     flex: 1,
