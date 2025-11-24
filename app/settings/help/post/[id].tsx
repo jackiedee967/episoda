@@ -330,7 +330,10 @@ export default function HelpDeskPostDetailScreen() {
           headerShown: false,
           statusBarTranslucent: true,
           statusBarBackgroundColor: 'transparent',
-          contentStyle: { backgroundColor: 'transparent' },
+          contentStyle: { 
+            backgroundColor: 'transparent',
+            paddingHorizontal: 0,
+          },
         }}
       />
       <ImageBackground
