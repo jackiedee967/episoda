@@ -22,6 +22,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { HelpDeskPost, HelpDeskComment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { Asset } from 'expo-asset';
+import { IconSymbol } from '@/components/IconSymbol';
 
 const appBackground = Asset.fromModule(require('../../../../assets/images/app-background.jpg')).uri;
 
@@ -191,15 +192,7 @@ export default function HelpDeskPostDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: 'Post',
-          headerBackTitle: 'Back',
-          headerStyle: {
-            backgroundColor: 'transparent',
-          },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          headerTransparent: true,
+          headerShown: false,
         }}
       />
       <ImageBackground
@@ -216,6 +209,14 @@ export default function HelpDeskPostDetailScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
         >
+          {/* Custom Header with Back Button */}
+          <View style={styles.customHeader}>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <IconSymbol name="chevron.left" size={24} color={colors.text} />
+            </Pressable>
+            <Text style={styles.pageTitle}>Post</Text>
+          </View>
+
           {/* Post Header */}
           <View style={styles.postHeader}>
             <Image
@@ -344,14 +345,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 0,
-    paddingHorizontal: 20,
     paddingBottom: 100,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  backButton: {
+    padding: 4,
+  },
+  pageTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text,
   },
   postHeader: {
     flexDirection: 'row',
     gap: 12,
     marginBottom: 16,
+    paddingHorizontal: 20,
   },
   avatar: {
     width: 48,
@@ -393,6 +409,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     marginBottom: 16,
+    marginLeft: 20,
   },
   categoryTagText: {
     fontSize: 13,
@@ -403,12 +420,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
+    paddingHorizontal: 20,
   },
   details: {
     fontSize: 15,
     color: colors.text,
     lineHeight: 22,
     marginBottom: 20,
+    paddingHorizontal: 20,
   },
   actions: {
     flexDirection: 'row',
@@ -416,6 +435,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    paddingHorizontal: 20,
   },
   actionButton: {
     flexDirection: 'row',
@@ -430,6 +450,7 @@ const styles = StyleSheet.create({
   commentsSection: {
     marginTop: 20,
     gap: 16,
+    paddingHorizontal: 20,
   },
   commentsTitle: {
     fontSize: 18,

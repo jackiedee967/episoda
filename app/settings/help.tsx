@@ -196,15 +196,7 @@ export default function HelpDeskScreen() {
     <>
       <Stack.Screen
         options={{
-          headerShown: true,
-          title: '',
-          headerBackTitle: 'Back',
-          headerStyle: {
-            backgroundColor: 'transparent',
-          },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          headerTransparent: true,
+          headerShown: false,
         }}
       />
       <ImageBackground
@@ -219,6 +211,13 @@ export default function HelpDeskScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.purple} />
           }
         >
+        {/* Custom Header with Back Button */}
+        <View style={styles.customHeader}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <IconSymbol name="chevron.left" size={24} color={colors.text} />
+          </Pressable>
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>The Help Desk</Text>
@@ -293,9 +292,19 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 100,
   },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  backButton: {
+    padding: 4,
+  },
   header: {
-    paddingTop: 0,
     paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 20,
     gap: 12,
   },
