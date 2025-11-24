@@ -203,18 +203,21 @@ export default function EditProfileModal({
       const response = await fetch(uri);
       const blob = await response.blob();
       const fileExt = uri.split('.').pop() || 'jpg';
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, blob, {
           contentType: `image/${fileExt}`,
-          upsert: false,
+          upsert: true,
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        console.error('Upload error details:', uploadError);
+        if (typeof window !== 'undefined') {
+          window.alert(`Upload failed: ${uploadError.message || 'Unknown error'}`);
+        }
         return null;
       }
 
@@ -225,6 +228,9 @@ export default function EditProfileModal({
       return data.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
+      if (typeof window !== 'undefined') {
+        window.alert('Failed to upload profile picture. Please try again.');
+      }
       return null;
     }
   };
