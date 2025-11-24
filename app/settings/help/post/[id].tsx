@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Heart, MessageCircle, Send } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   errorText: {
-    fontSize: 16,
+    ...typography.subtitle,
     color: colors.textSecondary,
   },
   scrollView: {
@@ -363,8 +363,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   pageTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.text,
   },
   postHeader: {
@@ -388,8 +387,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   username: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.text,
   },
   adminBadge: {
@@ -399,12 +397,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   adminBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...typography.p3B,
     color: colors.background,
   },
   timestamp: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
   },
   categoryTag: {
@@ -416,20 +413,17 @@ const styles = StyleSheet.create({
     marginLeft: 20,
   },
   categoryTagText: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.p1B,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    ...typography.title,
     color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 20,
   },
   details: {
-    fontSize: 15,
+    ...typography.p1,
     color: colors.text,
-    lineHeight: 22,
     marginBottom: 20,
     paddingHorizontal: 20,
   },
@@ -447,9 +441,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionText: {
-    fontSize: 15,
+    ...typography.p1,
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   commentsSection: {
     marginTop: 20,
@@ -457,8 +450,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   commentsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.titleS,
     color: colors.text,
   },
   comment: {
@@ -485,8 +477,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   commentUsername: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.p1B,
     color: colors.text,
   },
   adminBadgeSmall: {
@@ -496,21 +487,19 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   adminBadgeTextSmall: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...typography.p3B,
     color: colors.background,
   },
   commentTimestamp: {
-    fontSize: 12,
+    ...typography.p2,
     color: colors.textSecondary,
   },
   commentText: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.text,
-    lineHeight: 20,
   },
   noComments: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 20,
@@ -530,7 +519,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 15,
+    ...typography.p1,
     color: colors.text,
     maxHeight: 100,
   },
