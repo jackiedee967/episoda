@@ -7,6 +7,7 @@ import tokens from '@/styles/tokens';
 import { Comment } from '@/types';
 import { useRouter } from 'expo-router';
 import { Heart, MessageCircle } from 'lucide-react-native';
+import MentionText from '@/components/MentionText';
 
 interface CommentCardProps {
   comment: Comment;
@@ -104,7 +105,11 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
           <Text style={styles.timestamp}>{formatTimestamp(comment.timestamp)}</Text>
         </View>
 
-        <Text style={styles.text}>{comment.text}</Text>
+        <MentionText 
+          text={comment.text} 
+          style={styles.text}
+          mentionColor={tokens.colors.greenHighlight}
+        />
 
         {comment.image ? (
           <View style={styles.commentImageContainer}>

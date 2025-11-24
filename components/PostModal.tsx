@@ -30,6 +30,8 @@ import { ChevronUp, ChevronDown, Star } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
 import { supabase } from '@/integrations/supabase/client';
 import PostTags from '@/components/PostTags';
+import MentionInput from '@/components/MentionInput';
+import { savePostMentions, getUserIdsByUsernames, createMentionNotifications, extractMentions } from '@/utils/mentionUtils';
 
 interface PostModalProps {
   visible: boolean;
@@ -146,6 +148,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
   const [postTitle, setPostTitle] = useState('');
   const [postBody, setPostBody] = useState('');
+  const [postMentions, setPostMentions] = useState<string[]>([]);
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTags, setCustomTags] = useState<string[]>([]);
@@ -1208,6 +1211,25 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         console.log('Post created successfully');
         
+        // Save mentions and create notifications - extract from text at submission time
+        const mentionedUsernames = extractMentions(postBody);
+        if (mentionedUsernames.length > 0) {
+          try {
+            await savePostMentions(newPost.id, mentionedUsernames);
+            const userMap = await getUserIdsByUsernames(mentionedUsernames);
+            const mentionedUserIds = Array.from(userMap.values());
+            await createMentionNotifications(
+              mentionedUserIds,
+              currentUser.id,
+              'mention_post',
+              newPost.id
+            );
+            console.log(`✅ Saved ${mentionedUsernames.length} mentions for post`);
+          } catch (mentionError) {
+            console.error('Error saving mentions:', mentionError);
+          }
+        }
+        
         // Update logged episodes set
         dbEpisodes.forEach(episode => {
           setLoggedEpisodeIds(prev => new Set(prev).add(getEpisodeKey(episode)));
@@ -1358,6 +1380,25 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         console.log('Post created successfully with ShowHub fallback');
         
+        // Save mentions and create notifications - extract from text at submission time
+        const mentionedUsernames = extractMentions(postBody);
+        if (mentionedUsernames.length > 0) {
+          try {
+            await savePostMentions(newPost.id, mentionedUsernames);
+            const userMap = await getUserIdsByUsernames(mentionedUsernames);
+            const mentionedUserIds = Array.from(userMap.values());
+            await createMentionNotifications(
+              mentionedUserIds,
+              currentUser.id,
+              'mention_post',
+              newPost.id
+            );
+            console.log(`✅ Saved ${mentionedUsernames.length} mentions for post`);
+          } catch (mentionError) {
+            console.error('Error saving mentions:', mentionError);
+          }
+        }
+        
         // Update logged episodes set
         dbEpisodes.forEach(episode => {
           setLoggedEpisodeIds(prev => new Set(prev).add(getEpisodeKey(episode)));
@@ -1390,6 +1431,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     setSelectedEpisodes([]);
     setPostTitle('');
     setPostBody('');
+    setPostMentions([]);
     setRating(0);
     setSelectedTags([]);
     setCustomTags([]);
@@ -1646,12 +1688,16 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               <Text style={styles.inputLabelText}>Body</Text>
               <Text style={styles.inputLabelOptional}> (Optional)</Text>
             </Text>
-            <TextInput
+            <MentionInput
               style={styles.bodyInput}
               placeholder="Tell us how it made you feel"
               placeholderTextColor={tokens.colors.grey1}
               value={postBody}
-              onChangeText={setPostBody}
+              onChangeText={(text, mentions) => {
+                setPostBody(text);
+                setPostMentions(mentions);
+              }}
+              currentUserId={currentUser.id}
               multiline
               numberOfLines={6}
               textAlignVertical="top"

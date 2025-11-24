@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   TextInput,
@@ -57,6 +57,13 @@ export default function MentionInput({
       setInternalValue(value);
       // Default caret to end of text when external change occurs
       setSelection({ start: value.length, end: value.length });
+    }
+    
+    // Reset all internal autocomplete state when value is cleared (defensive cleanup)
+    if (value === '') {
+      setShowAutocomplete(false);
+      setAutocompleteUsers([]);
+      setMentionSearch('');
     }
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 

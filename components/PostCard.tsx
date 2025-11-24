@@ -13,6 +13,7 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import FadeInImage from './FadeInImage';
 import { getShowColorScheme } from '@/utils/showColors';
+import MentionText from '@/components/MentionText';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -223,7 +224,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
             </Pressable>
           ) : (
             latestPost.body ? (
-              <Text style={styles.postBody}>{latestPost.body}</Text>
+              <MentionText text={latestPost.body} style={styles.postBody} />
             ) : null
           )}
         </View>

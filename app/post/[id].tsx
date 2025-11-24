@@ -27,6 +27,9 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { getShowColorScheme } from '@/utils/showColors';
+import MentionInput from '@/components/MentionInput';
+import MentionText from '@/components/MentionText';
+import { saveCommentMentions, getUserIdsByUsernames, createMentionNotifications, extractMentions } from '@/utils/mentionUtils';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -49,6 +52,7 @@ export default function PostDetail() {
   const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts, isDeletingPost, userProfileCache } = useData();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
+  const [commentMentions, setCommentMentions] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string; textPreview: string } | null>(null);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -313,6 +317,26 @@ export default function PostDetail() {
           
           // Update post comment count (replies count as comments)
           updateCommentCount(post.id, newTotalCount);
+          
+          // Save mentions and create notifications - extract from text at submission time
+          const mentionedUsernames = extractMentions(commentText);
+          if (mentionedUsernames.length > 0) {
+            try {
+              await saveCommentMentions(data.id, mentionedUsernames);
+              const userMap = await getUserIdsByUsernames(mentionedUsernames);
+              const mentionedUserIds = Array.from(userMap.values());
+              await createMentionNotifications(
+                mentionedUserIds,
+                currentUser.id,
+                'mention_comment',
+                post.id,
+                data.id
+              );
+              console.log(`✅ Saved ${mentionedUsernames.length} mentions for reply`);
+            } catch (mentionError) {
+              console.error('Error saving mentions:', mentionError);
+            }
+          }
         }
       } catch (error) {
         console.error('Error saving reply:', error);
@@ -382,6 +406,26 @@ export default function PostDetail() {
           
           // Update post comment count
           updateCommentCount(post.id, newTotalCount);
+          
+          // Save mentions and create notifications - extract from text at submission time
+          const mentionedUsernames = extractMentions(commentText);
+          if (mentionedUsernames.length > 0) {
+            try {
+              await saveCommentMentions(data.id, mentionedUsernames);
+              const userMap = await getUserIdsByUsernames(mentionedUsernames);
+              const mentionedUserIds = Array.from(userMap.values());
+              await createMentionNotifications(
+                mentionedUserIds,
+                currentUser.id,
+                'mention_comment',
+                post.id,
+                data.id
+              );
+              console.log(`✅ Saved ${mentionedUsernames.length} mentions for comment`);
+            } catch (mentionError) {
+              console.error('Error saving mentions:', mentionError);
+            }
+          }
         }
       } catch (error) {
         console.error('Error saving comment:', error);
@@ -389,6 +433,7 @@ export default function PostDetail() {
     }
 
     setCommentText('');
+    setCommentMentions([]);
   };
 
   // Recursive helper to find and update a comment in the tree
@@ -488,11 +533,17 @@ export default function PostDetail() {
     // If replying to a 4th tier comment (depth 3), make it a sibling by using its parent
     const MAX_DEPTH = 3;
     const actualParentId = depth >= MAX_DEPTH && parentId ? parentId : commentId;
+    // Clear any existing comment text and mentions when starting a new reply
+    setCommentText('');
+    setCommentMentions([]);
     setReplyingTo({ commentId: actualParentId, username, textPreview });
   };
 
   const handleCancelReply = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Clear comment text and mentions when canceling reply
+    setCommentText('');
+    setCommentMentions([]);
     setReplyingTo(null);
   };
 
@@ -650,7 +701,7 @@ export default function PostDetail() {
 
               {/* Post Body */}
               {post.body ? (
-                <Text style={styles.postBody}>{post.body}</Text>
+                <MentionText text={post.body} style={styles.postBody} />
               ) : null}
 
               {/* Post Tags (Discussion, Fan Theory, etc.) */}
@@ -747,12 +798,16 @@ export default function PostDetail() {
             
             <View style={styles.inputRow}>
               <View style={styles.inputBox}>
-                <TextInput
+                <MentionInput
                   style={styles.commentInput}
                   placeholder="Add a comment"
                   placeholderTextColor={tokens.colors.grey1}
                   value={commentText}
-                  onChangeText={setCommentText}
+                  onChangeText={(text, mentions) => {
+                    setCommentText(text);
+                    setCommentMentions(mentions);
+                  }}
+                  currentUserId={currentUser.id}
                   multiline
                 />
               </View>
