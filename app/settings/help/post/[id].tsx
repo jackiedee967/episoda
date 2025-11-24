@@ -453,31 +453,33 @@ export default function HelpDeskPostDetailScreen() {
 
         {/* Comment Input */}
         <View style={styles.commentInputContainer}>
-          <MentionInput
-            value={commentText}
-            onChangeText={(text, mentions) => {
-              setCommentText(text);
-              setCommentMentions(mentions);
-            }}
-            currentUserId={currentUser.id}
-            placeholder="Write a comment..."
-            placeholderTextColor={tokens.colors.grey1}
-            style={styles.commentInput}
-            inputBackgroundColor={tokens.colors.almostWhite}
-            multiline
-            maxLength={500}
-          />
-          <Pressable
-            style={[styles.sendButton, (!commentText.trim() || submitting) && styles.sendButtonDisabled]}
-            onPress={handleSubmitComment}
-            disabled={!commentText.trim() || submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color={tokens.colors.black} />
-            ) : (
-              <Send size={20} color={tokens.colors.black} />
-            )}
-          </Pressable>
+          <View style={styles.commentInputWrapper}>
+            <MentionInput
+              value={commentText}
+              onChangeText={(text, mentions) => {
+                setCommentText(text);
+                setCommentMentions(mentions);
+              }}
+              currentUserId={currentUser.id}
+              placeholder="Write a comment..."
+              placeholderTextColor={tokens.colors.grey1}
+              style={styles.commentInput}
+              inputBackgroundColor={tokens.colors.almostWhite}
+              multiline
+              maxLength={500}
+            />
+            <Pressable
+              style={[styles.sendButton, (!commentText.trim() || submitting) && styles.sendButtonDisabled]}
+              onPress={handleSubmitComment}
+              disabled={!commentText.trim() || submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color={tokens.colors.black} />
+              ) : (
+                <Send size={20} color={tokens.colors.black} />
+              )}
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -680,14 +682,16 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 12,
-    paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: tokens.colors.pureWhite,
     borderTopWidth: 1,
     borderTopColor: tokens.colors.grey2,
+  },
+  commentInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 12,
+    paddingHorizontal: 16,
   },
   commentInput: {
     flex: 1,
