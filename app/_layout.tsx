@@ -84,7 +84,11 @@ function AuthNavigator() {
     }
 
     if (onboardingStatus === 'completed') {
-      if (!inTabGroup) {
+      // Allow access to public pages like show, user, post, episode, playlist etc
+      const publicPages = ['show', 'user', 'post', 'episode', 'playlist'];
+      const isPublicPage = publicPages.includes(segments[0] as string);
+      
+      if (!inTabGroup && !isPublicPage && inAuthGroup) {
         console.log('✅ Onboarding complete - redirecting to home');
         router.replace('/(tabs)/' as any);
       }
