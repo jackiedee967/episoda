@@ -50,7 +50,7 @@ export default function HelpDeskScreen() {
 
       if (error) throw error;
 
-      setPosts(data || []);
+      setPosts((data as HelpDeskPost[]) || []);
     } catch (error) {
       console.error('Error loading posts:', error);
     } finally {
