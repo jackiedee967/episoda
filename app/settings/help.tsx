@@ -327,7 +327,10 @@ export default function HelpDeskScreen() {
               {showMenu && (
                 <View style={styles.deleteMenuPositioned}>
                   <Pressable 
-                    onPress={() => handleDeletePost(post.id)} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeletePost(post.id);
+                    }} 
                     style={styles.deleteMenuItem}
                   >
                     <Text style={styles.deleteMenuText}>Delete Post</Text>
@@ -409,7 +412,10 @@ export default function HelpDeskScreen() {
               {showMenu && (
                 <View style={styles.deleteMenuPositioned}>
                   <Pressable 
-                    onPress={() => handleDeletePost(post.id)} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeletePost(post.id);
+                    }} 
                     style={styles.deleteMenuItem}
                   >
                     <Text style={styles.deleteMenuText}>Delete Post</Text>
