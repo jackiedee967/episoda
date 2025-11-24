@@ -20,11 +20,30 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { supabase } from '@/integrations/supabase/client';
-import { HelpDeskPost } from '@/types';
+import { HelpDeskPost, HelpDeskCategory } from '@/types';
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { isAdmin } from '@/config/admins';
 import ButtonL from '@/components/ButtonL';
+
+// Helper function to validate and normalize category
+const normalizeCategory = (category: string): HelpDeskCategory => {
+  const validCategories: HelpDeskCategory[] = [
+    'Feature Request',
+    'Support',
+    'Feedback',
+    'Misc',
+    'Admin Announcement'
+  ];
+  
+  if (validCategories.includes(category as HelpDeskCategory)) {
+    return category as HelpDeskCategory;
+  }
+  
+  // Default to 'Misc' for unknown categories
+  console.warn(`Unknown help desk category: "${category}", defaulting to "Misc"`);
+  return 'Misc';
+};
 
 export default function HelpDeskScreen() {
   const router = useRouter();
@@ -50,7 +69,13 @@ export default function HelpDeskScreen() {
 
       if (error) throw error;
 
-      setPosts((data as HelpDeskPost[]) || []);
+      // Normalize categories to ensure type safety
+      const normalizedPosts: HelpDeskPost[] = (data || []).map(post => ({
+        ...post,
+        category: normalizeCategory(post.category)
+      }));
+
+      setPosts(normalizedPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
     } finally {
