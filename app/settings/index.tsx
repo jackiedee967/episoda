@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import { User, Bell, HelpCircle, LogOut } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
@@ -177,19 +177,15 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    ...typography.titleL,
     color: colors.text,
-    letterSpacing: 0,
   },
   section: {
     marginTop: 24,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...typography.p3B,
     color: colors.textSecondary,
-    letterSpacing: 0,
     textTransform: 'uppercase',
     paddingHorizontal: 16,
     marginBottom: 8,
@@ -221,8 +217,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   rowText: {
-    fontSize: 16,
-    fontWeight: '500',
+    ...typography.subtitle,
     color: colors.text,
   },
   divider: {
