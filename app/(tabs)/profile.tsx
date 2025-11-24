@@ -14,6 +14,7 @@ import TabSelector, { Tab as TabSelectorTab } from '@/components/TabSelector';
 import Button from '@/components/Button';
 import WatchHistoryCard from '@/components/WatchHistoryCard';
 import { useData } from '@/contexts/DataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { Instagram, Music, Globe, MoreHorizontal } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
@@ -29,6 +30,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { authReady } = useAuth();
   const { 
     posts, 
     followUser, 
@@ -692,7 +694,8 @@ export default function ProfileScreen() {
     </View>
   );
 
-  if (!profileUser) {
+  // Wait for auth to initialize before showing content
+  if (!authReady || !profileUser) {
     return (
       <View style={styles.pageContainer}>
         <Stack.Screen options={{ headerShown: false }} />
