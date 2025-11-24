@@ -40,6 +40,7 @@ import { getEpisode, getAllEpisodes as getAllTVMazeEpisodes } from '@/services/t
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/integrations/supabase/client';
+import { processBatched } from '@/utils/batchOperations';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -261,47 +262,95 @@ export default function ShowHub() {
               setLoadingEpisodes(false);
               console.log('✅ Loaded', mappedEpisodes.length, 'episodes from Trakt');
               
-              // Fetch thumbnails in the background if TVMaze ID is available
+              // Fetch thumbnails in background with BATCHED processing to prevent overwhelming Supabase
               if (dbShow.tvmaze_id) {
-                const episodesWithThumbnails = await Promise.all(
-                  mappedEpisodes.map(async (ep, index) => {
-                    try {
-                      const traktEpisode = traktEpisodes[index];
-                      const tvmazeEpisode = await getEpisode(
-                        dbShow.tvmaze_id!,
-                        ep.seasonNumber,
-                        ep.episodeNumber
-                      );
-                      const thumbnailUrl = tvmazeEpisode?.image?.original || null;
-                      
-                      // Save to database for persistence (upsert creates if missing)
-                      try {
-                        await upsertEpisodeMetadata(show.id, ep.seasonNumber, ep.episodeNumber, {
-                          title: traktEpisode.title || ep.title,
-                          description: traktEpisode.overview || ep.description,
-                          thumbnail_url: thumbnailUrl || undefined,
-                          trakt_id: traktEpisode.ids.trakt,
-                          imdb_id: traktEpisode.ids.imdb,
-                          tvdb_id: traktEpisode.ids.tvdb,
-                          tmdb_id: traktEpisode.ids.tmdb,
-                          rating: traktEpisode.rating ? Number(traktEpisode.rating.toFixed(1)) : undefined,
-                        });
-                      } catch (dbError) {
-                        console.error(`Failed to save metadata for S${ep.seasonNumber}E${ep.episodeNumber}:`, dbError);
-                      }
-                      
-                      return {
-                        ...ep,
-                        thumbnail: thumbnailUrl || undefined,
-                      };
-                    } catch (error) {
-                      console.error(`Error fetching thumbnail for S${ep.seasonNumber}E${ep.episodeNumber}:`, error);
-                      return ep;
-                    }
-                  })
+                // Check database first for existing episode metadata
+                console.log('🔍 Checking database for existing episode metadata...');
+                const existingEpisodes = await getEpisodesByShowId(show.id);
+                const existingEpisodeKeys = new Set(
+                  existingEpisodes.map(ep => `S${ep.season_number}E${ep.episode_number}`)
                 );
                 
-                setEpisodes(episodesWithThumbnails);
+                console.log(`📊 Found ${existingEpisodes.length} episodes already in database (will skip these)`);
+                
+                // Map existing episodes to display immediately
+                const episodesWithExistingData = mappedEpisodes.map(ep => {
+                  const key = `S${ep.seasonNumber}E${ep.episodeNumber}`;
+                  const existingEp = existingEpisodes.find(
+                    e => e.season_number === ep.seasonNumber && e.episode_number === ep.episodeNumber
+                  );
+                  
+                  return existingEp ? {
+                    ...ep,
+                    thumbnail: existingEp.thumbnail_url || undefined,
+                    title: existingEp.title || ep.title,
+                    description: existingEp.description || ep.description,
+                  } : ep;
+                });
+                
+                setEpisodes(episodesWithExistingData);
+                
+                // Only fetch missing thumbnails to reduce API calls
+                const episodesToUpdate = mappedEpisodes
+                  .map((ep, index) => ({ ep, index }))
+                  .filter(({ ep }) => !existingEpisodeKeys.has(`S${ep.seasonNumber}E${ep.episodeNumber}`));
+                
+                if (episodesToUpdate.length > 0) {
+                  console.log(`🔄 Starting batched updates for ${episodesToUpdate.length} missing episodes (15 per batch, 100ms delay)`);
+                  
+                  const updatedEpisodes = await processBatched(
+                    episodesToUpdate,
+                    async ({ ep, index }) => {
+                      try {
+                        const traktEpisode = traktEpisodes[index];
+                        const tvmazeEpisode = await getEpisode(
+                          dbShow.tvmaze_id!,
+                          ep.seasonNumber,
+                          ep.episodeNumber
+                        );
+                        const thumbnailUrl = tvmazeEpisode?.image?.original || null;
+                        
+                        // Save to database for persistence
+                        try {
+                          await upsertEpisodeMetadata(show.id, ep.seasonNumber, ep.episodeNumber, {
+                            title: traktEpisode.title || ep.title,
+                            description: traktEpisode.overview || ep.description,
+                            thumbnail_url: thumbnailUrl || undefined,
+                            trakt_id: traktEpisode.ids.trakt,
+                            imdb_id: traktEpisode.ids.imdb,
+                            tvdb_id: traktEpisode.ids.tvdb,
+                            tmdb_id: traktEpisode.ids.tmdb,
+                            rating: traktEpisode.rating ? Number(traktEpisode.rating.toFixed(1)) : undefined,
+                          });
+                        } catch (dbError) {
+                          console.error(`Failed to save metadata for S${ep.seasonNumber}E${ep.episodeNumber}:`, dbError);
+                        }
+                        
+                        return {
+                          ...ep,
+                          thumbnail: thumbnailUrl || undefined,
+                        };
+                      } catch (error) {
+                        console.error(`Error fetching thumbnail for S${ep.seasonNumber}E${ep.episodeNumber}:`, error);
+                        return ep;
+                      }
+                    },
+                    { batchSize: 15, delayMs: 100 }
+                  );
+                  
+                  // Merge updated episodes back into the full list
+                  const finalEpisodes = episodesWithExistingData.map(ep => {
+                    const updated = updatedEpisodes.find(
+                      u => u.seasonNumber === ep.seasonNumber && u.episodeNumber === ep.episodeNumber
+                    );
+                    return updated || ep;
+                  });
+                  
+                  console.log('✅ Completed batched metadata updates');
+                  setEpisodes(finalEpisodes);
+                } else {
+                  console.log('✅ All episode metadata already cached - no updates needed');
+                }
               }
               return;
             }
