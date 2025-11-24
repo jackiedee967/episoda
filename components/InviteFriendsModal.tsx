@@ -71,7 +71,7 @@ export default function InviteFriendsModal({ visible, onClose, onInvite }: Invit
               Invite friends to see what they're watching, talk theories and delusions, and find your next binge!
             </Text>
           </View>
-          <Button variant="primary" onPress={handleInviteFriends}>
+          <Button variant="primary" onPress={handleInviteFriends} fullWidth>
             Invite friends!
           </Button>
         </Pressable>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    ...typography.subtitle,
+    ...typography.titleL,
     width: 326,
     color: colors.black,
     textAlign: 'center',
