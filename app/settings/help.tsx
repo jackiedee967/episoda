@@ -1,7 +1,7 @@
 
 import { Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { colors } from '@/styles/commonStyles';
+import { colors, typography } from '@/styles/commonStyles';
 import { Heart, MessageCircle, Plus } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Asset } from 'expo-asset';
@@ -313,15 +313,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    ...typography.titleL,
     color: colors.text,
-    letterSpacing: 0,
   },
   headerSubtitle: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
-    lineHeight: 20,
   },
   section: {
     marginTop: 8,
@@ -334,10 +331,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...typography.smallSubtitle,
     color: colors.text,
-    letterSpacing: 0,
   },
   createButton: {
     flexDirection: 'row',
@@ -349,8 +344,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   createButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.buttonSmall,
     color: colors.background,
   },
   adminCardsContainer: {
@@ -365,14 +359,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   adminCardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.subtitle,
     color: colors.text,
   },
   adminCardPreview: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
-    lineHeight: 20,
   },
   adminCardFooter: {
     flexDirection: 'row',
@@ -385,7 +377,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   adminCardStatText: {
-    fontSize: 13,
+    ...typography.p1,
     color: colors.textSecondary,
   },
   communityPostsContainer: {
@@ -417,8 +409,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   communityPostUsername: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.subtitle,
     color: colors.text,
   },
   adminBadge: {
@@ -428,23 +419,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   adminBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...typography.p3B,
     color: colors.background,
   },
   communityPostTimestamp: {
-    fontSize: 13,
+    ...typography.p1,
     color: colors.textSecondary,
   },
   communityPostTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.subtitle,
     color: colors.text,
   },
   communityPostPreview: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
-    lineHeight: 20,
   },
   communityPostFooter: {
     flexDirection: 'row',
@@ -457,8 +445,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   categoryTagText: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...typography.p1B,
   },
   communityPostStats: {
     flexDirection: 'row',
@@ -466,17 +453,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   communityPostStatText: {
-    fontSize: 13,
+    ...typography.p1,
     color: colors.textSecondary,
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 40,
   },
   emptyAdminText: {
-    fontSize: 14,
+    ...typography.p1,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingVertical: 20,
