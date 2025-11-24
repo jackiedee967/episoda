@@ -112,6 +112,41 @@ export async function saveCommentMentions(
 }
 
 /**
+ * Save help desk post mentions to database
+ */
+export async function saveHelpDeskPostMentions(
+  postId: string,
+  usernames: string[]
+): Promise<boolean> {
+  if (usernames.length === 0) {
+    return true;
+  }
+
+  try {
+    const mentions = usernames.map((username) => ({
+      post_id: postId,
+      mentioned_username: username,
+    }));
+
+    if (mentions.length > 0) {
+      const { error } = await supabase
+        .from('help_desk_post_mentions')
+        .insert(mentions);
+
+      if (error) {
+        console.error('Error saving help desk post mentions:', error);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in saveHelpDeskPostMentions:', error);
+    return false;
+  }
+}
+
+/**
  * Save help desk comment mentions to database
  */
 export async function saveHelpDeskCommentMentions(

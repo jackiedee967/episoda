@@ -12,6 +12,7 @@ export interface User {
   isOnline?: boolean;
   lastActiveAt?: Date;
   socialLinks?: SocialLink[];
+  is_admin?: boolean;
 }
 
 export interface SocialLink {
@@ -154,6 +155,7 @@ export interface HelpDeskPost {
   title: string;
   details: string;
   category: HelpDeskCategory;
+  section: string;
   likes_count: number;
   comments_count: number;
   created_at: string;

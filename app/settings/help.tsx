@@ -25,8 +25,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { HelpDeskPost, HelpDeskCategory } from '@/types';
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
-import { isAdmin } from '@/config/admins';
 import ButtonL from '@/components/ButtonL';
+import MentionText from '@/components/MentionText';
 
 // Helper function to validate and normalize category
 const normalizeCategory = (category: string): HelpDeskCategory => {
@@ -57,7 +57,7 @@ export default function HelpDeskScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [activeMenuPostId, setActiveMenuPostId] = useState<string | null>(null);
-  const userIsAdmin = isAdmin(currentUser?.id);
+  const userIsAdmin = currentUser?.is_admin === true;
 
   useEffect(() => {
     loadPosts();
@@ -89,7 +89,17 @@ export default function HelpDeskScreen() {
         category: normalizeCategory(post.category)
       }));
 
-      setPosts(normalizedPosts);
+      // Sort: announcements first, then by date
+      const sortedPosts = normalizedPosts.sort((a, b) => {
+        // Announcements always come first
+        if (a.section === 'announcement' && b.section !== 'announcement') return -1;
+        if (a.section !== 'announcement' && b.section === 'announcement') return 1;
+        
+        // Within same section, sort by date (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setPosts(sortedPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
     } finally {
@@ -318,7 +328,12 @@ export default function HelpDeskScreen() {
         }}
       >
         <View style={styles.adminCardHeader}>
-          <Text style={styles.adminCardTitle}>{post.title}</Text>
+          <View style={styles.adminCardTitleRow}>
+            <Text style={styles.adminCardTitle}>{post.title}</Text>
+            <View style={styles.announcementBadge}>
+              <IconSymbol name="megaphone.fill" size={10} color={colors.background} />
+            </View>
+          </View>
           {canDelete && (
             <View>
               <Pressable
@@ -343,9 +358,9 @@ export default function HelpDeskScreen() {
             </View>
           )}
         </View>
-        <Text style={styles.adminCardPreview}>
-          {truncateText(post.details, 100)}
-        </Text>
+        <MentionText style={styles.adminCardPreview} numberOfLines={3}>
+          {post.details}
+        </MentionText>
         <View style={styles.adminCardFooter}>
           <Pressable 
             style={styles.adminCardStats}
@@ -425,9 +440,9 @@ export default function HelpDeskScreen() {
         </View>
 
         <Text style={styles.communityPostTitle}>{post.title}</Text>
-        <Text style={styles.communityPostPreview}>
-          {truncateText(post.details, 120)}
-        </Text>
+        <MentionText style={styles.communityPostPreview} numberOfLines={2}>
+          {post.details}
+        </MentionText>
 
         <View style={styles.communityPostFooter}>
           <View style={[
@@ -641,10 +656,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  adminCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
   adminCardTitle: {
     ...typography.subtitle,
     color: colors.text,
     flex: 1,
+  },
+  announcementBadge: {
+    backgroundColor: colors.error,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   adminCardPreview: {
     ...typography.p1,

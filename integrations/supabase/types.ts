@@ -450,6 +450,7 @@ export type Database = {
           onboarding_completed: boolean
           avatar_color_scheme: number | null
           avatar_icon: string | null
+          is_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -463,6 +464,7 @@ export type Database = {
           onboarding_completed?: boolean
           avatar_color_scheme?: number | null
           avatar_icon?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -476,6 +478,7 @@ export type Database = {
           onboarding_completed?: boolean
           avatar_color_scheme?: number | null
           avatar_icon?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -540,6 +543,7 @@ export type Database = {
           title: string
           details: string
           category: string
+          section: string
           likes_count: number
           comments_count: number
           created_at: string
@@ -552,6 +556,7 @@ export type Database = {
           title: string
           details: string
           category: string
+          section?: string
           likes_count?: number
           comments_count?: number
           created_at?: string
@@ -564,10 +569,32 @@ export type Database = {
           title?: string
           details?: string
           category?: string
+          section?: string
           likes_count?: number
           comments_count?: number
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      help_desk_post_mentions: {
+        Row: {
+          id: string
+          post_id: string
+          mentioned_username: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          mentioned_username: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          mentioned_username?: string
+          created_at?: string
         }
         Relationships: []
       }

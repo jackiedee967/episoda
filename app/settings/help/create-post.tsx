@@ -17,21 +17,23 @@ import * as Haptics from 'expo-haptics';
 import { supabase } from '@/integrations/supabase/client';
 import { HelpDeskCategory } from '@/types';
 import { useData } from '@/contexts/DataContext';
-import { isAdmin } from '@/config/admins';
 import ButtonL from '@/components/ButtonL';
+import MentionInput from '@/components/MentionInput';
+import { saveHelpDeskPostMentions, getUserIdsByUsernames, createMentionNotifications } from '@/utils/mentionUtils';
 
 export default function CreatePostScreen() {
   const router = useRouter();
   const { currentUser } = useData();
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
+  const [mentionedUsers, setMentionedUsers] = useState<string[]>([]);
   const [category, setCategory] = useState<HelpDeskCategory>('Feature Request');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // AUTHENTICATION BYPASSED - Using mock user from DataContext
   const currentUsername = currentUser.username;
-  const userIsAdmin = isAdmin(currentUser.id);
+  const userIsAdmin = currentUser?.is_admin === true;
 
   const categories: HelpDeskCategory[] = [
     'Feature Request',
@@ -63,7 +65,10 @@ export default function CreatePostScreen() {
       // AUTHENTICATION BYPASSED - Using mock user
       const userId = currentUser.id;
 
-      const { error } = await supabase
+      // Determine section based on category
+      const section = category === 'Admin Announcement' ? 'announcement' : 'general';
+
+      const { data, error } = await supabase
         .from('help_desk_posts')
         .insert({
           user_id: userId,
@@ -71,13 +76,31 @@ export default function CreatePostScreen() {
           title: title.trim(),
           details: details.trim(),
           category,
+          section,
           likes_count: 0,
           comments_count: 0,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Error creating post:', error);
         throw error;
+      }
+
+      // Save mentions if there are any
+      if (mentionedUsers.length > 0 && data?.id) {
+        await saveHelpDeskPostMentions(data.id, mentionedUsers);
+
+        // Create notifications for mentioned users
+        const userMap = await getUserIdsByUsernames(mentionedUsers);
+        const mentionedUserIds = Array.from(userMap.values());
+        await createMentionNotifications(
+          mentionedUserIds,
+          userId,
+          'mention_post',
+          data.id
+        );
       }
 
       if (typeof window !== 'undefined') {
@@ -151,15 +174,18 @@ export default function CreatePostScreen() {
           {/* Details Input */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Details</Text>
-            <TextInput
+            <MentionInput
               style={[styles.input, styles.textArea]}
-              placeholder="Provide as much detail as you can."
+              placeholder="Provide as much detail as you can. Use @username to mention someone."
               placeholderTextColor={colors.textSecondary}
               value={details}
-              onChangeText={setDetails}
+              onChangeText={(text, mentions) => {
+                setDetails(text);
+                setMentionedUsers(mentions);
+              }}
+              currentUserId={currentUser.id}
               multiline
-              numberOfLines={8}
-              textAlignVertical="top"
+              inputBackgroundColor={colors.background}
             />
           </View>
 
