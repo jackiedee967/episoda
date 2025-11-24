@@ -520,6 +520,87 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          actor_id: string
+          post_id: string | null
+          comment_id: string | null
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          actor_id: string
+          post_id?: string | null
+          comment_id?: string | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          actor_id?: string
+          post_id?: string | null
+          comment_id?: string | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      comment_mentions: {
+        Row: {
+          id: string
+          comment_id: string
+          mentioned_user_id: string
+          mentioned_username: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          comment_id: string
+          mentioned_user_id: string
+          mentioned_username: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          comment_id?: string
+          mentioned_user_id?: string
+          mentioned_username?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      post_mentions: {
+        Row: {
+          id: string
+          post_id: string
+          mentioned_user_id: string
+          mentioned_username: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          mentioned_user_id: string
+          mentioned_username: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          mentioned_user_id?: string
+          mentioned_username?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
