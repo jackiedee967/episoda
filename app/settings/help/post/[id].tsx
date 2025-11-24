@@ -697,6 +697,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    paddingHorizontal: Platform.select({ web: 0, default: 16 }),
     paddingVertical: 12,
     paddingBottom: Platform.OS === 'ios' ? 34 : 12,
     backgroundColor: tokens.colors.pureWhite,
