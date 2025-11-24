@@ -78,7 +78,12 @@ export default function HelpDeskScreen() {
 
       const { data, error } = await supabase
         .from('help_desk_posts')
-        .select('*')
+        .select(`
+          *,
+          profiles!help_desk_posts_user_id_fkey (
+            avatar_url
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -355,7 +360,7 @@ export default function HelpDeskScreen() {
       >
         <View style={styles.communityPostHeader}>
           <Image
-            source={{ uri: currentUser.avatar }}
+            source={{ uri: post.profiles?.avatar_url || currentUser.avatar }}
             style={styles.communityPostAvatar}
           />
           <View style={styles.communityPostHeaderText}>
