@@ -229,10 +229,9 @@ export async function fetchShowEndYear(
   seasons?: TraktSeason[]
 ): Promise<number | undefined> {
   try {
-    // Only set endYear for ended/canceled shows
-    if (traktShow.status !== 'ended' && traktShow.status !== 'canceled') {
-      return undefined;
-    }
+    // Calculate end year for ALL shows based on last aired episode
+    // This gives us accurate year ranges for both ended and ongoing shows
+    // Example: "Loot" (2022 - 2024) even though it's still "returning series"
     
     // Reuse seasons if provided, otherwise fetch them
     const showSeasons = seasons || await getShowSeasons(traktShow.ids.trakt);
@@ -252,6 +251,12 @@ export async function fetchShowEndYear(
     
     const lastEpisode = airedEpisodes[airedEpisodes.length - 1];
     const endYear = new Date(lastEpisode.first_aired!).getFullYear();
+    
+    // Only return endYear if it's different from the start year
+    // This prevents "2022 - 2022" and shows just "2022" instead
+    if (endYear === traktShow.year) {
+      return undefined;
+    }
     
     return endYear;
   } catch (error) {
