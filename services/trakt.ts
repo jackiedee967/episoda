@@ -16,6 +16,7 @@ const TRAKT_HEADERS = {
 export interface TraktShow {
   title: string;
   year: number;
+  end_year?: number;
   ids: {
     trakt: number;
     slug: string;

@@ -28,7 +28,9 @@ export interface TMDBShow {
   poster_path: string | null;
   backdrop_path: string | null;
   first_air_date: string;
+  last_air_date?: string;
   overview: string;
+  status?: string;
 }
 
 export interface TMDBSearchResult {
@@ -98,6 +100,29 @@ export interface TMDBKeyword {
 
 export interface TMDBKeywordsResponse {
   results: TMDBKeyword[];
+}
+
+export async function getShowDetails(tmdbId: number): Promise<TMDBShow | null> {
+  if (!TMDB_API_KEY) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      console.error(`❌ TMDB details API error: ${response.status}`);
+      return null;
+    }
+
+    const data: TMDBShow = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`❌ Error fetching TMDB details:`, error);
+    return null;
+  }
 }
 
 export async function getShowKeywords(tmdbId: number): Promise<string[]> {

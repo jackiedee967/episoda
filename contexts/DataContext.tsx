@@ -378,22 +378,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
               // Try to enrich with Trakt if available
               let traktShow: any;
+              let enrichedData: any = null;
               try {
                 traktShow = await getShowDetails(dbShow.trakt_id);
+                if (traktShow) {
+                  const { showEnrichmentManager } = await import('@/services/showEnrichment');
+                  enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+                }
               } catch (error) {
                 console.warn(`Failed to fetch Trakt details for ${dbShow.trakt_id}, using database only`);
               }
 
               // Enrich poster if missing and Trakt worked
-              let posterUrl = dbShow.poster_url;
-              if (!posterUrl && traktShow) {
-                try {
-                  const { showEnrichmentManager } = await import('@/services/showEnrichment');
-                  const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
-                  posterUrl = enrichedData.posterUrl;
-                } catch (error) {
-                  console.warn(`Failed to enrich poster for ${dbShow.title}`);
-                }
+              let posterUrl = dbShow.poster_url || enrichedData?.posterUrl;
+
+              // Add end_year to traktShow if available
+              if (traktShow && enrichedData?.endYear) {
+                traktShow = {
+                  ...traktShow,
+                  end_year: enrichedData.endYear
+                };
               }
 
               return {
@@ -413,14 +417,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 const traktShow = await getShowDetails(rec.trakt_id);
                 const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
 
+                // Add end_year to traktShow object
+                const enrichedTraktShow = {
+                  ...traktShow,
+                  end_year: enrichedData.endYear
+                };
+
                 return {
-                  show: mapTraktShowToShow(traktShow, {
+                  show: mapTraktShowToShow(enrichedTraktShow, {
                     posterUrl: enrichedData.posterUrl,
                     totalSeasons: enrichedData.totalSeasons,
                     totalEpisodes: traktShow.aired_episodes,
                     endYear: enrichedData.endYear
                   }),
-                  traktShow,
+                  traktShow: enrichedTraktShow,
                   traktId: rec.trakt_id,
                   isDatabaseBacked: false
                 };
