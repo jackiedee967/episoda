@@ -638,25 +638,22 @@ export default function ProfileScreen() {
             const showCount = playlist.showCount || 0;
             const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
-              <Pressable
-                key={playlist.id}
-                style={({ pressed }) => [
-                  styles.playlistItem,
-                  pressed ? styles.playlistItemPressed : null,
-                ]}
-                onPress={() => handlePlaylistPress(playlist.id)}
-              >
-                <View style={styles.playlistInfo}>
-                  <Text style={styles.playlistName}>{playlist.name}</Text>
-                  <Text style={styles.playlistCount}>
-                    {showCount} {showCount === 1 ? 'show' : 'shows'}
-                  </Text>
-                </View>
+              <View key={playlist.id} style={styles.playlistItem}>
+                <Pressable
+                  style={styles.playlistCardPressable}
+                  onPress={() => handlePlaylistPress(playlist.id)}
+                >
+                  <View style={styles.playlistInfo}>
+                    <Text style={styles.playlistName}>{playlist.name}</Text>
+                    <Text style={styles.playlistCount}>
+                      {showCount} {showCount === 1 ? 'show' : 'shows'}
+                    </Text>
+                  </View>
+                </Pressable>
                 {isOwnPlaylist && (
                   <Pressable
                     style={styles.playlistMenuButton}
-                    onPress={(e) => {
-                      e?.stopPropagation?.();
+                    onPress={() => {
                       console.log('🔥 Three dots clicked for playlist:', playlist.id);
                       handleDeletePlaylist(playlist.id, playlist.name);
                     }}
@@ -665,7 +662,7 @@ export default function ProfileScreen() {
                     <MoreHorizontal size={20} color={colors.almostWhite} />
                   </Pressable>
                 )}
-              </Pressable>
+              </View>
             );
           })}
         </>
@@ -1080,23 +1077,23 @@ const styles = StyleSheet.create({
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 15,
     backgroundColor: colors.cardBackground,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
     marginBottom: 12,
+    overflow: 'hidden',
   },
-  playlistItemPressed: {
-    opacity: 0.7,
+  playlistCardPressable: {
+    flex: 1,
+    padding: 15,
   },
   playlistMenuButton: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
+    top: 0,
+    right: 0,
+    width: 48,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,

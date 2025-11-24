@@ -244,40 +244,40 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               <View style={styles.showsGrid}>
                 {playlistShows.map((show) => (
                   <View key={show.id} style={styles.showItem}>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.showPosterContainer,
-                        pressed ? styles.showPosterPressed : null,
-                      ]}
-                      onPress={() => handleShowPress(show.id)}
-                    >
-                      <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
-                    </Pressable>
-                    
-                    {isOwnPlaylist ? (
+                    <View style={styles.showPosterWrapper}>
                       <Pressable
-                        style={styles.removeButton}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          console.log('🔥 Trash icon clicked for show:', show.id);
-                          handleRemoveShow(show.id);
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={({ pressed }) => [
+                          styles.showPosterContainer,
+                          pressed ? styles.showPosterPressed : null,
+                        ]}
+                        onPress={() => handleShowPress(show.id)}
                       >
-                        <Trash2 size={18} color="#EF4444" />
+                        <Image source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.showPoster} />
                       </Pressable>
-                    ) : (
-                      <Pressable
-                        style={styles.bookmarkIconContainer}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          console.log('🔥 Bookmark icon clicked');
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Bookmark size={18} color={tokens.colors.black} fill={tokens.colors.black} />
-                      </Pressable>
-                    )}
+                      
+                      {isOwnPlaylist ? (
+                        <Pressable
+                          style={styles.removeButton}
+                          onPress={() => {
+                            console.log('🔥 Trash icon clicked for show:', show.id);
+                            handleRemoveShow(show.id);
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Trash2 size={18} color="#EF4444" />
+                        </Pressable>
+                      ) : (
+                        <Pressable
+                          style={styles.bookmarkIconContainer}
+                          onPress={() => {
+                            console.log('🔥 Bookmark icon clicked');
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Bookmark size={18} color={tokens.colors.black} fill={tokens.colors.black} />
+                        </Pressable>
+                      )}
+                    </View>
                     
                     <Text style={styles.showTitle} numberOfLines={2}>
                       {show.title}
@@ -386,11 +386,13 @@ const styles = StyleSheet.create({
   },
   showItem: {
     width: '30%',
+  },
+  showPosterWrapper: {
     position: 'relative',
+    marginBottom: 8,
   },
   showPosterContainer: {
     width: '100%',
-    marginBottom: 8,
   },
   showPosterPressed: {
     opacity: 0.7,
