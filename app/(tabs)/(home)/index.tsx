@@ -710,11 +710,11 @@ export default function HomeScreen() {
                   {show.title}
                 </Text>
                 
-                {show.year && (
+                {show.traktShow?.year && (
                   <Text style={styles.showYear}>
-                    {show.endYear && show.endYear !== show.year 
-                      ? `${show.year} - ${show.endYear}` 
-                      : show.year}
+                    {show.traktShow.endYear && show.traktShow.endYear !== show.traktShow.year 
+                      ? `${show.traktShow.year} - ${show.traktShow.endYear}` 
+                      : show.traktShow.year}
                   </Text>
                 )}
               </Pressable>
