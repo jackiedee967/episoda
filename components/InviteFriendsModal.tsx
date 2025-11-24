@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Image, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, Image, Share, Alert, Platform } from 'react-native';
 import { colors, typography } from '@/styles/tokens';
 import Button from '@/components/Button';
 import * as Haptics from 'expo-haptics';
@@ -8,21 +8,29 @@ import * as Clipboard from 'expo-clipboard';
 interface InviteFriendsModalProps {
   visible: boolean;
   onClose: () => void;
+  onInvite?: () => void;
 }
 
 // Placeholder App Store URL - update this when you have your real App Store link
-const APP_STORE_URL = 'https://apps.apple.com/app/natively/idXXXXXXXXX';
+const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
 
-export default function InviteFriendsModal({ visible, onClose }: InviteFriendsModalProps) {
+export default function InviteFriendsModal({ visible, onClose, onInvite }: InviteFriendsModalProps) {
   const handleInviteFriends = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
+      // If parent provided a custom onInvite handler, use that
+      if (onInvite) {
+        onInvite();
+        return;
+      }
+      
+      // Otherwise, default share behavior
       // Copy link to clipboard
       await Clipboard.setStringAsync(APP_STORE_URL);
       
       // Share with native share sheet
-      const message = `Check out Natively - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
+      const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
       
       const result = await Share.share({
         message: message,
@@ -35,7 +43,11 @@ export default function InviteFriendsModal({ visible, onClose }: InviteFriendsMo
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      Alert.alert('Error', 'Failed to share. Link copied to clipboard.');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to share. Link copied to clipboard.');
+      } else {
+        Alert.alert('Error', 'Failed to share. Link copied to clipboard.');
+      }
     }
   };
 
@@ -49,8 +61,9 @@ export default function InviteFriendsModal({ visible, onClose }: InviteFriendsMo
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
           <Image 
-            source={require('@/assets/images/invite-friends.png')} 
+            source={require('@/assets/images/rectangle4.png')} 
             style={styles.image}
+            resizeMode="contain"
           />
           <View style={styles.textContainer}>
             <Text style={styles.title}>TV is more fun when shared</Text>
