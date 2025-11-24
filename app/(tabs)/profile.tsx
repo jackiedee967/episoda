@@ -655,24 +655,17 @@ export default function ProfileScreen() {
                   </View>
                 </Pressable>
                 {isOwnPlaylist && (
-                  <View style={styles.playlistMenuWrapper}>
-                    <div
-                      onClick={() => {
-                        console.log('🔥 Three dots clicked for playlist:', playlist.id);
-                        handleDeletePlaylist(playlist.id, playlist.name);
-                      }}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <MoreHorizontal size={20} color={colors.almostWhite} />
-                    </div>
-                  </View>
+                  <Pressable
+                    style={styles.playlistMenuButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      console.log('🔥 Three dots clicked for playlist:', playlist.id);
+                      handleDeletePlaylist(playlist.id, playlist.name);
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <MoreHorizontal size={20} color={colors.almostWhite} />
+                  </Pressable>
                 )}
               </View>
             );
@@ -1108,20 +1101,15 @@ const styles = StyleSheet.create({
   playlistItemPressed: {
     opacity: 0.7,
   },
-  playlistMenuWrapper: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   playlistMenuButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   playlistInfo: {
     flex: 1,
