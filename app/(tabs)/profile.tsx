@@ -638,27 +638,25 @@ export default function ProfileScreen() {
             const showCount = playlist.showCount || 0;
             const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
-              <View key={playlist.id} style={styles.playlistRow}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.playlistItem,
-                    pressed ? styles.playlistItemPressed : null,
-                    isOwnPlaylist && styles.playlistItemWithMenu,
-                  ]}
-                  onPress={() => handlePlaylistPress(playlist.id)}
-                >
-                  <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistName}>{playlist.name}</Text>
-                    <Text style={styles.playlistCount}>
-                      {showCount} {showCount === 1 ? 'show' : 'shows'}
-                    </Text>
-                  </View>
-                </Pressable>
+              <Pressable
+                key={playlist.id}
+                style={({ pressed }) => [
+                  styles.playlistItem,
+                  pressed ? styles.playlistItemPressed : null,
+                ]}
+                onPress={() => handlePlaylistPress(playlist.id)}
+              >
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistName}>{playlist.name}</Text>
+                  <Text style={styles.playlistCount}>
+                    {showCount} {showCount === 1 ? 'show' : 'shows'}
+                  </Text>
+                </View>
                 {isOwnPlaylist && (
                   <Pressable
                     style={styles.playlistMenuButton}
                     onPress={(e) => {
-                      e.stopPropagation();
+                      e?.stopPropagation?.();
                       console.log('🔥 Three dots clicked for playlist:', playlist.id);
                       handleDeletePlaylist(playlist.id, playlist.name);
                     }}
@@ -667,7 +665,7 @@ export default function ProfileScreen() {
                     <MoreHorizontal size={20} color={colors.almostWhite} />
                   </Pressable>
                 )}
-              </View>
+              </Pressable>
             );
           })}
         </>
@@ -1078,14 +1076,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  playlistRow: {
-    position: 'relative',
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   playlistItem: {
-    flex: 1,
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1094,9 +1086,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
-  },
-  playlistItemWithMenu: {
-    paddingRight: 56,
+    marginBottom: 12,
   },
   playlistItemPressed: {
     opacity: 0.7,
