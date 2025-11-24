@@ -1748,7 +1748,7 @@ export default function SearchScreen() {
         if (!query) return [];
         
         const filteredComments = mockComments.filter(comment =>
-          comment.text.toLowerCase().includes(query)
+          comment.comment_text.toLowerCase().includes(query)
         );
         
         return filteredComments.sort((a, b) => {
@@ -1960,7 +1960,7 @@ export default function SearchScreen() {
 
         const postTitle = post.title || 'Untitled';
         const truncatedPostTitle = postTitle.length > 40 ? postTitle.slice(0, 40) + '...' : postTitle;
-        const truncatedComment = comment.text.length > 60 ? comment.text.slice(0, 60) + '...' : comment.text;
+        const truncatedComment = comment.comment_text.length > 60 ? comment.comment_text.slice(0, 60) + '...' : comment.comment_text;
 
         return (
           <FadeInView key={comment.id} delay={index * 30}>
@@ -2117,7 +2117,7 @@ export default function SearchScreen() {
       
       case 'comments':
         return mockComments.filter(comment =>
-          comment.text.toLowerCase().includes(query)
+          comment.comment_text.toLowerCase().includes(query)
         ).length;
       
       case 'users':

@@ -69,7 +69,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
 
   const handleReplyPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const textPreview = comment.text.length > 50 ? comment.text.substring(0, 50) + '...' : comment.text;
+    const textPreview = comment.comment_text.length > 50 ? comment.comment_text.substring(0, 50) + '...' : comment.comment_text;
     onReplyStart?.(comment.id, comment.user.displayName, textPreview, depth, comment.parentId || null);
   };
 
@@ -106,7 +106,7 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
         </View>
 
         <MentionText 
-          text={comment.text} 
+          text={comment.comment_text} 
           style={styles.text}
           mentionColor={tokens.colors.greenHighlight}
         />

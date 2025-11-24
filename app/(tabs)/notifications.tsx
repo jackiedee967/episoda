@@ -84,10 +84,10 @@ export default function NotificationsScreen() {
       case 'like':
         return `liked your post${notification.post?.title ? ` "${notification.post.title}"` : ''}`;
       case 'comment':
-        const commentPreview = notification.comment?.text 
-          ? notification.comment.text.length > 50 
-            ? notification.comment.text.substring(0, 50) + '...'
-            : notification.comment.text
+        const commentPreview = notification.comment?.comment_text 
+          ? notification.comment.comment_text.length > 50 
+            ? notification.comment.comment_text.substring(0, 50) + '...'
+            : notification.comment.comment_text
           : '';
         return `commented: "${commentPreview}"`;
       case 'follow':

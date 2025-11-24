@@ -52,7 +52,7 @@ export interface Comment {
   postId: string;
   parentId?: string | null;
   user: User;
-  text: string;
+  comment_text: string;
   image?: string;
   likes: number;
   isLiked: boolean;
