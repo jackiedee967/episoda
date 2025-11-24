@@ -41,12 +41,24 @@ export default function MentionInput({
   const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [autocompleteUsers, setAutocompleteUsers] = useState<User[]>([]);
   const [mentionSearch, setMentionSearch] = useState('');
-  const [cursorPosition, setCursorPosition] = useState(0);
   const [followingLoaded, setFollowingLoaded] = useState(false);
   const inputRef = useRef<TextInput>(null);
   
+  // Fully controlled input model: maintain internal value and selection
+  const [internalValue, setInternalValue] = useState(value);
+  const [selection, setSelection] = useState({ start: value.length, end: value.length });
+  
   // Cache follow list to avoid refetching on every keystroke
   const followingIdsRef = useRef<string[]>([]);
+
+  // Sync internal value when value prop changes externally (prefills, suggestion insertion)
+  useEffect(() => {
+    if (value !== internalValue) {
+      setInternalValue(value);
+      // Default caret to end of text when external change occurs
+      setSelection({ start: value.length, end: value.length });
+    }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Extract all @mentions from text
   const extractMentions = (text: string): string[] => {
@@ -156,12 +168,19 @@ export default function MentionInput({
 
   // Handle text change
   const handleTextChange = (text: string) => {
-    // Find if @ was just typed and get the search term
-    const beforeCursor = text.substring(0, cursorPosition);
+    // Calculate cursor position from text delta (onSelectionChange lags behind)
+    const textDelta = text.length - internalValue.length;
+    const cursor = selection.end + textDelta;
+    
+    // Update internal value
+    setInternalValue(text);
+
+    // Find mention based on calculated cursor position
+    const beforeCursor = text.substring(0, cursor);
     const lastAtIndex = beforeCursor.lastIndexOf('@');
 
     if (lastAtIndex !== -1) {
-      const afterAt = text.substring(lastAtIndex + 1, cursorPosition);
+      const afterAt = text.substring(lastAtIndex + 1, cursor);
       // Check if there's a space after @, if so, stop autocomplete
       if (afterAt.includes(' ')) {
         setShowAutocomplete(false);
@@ -174,25 +193,30 @@ export default function MentionInput({
       setMentionSearch('');
     }
 
+    // Extract all mentions and notify parent
     const mentions = extractMentions(text);
     onChangeText(text, mentions);
   };
 
   // Handle user selection
   const handleSelectUser = (username: string) => {
-    const beforeCursor = value.substring(0, cursorPosition);
-    const afterCursor = value.substring(cursorPosition);
+    const cursor = selection.end;
+    const beforeCursor = internalValue.substring(0, cursor);
+    const afterCursor = internalValue.substring(cursor);
     const lastAtIndex = beforeCursor.lastIndexOf('@');
 
     if (lastAtIndex !== -1) {
-      const before = value.substring(0, lastAtIndex);
+      const before = internalValue.substring(0, lastAtIndex);
       const newText = `${before}@${username} ${afterCursor}`;
-      const newCursorPos = lastAtIndex + username.length + 2; // +2 for @ and space
+      const newCursor = lastAtIndex + username.length + 2; // +2 for @ and space
 
-      setCursorPosition(newCursorPos);
+      // Update internal state
+      setInternalValue(newText);
+      setSelection({ start: newCursor, end: newCursor });
       setShowAutocomplete(false);
       setMentionSearch('');
 
+      // Notify parent
       const mentions = extractMentions(newText);
       onChangeText(newText, mentions);
 
@@ -229,10 +253,12 @@ export default function MentionInput({
       <TextInput
         {...textInputProps}
         ref={inputRef}
-        value={value}
+        value={internalValue}
+        selection={selection}
         onChangeText={handleTextChange}
         onSelectionChange={(e) => {
-          setCursorPosition(e.nativeEvent.selection.end);
+          // Keep selection state in sync with native caret changes
+          setSelection(e.nativeEvent.selection);
         }}
       />
 
