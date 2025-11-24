@@ -1868,15 +1868,11 @@ export default function SearchScreen() {
 
       case 'shows':
         const show = item;
-        // Derive stable traktId directly from item
         const stableTraktId = show.traktId ?? show.traktShow?.ids?.trakt ?? show.traktDetails?.ids?.trakt;
         const isEnriching = stableTraktId ? enrichingShows.has(stableTraktId) : false;
         const mutualFriendsWatching = show.mutualFriendsWatching || [];
         const traktShow = show.traktShow ?? traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
-        // Robust year fallback: try multiple sources
         const releaseYear = traktShow?.year || show.releaseYear || show.year || (show.firstAired ? new Date(show.firstAired).getFullYear() : undefined);
-
-        // Use stable ID for key and bookmark state
         const stableKey = show.id || (stableTraktId ? `trakt-${stableTraktId}` : `show-${index}`);
         
         return (
@@ -1884,87 +1880,80 @@ export default function SearchScreen() {
             <Pressable
               style={({ pressed }) => [styles.searchShowCard, pressed && styles.pressed]}
               onPress={async () => {
-              console.log('🎬 Show card pressed:', show.title);
-              console.log('📊 Show data:', JSON.stringify(show, null, 2));
-              
-              try {
-                setIsSavingShow(true);
-                const traktShowData = traktShow || traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
+                console.log('🎬 Show card pressed:', show.title);
+                console.log('📊 Show data:', JSON.stringify(show, null, 2));
                 
-                if (!traktShowData) {
-                  console.error('❌ Trakt show data not found for:', show.title);
-                  setIsSavingShow(false);
-                  return;
-                }
+                try {
+                  setIsSavingShow(true);
+                  const traktShowData = traktShow || traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.traktShow;
+                  
+                  if (!traktShowData) {
+                    console.error('❌ Trakt show data not found for:', show.title);
+                    setIsSavingShow(false);
+                    return;
+                  }
 
-                const enrichedInfo = traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.enrichedData;
-                
-                console.log('💾 Saving show to database (quick save with retry logic)...');
-                const dbShow = await saveShow(traktShowData, {
-                  enrichedPosterUrl: enrichedInfo?.posterUrl,
-                  enrichedBackdropUrl: enrichedInfo?.backdropUrl,
-                  enrichedSeasonCount: enrichedInfo?.totalSeasons,
-                  enrichedTVMazeId: enrichedInfo?.tvmazeId,
-                  enrichedImdbId: enrichedInfo?.imdbId
-                });
-                console.log('✅ Show saved with DB UUID:', dbShow.id);
-                
-                console.log('🚀 Navigating to ShowHub with UUID:', dbShow.id);
-                router.push(`/show/${dbShow.id}`);
-              } catch (error) {
-                console.error('❌ Error navigating to show:', error);
-              } finally {
-                setIsSavingShow(false);
-              }
-            }}
-          >
-            <View style={styles.searchPosterContainer}>
-              <FadeInImage 
-                source={{ uri: getPosterUrl(show.poster, show.title) }} 
-                style={styles.searchPoster}
-                priority="high"
-                cachePolicy="memory-disk"
-                contentFit="cover"
-              />
-              {isEnriching ? (
-                <View style={styles.enrichingOverlay}>
-                  <ActivityIndicator size="small" color={tokens.colors.green} />
-                </View>
-              ) : null}
-              
-              {/* Mutual Friends Watching - Top Left */}
-              {mutualFriendsWatching.length > 0 && (
-                <View style={styles.searchMutualFriendsOverlay}>
-                  <BaseFriends
-                    prop="Small"
-                    state="Mutual_Friends"
-                    friends={mutualFriendsWatching}
-                  />
-                </View>
-              )}
-              
-              <Pressable
-                style={styles.saveButton}
-                onPress={(e) => handleSavePress(show, e)}
-              >
-                <IconSymbol
-                  name={isShowSaved(show.id || stableKey) ? "bookmark.fill" : "bookmark"}
-                  size={20}
-                  color={isShowSaved(show.id || stableKey) ? tokens.colors.green : tokens.colors.grey1}
+                  const enrichedInfo = traktShowResults.results.find(r => r.traktShow.ids.trakt === stableTraktId)?.enrichedData;
+                  
+                  console.log('💾 Saving show to database (quick save with retry logic)...');
+                  const dbShow = await saveShow(traktShowData, {
+                    enrichedPosterUrl: enrichedInfo?.posterUrl,
+                    enrichedBackdropUrl: enrichedInfo?.backdropUrl,
+                    enrichedSeasonCount: enrichedInfo?.totalSeasons,
+                    enrichedTVMazeId: enrichedInfo?.tvmazeId,
+                    enrichedImdbId: enrichedInfo?.imdbId
+                  });
+                  console.log('✅ Show saved with DB UUID:', dbShow.id);
+                  
+                  console.log('🚀 Navigating to ShowHub with UUID:', dbShow.id);
+                  router.push(`/show/${dbShow.id}`);
+                } catch (error) {
+                  console.error('❌ Error navigating to show:', error);
+                } finally {
+                  setIsSavingShow(false);
+                }
+              }}
+            >
+              <View style={styles.searchPosterContainer}>
+                <FadeInImage 
+                  source={{ uri: getPosterUrl(show.poster, show.title) }} 
+                  style={styles.searchPoster}
+                  priority="high"
+                  cachePolicy="memory-disk"
+                  contentFit="cover"
                 />
-              </Pressable>
-            </View>
-            
-            {/* Title & Year below poster - matching Explore format */}
-            <View style={styles.searchShowInfo}>
-              <Text style={styles.searchShowTitle} numberOfLines={2}>
-                {show.title}
-              </Text>
-              {releaseYear ? (
-                <Text style={styles.searchShowYear}>{releaseYear}</Text>
-              ) : null}
-            </View>
-          </Pressable>
+                {isEnriching && (
+                  <View style={styles.enrichingOverlay}>
+                    <ActivityIndicator size="small" color={tokens.colors.green} />
+                  </View>
+                )}
+                
+                <Pressable
+                  style={styles.saveButton}
+                  onPress={(e) => handleSavePress(show, e)}
+                >
+                  <IconSymbol
+                    name={isShowSaved(show.id || stableKey) ? "bookmark.fill" : "bookmark"}
+                    size={20}
+                    color={isShowSaved(show.id || stableKey) ? tokens.colors.green : tokens.colors.grey1}
+                  />
+                </Pressable>
+              </View>
+              
+              <View style={styles.searchShowInfo}>
+                <Text style={styles.searchShowTitle} numberOfLines={1}>
+                  {show.title}
+                </Text>
+                {releaseYear && (
+                  <Text style={styles.searchShowYear}>{releaseYear}</Text>
+                )}
+                {mutualFriendsWatching.length > 0 && (
+                  <Text style={styles.friendsWatchingText}>
+                    {mutualFriendsWatching.length} {mutualFriendsWatching.length === 1 ? 'friend' : 'friends'} watching
+                  </Text>
+                )}
+              </View>
+            </Pressable>
           </FadeInView>
         );
 
@@ -2569,9 +2558,6 @@ export default function SearchScreen() {
             style={styles.scrollView}
             contentContainerStyle={styles.resultsContainer}
             showsVerticalScrollIndicator={false}
-            numColumns={activeCategory === 'shows' ? 2 : 1}
-            key={activeCategory === 'shows' ? 'grid' : 'list'}
-            columnWrapperStyle={activeCategory === 'shows' ? styles.searchColumnWrapper : undefined}
             ListEmptyComponent={renderEmptyState}
             ListFooterComponent={renderFooter}
             onEndReached={activeCategory === 'shows' ? handleEndReached : undefined}
@@ -2736,20 +2722,31 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
-  // Vertical poster layout for search results (matching Explore format)
+  // Horizontal card layout for search results
   searchShowCard: {
-    width: 143,
-    marginBottom: 20,
+    flexDirection: 'row',
+    width: '100%',
+    paddingTop: 9,
+    paddingLeft: 11,
+    paddingBottom: 9,
+    paddingRight: 11,
+    alignItems: 'center',
+    columnGap: 17,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderStyle: 'solid',
+    borderColor: tokens.colors.cardStroke,
+    backgroundColor: tokens.colors.cardBackground,
+    marginBottom: 12,
   },
   searchPosterContainer: {
     position: 'relative',
-    width: 143,
-    height: 175.76,
-    marginBottom: 8,
+    width: 80,
+    height: 99,
   },
   searchPoster: {
-    width: 143,
-    height: 175.76,
+    width: 80,
+    height: 99,
     borderRadius: 8,
   },
   enrichingOverlay: {
@@ -2778,28 +2775,25 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
   },
-  searchMutualFriendsOverlay: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    zIndex: 10,
+  searchShowInfo: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    rowGap: 4,
   },
   searchShowTitle: {
     ...tokens.typography.p1SB,
     color: tokens.colors.pureWhite,
-    marginBottom: 2,
-  },
-  searchShowInfo: {
     width: '100%',
   },
   searchShowYear: {
     ...tokens.typography.p3M,
     color: tokens.colors.grey1,
   },
-  searchColumnWrapper: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
+  friendsWatchingText: {
+    ...tokens.typography.p3M,
+    color: tokens.colors.grey2,
   },
   userCardWrapper: {
     marginBottom: 12,
