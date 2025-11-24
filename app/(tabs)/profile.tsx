@@ -636,21 +636,20 @@ export default function ProfileScreen() {
             const showCount = playlist.showCount || 0;
             const isOwnPlaylist = playlist.userId === contextCurrentUser?.id;
             return (
-              <View key={playlist.id} style={styles.playlistRow}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.playlistItem,
-                    pressed ? styles.playlistItemPressed : null,
-                  ]}
-                  onPress={() => handlePlaylistPress(playlist.id)}
-                >
-                  <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistName}>{playlist.name}</Text>
-                    <Text style={styles.playlistCount}>
-                      {showCount} {showCount === 1 ? 'show' : 'shows'}
-                    </Text>
-                  </View>
-                </Pressable>
+              <Pressable
+                key={playlist.id}
+                style={({ pressed }) => [
+                  styles.playlistItem,
+                  pressed ? styles.playlistItemPressed : null,
+                ]}
+                onPress={() => handlePlaylistPress(playlist.id)}
+              >
+                <View style={styles.playlistInfo}>
+                  <Text style={styles.playlistName}>{playlist.name}</Text>
+                  <Text style={styles.playlistCount}>
+                    {showCount} {showCount === 1 ? 'show' : 'shows'}
+                  </Text>
+                </View>
                 {isOwnPlaylist && (
                   <Pressable
                     style={styles.playlistMenuButton}
@@ -660,10 +659,10 @@ export default function ProfileScreen() {
                     }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <MoreHorizontal size={20} color={colors.textSecondary} />
+                    <MoreHorizontal size={20} color={colors.almostWhite} />
                   </Pressable>
                 )}
-              </View>
+              </Pressable>
             );
           })}
         </>
@@ -1073,13 +1072,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  playlistRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
   playlistItem: {
-    flex: 1,
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1088,13 +1082,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.cardStroke,
+    marginBottom: 12,
   },
   playlistItemPressed: {
     opacity: 0.7,
   },
   playlistMenuButton: {
-    padding: 15,
-    marginLeft: 8,
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    padding: 4,
   },
   playlistInfo: {
     flex: 1,
