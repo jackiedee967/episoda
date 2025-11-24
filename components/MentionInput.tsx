@@ -43,6 +43,10 @@ export default function MentionInput({
   const [mentionSearch, setMentionSearch] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
   const inputRef = useRef<TextInput>(null);
+  
+  // Cache follow list to avoid refetching on every keystroke
+  const followingIdsRef = useRef<string[]>([]);
+  const followingLoadedRef = useRef(false);
 
   // Extract all @mentions from text
   const extractMentions = (text: string): string[] => {
@@ -51,51 +55,88 @@ export default function MentionInput({
     return matches ? matches.map(m => m.substring(1)) : [];
   };
 
-  // Search for users when @ is detected
+  // Load following list once on mount
   useEffect(() => {
-    const searchUsers = async () => {
+    const loadFollowing = async () => {
+      try {
+        const { data: following } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', currentUserId);
+
+        followingIdsRef.current = following?.map(f => f.following_id) || [];
+        followingLoadedRef.current = true;
+      } catch (error) {
+        console.error('Error loading following list:', error);
+        followingIdsRef.current = [];
+        followingLoadedRef.current = true;
+      }
+    };
+
+    loadFollowing();
+  }, [currentUserId]);
+
+  // Search for users when @ is detected (with debouncing)
+  useEffect(() => {
+    // Debounce search by 300ms
+    const timeoutId = setTimeout(async () => {
       if (!mentionSearch) {
         setAutocompleteUsers([]);
         setShowAutocomplete(false);
         return;
       }
 
+      // Wait for following list to load
+      if (!followingLoadedRef.current) {
+        return;
+      }
+
       try {
-        // Get users you're following
-        const { data: following } = await supabase
-          .from('follows')
-          .select('following_id')
-          .eq('follower_id', currentUserId);
+        const followingIds = followingIdsRef.current;
 
-        const followingIds = following?.map(f => f.following_id) || [];
+        // Optimized query: Get users with mutual friend counts in single query
+        // Use SQL function to calculate mutual friends efficiently
+        const { data, error } = await supabase.rpc('search_users_for_mentions', {
+          search_term: mentionSearch,
+          current_user_id: currentUserId,
+          following_ids: followingIds,
+          result_limit: 10
+        });
 
-        // Search all users matching the query
-        const { data: users, error } = await supabase
-          .from('profiles')
-          .select('user_id, username, display_name, avatar_url, avatar_color_scheme, avatar_icon')
-          .ilike('username', `${mentionSearch}%`)
-          .neq('user_id', currentUserId) // Don't show current user
-          .limit(10);
+        if (error) {
+          // Fallback to simple query if RPC function doesn't exist yet
+          console.warn('RPC function not found, using fallback query:', error);
+          const { data: users, error: fallbackError } = await supabase
+            .from('profiles')
+            .select('user_id, username, display_name, avatar_url, avatar_color_scheme, avatar_icon')
+            .ilike('username', `${mentionSearch}%`)
+            .neq('user_id', currentUserId)
+            .limit(10);
 
-        if (error) throw error;
+          if (fallbackError) throw fallbackError;
 
-        if (users && users.length > 0) {
-          // Sort: following first, then alphabetically
-          const sortedUsers = users
-            .map(user => ({
-              ...user,
-              is_following: followingIds.includes(user.user_id),
-            }))
-            .sort((a, b) => {
-              // Following users first
-              if (a.is_following !== b.is_following) {
-                return a.is_following ? -1 : 1;
-              }
-              // Then alphabetically
-              return a.username.localeCompare(b.username);
-            });
+          if (users && users.length > 0) {
+            const sortedUsers = users
+              .map(user => ({
+                ...user,
+                is_following: followingIds.includes(user.user_id),
+                mutual_friends: 0,
+              }))
+              .sort((a, b) => {
+                if (a.is_following !== b.is_following) {
+                  return a.is_following ? -1 : 1;
+                }
+                return a.username.localeCompare(b.username);
+              });
 
-          setAutocompleteUsers(sortedUsers);
+            setAutocompleteUsers(sortedUsers);
+            setShowAutocomplete(true);
+          } else {
+            setAutocompleteUsers([]);
+            setShowAutocomplete(false);
+          }
+        } else if (data && data.length > 0) {
+          setAutocompleteUsers(data);
           setShowAutocomplete(true);
         } else {
           setAutocompleteUsers([]);
@@ -106,9 +147,9 @@ export default function MentionInput({
         setAutocompleteUsers([]);
         setShowAutocomplete(false);
       }
-    };
+    }, 300); // 300ms debounce
 
-    searchUsers();
+    return () => clearTimeout(timeoutId);
   }, [mentionSearch, currentUserId]);
 
   // Handle text change
