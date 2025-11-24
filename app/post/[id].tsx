@@ -1124,7 +1124,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   commentInput: {
-    color: tokens.colors.grey1,
+    color: tokens.colors.black,
     fontFamily: 'FunnelDisplay_300Light',
     fontSize: 13,
     fontWeight: '300',
