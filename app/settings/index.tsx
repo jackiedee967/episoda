@@ -9,12 +9,14 @@ import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { Asset } from 'expo-asset';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handleSignOut = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -47,19 +49,10 @@ export default function SettingsScreen() {
     <>
       <Stack.Screen 
         options={{
-          headerShown: true,
-          title: 'Settings',
-          headerBackTitle: '',
-          headerStyle: {
-            backgroundColor: 'transparent',
-          },
-          headerTintColor: colors.text,
-          headerShadowVisible: false,
-          headerTransparent: true,
-          headerTitleStyle: {
-            fontWeight: '600',
-            fontSize: 17,
-          },
+          headerShown: false,
+          statusBarTranslucent: true,
+          statusBarBackgroundColor: 'transparent',
+          contentStyle: { backgroundColor: 'transparent' },
         }} 
       />
       <ImageBackground
@@ -67,8 +60,19 @@ export default function SettingsScreen() {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        <View style={styles.container}>
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Custom Header with Back Button */}
+          <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <IconSymbol name="chevron.left" size={24} color={colors.text} />
+            </Pressable>
+          </View>
+
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Settings</Text>
+          </View>
+
           {/* Account Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>ACCOUNT</Text>
@@ -145,7 +149,6 @@ export default function SettingsScreen() {
 
           <View style={{ height: 100 }} />
         </ScrollView>
-      </View>
       </ImageBackground>
     </>
   );
@@ -156,11 +159,28 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
   },
-  container: {
-    flex: 1,
-  },
   scrollView: {
     flex: 1,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  backButton: {
+    padding: 4,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: 0,
   },
   section: {
     marginTop: 24,
