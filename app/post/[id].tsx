@@ -884,6 +884,7 @@ export default function PostDetail() {
           username={post?.user.username || ''}
           onBlock={() => {}} // No blocking for post reports
           onReport={handleReportPost}
+          reportOnly={true} // Skip block option for post reports
         />
       </View>
     </>

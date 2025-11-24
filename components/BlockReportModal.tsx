@@ -25,6 +25,7 @@ interface BlockReportModalProps {
   username: string;
   onBlock: () => void;
   onReport: (reason: ReportReason, details: string) => void;
+  reportOnly?: boolean; // If true, skip block option and go directly to report form
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -35,6 +36,7 @@ export default function BlockReportModal({
   username,
   onBlock,
   onReport,
+  reportOnly = false,
 }: BlockReportModalProps) {
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const [selectedAction, setSelectedAction] = useState<'block' | 'report' | null>(null);
@@ -49,6 +51,10 @@ export default function BlockReportModal({
         tension: 65,
         friction: 11,
       }).start();
+      // If reportOnly mode, automatically set selectedAction to 'report'
+      if (reportOnly) {
+        setSelectedAction('report');
+      }
     } else {
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
@@ -57,12 +63,12 @@ export default function BlockReportModal({
       }).start();
       // Reset state when modal closes
       setTimeout(() => {
-        setSelectedAction(null);
+        setSelectedAction(reportOnly ? 'report' : null);
         setDetails('');
         setSelectedReason('spam');
       }, 300);
     }
-  }, [visible, slideAnim]);
+  }, [visible, slideAnim, reportOnly]);
 
   const handleBlock = () => {
     Alert.alert(
