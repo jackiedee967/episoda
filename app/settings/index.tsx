@@ -51,10 +51,11 @@ export default function SettingsScreen() {
           title: 'Settings',
           headerBackTitle: 'Back',
           headerStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: 'transparent',
           },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerTransparent: true,
         }} 
       />
       <ImageBackground

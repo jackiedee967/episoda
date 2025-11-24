@@ -195,10 +195,11 @@ export default function HelpDeskPostDetailScreen() {
           title: 'Post',
           headerBackTitle: 'Back',
           headerStyle: {
-            backgroundColor: colors.background,
+            backgroundColor: 'transparent',
           },
           headerTintColor: colors.text,
           headerShadowVisible: false,
+          headerTransparent: true,
         }}
       />
       <ImageBackground
