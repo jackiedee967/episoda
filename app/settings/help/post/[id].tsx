@@ -341,15 +341,16 @@ export default function HelpDeskPostDetailScreen() {
         style={styles.backgroundImage}
         resizeMode="cover"
       >
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={100}
-        >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-        >
+        <View style={styles.outerContainer}>
+          <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={100}
+          >
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+          >
           {/* Custom Header with Back Button */}
           <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
@@ -485,6 +486,7 @@ export default function HelpDeskPostDetailScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+        </View>
 
       {/* Delete Menu */}
       {post && currentUser.id === post.user_id && showDeleteMenu && (
@@ -508,6 +510,9 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     width: '100%',
+  },
+  outerContainer: {
+    flex: 1,
   },
   container: {
     flex: 1,
