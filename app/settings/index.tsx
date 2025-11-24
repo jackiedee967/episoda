@@ -49,7 +49,7 @@ export default function SettingsScreen() {
         options={{
           headerShown: true,
           title: 'Settings',
-          headerBackTitle: 'Back',
+          headerBackTitle: '',
           headerStyle: {
             backgroundColor: 'transparent',
           },
@@ -60,7 +60,6 @@ export default function SettingsScreen() {
             fontWeight: '600',
             fontSize: 17,
           },
-          headerTitleAlign: 'center',
         }} 
       />
       <ImageBackground
