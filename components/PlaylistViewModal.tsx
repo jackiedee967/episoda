@@ -10,6 +10,7 @@ import {
   Animated,
   Alert,
   Share,
+  Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -143,27 +144,42 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    Alert.alert(
-      'Remove Show',
-      'Are you sure you want to remove this show from the playlist?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await removeShowFromPlaylist(playlist.id, showId);
-              await loadPlaylists();
-              loadPlaylistData();
-            } catch (error) {
-              console.error('Error removing show:', error);
-              Alert.alert('Error', 'Failed to remove show from playlist');
-            }
+    // Web-compatible confirmation
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to remove this show from the playlist?');
+      if (confirmed) {
+        try {
+          await removeShowFromPlaylist(playlist.id, showId);
+          await loadPlaylists();
+          loadPlaylistData();
+        } catch (error) {
+          console.error('Error removing show:', error);
+          window.alert('Failed to remove show from playlist');
+        }
+      }
+    } else {
+      Alert.alert(
+        'Remove Show',
+        'Are you sure you want to remove this show from the playlist?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await removeShowFromPlaylist(playlist.id, showId);
+                await loadPlaylists();
+                loadPlaylistData();
+              } catch (error) {
+                console.error('Error removing show:', error);
+                Alert.alert('Error', 'Failed to remove show from playlist');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleDeletePlaylist = () => {
@@ -171,26 +187,42 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     
-    Alert.alert(
-      'Delete Playlist',
-      'Are you sure you want to delete this playlist? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePlaylist(playlist.id);
-              onClose();
-            } catch (error) {
-              console.error('Error deleting playlist:', error);
-              Alert.alert('Error', 'Failed to delete playlist');
-            }
+    // Web-compatible confirmation
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to delete this playlist? This action cannot be undone.');
+      if (confirmed) {
+        (async () => {
+          try {
+            await deletePlaylist(playlist.id);
+            onClose();
+          } catch (error) {
+            console.error('Error deleting playlist:', error);
+            window.alert('Failed to delete playlist');
+          }
+        })();
+      }
+    } else {
+      Alert.alert(
+        'Delete Playlist',
+        'Are you sure you want to delete this playlist? This action cannot be undone.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deletePlaylist(playlist.id);
+                onClose();
+              } catch (error) {
+                console.error('Error deleting playlist:', error);
+                Alert.alert('Error', 'Failed to delete playlist');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleSharePlaylist = async () => {

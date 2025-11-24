@@ -313,27 +313,44 @@ export default function ProfileScreen() {
   const handleDeletePlaylist = (playlistId: string, playlistName: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    Alert.alert(
-      'Delete Playlist',
-      `Are you sure you want to delete "${playlistName}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePlaylist(playlistId);
-              await loadPlaylists();
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            } catch (error) {
-              console.error('Error deleting playlist:', error);
-              Alert.alert('Error', 'Failed to delete playlist');
-            }
+    // Web-compatible confirmation
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to delete "${playlistName}"?`);
+      if (confirmed) {
+        (async () => {
+          try {
+            await deletePlaylist(playlistId);
+            await loadPlaylists();
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } catch (error) {
+            console.error('Error deleting playlist:', error);
+            window.alert('Failed to delete playlist');
+          }
+        })();
+      }
+    } else {
+      Alert.alert(
+        'Delete Playlist',
+        `Are you sure you want to delete "${playlistName}"?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await deletePlaylist(playlistId);
+                await loadPlaylists();
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch (error) {
+                console.error('Error deleting playlist:', error);
+                Alert.alert('Error', 'Failed to delete playlist');
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleFollowToggle = async (userId: string) => {
