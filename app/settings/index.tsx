@@ -56,6 +56,11 @@ export default function SettingsScreen() {
           headerTintColor: colors.text,
           headerShadowVisible: false,
           headerTransparent: true,
+          headerTitleStyle: {
+            fontWeight: '600',
+            fontSize: 17,
+          },
+          headerTitleAlign: 'center',
         }} 
       />
       <ImageBackground
