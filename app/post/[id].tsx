@@ -50,7 +50,7 @@ function getRelativeTime(timestamp: Date): string {
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, updateCommentCount, posts, isDeletingPost, userProfileCache } = useData();
+  const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, hasUserReportedPost, unreportPost: unreportPostAction, updateCommentCount, posts, isDeletingPost, userProfileCache } = useData();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
   const [commentMentions, setCommentMentions] = useState<string[]>([]);
@@ -61,6 +61,7 @@ export default function PostDetail() {
 
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
+  const isReported = post ? hasUserReportedPost(post.id) : false;
   const canDelete = post && currentUser && post.user.id === currentUser.id;
   const canReport = post && currentUser && post.user.id !== currentUser.id;
 
@@ -727,68 +728,83 @@ export default function PostDetail() {
             {/* Divider */}
             <View style={styles.headerDivider} />
 
-            {/* Post Content */}
-            <View style={styles.postContentContainer}>
-              {/* Post Title */}
-              {post.title ? (
-                <Text style={styles.postTitle}>{post.title}</Text>
-              ) : null}
-
-              {/* Post Body */}
-              {post.body ? (
-                <MentionText text={post.body} style={styles.postBody} />
-              ) : null}
-
-              {/* Post Tags (Discussion, Fan Theory, etc.) */}
-              {post.tags.length > 0 ? (
-                <View style={styles.postTagsContainer}>
-                  {post.tags.map((tag, index) => {
-                    let tagState: 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' = 'Misc';
-                    const tagLower = tag.toLowerCase();
-                    if (tagLower.includes('theory') || tagLower.includes('fan')) tagState = 'Fan_Theory';
-                    else if (tagLower.includes('discussion')) tagState = 'Discussion';
-                    else if (tagLower.includes('recap')) tagState = 'Episode_Recap';
-                    else if (tagLower.includes('spoiler')) tagState = 'Spoiler';
-
-                    return (
-                      <PostTags
-                        key={index}
-                        prop="Small"
-                        state={tagState}
-                        text={tag}
-                      />
-                    );
-                  })}
-                </View>
-              ) : null}
-
-              {/* Engagement Row */}
-              <View style={styles.engagementRow}>
-                <Pressable onPress={handleLike} style={styles.engagementButton}>
-                  <Heart
-                    size={16}
-                    color={post.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                    fill={post.isLiked ? tokens.colors.greenHighlight : 'none'}
-                    strokeWidth={1.5}
-                  />
-                  <Text style={styles.engagementText}>{post.likes}</Text>
-                </Pressable>
-
-                <View style={styles.engagementButton}>
-                  <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
-                  <Text style={styles.engagementText}>{rawComments.length}</Text>
-                </View>
-
-                <Pressable onPress={handleRepost} style={styles.engagementButton}>
-                  <RefreshCw
-                    size={16}
-                    color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                    strokeWidth={1.5}
-                  />
-                  <Text style={styles.engagementText}>{post.reposts}</Text>
+            {/* Post Content or Reported Placeholder */}
+            {isReported ? (
+              <View style={styles.reportedContainer}>
+                <Text style={styles.reportedText}>You reported this post</Text>
+                <Pressable 
+                  style={styles.unreportButton} 
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    await unreportPostAction(post.id);
+                  }}
+                >
+                  <Text style={styles.unreportButtonText}>Unreport</Text>
                 </Pressable>
               </View>
-            </View>
+            ) : (
+              <View style={styles.postContentContainer}>
+                {/* Post Title */}
+                {post.title ? (
+                  <Text style={styles.postTitle}>{post.title}</Text>
+                ) : null}
+
+                {/* Post Body */}
+                {post.body ? (
+                  <MentionText text={post.body} style={styles.postBody} />
+                ) : null}
+
+                {/* Post Tags (Discussion, Fan Theory, etc.) */}
+                {post.tags.length > 0 ? (
+                  <View style={styles.postTagsContainer}>
+                    {post.tags.map((tag, index) => {
+                      let tagState: 'Fan_Theory' | 'Discussion' | 'Episode_Recap' | 'Spoiler' | 'Misc' = 'Misc';
+                      const tagLower = tag.toLowerCase();
+                      if (tagLower.includes('theory') || tagLower.includes('fan')) tagState = 'Fan_Theory';
+                      else if (tagLower.includes('discussion')) tagState = 'Discussion';
+                      else if (tagLower.includes('recap')) tagState = 'Episode_Recap';
+                      else if (tagLower.includes('spoiler')) tagState = 'Spoiler';
+
+                      return (
+                        <PostTags
+                          key={index}
+                          prop="Small"
+                          state={tagState}
+                          text={tag}
+                        />
+                      );
+                    })}
+                  </View>
+                ) : null}
+
+                {/* Engagement Row */}
+                <View style={styles.engagementRow}>
+                  <Pressable onPress={handleLike} style={styles.engagementButton}>
+                    <Heart
+                      size={16}
+                      color={post.isLiked ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                      fill={post.isLiked ? tokens.colors.greenHighlight : 'none'}
+                      strokeWidth={1.5}
+                    />
+                    <Text style={styles.engagementText}>{post.likes}</Text>
+                  </Pressable>
+
+                  <View style={styles.engagementButton}>
+                    <MessageCircle size={16} color={tokens.colors.grey1} strokeWidth={1.5} />
+                    <Text style={styles.engagementText}>{rawComments.length}</Text>
+                  </Pressable>
+
+                  <Pressable onPress={handleRepost} style={styles.engagementButton}>
+                    <RefreshCw
+                      size={16}
+                      color={isReposted ? tokens.colors.greenHighlight : tokens.colors.grey1}
+                      strokeWidth={1.5}
+                    />
+                    <Text style={styles.engagementText}>{post.reposts}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
 
             {/* Comments Title */}
             <Text style={styles.commentsTitle}>Comments ({rawComments.length})</Text>
@@ -1199,5 +1215,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 40,
+  },
+  reportedContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  reportedText: {
+    fontSize: 15,
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_400Regular',
+  },
+  unreportButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: tokens.colors.greenHighlight,
+    backgroundColor: 'transparent',
+  },
+  unreportButtonText: {
+    fontSize: 15,
+    color: tokens.colors.greenHighlight,
+    fontFamily: 'FunnelDisplay_500Medium',
   },
 });
