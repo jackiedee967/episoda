@@ -7,7 +7,6 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
@@ -44,12 +43,16 @@ export default function CreatePostScreen() {
 
   const handleCreatePost = async () => {
     if (!title.trim()) {
-      Alert.alert('Missing Title', 'Please enter a title for your post.');
+      if (typeof window !== 'undefined') {
+        window.alert('Please enter a title for your post.');
+      }
       return;
     }
 
     if (!details.trim()) {
-      Alert.alert('Missing Details', 'Please provide details for your post.');
+      if (typeof window !== 'undefined') {
+        window.alert('Please provide details for your post.');
+      }
       return;
     }
 
@@ -72,17 +75,20 @@ export default function CreatePostScreen() {
           comments_count: 0,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating post:', error);
+        throw error;
+      }
 
-      Alert.alert('Success', 'Your post has been created!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      if (typeof window !== 'undefined') {
+        window.alert('Your post has been created!');
+      }
+      router.back();
     } catch (error) {
       console.error('Error creating post:', error);
-      Alert.alert('Error', 'Failed to create post. Please try again.');
+      if (typeof window !== 'undefined') {
+        window.alert('Failed to create post. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
