@@ -533,7 +533,7 @@ export default function HomeScreen() {
                 key={show.id}
                 style={[
                   styles.showCard,
-                  { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight },
+                  { width: posterDimensions.cardWidth },
                   navigatingShowId === show.id && { opacity: 0.5 }
                 ]}
                 onPress={() => handleShowPress(show)}
@@ -588,6 +588,18 @@ export default function HomeScreen() {
                     <Text style={styles.logEpisodeButtonText}>Log episode</Text>
                   </Pressable>
                 </View>
+
+                <Text style={styles.showTitle} numberOfLines={2}>
+                  {show.title}
+                </Text>
+                
+                {show.traktShow?.year && (
+                  <Text style={styles.showYear}>
+                    {show.traktShow.endYear && show.traktShow.endYear !== show.traktShow.year 
+                      ? `${show.traktShow.year} - ${show.traktShow.endYear}` 
+                      : show.traktShow.year}
+                  </Text>
+                )}
               </Pressable>
             );
           })}
@@ -650,7 +662,7 @@ export default function HomeScreen() {
                 key={show.id}
                 style={[
                   styles.showCard,
-                  { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight },
+                  { width: posterDimensions.cardWidth },
                   navigatingShowId === show.id && { opacity: 0.5 }
                 ]}
                 onPress={() => handleShowPress(show)}
@@ -693,6 +705,18 @@ export default function HomeScreen() {
                     />
                   </Pressable>
                 </View>
+
+                <Text style={styles.showTitle} numberOfLines={2}>
+                  {show.title}
+                </Text>
+                
+                {show.year && (
+                  <Text style={styles.showYear}>
+                    {show.endYear && show.endYear !== show.year 
+                      ? `${show.year} - ${show.endYear}` 
+                      : show.year}
+                  </Text>
+                )}
               </Pressable>
             );
           })}
@@ -1015,8 +1039,7 @@ const styles = StyleSheet.create({
   },
   showCard: {
     width: 140,
-    height: 210,
-    position: 'relative',
+    gap: 6,
   },
   posterWrapper: {
     position: 'relative',
@@ -1050,6 +1073,19 @@ const styles = StyleSheet.create({
   saveIconPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
+  },
+  showTitle: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.almostWhite,
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  showYear: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.almostWhite,
+    fontSize: 11,
+    lineHeight: 14,
+    opacity: 0.6,
   },
   logEpisodeButton: {
     position: 'absolute',
