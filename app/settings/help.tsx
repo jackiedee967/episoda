@@ -16,6 +16,7 @@ import {
   RefreshControl,
   ImageBackground,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +29,7 @@ import ButtonL from '@/components/ButtonL';
 export default function HelpDeskScreen() {
   const router = useRouter();
   const { currentUser } = useData();
+  const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState<HelpDeskPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -197,6 +199,9 @@ export default function HelpDeskScreen() {
       <Stack.Screen
         options={{
           headerShown: false,
+          statusBarTranslucent: true,
+          statusBarBackgroundColor: 'transparent',
+          contentStyle: { backgroundColor: 'transparent' },
         }}
       />
       <ImageBackground
@@ -212,7 +217,7 @@ export default function HelpDeskScreen() {
           }
         >
         {/* Custom Header with Back Button */}
-        <View style={styles.customHeader}>
+        <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <IconSymbol name="chevron.left" size={24} color={colors.text} />
           </Pressable>
@@ -296,7 +301,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 8,
   },
   backButton: {

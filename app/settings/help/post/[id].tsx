@@ -23,6 +23,7 @@ import { HelpDeskPost, HelpDeskComment } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { Asset } from 'expo-asset';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const appBackground = Asset.fromModule(require('../../../../assets/images/app-background.jpg')).uri;
 
@@ -30,6 +31,7 @@ export default function HelpDeskPostDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { currentUser } = useData();
+  const insets = useSafeAreaInsets();
   const [post, setPost] = useState<HelpDeskPost | null>(null);
   const [comments, setComments] = useState<HelpDeskComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,6 +195,9 @@ export default function HelpDeskPostDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: false,
+          statusBarTranslucent: true,
+          statusBarBackgroundColor: 'transparent',
+          contentStyle: { backgroundColor: 'transparent' },
         }}
       />
       <ImageBackground
@@ -210,7 +215,7 @@ export default function HelpDeskPostDetailScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           {/* Custom Header with Back Button */}
-          <View style={styles.customHeader}>
+          <View style={[styles.customHeader, { paddingTop: insets.top + 12 }]}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <IconSymbol name="chevron.left" size={24} color={colors.text} />
             </Pressable>
@@ -351,7 +356,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 8,
     gap: 8,
   },
