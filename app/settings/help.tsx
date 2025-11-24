@@ -78,12 +78,7 @@ export default function HelpDeskScreen() {
 
       const { data, error } = await supabase
         .from('help_desk_posts')
-        .select(`
-          *,
-          profiles!help_desk_posts_user_id_fkey (
-            avatar_url
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -104,6 +99,11 @@ export default function HelpDeskScreen() {
 
   const loadUserLikes = async () => {
     try {
+      if (!currentUser?.id) {
+        console.warn('No user ID available, skipping likes load');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('help_desk_likes')
         .select('post_id')
@@ -360,7 +360,7 @@ export default function HelpDeskScreen() {
       >
         <View style={styles.communityPostHeader}>
           <Image
-            source={{ uri: post.profiles?.avatar_url || currentUser.avatar }}
+            source={{ uri: currentUser.avatar }}
             style={styles.communityPostAvatar}
           />
           <View style={styles.communityPostHeaderText}>

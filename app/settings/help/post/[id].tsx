@@ -58,12 +58,7 @@ export default function HelpDeskPostDetailScreen() {
     try {
       const { data, error } = await supabase
         .from('help_desk_posts')
-        .select(`
-          *,
-          profiles!help_desk_posts_user_id_fkey (
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -82,12 +77,7 @@ export default function HelpDeskPostDetailScreen() {
     try {
       const { data, error } = await supabase
         .from('help_desk_comments')
-        .select(`
-          *,
-          profiles!help_desk_comments_user_id_fkey (
-            avatar_url
-          )
-        `)
+        .select('*')
         .eq('post_id', id)
         .order('created_at', { ascending: true });
 
@@ -372,7 +362,7 @@ export default function HelpDeskPostDetailScreen() {
           {/* Post Header */}
           <View style={styles.postHeader}>
             <Image
-              source={{ uri: post.profiles?.avatar_url || currentUser.avatar }}
+              source={{ uri: currentUser.avatar }}
               style={styles.avatar}
             />
             <View style={styles.postHeaderText}>
@@ -429,7 +419,7 @@ export default function HelpDeskPostDetailScreen() {
               comments.map((comment) => (
                 <View key={comment.id} style={styles.comment}>
                   <Image
-                    source={{ uri: comment.profiles?.avatar_url || currentUser.avatar }}
+                    source={{ uri: currentUser.avatar }}
                     style={styles.commentAvatar}
                   />
                   <View style={styles.commentContent}>
