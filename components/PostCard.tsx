@@ -46,10 +46,11 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onRepost, onShare, repostContext }: PostCardProps) {
   const router = useRouter();
-  const { likePost, unlikePost, repostPost, unrepostPost, getPost, hasUserReposted, posts, currentUser } = useData();
+  const { likePost, unlikePost, repostPost, unrepostPost, getPost, hasUserReposted, hasUserReportedPost, unreportPost: unreportPostAction, posts, currentUser } = useData();
   
   const latestPost = getPost(post.id) || post;
   const isReposted = hasUserReposted(latestPost.id);
+  const isReported = hasUserReportedPost(latestPost.id);
   const [spoilerRevealed, setSpoilerRevealed] = useState(false);
 
   const handleShowPress = () => {
@@ -147,6 +148,36 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
     if (tagLower.includes('spoiler')) return 'Spoiler';
     return 'Misc';
   };
+
+  const handleUnreportPress = async (e: any) => {
+    e.stopPropagation();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await unreportPostAction(latestPost.id);
+  };
+
+  if (isReported) {
+    return (
+      <Pressable style={styles.card} onPress={handlePostPress}>
+        {repostContext ? (
+          <View style={styles.repostBanner}>
+            <RefreshCw size={12} color={tokens.colors.grey1} strokeWidth={1.5} />
+            <Text style={styles.repostBannerText}>
+              {repostContext.isSelfRepost 
+                ? `${repostContext.repostedBy.displayName} reposted their own post`
+                : `${repostContext.repostedBy.displayName} reposted`}
+            </Text>
+          </View>
+        ) : null}
+        
+        <View style={styles.reportedContainer}>
+          <Text style={styles.reportedText}>You reported this post</Text>
+          <Pressable style={styles.unreportButton} onPress={handleUnreportPress}>
+            <Text style={styles.unreportButtonText}>Unreport</Text>
+          </Pressable>
+        </View>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable style={styles.card} onPress={handlePostPress}>
@@ -496,5 +527,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0,
     lineHeight: 12,
+  },
+  reportedContainer: {
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  reportedText: {
+    fontSize: 14,
+    color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_400Regular',
+  },
+  unreportButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: tokens.colors.greenHighlight,
+    backgroundColor: 'transparent',
+  },
+  unreportButtonText: {
+    fontSize: 14,
+    color: tokens.colors.greenHighlight,
+    fontFamily: 'FunnelDisplay_500Medium',
   },
 });
