@@ -18,7 +18,7 @@ export function mapTraktShowToShow(
     traktId: traktShow.ids.trakt,
     title: traktShow.title,
     year: traktShow.year,
-    endYear: overrides.endYear,
+    endYear: overrides.endYear ?? traktShow.end_year,
     poster: overrides.posterUrl ?? null,
     description: traktShow.overview || '',
     rating: traktShow.rating || 0,
