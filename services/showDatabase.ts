@@ -120,16 +120,16 @@ export async function saveShow(
 
   if (error) {
     console.error('❌ Upsert error:', error);
-    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.code === 'PGRST204') {
+    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.message?.includes('year') || error.code === 'PGRST204') {
       console.warn('⚠️ Schema cache issue detected - retrying without problematic columns...');
-      const { genres, color_scheme, ...minimalShowData } = showData;
+      const { genres, color_scheme, year, ...minimalShowData } = showData;
       const { data: retryData, error: retryError } = await supabase
         .from('shows')
         .upsert(minimalShowData, {
           onConflict: 'trakt_id',
           ignoreDuplicates: false
         })
-        .select()
+        .select('id, trakt_id, imdb_id, tvdb_id, tmdb_id, tvmaze_id, title, description, poster_url, backdrop_url, rating, total_seasons, total_episodes, created_at, updated_at')
         .single();
       
       if (retryError) {
@@ -137,7 +137,7 @@ export async function saveShow(
         throw retryError;
       }
       console.log('✅ saveShow COMPLETE (without cache-problematic columns), ID:', retryData.id);
-      return retryData as DatabaseShow;
+      return { ...retryData, year: null, color_scheme: null, genres: null } as DatabaseShow;
     }
     throw error;
   }
@@ -195,7 +195,7 @@ export async function upsertShowFromAppModel(show: {
 
   if (error) {
     console.error('❌ Upsert error:', error);
-    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.code === 'PGRST204') {
+    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.message?.includes('year') || error.code === 'PGRST204') {
       console.warn('⚠️ Schema cache issue detected - retrying without problematic columns...');
       const { genres, color_scheme, ...minimalShowData } = showData;
       const { data: retryData, error: retryError } = await supabase
@@ -204,7 +204,7 @@ export async function upsertShowFromAppModel(show: {
           onConflict: 'trakt_id',
           ignoreDuplicates: false
         })
-        .select()
+        .select('id, trakt_id, imdb_id, tvdb_id, tmdb_id, tvmaze_id, title, description, poster_url, backdrop_url, rating, total_seasons, total_episodes, created_at, updated_at')
         .single();
       
       if (retryError) {
@@ -212,7 +212,7 @@ export async function upsertShowFromAppModel(show: {
         throw retryError;
       }
       console.log('✅ upsertShowFromAppModel COMPLETE (without cache-problematic columns), ID:', retryData.id);
-      return retryData as DatabaseShow;
+      return { ...retryData, year: null, color_scheme: null, genres: null } as DatabaseShow;
     }
     throw error;
   }
