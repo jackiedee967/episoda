@@ -44,43 +44,46 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
 import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
-import Constants from 'expo-constants';
 
-const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || 
-                     (Constants as any).manifest?.extra?.SUPABASE_URL || 
-                     process.env.EXPO_PUBLIC_SUPABASE_URL;
-
-const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY || 
-                          (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
-                          process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-async function callRPC(functionName: string, params: Record<string, any>): Promise<any> {
-  const url = `${SUPABASE_URL}/rest/v1/rpc/${functionName}`;
-  console.log(`📡 RPC call: ${functionName}`, { url: url.substring(0, 50) + '...', params });
+async function getUserShowRating(userId: string, showId: string): Promise<number | null> {
+  console.log('📡 Fetching user show rating', { userId, showId });
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY || '',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify(params),
-  });
+  const { data, error } = await supabase
+    .from('show_ratings')
+    .select('rating')
+    .eq('user_id', userId)
+    .eq('show_id', showId)
+    .maybeSingle();
   
-  const text = await response.text();
-  console.log(`📡 RPC response: ${functionName}`, { status: response.status, body: text.substring(0, 100) });
-  
-  if (!response.ok) {
-    let errorMessage = `RPC call failed with status ${response.status}`;
-    try {
-      const error = JSON.parse(text);
-      errorMessage = error.message || error.error || errorMessage;
-    } catch {}
-    throw new Error(errorMessage);
+  if (error) {
+    console.error('Error fetching user rating:', error);
+    return null;
   }
   
-  return text ? JSON.parse(text) : null;
+  console.log('✅ User rating found:', data?.rating ?? 'none');
+  return data?.rating ?? null;
+}
+
+async function getShowRatingStats(showId: string): Promise<{ count: number; average: number | null }> {
+  console.log('📡 Fetching show rating stats', { showId });
+  
+  const { data, error, count } = await supabase
+    .from('show_ratings')
+    .select('rating', { count: 'exact' })
+    .eq('show_id', showId);
+  
+  if (error || !data) {
+    console.error('Error fetching rating stats:', error);
+    return { count: 0, average: null };
+  }
+  
+  const ratingCount = count ?? data.length;
+  const average = ratingCount > 0 
+    ? Math.round((data.reduce((sum, r) => sum + r.rating, 0) / ratingCount) * 10) / 10
+    : null;
+  
+  console.log('✅ Rating stats:', { count: ratingCount, average });
+  return { count: ratingCount, average };
 }
 
 type TabKey = 'friends' | 'all' | 'episodes';
@@ -262,14 +265,11 @@ export default function ShowHub() {
       }
 
       try {
-        const data = await callRPC('get_user_show_rating', {
-          p_user_id: currentUser.id,
-          p_show_id: show.id
-        });
+        const rating = await getUserShowRating(currentUser.id, show.id);
 
-        if (data !== null) {
-          setUserShowRating(Number(data));
-          console.log(`✅ User has rated ${show.title}: ${data} stars`);
+        if (rating !== null) {
+          setUserShowRating(Number(rating));
+          console.log(`✅ User has rated ${show.title}: ${rating} stars`);
         } else {
           setUserShowRating(0);
         }
@@ -291,16 +291,14 @@ export default function ShowHub() {
       }
 
       try {
-        // Get show_ratings stats using direct RPC call
+        // Get show_ratings stats using direct table access
         let showRatingCount = 0;
         let showRatingAvg = null;
         
         try {
-          const showRatingStats = await callRPC('get_show_rating_stats', {
-            p_show_id: show.id
-          });
-          showRatingCount = showRatingStats?.[0]?.rating_count || 0;
-          showRatingAvg = showRatingStats?.[0]?.avg_rating;
+          const showRatingStats = await getShowRatingStats(show.id);
+          showRatingCount = showRatingStats?.count || 0;
+          showRatingAvg = showRatingStats?.average;
         } catch (rpcError) {
           console.error('Error getting show rating stats:', rpcError);
         }
@@ -1515,12 +1513,9 @@ export default function ShowHub() {
           setRatingModalVisible(false);
           // Reload user rating after modal closes
           if (currentUser?.id && show?.id) {
-            callRPC('get_user_show_rating', {
-              p_user_id: currentUser.id,
-              p_show_id: show.id
-            }).then((data) => {
-              if (data !== null) {
-                setUserShowRating(Number(data));
+            getUserShowRating(currentUser.id, show.id).then((rating) => {
+              if (rating !== null) {
+                setUserShowRating(Number(rating));
               }
             }).catch(err => {
               console.error('Error reloading user rating:', err);

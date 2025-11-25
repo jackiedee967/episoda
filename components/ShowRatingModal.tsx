@@ -17,45 +17,66 @@ import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
 import { Show } from '@/types';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
-import Constants from 'expo-constants';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || 
-                     (Constants as any).manifest?.extra?.SUPABASE_URL || 
-                     process.env.EXPO_PUBLIC_SUPABASE_URL;
-
-const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY || 
-                          (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
-                          process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-async function callRPC(functionName: string, params: Record<string, any>): Promise<any> {
-  const url = `${SUPABASE_URL}/rest/v1/rpc/${functionName}`;
-  console.log(`📡 RPC call: ${functionName}`, { url: url.substring(0, 50) + '...', params });
+async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
+  console.log('📡 Saving show rating directly to table', { userId, showId, rating });
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON_KEY || '',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify(params),
-  });
+  const { error } = await supabase
+    .from('show_ratings')
+    .upsert(
+      { user_id: userId, show_id: showId, rating: rating, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,show_id' }
+    );
   
-  const text = await response.text();
-  console.log(`📡 RPC response: ${functionName}`, { status: response.status, body: text.substring(0, 100) });
-  
-  if (!response.ok) {
-    let errorMessage = `RPC call failed with status ${response.status}`;
-    try {
-      const error = JSON.parse(text);
-      errorMessage = error.message || error.error || errorMessage;
-    } catch {}
-    throw new Error(errorMessage);
+  if (error) {
+    console.error('Error saving rating:', error);
+    throw new Error(error.message);
   }
   
-  return text ? JSON.parse(text) : null;
+  console.log('✅ Rating saved successfully');
+}
+
+async function getUserShowRating(userId: string, showId: string): Promise<number | null> {
+  console.log('📡 Fetching user show rating from table', { userId, showId });
+  
+  const { data, error } = await supabase
+    .from('show_ratings')
+    .select('rating')
+    .eq('user_id', userId)
+    .eq('show_id', showId)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('Error fetching user rating:', error);
+    return null;
+  }
+  
+  console.log('✅ User rating found:', data?.rating ?? 'none');
+  return data?.rating ?? null;
+}
+
+async function getShowRatingStats(showId: string): Promise<{ count: number; average: number | null }> {
+  console.log('📡 Fetching show rating stats from table', { showId });
+  
+  const { data, error, count } = await supabase
+    .from('show_ratings')
+    .select('rating', { count: 'exact' })
+    .eq('show_id', showId);
+  
+  if (error || !data) {
+    console.error('Error fetching rating stats:', error);
+    return { count: 0, average: null };
+  }
+  
+  const ratingCount = count ?? data.length;
+  const average = ratingCount > 0 
+    ? Math.round((data.reduce((sum, r) => sum + r.rating, 0) / ratingCount) * 10) / 10
+    : null;
+  
+  console.log('✅ Rating stats:', { count: ratingCount, average });
+  return { count: ratingCount, average };
 }
 
 interface ShowRatingModalProps {
@@ -185,11 +206,7 @@ export default function ShowRatingModal({
     
     setIsSaving(true);
     try {
-      await callRPC('save_show_rating', {
-        p_user_id: currentUser.id,
-        p_show_id: show.id,
-        p_rating: rating
-      });
+      await saveShowRating(currentUser.id, show.id, rating);
 
       console.log('✅ Show rating saved successfully');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
