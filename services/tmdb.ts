@@ -316,7 +316,8 @@ function getBaseServiceName(providerName: string): string {
   return providerName
     .toLowerCase()
     .replace(/\s*(via|with|on)\s+.*$/i, '')
-    .replace(/\s*(amazon|prime video)\s+channel[s]?$/i, '')
+    .replace(/\s+amazon\s+channel$/i, '')
+    .replace(/\s+prime\s+video\s+channel$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -405,7 +406,8 @@ export async function getWatchProviders(tmdbId: number, countryCode: string = 'U
 
     finalProviders.sort((a, b) => a.display_priority - b.display_priority);
 
-    console.log(`✅ Found ${finalProviders.length} unique streaming providers for ${countryCode}`);
+    console.log(`✅ Found ${finalProviders.length} unique streaming providers for ${countryCode}:`, 
+      finalProviders.map(p => `${p.provider_name} (ID: ${p.provider_id})`));
     return finalProviders;
   } catch (error) {
     console.error(`❌ Error fetching watch providers:`, error);
