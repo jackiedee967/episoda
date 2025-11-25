@@ -83,7 +83,6 @@ export default function CreateAnnouncementScreen() {
           title: title.trim(),
           details: details.trim(),
           category: 'Admin Announcement',
-          section: 'announcement',
           likes_count: 0,
           comments_count: 0,
         })

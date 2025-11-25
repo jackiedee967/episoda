@@ -91,9 +91,11 @@ export default function HelpDeskScreen() {
 
       // Sort: announcements first, then by date
       const sortedPosts = normalizedPosts.sort((a, b) => {
-        // Announcements always come first
-        if (a.section === 'announcement' && b.section !== 'announcement') return -1;
-        if (a.section !== 'announcement' && b.section === 'announcement') return 1;
+        // Announcements always come first (identified by category)
+        const aIsAnnouncement = a.category === 'Admin Announcement';
+        const bIsAnnouncement = b.category === 'Admin Announcement';
+        if (aIsAnnouncement && !bIsAnnouncement) return -1;
+        if (!aIsAnnouncement && bIsAnnouncement) return 1;
         
         // Within same section, sort by date (newest first)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
