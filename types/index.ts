@@ -171,4 +171,8 @@ export interface HelpDeskComment {
   avatar?: string;
   comment_text: string;
   created_at: string;
+  parent_comment_id?: string | null;
+  likes: number;
+  isLiked: boolean;
+  replies?: HelpDeskComment[];
 }

@@ -31,19 +31,25 @@ import { extractMentions, getUserIdsByUsernames, saveHelpDeskCommentMentions, cr
 
 const appBackground = Asset.fromModule(require('../../../../assets/images/app-background.jpg')).uri;
 
+const MAX_DEPTH = 4;
+
 export default function HelpDeskPostDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { currentUser } = useData();
+  const { currentUser, userProfileCache } = useData();
   const insets = useSafeAreaInsets();
   const [post, setPost] = useState<HelpDeskPost | null>(null);
   const [comments, setComments] = useState<HelpDeskComment[]>([]);
+  const [rawComments, setRawComments] = useState<any[]>([]);
+  const [commentLikesData, setCommentLikesData] = useState<any[]>([]);
+  const [userCommentLikes, setUserCommentLikes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
   const [commentMentions, setCommentMentions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ commentId: string; username: string } | null>(null);
   const commentInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -76,7 +82,7 @@ export default function HelpDeskPostDetailScreen() {
 
   const loadComments = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: commentsData, error } = await supabase
         .from('help_desk_comments')
         .select('*')
         .eq('post_id', id)
@@ -84,11 +90,75 @@ export default function HelpDeskPostDetailScreen() {
 
       if (error) throw error;
 
-      setComments(data || []);
+      setRawComments(commentsData || []);
+
+      if (commentsData && commentsData.length > 0) {
+        // Fetch comment likes in parallel
+        const commentIds = commentsData.map((c: any) => c.id);
+        const [likesResult, userLikesResult] = await Promise.all([
+          supabase.from('help_desk_comment_likes').select('comment_id').in('comment_id', commentIds),
+          supabase.from('help_desk_comment_likes').select('comment_id').eq('user_id', currentUser.id).in('comment_id', commentIds),
+        ]);
+
+        setCommentLikesData(likesResult.data || []);
+        setUserCommentLikes(new Set((userLikesResult.data || []).map((like: any) => like.comment_id)));
+      } else {
+        setCommentLikesData([]);
+        setUserCommentLikes(new Set());
+      }
     } catch (error) {
       console.error('Error loading comments:', error);
     }
   };
+
+  // Build nested comment tree from raw comments
+  useEffect(() => {
+    if (rawComments.length === 0) {
+      setComments([]);
+      return;
+    }
+
+    // Count likes per comment
+    const likesCount = new Map<string, number>();
+    commentLikesData.forEach((like: any) => {
+      likesCount.set(like.comment_id, (likesCount.get(like.comment_id) || 0) + 1);
+    });
+
+    // Group comments by parent ID
+    const childrenByParent = new Map<string, any[]>();
+    rawComments.forEach((c: any) => {
+      const parentId = c.parent_comment_id || 'root';
+      if (!childrenByParent.has(parentId)) {
+        childrenByParent.set(parentId, []);
+      }
+      childrenByParent.get(parentId)!.push(c);
+    });
+
+    // Recursive function to build comment tree
+    const buildCommentTree = (commentData: any): HelpDeskComment => {
+      const children = childrenByParent.get(commentData.id) || [];
+      const replies = children.map(child => buildCommentTree(child));
+
+      return {
+        id: commentData.id,
+        post_id: commentData.post_id,
+        user_id: commentData.user_id,
+        username: commentData.username || userProfileCache?.[commentData.user_id]?.username || 'User',
+        avatar: commentData.avatar || userProfileCache?.[commentData.user_id]?.avatar,
+        comment_text: commentData.comment_text,
+        created_at: commentData.created_at,
+        parent_comment_id: commentData.parent_comment_id || null,
+        likes: likesCount.get(commentData.id) || 0,
+        isLiked: userCommentLikes.has(commentData.id),
+        replies: replies.length > 0 ? replies : undefined,
+      };
+    };
+
+    // Build top-level comments (those without parent)
+    const rootComments = childrenByParent.get('root') || [];
+    const nestedComments = rootComments.map(c => buildCommentTree(c));
+    setComments(nestedComments);
+  }, [rawComments, commentLikesData, userCommentLikes, userProfileCache]);
 
   const loadUserLike = async () => {
     try {
@@ -216,6 +286,107 @@ export default function HelpDeskPostDetailScreen() {
     }
   };
 
+  // Helper functions for nested comment updates
+  const findAndUpdateComment = (
+    commentsList: HelpDeskComment[],
+    targetId: string,
+    updateFn: (comment: HelpDeskComment) => HelpDeskComment
+  ): HelpDeskComment[] => {
+    return commentsList.map((comment) => {
+      if (comment.id === targetId) {
+        return updateFn(comment);
+      }
+      if (comment.replies && comment.replies.length > 0) {
+        return {
+          ...comment,
+          replies: findAndUpdateComment(comment.replies, targetId, updateFn),
+        };
+      }
+      return comment;
+    });
+  };
+
+  const handleCommentLike = async (commentId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    const isCurrentlyLiked = userCommentLikes.has(commentId);
+
+    // Optimistic update
+    setComments(prev => findAndUpdateComment(prev, commentId, (c) => ({
+      ...c,
+      likes: isCurrentlyLiked ? c.likes - 1 : c.likes + 1,
+      isLiked: !isCurrentlyLiked,
+    })));
+
+    // Update local state
+    setUserCommentLikes(prev => {
+      const newSet = new Set(prev);
+      if (isCurrentlyLiked) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+
+    try {
+      if (isCurrentlyLiked) {
+        // Unlike: delete from help_desk_comment_likes
+        const { error } = await supabase
+          .from('help_desk_comment_likes')
+          .delete()
+          .eq('comment_id', commentId)
+          .eq('user_id', currentUser.id);
+
+        if (error) {
+          console.error('Failed to unlike comment:', error);
+          // Revert optimistic update
+          setComments(prev => findAndUpdateComment(prev, commentId, (c) => ({
+            ...c,
+            likes: c.likes + 1,
+            isLiked: true,
+          })));
+          setUserCommentLikes(prev => {
+            const newSet = new Set(prev);
+            newSet.add(commentId);
+            return newSet;
+          });
+        }
+      } else {
+        // Like: insert into help_desk_comment_likes
+        const { error } = await supabase
+          .from('help_desk_comment_likes')
+          .insert({
+            comment_id: commentId,
+            user_id: currentUser.id,
+          });
+
+        if (error) {
+          console.error('Failed to like comment:', error);
+          // Revert optimistic update
+          setComments(prev => findAndUpdateComment(prev, commentId, (c) => ({
+            ...c,
+            likes: c.likes - 1,
+            isLiked: false,
+          })));
+          setUserCommentLikes(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(commentId);
+            return newSet;
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling comment like:', error);
+    }
+  };
+
+  const handleReplyStart = (commentId: string, username: string) => {
+    setReplyingTo({ commentId, username });
+    setCommentText(`@${username} `);
+    commentInputRef.current?.focus();
+  };
+
   const handleSubmitComment = async () => {
     if (!commentText.trim() || !post) return;
 
@@ -223,32 +394,37 @@ export default function HelpDeskPostDetailScreen() {
       setSubmitting(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // Use authenticated user from session
       const userId = currentUser.id;
       const username = currentUser.username;
 
+      // Insert comment (with optional parent_comment_id for replies)
+      const insertData: any = {
+        post_id: post.id,
+        user_id: userId,
+        username,
+        comment_text: commentText.trim(),
+      };
+
+      if (replyingTo) {
+        insertData.parent_comment_id = replyingTo.commentId;
+      }
+
       const { data, error } = await supabase
         .from('help_desk_comments')
-        .insert({
-          post_id: post.id,
-          user_id: userId,
-          username,
-          comment_text: commentText.trim(),
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) throw error;
 
       // Save mentions to database
-      if (commentMentions.length > 0) {
-        await saveHelpDeskCommentMentions(data.id, commentMentions);
-        
-        // Get user IDs for mentioned users
-        const userMap = await getUserIdsByUsernames(commentMentions);
+      const mentionedUsernames = extractMentions(commentText);
+      if (mentionedUsernames.length > 0) {
+        await saveHelpDeskCommentMentions(data.id, mentionedUsernames);
+
+        const userMap = await getUserIdsByUsernames(mentionedUsernames);
         const mentionedUserIds = Array.from(userMap.values());
-        
-        // Create notifications for mentioned users
+
         await createMentionNotifications(
           mentionedUserIds,
           userId,
@@ -266,9 +442,22 @@ export default function HelpDeskPostDetailScreen() {
         .eq('id', post.id);
 
       setPost({ ...post, comments_count: newCommentsCount });
-      setComments([...comments, data]);
+
+      // Add new comment to raw comments list (will rebuild tree in useEffect)
+      const newRawComment = {
+        id: data.id,
+        post_id: post.id,
+        user_id: userId,
+        username,
+        comment_text: commentText.trim(),
+        parent_comment_id: replyingTo?.commentId || null,
+        created_at: new Date().toISOString(),
+      };
+      setRawComments(prev => [...prev, newRawComment]);
+
       setCommentText('');
       setCommentMentions([]);
+      setReplyingTo(null);
       commentInputRef.current?.blur();
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -299,9 +488,9 @@ export default function HelpDeskPostDetailScreen() {
       case 'Support':
         return colors.blue;
       case 'Feedback':
-        return colors.green;
+        return colors.greenHighlight;
       case 'Admin Announcement':
-        return colors.error;
+        return colors.greenHighlight;
       default:
         return colors.textSecondary;
     }
@@ -422,38 +611,37 @@ export default function HelpDeskPostDetailScreen() {
             <Text style={styles.commentsTitle}>Comments</Text>
             {comments.length > 0 ? (
               comments.map((comment) => (
-                <View key={comment.id} style={styles.comment}>
-                  <Image
-                    source={{ uri: currentUser.avatar }}
-                    style={styles.commentAvatar}
-                  />
-                  <View style={styles.commentContent}>
-                    <View style={styles.commentHeader}>
-                      <View style={styles.commentUserRow}>
-                        <Text style={styles.commentUsername}>{comment.username}</Text>
-                        {comment.username === 'jvckie' ? (
-                          <View style={styles.adminBadgeSmall}>
-                            <Text style={styles.adminBadgeTextSmall}>Admin</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text style={styles.commentTimestamp}>
-                        {formatTimestamp(comment.created_at)}
-                      </Text>
-                    </View>
-                    <MentionText 
-                      text={comment.comment_text} 
-                      style={styles.commentText}
-                      mentionColor={colors.greenHighlight}
-                    />
-                  </View>
-                </View>
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  depth={0}
+                  formatTimestamp={formatTimestamp}
+                  onLike={handleCommentLike}
+                  onReply={handleReplyStart}
+                  userProfileCache={userProfileCache}
+                  currentUserAvatar={currentUser.avatar}
+                />
               ))
             ) : (
               <Text style={styles.noComments}>No comments yet. Be the first to comment!</Text>
             )}
           </View>
         </ScrollView>
+
+        {/* Reply indicator */}
+        {replyingTo && (
+          <View style={styles.replyIndicator}>
+            <Text style={styles.replyIndicatorText}>
+              Replying to @{replyingTo.username}
+            </Text>
+            <Pressable onPress={() => {
+              setReplyingTo(null);
+              setCommentText('');
+            }}>
+              <Text style={styles.cancelReply}>Cancel</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* Comment Input */}
         <View style={styles.commentInputContainer}>
@@ -465,7 +653,7 @@ export default function HelpDeskPostDetailScreen() {
                 setCommentMentions(mentions);
               }}
               currentUserId={currentUser.id}
-              placeholder="Write a comment..."
+              placeholder={replyingTo ? "Write a reply..." : "Write a comment..."}
               placeholderTextColor={tokens.colors.grey1}
               style={styles.commentInput}
               inputBackgroundColor={tokens.colors.almostWhite}
@@ -505,6 +693,178 @@ export default function HelpDeskPostDetailScreen() {
     </>
   );
 }
+
+// Recursive comment item component
+interface CommentItemProps {
+  comment: HelpDeskComment;
+  depth: number;
+  formatTimestamp: (timestamp: string) => string;
+  onLike: (commentId: string) => void;
+  onReply: (commentId: string, username: string) => void;
+  userProfileCache: any;
+  currentUserAvatar: string;
+}
+
+const CommentItem: React.FC<CommentItemProps> = ({
+  comment,
+  depth,
+  formatTimestamp,
+  onLike,
+  onReply,
+  userProfileCache,
+  currentUserAvatar,
+}) => {
+  const avatarSize = depth === 0 ? 36 : 28;
+  const marginLeft = depth > 0 ? 20 : 0;
+  const avatar = comment.avatar || userProfileCache?.[comment.user_id]?.avatar || currentUserAvatar;
+
+  return (
+    <View style={{ marginLeft }}>
+      <View style={commentItemStyles.comment}>
+        <Image
+          source={{ uri: avatar }}
+          style={[commentItemStyles.commentAvatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}
+        />
+        <View style={commentItemStyles.commentContent}>
+          <View style={commentItemStyles.commentHeader}>
+            <View style={commentItemStyles.commentUserRow}>
+              <Text style={commentItemStyles.commentUsername}>{comment.username}</Text>
+              {comment.username === 'jvckie' || comment.username === 'jvckiee' ? (
+                <View style={commentItemStyles.adminBadgeSmall}>
+                  <Text style={commentItemStyles.adminBadgeTextSmall}>Admin</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={commentItemStyles.commentTimestamp}>
+              {formatTimestamp(comment.created_at)}
+            </Text>
+          </View>
+          <MentionText 
+            text={comment.comment_text} 
+            style={commentItemStyles.commentText}
+            mentionColor={colors.greenHighlight}
+          />
+          
+          {/* Comment actions */}
+          <View style={commentItemStyles.commentActions}>
+            <Pressable 
+              style={commentItemStyles.commentAction} 
+              onPress={() => onLike(comment.id)}
+            >
+              <Heart 
+                size={14} 
+                color={comment.isLiked ? colors.greenHighlight : colors.textSecondary}
+                fill={comment.isLiked ? colors.greenHighlight : 'none'}
+              />
+              {comment.likes > 0 && (
+                <Text style={[
+                  commentItemStyles.commentActionText,
+                  comment.isLiked && { color: colors.greenHighlight }
+                ]}>
+                  {comment.likes}
+                </Text>
+              )}
+            </Pressable>
+            
+            {depth < MAX_DEPTH && (
+              <Pressable 
+                style={commentItemStyles.commentAction}
+                onPress={() => onReply(comment.id, comment.username)}
+              >
+                <MessageCircle size={14} color={colors.textSecondary} />
+                <Text style={commentItemStyles.commentActionText}>Reply</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+      
+      {/* Nested replies */}
+      {comment.replies && comment.replies.length > 0 && depth < MAX_DEPTH && (
+        <View style={commentItemStyles.repliesContainer}>
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              formatTimestamp={formatTimestamp}
+              onLike={onLike}
+              onReply={onReply}
+              userProfileCache={userProfileCache}
+              currentUserAvatar={currentUserAvatar}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const commentItemStyles = StyleSheet.create({
+  comment: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  commentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  commentContent: {
+    flex: 1,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  commentUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  commentUsername: {
+    ...typography.p1Bold,
+    color: colors.text,
+  },
+  adminBadgeSmall: {
+    backgroundColor: colors.purple + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  adminBadgeTextSmall: {
+    ...typography.smallSubtitle,
+    color: colors.purple,
+  },
+  commentTimestamp: {
+    ...typography.smallSubtitle,
+    color: colors.textSecondary,
+  },
+  commentText: {
+    ...typography.p1,
+    color: colors.text,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 8,
+  },
+  commentAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  commentActionText: {
+    ...typography.smallSubtitle,
+    color: colors.textSecondary,
+  },
+  repliesContainer: {
+    marginTop: 8,
+  },
+});
 
 const styles = StyleSheet.create({
   backgroundImage: {
@@ -730,6 +1090,24 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  replyIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: colors.card,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  replyIndicatorText: {
+    ...typography.p2,
+    color: colors.textSecondary,
+  },
+  cancelReply: {
+    ...typography.p2Bold,
+    color: colors.greenHighlight,
   },
   menuOverlay: {
     position: 'absolute',
