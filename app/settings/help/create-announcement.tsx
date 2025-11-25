@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
@@ -56,6 +57,8 @@ export default function CreateAnnouncementScreen() {
   }
 
   const handleCreateAnnouncement = async () => {
+    console.log('📢 Post Announcement button clicked');
+    
     if (!title.trim()) {
       Alert.alert('Missing Title', 'Please enter a title for your announcement.');
       return;
@@ -68,8 +71,9 @@ export default function CreateAnnouncementScreen() {
 
     try {
       setLoading(true);
+      console.log('📢 Inserting announcement to database...');
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('help_desk_posts')
         .insert({
           user_id: currentUser.id,
@@ -77,21 +81,37 @@ export default function CreateAnnouncementScreen() {
           title: title.trim(),
           details: details.trim(),
           category: 'Admin Announcement',
+          section: 'announcement',
           likes_count: 0,
           comments_count: 0,
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('📢 Database error:', error);
+        throw error;
+      }
 
-      Alert.alert('Success', 'Your announcement has been posted!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+      console.log('📢 Announcement posted successfully:', data);
+      
+      if (Platform.OS === 'web') {
+        window.alert('Your announcement has been posted!');
+        router.replace({ pathname: '/settings/help', params: { refresh: Date.now().toString() } });
+      } else {
+        Alert.alert('Success', 'Your announcement has been posted!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace({ pathname: '/settings/help', params: { refresh: Date.now().toString() } }),
+          },
+        ]);
+      }
     } catch (error) {
       console.error('Error creating announcement:', error);
-      Alert.alert('Error', 'Failed to create announcement. Please try again.');
+      if (Platform.OS === 'web') {
+        window.alert('Failed to create announcement. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create announcement. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
