@@ -224,21 +224,19 @@ export default function ShowHub() {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('show_ratings')
-          .select('rating')
-          .eq('user_id', currentUser.id)
-          .eq('show_id', show.id)
-          .single();
+        const { data, error } = await supabase.rpc('get_user_show_rating', {
+          p_user_id: currentUser.id,
+          p_show_id: show.id
+        });
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
           console.error('Error loading user show rating:', error);
           return;
         }
 
-        if (data) {
-          setUserShowRating(Number(data.rating));
-          console.log(`✅ User has rated ${show.title}: ${data.rating} stars`);
+        if (data !== null) {
+          setUserShowRating(Number(data));
+          console.log(`✅ User has rated ${show.title}: ${data} stars`);
         } else {
           setUserShowRating(0);
         }
@@ -259,17 +257,16 @@ export default function ShowHub() {
       }
 
       try {
-        // Use efficient count queries instead of fetching all rows
-        // Count and sum from show_ratings table
-        const { count: showRatingCount, error: countError } = await supabase
-          .from('show_ratings')
-          .select('*', { count: 'exact', head: true })
-          .eq('show_id', show.id);
+        // Get show_ratings stats using RPC function
+        const { data: showRatingStats, error: showRatingError } = await supabase.rpc('get_show_rating_stats', {
+          p_show_id: show.id
+        });
 
-        if (countError) {
-          console.error('Error counting show ratings:', countError);
-          setCommunityRating(null);
-          return;
+        const showRatingCount = showRatingStats?.[0]?.rating_count || 0;
+        const showRatingAvg = showRatingStats?.[0]?.avg_rating;
+
+        if (showRatingError) {
+          console.error('Error getting show rating stats:', showRatingError);
         }
 
         // Count post ratings for this show
@@ -283,37 +280,41 @@ export default function ShowHub() {
           console.error('Error counting post ratings:', postCountError);
         }
 
-        const totalCount = (showRatingCount || 0) + (postRatingCount || 0);
+        const totalCount = Number(showRatingCount || 0) + (postRatingCount || 0);
 
         // Only fetch actual ratings if we have enough for community rating (10+)
         if (totalCount >= 10) {
-          // Fetch ratings for average calculation (limited to reasonable batch)
-          const [showRatingsResult, postRatingsResult] = await Promise.all([
-            supabase
-              .from('show_ratings')
-              .select('rating')
-              .eq('show_id', show.id),
-            supabase
+          // If we have enough show ratings alone, use that average
+          // Otherwise, combine with post ratings
+          if (showRatingCount >= 10 && showRatingAvg) {
+            setCommunityRating({ average: Number(showRatingAvg), count: totalCount });
+            console.log(`✅ Community rating for ${show.title}: ${Number(showRatingAvg).toFixed(1)} (${totalCount} ratings)`);
+          } else {
+            // Need to include post ratings - fetch them
+            const { data: postRatings } = await supabase
               .from('posts')
               .select('rating')
               .eq('show_id', show.id)
-              .gt('rating', 0)
-          ]);
+              .gt('rating', 0);
 
-          const allRatings: number[] = [];
-          
-          if (showRatingsResult.data) {
-            showRatingsResult.data.forEach((r: any) => allRatings.push(Number(r.rating)));
-          }
-          
-          if (postRatingsResult.data) {
-            postRatingsResult.data.forEach((r: any) => allRatings.push(Number(r.rating)));
-          }
+            const allRatings: number[] = [];
+            
+            // Add weighted show ratings
+            if (showRatingCount > 0 && showRatingAvg) {
+              for (let i = 0; i < Number(showRatingCount); i++) {
+                allRatings.push(Number(showRatingAvg));
+              }
+            }
+            
+            if (postRatings) {
+              postRatings.forEach((r: any) => allRatings.push(Number(r.rating)));
+            }
 
-          if (allRatings.length > 0) {
-            const average = allRatings.reduce((a, b) => a + b, 0) / allRatings.length;
-            setCommunityRating({ average, count: allRatings.length });
-            console.log(`✅ Community rating for ${show.title}: ${average.toFixed(1)} (${allRatings.length} ratings)`);
+            if (allRatings.length > 0) {
+              const average = allRatings.reduce((a, b) => a + b, 0) / allRatings.length;
+              setCommunityRating({ average, count: allRatings.length });
+              console.log(`✅ Community rating for ${show.title}: ${average.toFixed(1)} (${allRatings.length} ratings)`);
+            }
           }
         } else if (totalCount > 0) {
           // Less than 10 ratings - store count but we'll use API rating
@@ -1478,17 +1479,14 @@ export default function ShowHub() {
           setRatingModalVisible(false);
           // Reload user rating after modal closes
           if (currentUser?.id && show?.id) {
-            supabase
-              .from('show_ratings')
-              .select('rating')
-              .eq('user_id', currentUser.id)
-              .eq('show_id', show.id)
-              .single()
-              .then(({ data }) => {
-                if (data) {
-                  setUserShowRating(Number(data.rating));
-                }
-              });
+            supabase.rpc('get_user_show_rating', {
+              p_user_id: currentUser.id,
+              p_show_id: show.id
+            }).then(({ data }) => {
+              if (data !== null) {
+                setUserShowRating(Number(data));
+              }
+            });
           }
         }}
         show={show}

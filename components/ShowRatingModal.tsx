@@ -147,16 +147,11 @@ export default function ShowRatingModal({
     
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('show_ratings')
-        .upsert({
-          user_id: currentUser.id,
-          show_id: show.id,
-          rating: rating,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,show_id'
-        });
+      const { error } = await supabase.rpc('save_show_rating', {
+        p_user_id: currentUser.id,
+        p_show_id: show.id,
+        p_rating: rating
+      });
 
       if (error) {
         console.error('Error saving show rating:', error);
