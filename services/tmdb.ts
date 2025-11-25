@@ -284,3 +284,87 @@ export async function getExternalIds(tmdbId: number): Promise<TMDBExternalIds | 
     return null;
   }
 }
+
+export interface WatchProvider {
+  logo_path: string;
+  provider_id: number;
+  provider_name: string;
+  display_priority: number;
+}
+
+export interface WatchProvidersResult {
+  link?: string;
+  flatrate?: WatchProvider[];
+  rent?: WatchProvider[];
+  buy?: WatchProvider[];
+  ads?: WatchProvider[];
+  free?: WatchProvider[];
+}
+
+export interface WatchProvidersResponse {
+  id: number;
+  results: {
+    [countryCode: string]: WatchProvidersResult;
+  };
+}
+
+export function getProviderLogoUrl(logoPath: string): string {
+  return `https://image.tmdb.org/t/p/w92${logoPath}`;
+}
+
+export async function getWatchProviders(tmdbId: number, countryCode: string = 'US'): Promise<WatchProvider[]> {
+  if (!TMDB_API_KEY) {
+    console.log('⚠️ TMDB API key not configured for watch providers');
+    return [];
+  }
+
+  try {
+    console.log(`📺 Fetching watch providers for TMDB ID ${tmdbId}...`);
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/watch/providers?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      console.error(`❌ TMDB watch providers API error: ${response.status}`);
+      return [];
+    }
+
+    const data: WatchProvidersResponse = await response.json();
+    
+    const countryData = data.results[countryCode];
+    if (!countryData) {
+      console.log(`⚠️ No watch providers found for country: ${countryCode}`);
+      return [];
+    }
+
+    const providers: WatchProvider[] = [];
+    const seenIds = new Set<number>();
+
+    const addProviders = (list: WatchProvider[] | undefined) => {
+      if (!list) return;
+      for (const provider of list) {
+        if (!seenIds.has(provider.provider_id)) {
+          seenIds.add(provider.provider_id);
+          providers.push(provider);
+        }
+      }
+    };
+
+    addProviders(countryData.flatrate);
+    addProviders(countryData.free);
+    addProviders(countryData.ads);
+
+    providers.sort((a, b) => a.display_priority - b.display_priority);
+
+    console.log(`✅ Found ${providers.length} streaming providers for ${countryCode}`);
+    return providers;
+  } catch (error) {
+    console.error(`❌ Error fetching watch providers:`, error);
+    return [];
+  }
+}
+
+export async function findTMDBIdByName(showName: string, year?: number | null): Promise<number | null> {
+  const show = await searchShowByName(showName, year);
+  return show?.id || null;
+}

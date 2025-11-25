@@ -42,6 +42,7 @@ import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
+import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -108,7 +109,9 @@ export default function ShowHub() {
   const [hasSetInitialTab, setHasSetInitialTab] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerFailed, setBannerFailed] = useState(false);
+  const [streamingProviders, setStreamingProviders] = useState<WatchProvider[]>([]);
   const endYearFetchedRef = React.useRef<string | null>(null); // Track which show we've fetched end year for
+  const providersFetchedRef = React.useRef<string | null>(null); // Track which show we've fetched providers for
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   
@@ -370,6 +373,45 @@ export default function ShowHub() {
     
     fetchEndYearIfNeeded();
   }, [show?.id, show?.year, show?.endYear, show?.traktId]);
+
+  // Fetch streaming providers once per show visit
+  useEffect(() => {
+    async function fetchStreamingProviders() {
+      if (!show || !show.title) return;
+      if (providersFetchedRef.current === show.id) return;
+      
+      // Mark that we're fetching for this show
+      providersFetchedRef.current = show.id;
+      
+      // Clear previous providers immediately to prevent stale data
+      setStreamingProviders([]);
+      
+      try {
+        // Find TMDB ID using show name and year
+        const tmdbId = await findTMDBIdByName(show.title, show.year);
+        if (!tmdbId) {
+          console.log('⚠️ Could not find TMDB ID for:', show.title);
+          return;
+        }
+        
+        const providers = await getWatchProviders(tmdbId, 'US');
+        setStreamingProviders(providers); // Set to whatever we get (empty or full)
+      } catch (error) {
+        console.warn('⚠️ Failed to fetch streaming providers:', error);
+        setStreamingProviders([]); // Clear on error
+      }
+    }
+    
+    fetchStreamingProviders();
+  }, [show?.id, show?.title, show?.year]);
+  
+  // Reset streaming providers when show changes
+  useEffect(() => {
+    if (id) {
+      setStreamingProviders([]);
+      providersFetchedRef.current = null;
+    }
+  }, [id]);
 
   useEffect(() => {
     async function loadEpisodes() {
@@ -988,6 +1030,19 @@ export default function ShowHub() {
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
+            {streamingProviders.length > 0 && (
+              <View style={styles.streamingProvidersRow}>
+                {streamingProviders.slice(0, 5).map((provider) => (
+                  <View key={provider.provider_id} style={styles.providerLogoContainer}>
+                    <Image
+                      source={{ uri: getProviderLogoUrl(provider.logo_path) }}
+                      style={styles.providerLogo}
+                      contentFit="cover"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
             {friendsWatching.length > 0 ? (
               <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
                 <View style={styles.friendAvatarsRow}>
@@ -1444,6 +1499,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  streamingProvidersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  providerLogoContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: tokens.colors.grey4,
+  },
+  providerLogo: {
+    width: 28,
+    height: 28,
   },
   ratingContainer: {
     flexDirection: 'row',
