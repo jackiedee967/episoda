@@ -102,7 +102,10 @@ export type NotificationType =
   | 'friend_follow'
   | 'friend_like'
   | 'friend_comment'
-  | 'friend_post';
+  | 'friend_post'
+  | 'mention_comment'
+  | 'mention_post'
+  | 'admin_announcement';
 
 export interface Notification {
   id: string;
@@ -115,6 +118,7 @@ export interface Notification {
   targetUser?: User;
   show?: Show;
   episode?: Episode;
+  helpDeskPost?: HelpDeskPost; // For admin_announcement type
 }
 
 export interface Playlist {

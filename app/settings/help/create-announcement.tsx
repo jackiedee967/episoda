@@ -95,6 +95,51 @@ export default function CreateAnnouncementScreen() {
 
       console.log('📢 Announcement posted successfully:', data);
       
+      // Create in-app notifications for ALL users
+      if (data && data[0]) {
+        const announcementId = data[0].id;
+        
+        try {
+          // Get all user IDs from profiles table
+          const { data: allUsers, error: usersError } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .neq('user_id', currentUser.id); // Don't notify the admin who created it
+          
+          if (usersError) {
+            console.warn('📢 Error fetching users for notifications:', usersError);
+          } else if (allUsers && allUsers.length > 0) {
+            // Create notification for each user
+            // Using post_id to store help desk post id - type 'admin_announcement' identifies it
+            const notifications = allUsers.map(user => ({
+              user_id: user.user_id,
+              type: 'admin_announcement',
+              actor_id: currentUser.id,
+              post_id: announcementId,
+              is_read: false,
+            }));
+            
+            // Insert in batches of 100 to avoid hitting limits
+            const batchSize = 100;
+            for (let i = 0; i < notifications.length; i += batchSize) {
+              const batch = notifications.slice(i, i + batchSize);
+              const { error: notifyError } = await supabase
+                .from('notifications')
+                .insert(batch);
+              
+              if (notifyError) {
+                console.warn('📢 Error creating notifications batch:', notifyError);
+              }
+            }
+            
+            console.log('📢 Created notifications for', allUsers.length, 'users');
+          }
+        } catch (notifyError) {
+          console.warn('📢 Error in notification creation:', notifyError);
+          // Don't fail the whole operation if notifications fail
+        }
+      }
+      
       // Save mentions if any
       if (data && data[0] && mentions.length > 0) {
         const postId = data[0].id;
