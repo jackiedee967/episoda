@@ -38,6 +38,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Genre Discovery System**: Three-view routing architecture (Explore grid, Genre detail, Section detail). Migrated from TMDB to Trakt's native genre API for accurate genre representation and uses production-grade pagination with retry logic and defensive null handling.
 - **Authentication Flow**: Robust 7-screen onboarding with progressive data collection.
 - **Episode Metadata Refresh System**: Production-grade automatic refresh system using `upsertEpisodeMetadata()` for constant synchronization. Background refresh fetches all metadata from Trakt API in a single batch, enriched with TVMaze artwork. Database-first approach for episode counts and optimized map-based lookups.
+- **Show Auto-Refresh System**: ShowHub automatically detects incomplete show data (missing year, description, or backdrop) and fetches fresh data from Trakt API in the background. Updates database with description/backdrop/rating and local state with year from Trakt for immediate UI display. Includes defensive error handling for API failures without breaking UI.
 - **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, and custom profile tab display.
 - **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, Show Hub, and Explore Page.
 - **Modular & Component-Based**: Organized into logical directories with reusable UI components.
