@@ -210,7 +210,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const [profileResult, socialLinksResult] = await Promise.all([
         supabase
           .from('profiles' as any)
-          .select('*')
+          .select('user_id, username, display_name, bio, avatar_url, avatar_color_scheme, avatar_icon, is_admin')
           .eq('user_id', userId)
           .maybeSingle(),
         supabase
@@ -226,7 +226,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       if (profileResult.data) {
         const profileData = profileResult.data as any;
-        console.log('✅ Loaded user profile:', profileData.username);
+        console.log('✅ Loaded user profile:', profileData.username, 'is_admin:', profileData.is_admin);
         
         // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
         let avatarUrl = profileData.avatar_url || '';
