@@ -402,32 +402,31 @@ export default function HelpDeskPostDetailScreen() {
       let error: any;
 
       if (replyingTo) {
-        // Use raw SQL for replies to bypass PostgREST schema cache issue
-        const { data: rpcData, error: rpcError } = await supabase.rpc('insert_help_desk_comment_with_parent', {
-          p_post_id: post.id,
-          p_user_id: userId,
-          p_username: username,
-          p_comment_text: trimmedText,
-          p_parent_comment_id: replyingTo.commentId
-        });
+        // Insert comment first without parent_comment_id (bypasses cache issue)
+        const { data: insertData, error: insertError } = await supabase
+          .from('help_desk_comments')
+          .insert({
+            post_id: post.id,
+            user_id: userId,
+            username,
+            comment_text: trimmedText,
+          })
+          .select()
+          .single();
         
-        if (rpcError) {
-          // Fallback: try direct insert if RPC doesn't exist
-          const { data: directData, error: directError } = await supabase
-            .from('help_desk_comments')
-            .insert({
-              post_id: post.id,
-              user_id: userId,
-              username,
-              comment_text: trimmedText,
-              parent_comment_id: replyingTo.commentId
-            })
-            .select()
-            .single();
-          data = directData;
-          error = directError;
+        if (insertError) {
+          error = insertError;
         } else {
-          data = rpcData;
+          // Now update with parent_comment_id using raw SQL
+          const { error: updateError } = await supabase.rpc('update_comment_parent', {
+            p_comment_id: insertData.id,
+            p_parent_comment_id: replyingTo.commentId
+          });
+          
+          if (updateError) {
+            console.log('Could not set parent, reply saved as top-level comment');
+          }
+          data = insertData;
           error = null;
         }
       } else {

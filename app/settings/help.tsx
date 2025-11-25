@@ -442,32 +442,37 @@ export default function HelpDeskScreen() {
         <Text style={styles.communityPostTitle}>{post.title}</Text>
         <MentionText text={post.details || ''} style={styles.communityPostPreview} numberOfLines={2} />
 
-        <View style={styles.communityPostFooter}>
-          <View style={[
-            styles.categoryTag,
-            {
-              backgroundColor: getCategoryColor(post.category) + '20',
-              borderWidth: 1,
-              borderColor: getCategoryColor(post.category)
-            }
-          ]}>
-            <Text style={[styles.categoryTagText, { color: getCategoryColor(post.category) }]}>
-              {post.category}
-            </Text>
-          </View>
-          <View style={styles.communityPostStats}>
-            <Pressable 
-              style={styles.likeButton}
-              onPress={(e) => handleLike(post.id, e)}
-            >
-              <Heart 
-                size={14} 
-                color={isLiked ? colors.green : colors.textSecondary}
-                fill={isLiked ? colors.green : 'none'}
-              />
-              <Text style={styles.communityPostStatText}>{post.likes_count}</Text>
-            </Pressable>
-            <MessageCircle size={14} color={colors.textSecondary} style={{ marginLeft: 12 }} />
+        {/* Category tag */}
+        <View style={[
+          styles.categoryTag,
+          {
+            backgroundColor: getCategoryColor(post.category) + '20',
+            borderWidth: 1,
+            borderColor: getCategoryColor(post.category),
+            alignSelf: 'flex-start',
+            marginTop: 12,
+          }
+        ]}>
+          <Text style={[styles.categoryTagText, { color: getCategoryColor(post.category) }]}>
+            {post.category}
+          </Text>
+        </View>
+
+        {/* Stats on the left */}
+        <View style={styles.communityPostStats}>
+          <Pressable 
+            style={styles.likeButton}
+            onPress={(e) => handleLike(post.id, e)}
+          >
+            <Heart 
+              size={18} 
+              color={isLiked ? colors.green : colors.textSecondary}
+              fill={isLiked ? colors.green : 'none'}
+            />
+            <Text style={styles.communityPostStatText}>{post.likes_count}</Text>
+          </Pressable>
+          <View style={styles.likeButton}>
+            <MessageCircle size={18} color={colors.textSecondary} />
             <Text style={styles.communityPostStatText}>{post.comments_count}</Text>
           </View>
         </View>
@@ -777,7 +782,7 @@ const styles = StyleSheet.create({
   },
   communityPostFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
   },
   categoryTag: {
@@ -791,7 +796,8 @@ const styles = StyleSheet.create({
   communityPostStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 16,
+    marginTop: 12,
   },
   communityPostStatText: {
     ...typography.p1,
