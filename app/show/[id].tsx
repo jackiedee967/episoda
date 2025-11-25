@@ -34,8 +34,9 @@ import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, upsertEpisodeMetadata } from '@/services/showDatabase';
-import { getAllEpisodes } from '@/services/trakt';
+import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, upsertEpisodeMetadata, saveShow } from '@/services/showDatabase';
+import { getAllEpisodes, getShowDetails } from '@/services/trakt';
+import { getBackdropUrl as getTVMazeBackdrop } from '@/services/tvmaze';
 import { getEpisode, getAllEpisodes as getAllTVMazeEpisodes } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
@@ -219,6 +220,24 @@ export default function ShowHub() {
 
         if (dbShow) {
           setShow(mapDatabaseShowToShow(dbShow));
+          
+          // Check if show data is incomplete and needs refresh
+          const isIncomplete = !dbShow.year || 
+                              !dbShow.description || 
+                              dbShow.description === 'No description available.' ||
+                              !dbShow.backdrop_url;
+          
+          if (isIncomplete && dbShow.trakt_id) {
+            console.log('🔄 Show data incomplete, refreshing from Trakt...', {
+              title: dbShow.title,
+              hasYear: !!dbShow.year,
+              hasDescription: !!dbShow.description && dbShow.description !== 'No description available.',
+              hasBackdrop: !!dbShow.backdrop_url
+            });
+            
+            // Fetch fresh data in background (don't block UI)
+            refreshShowData(dbShow);
+          }
         } else {
           setShowError('Show not found');
         }
@@ -227,6 +246,77 @@ export default function ShowHub() {
         setShowError('Failed to load show');
       } finally {
         setLoadingShow(false);
+      }
+    }
+    
+    async function refreshShowData(dbShow: DatabaseShow) {
+      try {
+        // Fetch fresh show data from Trakt
+        let traktShow;
+        try {
+          traktShow = await getShowDetails(dbShow.trakt_id);
+        } catch (fetchError) {
+          console.warn('⚠️ Failed to fetch show from Trakt, skipping refresh:', fetchError);
+          return; // Exit gracefully - don't attempt updates with missing data
+        }
+        
+        // Defensive check - ensure we got valid data
+        if (!traktShow || !traktShow.title) {
+          console.warn('⚠️ Trakt returned invalid data, skipping refresh');
+          return;
+        }
+        
+        console.log('✅ Got fresh Trakt data:', { 
+          title: traktShow.title, 
+          year: traktShow.year,
+          hasOverview: !!traktShow.overview
+        });
+        
+        // Fetch backdrop from TVMaze if we have the ID (with separate error handling)
+        let backdropUrl = dbShow.backdrop_url;
+        if (!backdropUrl && dbShow.tvmaze_id) {
+          try {
+            backdropUrl = await getTVMazeBackdrop(dbShow.tvmaze_id);
+            console.log('🖼️ Got backdrop from TVMaze:', backdropUrl ? 'yes' : 'no');
+          } catch (backdropError) {
+            console.warn('⚠️ Failed to fetch backdrop from TVMaze:', backdropError);
+            // Continue with refresh - backdrop is optional
+          }
+        }
+        
+        // Update database with fresh data - use only columns cached in PostgREST schema
+        // Note: year/end_year columns may not be in PostgREST cache, so we update via description only
+        const updateData: Record<string, any> = {
+          description: traktShow.overview || dbShow.description,
+          backdrop_url: backdropUrl || dbShow.backdrop_url,
+          rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : dbShow.rating,
+          updated_at: new Date().toISOString(),
+        };
+        
+        const { error } = await supabase
+          .from('shows')
+          .update(updateData)
+          .eq('id', dbShow.id);
+        
+        if (error) {
+          console.error('❌ Failed to update show:', error);
+          return;
+        }
+        
+        console.log('✅ Show data refreshed successfully');
+        
+        // Update local state with refreshed data (including year from Trakt for UI display)
+        setShow(prev => prev ? {
+          ...prev,
+          year: traktShow.year || prev.year,
+          description: traktShow.overview || prev.description,
+          backdrop: backdropUrl || prev.backdrop,
+          rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : prev.rating,
+        } : null);
+        
+      } catch (error) {
+        console.error('❌ Error refreshing show data:', error);
+        // Graceful exit - show continues with existing data
       }
     }
 
