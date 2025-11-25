@@ -17,8 +17,37 @@ import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
 import { Show } from '@/types';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import Constants from 'expo-constants';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+
+const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || 
+                     (Constants as any).manifest?.extra?.SUPABASE_URL || 
+                     process.env.EXPO_PUBLIC_SUPABASE_URL;
+
+const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY || 
+                          (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
+                          process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+async function callRPC(functionName: string, params: Record<string, any>): Promise<any> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY || '',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(params),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'RPC call failed');
+  }
+  
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
 
 interface ShowRatingModalProps {
   visible: boolean;
@@ -147,18 +176,13 @@ export default function ShowRatingModal({
     
     setIsSaving(true);
     try {
-      const { error } = await supabase.rpc('save_show_rating', {
+      await callRPC('save_show_rating', {
         p_user_id: currentUser.id,
         p_show_id: show.id,
         p_rating: rating
       });
 
-      if (error) {
-        console.error('Error saving show rating:', error);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
-      }
-
+      console.log('✅ Show rating saved successfully');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStep('success');
     } catch (err) {

@@ -44,6 +44,35 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
 import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
+import Constants from 'expo-constants';
+
+const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || 
+                     (Constants as any).manifest?.extra?.SUPABASE_URL || 
+                     process.env.EXPO_PUBLIC_SUPABASE_URL;
+
+const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY || 
+                          (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
+                          process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+async function callRPC(functionName: string, params: Record<string, any>): Promise<any> {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY || '',
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(params),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'RPC call failed');
+  }
+  
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
 
 type TabKey = 'friends' | 'all' | 'episodes';
 
@@ -224,15 +253,10 @@ export default function ShowHub() {
       }
 
       try {
-        const { data, error } = await supabase.rpc('get_user_show_rating', {
+        const data = await callRPC('get_user_show_rating', {
           p_user_id: currentUser.id,
           p_show_id: show.id
         });
-
-        if (error) {
-          console.error('Error loading user show rating:', error);
-          return;
-        }
 
         if (data !== null) {
           setUserShowRating(Number(data));
@@ -242,6 +266,7 @@ export default function ShowHub() {
         }
       } catch (err) {
         console.error('Error loading user show rating:', err);
+        setUserShowRating(0);
       }
     }
 
@@ -257,16 +282,18 @@ export default function ShowHub() {
       }
 
       try {
-        // Get show_ratings stats using RPC function
-        const { data: showRatingStats, error: showRatingError } = await supabase.rpc('get_show_rating_stats', {
-          p_show_id: show.id
-        });
-
-        const showRatingCount = showRatingStats?.[0]?.rating_count || 0;
-        const showRatingAvg = showRatingStats?.[0]?.avg_rating;
-
-        if (showRatingError) {
-          console.error('Error getting show rating stats:', showRatingError);
+        // Get show_ratings stats using direct RPC call
+        let showRatingCount = 0;
+        let showRatingAvg = null;
+        
+        try {
+          const showRatingStats = await callRPC('get_show_rating_stats', {
+            p_show_id: show.id
+          });
+          showRatingCount = showRatingStats?.[0]?.rating_count || 0;
+          showRatingAvg = showRatingStats?.[0]?.avg_rating;
+        } catch (rpcError) {
+          console.error('Error getting show rating stats:', rpcError);
         }
 
         // Count post ratings for this show
@@ -1479,13 +1506,15 @@ export default function ShowHub() {
           setRatingModalVisible(false);
           // Reload user rating after modal closes
           if (currentUser?.id && show?.id) {
-            supabase.rpc('get_user_show_rating', {
+            callRPC('get_user_show_rating', {
               p_user_id: currentUser.id,
               p_show_id: show.id
-            }).then(({ data }) => {
+            }).then((data) => {
               if (data !== null) {
                 setUserShowRating(Number(data));
               }
+            }).catch(err => {
+              console.error('Error reloading user rating:', err);
             });
           }
         }}
