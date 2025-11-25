@@ -313,13 +313,21 @@ export function getProviderLogoUrl(logoPath: string): string {
 }
 
 function getBaseServiceName(providerName: string): string {
-  return providerName
-    .toLowerCase()
-    .replace(/\s*(via|with|on)\s+.*$/i, '')
+  let name = providerName.toLowerCase();
+  
+  name = name
     .replace(/\s+amazon\s+channel$/i, '')
     .replace(/\s+prime\s+video\s+channel$/i, '')
+    .replace(/\s+channel$/i, '')
+    .replace(/\s*(via|with|on)\s+.+$/i, '')
+    .replace(/\s+basic$/i, '')
+    .replace(/\s+ads$/i, '')
+    .replace(/\s+ad-supported$/i, '')
+    .replace(/\+$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
+  
+  return name;
 }
 
 function isChannelAddon(providerName: string): boolean {
@@ -328,7 +336,10 @@ function isChannelAddon(providerName: string): boolean {
     lowerName.includes('amazon channel') ||
     lowerName.includes('prime video channel') ||
     lowerName.includes(' via ') ||
-    lowerName.includes(' with ')
+    lowerName.includes(' with ') ||
+    lowerName.includes(' ads') ||
+    lowerName.includes('ad-supported') ||
+    lowerName.endsWith(' basic')
   );
 }
 
