@@ -1021,6 +1021,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+    gap: 16,
   },
   
   // Header - exact Figma specs
