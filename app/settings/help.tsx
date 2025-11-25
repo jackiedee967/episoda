@@ -299,7 +299,7 @@ export default function HelpDeskScreen() {
       case 'Feedback':
         return colors.green;
       case 'Admin Announcement':
-        return colors.error;
+        return colors.green;
       default:
         return colors.textSecondary;
     }
@@ -335,7 +335,7 @@ export default function HelpDeskScreen() {
             </View>
           </View>
           {canDelete && (
-            <View>
+            <View style={styles.menuContainer}>
               <Pressable
                 style={styles.deleteButton}
                 onPress={(e) => handleMenuPress(post.id, e)}
@@ -413,7 +413,7 @@ export default function HelpDeskScreen() {
             </Text>
           </View>
           {canDelete && (
-            <View>
+            <View style={styles.menuContainer}>
               <Pressable
                 style={styles.deleteButton}
                 onPress={(e) => handleMenuPress(post.id, e)}
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   announcementBadge: {
-    backgroundColor: colors.error,
+    backgroundColor: colors.green,
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -721,8 +721,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  menuContainer: {
+    position: 'relative',
+    zIndex: 1000,
+  },
   deleteButton: {
-    padding: 4,
+    padding: 8,
   },
   communityPostHeader: {
     flexDirection: 'row',
@@ -811,7 +815,7 @@ const styles = StyleSheet.create({
   },
   deleteMenuPositioned: {
     position: 'absolute',
-    top: 24,
+    top: 30,
     right: 0,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
@@ -819,9 +823,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 10,
     minWidth: 150,
-    zIndex: 1000,
+    zIndex: 9999,
   },
   clickAwayOverlay: {
     position: 'absolute',
