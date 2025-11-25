@@ -235,6 +235,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       console.log('✅ Show rating flow - skipping to post details with rating:', prefilledRating);
       setIsFetchingEpisodes(false);
       setStep('postDetails');
+      // Load Trakt/database show data in background for post creation
+      loadTraktDataForPreselectedShow(preselectedShow, true).catch(err => {
+        console.warn('⚠️ Show data fetch failed (non-blocking):', err);
+      });
     } else if (preselectedShow && (preselectedEpisodes || preselectedEpisode)) {
       // Flow 2: Show and episodes already selected from ShowHub → skip straight to rating page
       console.log('✅ Episodes preselected from ShowHub - skipping to rating page');
