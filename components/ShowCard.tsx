@@ -202,10 +202,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 6,
   },
   saveIconPressed: {
     opacity: 0.7,
