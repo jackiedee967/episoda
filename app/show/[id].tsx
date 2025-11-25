@@ -51,8 +51,14 @@ interface SeasonData {
 }
 
 function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
+  console.log('📺 ShowHub mapping:', { 
+    title: dbShow.title, 
+    year: dbShow.year, 
+    backdrop: dbShow.backdrop_url ? 'has backdrop' : 'no backdrop' 
+  });
   return {
     id: dbShow.id,
+    traktId: dbShow.trakt_id,
     title: dbShow.title,
     year: dbShow.year || undefined,
     poster: dbShow.poster_url ?? null,
@@ -728,11 +734,13 @@ export default function ShowHub() {
 
   const renderBanner = () => {
     if (!show) return null;
-    const backdropUrl = getBackdropUrl(show.backdrop, show.title);
     
-    // Hide banner if it failed to load, no backdrop URL, or if backdrop matches poster (raw DB values)
-    const isDuplicateArt = show.backdrop && show.poster && show.backdrop === show.poster;
-    if (bannerFailed || !backdropUrl || isDuplicateArt) {
+    // Check RAW backdrop value - if null/undefined/empty, don't show banner at all
+    // Also hide if backdrop duplicates poster, or if image failed to load
+    const hasBackdrop = show.backdrop && show.backdrop.trim() !== '';
+    const isDuplicateArt = hasBackdrop && show.poster && show.backdrop === show.poster;
+    
+    if (!hasBackdrop || isDuplicateArt || bannerFailed) {
       return (
         <View style={styles.noBannerHeader}>
           <Pressable onPress={() => router.back()} style={styles.backButtonNoBanner}>
@@ -749,7 +757,7 @@ export default function ShowHub() {
     return (
       <View style={styles.bannerContainer}>
         <Image 
-          source={{ uri: backdropUrl }} 
+          source={{ uri: show.backdrop }} 
           style={styles.bannerImage}
           contentFit="cover"
           onError={() => setBannerFailed(true)}
