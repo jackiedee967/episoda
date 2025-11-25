@@ -210,9 +210,13 @@ export default function HelpDeskScreen() {
   };
 
   const handleCreateAnnouncement = () => {
+    console.log('🔔 Announce button clicked!');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/settings/help/create-announcement');
   };
+
+  // Debug: log admin status
+  console.log('👑 Admin status check:', { userId: currentUser?.id, isAdmin: currentUser?.is_admin, userIsAdmin });
 
   const handlePostPress = (postId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -524,7 +528,14 @@ export default function HelpDeskScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>FROM THE TEAM</Text>
             {userIsAdmin ? (
-              <Pressable style={styles.createButton} onPress={handleCreateAnnouncement}>
+              <Pressable 
+                style={styles.createButton} 
+                onPress={() => {
+                  console.log('🔔 Announce button pressed (inline)');
+                  handleCreateAnnouncement();
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <Plus size={16} color={colors.background} />
                 <Text style={styles.createButtonText}>Announce</Text>
               </Pressable>
