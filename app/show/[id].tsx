@@ -1645,7 +1645,6 @@ const styles = StyleSheet.create({
   posterWrapper: {
     position: 'relative',
     width: 120,
-    height: 180,
   },
   poster: {
     width: 120,
