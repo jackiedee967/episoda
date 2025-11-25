@@ -12,73 +12,55 @@ import { BlurView } from 'expo-blur';
 import { Star } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, typography } from '@/styles/tokens';
-import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
 import { Show } from '@/types';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-const SHOW_RATING_MARKER = '[SHOW_RATING]';
+const RATINGS_STORAGE_KEY = '@episoda_show_ratings';
+
+interface StoredRatings {
+  [showId: string]: {
+    rating: number;
+    updatedAt: string;
+  };
+}
 
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
-  console.log('📡 Saving show rating to posts table', { userId, showId, rating });
+  console.log('📡 Saving show rating to local storage', { userId, showId, rating });
   
-  // Check if user already has a rating post for this show
-  // Use title column as marker since it's in PostgREST schema cache
-  const { data: existingRating } = await supabase
-    .from('posts')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('show_id', showId)
-    .eq('title', SHOW_RATING_MARKER)
-    .is('episode_id', null)
-    .maybeSingle();
-  
-  if (existingRating) {
-    // Update existing rating
-    const { error } = await supabase
-      .from('posts')
-      .update({ 
-        rating: rating, 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', existingRating.id);
+  try {
+    const storageKey = `${RATINGS_STORAGE_KEY}_${userId}`;
+    const existingData = await AsyncStorage.getItem(storageKey);
+    const ratings: StoredRatings = existingData ? JSON.parse(existingData) : {};
     
-    if (error) {
-      console.error('Error updating rating:', error);
-      throw new Error(error.message);
-    }
-    console.log('✅ Rating updated successfully');
-  } else {
-    // Create new rating post
-    const newId = `rating-${userId.substring(0,8)}-${showId.substring(0,8)}-${Date.now()}`;
-    const { error } = await supabase
-      .from('posts')
-      .insert({
-        id: newId,
-        user_id: userId,
-        show_id: showId,
-        show_title: '',
-        show_poster: '',
-        body: '',
-        title: SHOW_RATING_MARKER,
-        episode_id: null,
-        rating: rating,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        is_spoiler: false,
-        likes: 0,
-        comments: 0,
-        reposts: 0
-      } as any);
+    ratings[showId] = {
+      rating: rating,
+      updatedAt: new Date().toISOString()
+    };
     
-    if (error) {
-      console.error('Error creating rating:', error);
-      throw new Error(error.message);
-    }
-    console.log('✅ Rating saved successfully');
+    await AsyncStorage.setItem(storageKey, JSON.stringify(ratings));
+    console.log('✅ Rating saved successfully to local storage');
+  } catch (error) {
+    console.error('Error saving rating:', error);
+    throw error;
+  }
+}
+
+export async function getUserShowRatingFromStorage(userId: string, showId: string): Promise<number | null> {
+  try {
+    const storageKey = `${RATINGS_STORAGE_KEY}_${userId}`;
+    const existingData = await AsyncStorage.getItem(storageKey);
+    if (!existingData) return null;
+    
+    const ratings: StoredRatings = JSON.parse(existingData);
+    return ratings[showId]?.rating ?? null;
+  } catch (error) {
+    console.error('Error fetching rating:', error);
+    return null;
   }
 }
 

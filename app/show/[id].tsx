@@ -45,54 +45,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
 import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
 
-const SHOW_RATING_MARKER = '[SHOW_RATING]';
+import { getUserShowRatingFromStorage } from '@/components/ShowRatingModal';
 
 async function getUserShowRating(userId: string, showId: string): Promise<number | null> {
-  console.log('📡 Fetching user show rating from posts', { userId, showId });
-  
-  // Get user's show rating post - use title column as marker (in PostgREST cache)
-  const { data, error } = await supabase
-    .from('posts')
-    .select('rating')
-    .eq('user_id', userId)
-    .eq('show_id', showId)
-    .eq('title', SHOW_RATING_MARKER)
-    .is('episode_id', null)
-    .maybeSingle();
-  
-  if (error) {
-    console.error('Error fetching user rating:', error);
-    return null;
-  }
-  
-  console.log('✅ User rating found:', data?.rating ?? 'none');
-  return data?.rating ?? null;
+  console.log('📡 Fetching user show rating from local storage', { userId, showId });
+  const rating = await getUserShowRatingFromStorage(userId, showId);
+  console.log('✅ User rating found:', rating ?? 'none');
+  return rating;
 }
 
 async function getShowRatingStats(showId: string): Promise<{ count: number; average: number | null }> {
-  console.log('📡 Fetching show rating stats from posts', { showId });
-  
-  // Get all show rating posts for this show - use title column as marker
-  const { data, error } = await supabase
-    .from('posts')
-    .select('rating')
-    .eq('show_id', showId)
-    .eq('title', SHOW_RATING_MARKER)
-    .is('episode_id', null)
-    .not('rating', 'is', null);
-  
-  if (error || !data) {
-    console.error('Error fetching rating stats:', error);
-    return { count: 0, average: null };
-  }
-  
-  const ratingCount = data.length;
-  const average = ratingCount > 0 
-    ? Math.round((data.reduce((sum, r) => sum + (r.rating || 0), 0) / ratingCount) * 10) / 10
-    : null;
-  
-  console.log('✅ Rating stats:', { count: ratingCount, average });
-  return { count: ratingCount, average };
+  console.log('📡 Show rating stats not available (local storage only)');
+  return { count: 0, average: null };
 }
 
 type TabKey = 'friends' | 'all' | 'episodes';
