@@ -21,17 +21,37 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
-  console.log('📡 Saving show rating via RPC', { userId, showId, rating });
+  console.log('📡 Saving show rating via direct SQL', { userId, showId, rating });
   
-  const { error } = await (supabase.rpc as any)('upsert_show_rating', {
-    user_id_param: userId,
-    show_id_param: showId,
-    rating_param: rating
-  });
+  const { error } = await supabase
+    .from('posts')
+    .select('id')
+    .limit(0);
   
-  if (error) {
-    console.error('Error saving rating:', error);
-    throw new Error(error.message);
+  if (error && error.code === 'PGRST205') {
+    console.log('Schema cache issue detected, using SQL workaround');
+  }
+  
+  const sql = `
+    INSERT INTO show_ratings (user_id, show_id, rating, updated_at)
+    VALUES ('${userId}', '${showId}', ${rating}, NOW())
+    ON CONFLICT (user_id, show_id)
+    DO UPDATE SET rating = ${rating}, updated_at = NOW()
+  `;
+  
+  const { error: rpcError } = await (supabase.rpc as any)('exec_sql', { query: sql });
+  
+  if (rpcError) {
+    console.error('Error saving rating via exec_sql:', rpcError);
+    const { error: fallbackError } = await (supabase.rpc as any)('upsert_show_rating', {
+      user_id_param: userId,
+      show_id_param: showId,
+      rating_param: rating
+    });
+    if (fallbackError) {
+      console.error('Error saving rating:', fallbackError);
+      throw new Error(fallbackError.message);
+    }
   }
   
   console.log('✅ Rating saved successfully');
