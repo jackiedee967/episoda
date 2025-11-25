@@ -2,7 +2,7 @@
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { colors, typography } from '@/styles/commonStyles';
-import { Heart, MessageCircle, Plus, MoreVertical, Megaphone } from 'lucide-react-native';
+import { Heart, MessageCircle, Plus, MoreVertical } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Asset } from 'expo-asset';
 import {
@@ -332,9 +332,6 @@ export default function HelpDeskScreen() {
         <View style={styles.adminCardHeader}>
           <View style={styles.adminCardTitleRow}>
             <Text style={styles.adminCardTitle}>{post.title}</Text>
-            <View style={styles.announcementBadge}>
-              <Megaphone size={10} color={colors.background} />
-            </View>
           </View>
           {canDelete && (
             <View style={styles.menuContainer}>
