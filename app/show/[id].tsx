@@ -1682,10 +1682,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   posterStarFilled: {
-    color: colors.greenHighlight,
+    color: tokens.colors.greenHighlight,
   },
   posterStarEmpty: {
-    color: colors.grey2,
+    color: tokens.colors.grey2,
   },
   detailsColumn: {
     flex: 1,
