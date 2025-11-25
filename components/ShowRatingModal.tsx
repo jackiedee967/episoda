@@ -30,7 +30,10 @@ const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY ||
                           process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 async function callRPC(functionName: string, params: Record<string, any>): Promise<any> {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${functionName}`, {
+  const url = `${SUPABASE_URL}/rest/v1/rpc/${functionName}`;
+  console.log(`📡 RPC call: ${functionName}`, { url: url.substring(0, 50) + '...', params });
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -40,12 +43,18 @@ async function callRPC(functionName: string, params: Record<string, any>): Promi
     body: JSON.stringify(params),
   });
   
+  const text = await response.text();
+  console.log(`📡 RPC response: ${functionName}`, { status: response.status, body: text.substring(0, 100) });
+  
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'RPC call failed');
+    let errorMessage = `RPC call failed with status ${response.status}`;
+    try {
+      const error = JSON.parse(text);
+      errorMessage = error.message || error.error || errorMessage;
+    } catch {}
+    throw new Error(errorMessage);
   }
   
-  const text = await response.text();
   return text ? JSON.parse(text) : null;
 }
 
