@@ -13,7 +13,7 @@ function HalfStar({ size = 14 }: { size?: number }) {
     <View style={[styles.starWrapper, { width: size, height: size }]}>
       <Star
         size={size}
-        color="#8bfc76"
+        color={tokens.colors.grey1}
         fill="none"
         strokeWidth={1.5}
       />
