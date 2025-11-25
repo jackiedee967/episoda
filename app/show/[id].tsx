@@ -1192,10 +1192,10 @@ export default function ShowHub() {
             <View style={styles.statsRow}>
               {show.rating > 0 && (
                 <View style={styles.ratingContainer}>
+                  <Text style={styles.ratingStarIcon}>★</Text>
                   <Text style={styles.ratingText}>
                     {convertToFiveStarRating(show.rating).toFixed(1)}
                   </Text>
-                  <Text style={styles.starIcon}>★</Text>
                 </View>
               )}
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
@@ -1671,7 +1671,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 16,
     gap: 4,
   },
   posterRatingContainerPressed: {
@@ -1749,6 +1750,10 @@ const styles = StyleSheet.create({
   starIcon: {
     color: tokens.colors.grey1,
     fontSize: 10,
+  },
+  ratingStarIcon: {
+    color: tokens.colors.greenHighlight,
+    fontSize: 12,
   },
   userRatedStar: {
     color: tokens.colors.greenHighlight,
