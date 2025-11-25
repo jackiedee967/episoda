@@ -1159,7 +1159,7 @@ export default function ShowHub() {
                     size={20}
                     color={tokens.colors.greenHighlight}
                     fill={isFilled ? tokens.colors.greenHighlight : 'transparent'}
-                    strokeWidth={1.5}
+                    strokeWidth={1}
                   />
                 );
               })}
@@ -1670,7 +1670,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 8,
-    paddingBottom: 6,
+    paddingBottom: 2,
     gap: 4,
   },
   posterRatingContainerPressed: {
