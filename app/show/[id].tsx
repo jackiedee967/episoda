@@ -67,6 +67,7 @@ interface SeasonData {
   seasonNumber: number;
   episodes: Episode[];
   expanded: boolean;
+  year?: number;
 }
 
 function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
@@ -576,6 +577,7 @@ export default function ShowHub() {
                 rating: ep.rating || 0,
                 postCount: 0,
                 thumbnail: undefined,
+                firstAired: ep.first_aired || undefined,
               }));
               
               setEpisodes(mappedEpisodes);
@@ -880,11 +882,17 @@ export default function ShowHub() {
       });
 
       const seasonsData: SeasonData[] = Array.from(seasonMap.entries())
-        .map(([seasonNumber, episodes]) => ({
-          seasonNumber,
-          episodes: episodes.sort((a, b) => a.episodeNumber - b.episodeNumber),
-          expanded: false,
-        }))
+        .map(([seasonNumber, episodes]) => {
+          const sortedEpisodes = episodes.sort((a, b) => a.episodeNumber - b.episodeNumber);
+          const firstEpisode = sortedEpisodes[0];
+          const year = firstEpisode?.firstAired ? new Date(firstEpisode.firstAired).getFullYear() : undefined;
+          return {
+            seasonNumber,
+            episodes: sortedEpisodes,
+            expanded: false,
+            year,
+          };
+        })
         .sort((a, b) => a.seasonNumber - b.seasonNumber);
 
       // Smart season expansion: Find first season with unwatched episodes
@@ -1351,9 +1359,14 @@ export default function ShowHub() {
         style={styles.seasonHeader}
         onPress={() => toggleSeason(season.seasonNumber)}
       >
-        <Text style={styles.seasonTitle}>
-          Season {season.seasonNumber}
-        </Text>
+        <View style={styles.seasonTitleRow}>
+          <Text style={styles.seasonTitle}>
+            Season {season.seasonNumber}
+          </Text>
+          {season.year ? (
+            <Text style={styles.seasonYear}>{season.year}</Text>
+          ) : null}
+        </View>
         <View style={styles.seasonHeaderRight}>
           <Text style={styles.seasonEpisodeCount}>
             {season.episodes.length} episodes
@@ -1888,11 +1901,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.cardPadding,
   },
+  seasonTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   seasonTitle: {
     fontFamily: 'Funnel Display',
     fontSize: 17,
     fontWeight: '500',
     color: tokens.colors.almostWhite,
+  },
+  seasonYear: {
+    ...tokens.typography.p4,
+    color: tokens.colors.grey1,
   },
   seasonHeaderRight: {
     flexDirection: 'row',

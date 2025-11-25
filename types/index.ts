@@ -46,6 +46,7 @@ export interface Episode {
   rating: number;
   postCount: number;
   thumbnail?: string;
+  firstAired?: string;
 }
 
 export interface Comment {
