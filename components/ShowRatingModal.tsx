@@ -21,14 +21,13 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
-  console.log('📡 Saving show rating directly to table', { userId, showId, rating });
+  console.log('📡 Saving show rating via RPC', { userId, showId, rating });
   
-  const { error } = await supabase
-    .from('show_ratings')
-    .upsert(
-      { user_id: userId, show_id: showId, rating: rating, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,show_id' }
-    );
+  const { error } = await (supabase.rpc as any)('upsert_show_rating', {
+    user_id_param: userId,
+    show_id_param: showId,
+    rating_param: rating
+  });
   
   if (error) {
     console.error('Error saving rating:', error);
@@ -36,47 +35,6 @@ async function saveShowRating(userId: string, showId: string, rating: number): P
   }
   
   console.log('✅ Rating saved successfully');
-}
-
-async function getUserShowRating(userId: string, showId: string): Promise<number | null> {
-  console.log('📡 Fetching user show rating from table', { userId, showId });
-  
-  const { data, error } = await supabase
-    .from('show_ratings')
-    .select('rating')
-    .eq('user_id', userId)
-    .eq('show_id', showId)
-    .maybeSingle();
-  
-  if (error) {
-    console.error('Error fetching user rating:', error);
-    return null;
-  }
-  
-  console.log('✅ User rating found:', data?.rating ?? 'none');
-  return data?.rating ?? null;
-}
-
-async function getShowRatingStats(showId: string): Promise<{ count: number; average: number | null }> {
-  console.log('📡 Fetching show rating stats from table', { showId });
-  
-  const { data, error, count } = await supabase
-    .from('show_ratings')
-    .select('rating', { count: 'exact' })
-    .eq('show_id', showId);
-  
-  if (error || !data) {
-    console.error('Error fetching rating stats:', error);
-    return { count: 0, average: null };
-  }
-  
-  const ratingCount = count ?? data.length;
-  const average = ratingCount > 0 
-    ? Math.round((data.reduce((sum, r) => sum + r.rating, 0) / ratingCount) * 10) / 10
-    : null;
-  
-  console.log('✅ Rating stats:', { count: ratingCount, average });
-  return { count: ratingCount, average };
 }
 
 interface ShowRatingModalProps {

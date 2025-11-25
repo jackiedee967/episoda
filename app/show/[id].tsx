@@ -46,44 +46,40 @@ import { processBatched } from '@/utils/batchOperations';
 import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
 
 async function getUserShowRating(userId: string, showId: string): Promise<number | null> {
-  console.log('📡 Fetching user show rating', { userId, showId });
+  console.log('📡 Fetching user show rating via RPC', { userId, showId });
   
-  const { data, error } = await supabase
-    .from('show_ratings')
-    .select('rating')
-    .eq('user_id', userId)
-    .eq('show_id', showId)
-    .maybeSingle();
+  const { data, error } = await (supabase.rpc as any)('fetch_user_show_rating', {
+    user_id_param: userId,
+    show_id_param: showId
+  });
   
   if (error) {
     console.error('Error fetching user rating:', error);
     return null;
   }
   
-  console.log('✅ User rating found:', data?.rating ?? 'none');
-  return data?.rating ?? null;
+  console.log('✅ User rating found:', data ?? 'none');
+  return data ?? null;
 }
 
 async function getShowRatingStats(showId: string): Promise<{ count: number; average: number | null }> {
-  console.log('📡 Fetching show rating stats', { showId });
+  console.log('📡 Fetching show rating stats via RPC', { showId });
   
-  const { data, error, count } = await supabase
-    .from('show_ratings')
-    .select('rating', { count: 'exact' })
-    .eq('show_id', showId);
+  const { data, error } = await (supabase.rpc as any)('fetch_show_rating_stats', {
+    show_id_param: showId
+  });
   
-  if (error || !data) {
+  if (error) {
     console.error('Error fetching rating stats:', error);
     return { count: 0, average: null };
   }
   
-  const ratingCount = count ?? data.length;
-  const average = ratingCount > 0 
-    ? Math.round((data.reduce((sum, r) => sum + r.rating, 0) / ratingCount) * 10) / 10
-    : null;
+  const result = Array.isArray(data) ? data[0] : data;
+  const ratingCount = result?.total_count || 0;
+  const average = result?.average_rating || null;
   
   console.log('✅ Rating stats:', { count: ratingCount, average });
-  return { count: ratingCount, average };
+  return { count: Number(ratingCount), average: average ? Number(average) : null };
 }
 
 type TabKey = 'friends' | 'all' | 'episodes';
