@@ -49,7 +49,7 @@ function HalfStarRating({ rating, onRatingChange, size = 40 }: HalfStarRatingPro
 
   const renderStar = (starNumber: number) => {
     const highlightColor = colors.greenHighlight;
-    const emptyColor = colors.grey1;
+    const emptyColor = colors.grey2;
     
     const fillAmount = Math.max(0, Math.min(1, rating - (starNumber - 1)));
     const isFull = fillAmount >= 1;
@@ -57,7 +57,7 @@ function HalfStarRating({ rating, onRatingChange, size = 40 }: HalfStarRatingPro
     const isEmpty = fillAmount < 0.5;
     
     return (
-      <View key={starNumber} style={styles.starContainer}>
+      <View key={starNumber} style={[styles.starContainer, { width: size, height: size + 16 }]}>
         <View style={styles.starVisual} pointerEvents="none">
           {isEmpty ? (
             <Star size={size} color={emptyColor} fill="none" strokeWidth={1.5} />
@@ -65,7 +65,7 @@ function HalfStarRating({ rating, onRatingChange, size = 40 }: HalfStarRatingPro
           {isHalf ? (
             <View style={styles.starWrapper}>
               <Star size={size} color={emptyColor} fill="none" strokeWidth={1.5} />
-              <View style={styles.halfStarOverlay}>
+              <View style={[styles.halfStarOverlay, { width: size / 2 }]}>
                 <Star size={size} color={highlightColor} fill={highlightColor} strokeWidth={1.5} />
               </View>
             </View>
@@ -211,7 +211,7 @@ export default function ShowRatingModal({
       onRequestClose={handleClose}
     >
       <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-        <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+        <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         
         <Animated.View 
@@ -289,10 +289,10 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.pureWhite,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 40,
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 5,
-    backgroundColor: colors.grey3,
+    backgroundColor: colors.grey2,
     borderRadius: 3,
     alignSelf: 'center',
     marginTop: 12,
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 105,
     borderRadius: 8,
-    backgroundColor: colors.grey3,
+    backgroundColor: colors.grey2,
   },
   showDetails: {
     flex: 1,
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   showTitle: {
     ...typography.titleL,
-    color: colors.pureWhite,
+    color: colors.black,
     marginBottom: 4,
   },
   showYear: {
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   starsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
   },
   starContainer: {
     position: 'relative',
@@ -364,7 +364,6 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     overflow: 'hidden',
-    width: '50%',
   },
   touchZoneLeft: {
     position: 'absolute',
@@ -388,7 +387,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: colors.grey3,
+    backgroundColor: colors.grey2,
   },
   submitButtonText: {
     ...typography.subtitle,
@@ -403,7 +402,7 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     ...typography.titleL,
-    color: colors.pureWhite,
+    color: colors.black,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -429,10 +428,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.cardStroke,
+    borderColor: colors.grey2,
   },
   doneButtonText: {
     ...typography.subtitle,
-    color: colors.pureWhite,
+    color: colors.black,
   },
 });
