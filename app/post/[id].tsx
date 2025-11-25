@@ -750,7 +750,7 @@ export default function PostDetail() {
                 ) : null}
 
                 {/* Post Body */}
-                {post.body ? (
+                {(post.body && post.body !== '[SHOW_RATING_ONLY]') ? (
                   <MentionText text={post.body} style={styles.postBody} />
                 ) : null}
 

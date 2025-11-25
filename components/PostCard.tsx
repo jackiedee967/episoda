@@ -240,9 +240,9 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
         </View>
       </View>
 
-      {(latestPost.title || latestPost.body) ? <View style={styles.divider} /> : null}
+      {(latestPost.title || (latestPost.body && latestPost.body !== '[SHOW_RATING_ONLY]')) ? <View style={styles.divider} /> : null}
 
-      {(latestPost.title || latestPost.body) ? (
+      {(latestPost.title || (latestPost.body && latestPost.body !== '[SHOW_RATING_ONLY]')) ? (
         <View style={styles.postInfo}>
           {latestPost.title ? (
             <Text style={styles.postTitle}>{latestPost.title}</Text>
@@ -254,7 +254,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
               <Text style={styles.spoilerAlertSubtext}>Click to view</Text>
             </Pressable>
           ) : (
-            latestPost.body ? (
+            (latestPost.body && latestPost.body !== '[SHOW_RATING_ONLY]') ? (
               <MentionText text={latestPost.body} style={styles.postBody} />
             ) : null
           )}
