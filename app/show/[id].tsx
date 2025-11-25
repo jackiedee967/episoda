@@ -35,7 +35,7 @@ import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, upsertEpisodeMetadata, saveShow } from '@/services/showDatabase';
-import { getAllEpisodes, getShowDetails } from '@/services/trakt';
+import { getAllEpisodes, getShowDetails, fetchShowEndYear } from '@/services/trakt';
 import { getBackdropUrl as getTVMazeBackdrop } from '@/services/tvmaze';
 import { getEpisode, getAllEpisodes as getAllTVMazeEpisodes } from '@/services/tvmaze';
 import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator';
@@ -108,6 +108,7 @@ export default function ShowHub() {
   const [hasSetInitialTab, setHasSetInitialTab] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [bannerFailed, setBannerFailed] = useState(false);
+  const endYearFetchedRef = React.useRef<string | null>(null); // Track which show we've fetched end year for
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   
@@ -222,6 +223,7 @@ export default function ShowHub() {
           setShow(mapDatabaseShowToShow(dbShow));
           
           // Check if show data is incomplete and needs refresh
+          // Note: endYear is fetched during refresh but not persisted due to PostgREST cache
           const isIncomplete = !dbShow.year || 
                               !dbShow.description || 
                               dbShow.description === 'No description available.' ||
@@ -236,6 +238,7 @@ export default function ShowHub() {
             });
             
             // Fetch fresh data in background (don't block UI)
+            // This also fetches endYear for year range display
             refreshShowData(dbShow);
           }
         } else {
@@ -266,11 +269,26 @@ export default function ShowHub() {
           return;
         }
         
-        console.log('✅ Got fresh Trakt data:', { 
-          title: traktShow.title, 
-          year: traktShow.year,
-          hasOverview: !!traktShow.overview
-        });
+        // Fetch end year from last episode air date (separate error handling)
+        let endYear: number | undefined;
+        try {
+          endYear = await fetchShowEndYear(traktShow);
+          console.log('✅ Got fresh Trakt data:', { 
+            title: traktShow.title, 
+            year: traktShow.year,
+            endYear: endYear,
+            status: traktShow.status,
+            hasOverview: !!traktShow.overview
+          });
+        } catch (endYearError) {
+          console.warn('⚠️ Failed to fetch end year:', endYearError);
+          console.log('✅ Got fresh Trakt data (without end year):', { 
+            title: traktShow.title, 
+            year: traktShow.year,
+            status: traktShow.status,
+            hasOverview: !!traktShow.overview
+          });
+        }
         
         // Fetch backdrop from TVMaze if we have the ID (with separate error handling)
         let backdropUrl = dbShow.backdrop_url;
@@ -305,10 +323,11 @@ export default function ShowHub() {
         
         console.log('✅ Show data refreshed successfully');
         
-        // Update local state with refreshed data (including year from Trakt for UI display)
+        // Update local state with refreshed data (including year/endYear from Trakt for UI display)
         setShow(prev => prev ? {
           ...prev,
           year: traktShow.year || prev.year,
+          endYear: endYear || prev.endYear,
           description: traktShow.overview || prev.description,
           backdrop: backdropUrl || prev.backdrop,
           rating: traktShow.rating ? Number(traktShow.rating.toFixed(1)) : prev.rating,
@@ -322,6 +341,35 @@ export default function ShowHub() {
 
     loadShow();
   }, [id]);
+
+  // Separate effect to fetch end year for shows that have complete data but missing endYear
+  // This runs once per show visit and doesn't cause perpetual refresh loops
+  useEffect(() => {
+    async function fetchEndYearIfNeeded() {
+      // Skip if no show, already has endYear, or we've already fetched for this show
+      if (!show || show.endYear || !show.year || !show.traktId) return;
+      if (endYearFetchedRef.current === show.id) return;
+      
+      // Mark that we're fetching for this show (prevent duplicate calls)
+      endYearFetchedRef.current = show.id;
+      
+      try {
+        console.log('📅 Fetching end year for:', show.title);
+        const traktShow = await getShowDetails(show.traktId);
+        if (!traktShow) return;
+        
+        const endYear = await fetchShowEndYear(traktShow);
+        if (endYear && endYear !== show.year) {
+          console.log('✅ Got end year:', endYear, 'for', show.title);
+          setShow(prev => prev ? { ...prev, endYear } : null);
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to fetch end year:', error);
+      }
+    }
+    
+    fetchEndYearIfNeeded();
+  }, [show?.id, show?.year, show?.endYear, show?.traktId]);
 
   useEffect(() => {
     async function loadEpisodes() {
