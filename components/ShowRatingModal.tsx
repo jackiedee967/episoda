@@ -349,7 +349,7 @@ export default function ShowRatingModal({
             <View style={styles.content}>
               <View style={styles.successSection}>
                 <View style={styles.successIconContainer}>
-                  <Star size={48} color={colors.greenHighlight} fill={colors.greenHighlight} />
+                  <Text style={{ fontSize: 48 }}>🎉</Text>
                 </View>
                 <Text style={styles.successTitle}>You rated {show.title}</Text>
                 <View style={styles.successRating}>
