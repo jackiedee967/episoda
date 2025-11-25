@@ -20,41 +20,66 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
+const SHOW_RATING_MARKER = '[SHOW_RATING]';
+
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
-  console.log('📡 Saving show rating via direct SQL', { userId, showId, rating });
+  console.log('📡 Saving show rating to posts table', { userId, showId, rating });
   
-  const { error } = await supabase
+  // Check if user already has a rating post for this show
+  // Use title column as marker since it's in PostgREST schema cache
+  const { data: existingRating } = await supabase
     .from('posts')
     .select('id')
-    .limit(0);
+    .eq('user_id', userId)
+    .eq('show_id', showId)
+    .eq('title', SHOW_RATING_MARKER)
+    .is('episode_id', null)
+    .maybeSingle();
   
-  if (error && error.code === 'PGRST205') {
-    console.log('Schema cache issue detected, using SQL workaround');
-  }
-  
-  const sql = `
-    INSERT INTO show_ratings (user_id, show_id, rating, updated_at)
-    VALUES ('${userId}', '${showId}', ${rating}, NOW())
-    ON CONFLICT (user_id, show_id)
-    DO UPDATE SET rating = ${rating}, updated_at = NOW()
-  `;
-  
-  const { error: rpcError } = await (supabase.rpc as any)('exec_sql', { query: sql });
-  
-  if (rpcError) {
-    console.error('Error saving rating via exec_sql:', rpcError);
-    const { error: fallbackError } = await (supabase.rpc as any)('upsert_show_rating', {
-      user_id_param: userId,
-      show_id_param: showId,
-      rating_param: rating
-    });
-    if (fallbackError) {
-      console.error('Error saving rating:', fallbackError);
-      throw new Error(fallbackError.message);
+  if (existingRating) {
+    // Update existing rating
+    const { error } = await supabase
+      .from('posts')
+      .update({ 
+        rating: rating, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', existingRating.id);
+    
+    if (error) {
+      console.error('Error updating rating:', error);
+      throw new Error(error.message);
     }
+    console.log('✅ Rating updated successfully');
+  } else {
+    // Create new rating post
+    const newId = `rating-${userId.substring(0,8)}-${showId.substring(0,8)}-${Date.now()}`;
+    const { error } = await supabase
+      .from('posts')
+      .insert({
+        id: newId,
+        user_id: userId,
+        show_id: showId,
+        show_title: '',
+        show_poster: '',
+        body: '',
+        title: SHOW_RATING_MARKER,
+        episode_id: null,
+        rating: rating,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_spoiler: false,
+        likes: 0,
+        comments: 0,
+        reposts: 0
+      } as any);
+    
+    if (error) {
+      console.error('Error creating rating:', error);
+      throw new Error(error.message);
+    }
+    console.log('✅ Rating saved successfully');
   }
-  
-  console.log('✅ Rating saved successfully');
 }
 
 interface ShowRatingModalProps {
