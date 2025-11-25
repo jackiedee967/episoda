@@ -1141,6 +1141,30 @@ export default function ShowHub() {
                 color={tokens.colors.pureWhite} 
               />
             </Pressable>
+            <Pressable 
+              style={({ pressed }) => [
+                styles.posterRatingContainer,
+                pressed && styles.posterRatingContainerPressed,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setRatingModalVisible(true);
+              }}
+            >
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Text 
+                  key={star} 
+                  style={[
+                    styles.posterStar,
+                    userShowRating > 0 && userShowRating >= star - 0.5 
+                      ? styles.posterStarFilled 
+                      : styles.posterStarEmpty
+                  ]}
+                >
+                  ★
+                </Text>
+              ))}
+            </Pressable>
           </View>
           <View style={styles.detailsColumn}>
             <View style={styles.yearAndProvidersRow}>
@@ -1166,37 +1190,14 @@ export default function ShowHub() {
               {show.description}
             </Text>
             <View style={styles.statsRow}>
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.ratingContainer,
-                  pressed && styles.ratingContainerPressed,
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setRatingModalVisible(true);
-                }}
-              >
-                {userShowRating > 0 ? (
-                  <>
-                    <Text style={styles.ratingText}>{userShowRating.toFixed(1)}</Text>
-                    <Text style={[styles.starIcon, styles.userRatedStar]}>★</Text>
-                  </>
-                ) : communityRating && communityRating.count >= 10 && communityRating.average > 0 ? (
-                  <>
-                    <Text style={styles.ratingText}>{communityRating.average.toFixed(1)}</Text>
-                    <Text style={[styles.starIcon, styles.communityRatingStar]}>★</Text>
-                  </>
-                ) : show.rating > 0 ? (
-                  <>
-                    <Text style={styles.ratingText}>
-                      {convertToFiveStarRating(show.rating).toFixed(1)}
-                    </Text>
-                    <Text style={styles.starIcon}>★</Text>
-                  </>
-                ) : (
-                  <Text style={styles.rateShowText}>Rate</Text>
-                )}
-              </Pressable>
+              {show.rating > 0 && (
+                <View style={styles.ratingContainer}>
+                  <Text style={styles.ratingText}>
+                    {convertToFiveStarRating(show.rating).toFixed(1)}
+                  </Text>
+                  <Text style={styles.starIcon}>★</Text>
+                </View>
+              )}
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
@@ -1665,6 +1666,26 @@ const styles = StyleSheet.create({
   saveIconPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.9 }],
+  },
+  posterRatingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 4,
+  },
+  posterRatingContainerPressed: {
+    opacity: 0.7,
+  },
+  posterStar: {
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  posterStarFilled: {
+    color: colors.greenHighlight,
+  },
+  posterStarEmpty: {
+    color: colors.grey2,
   },
   detailsColumn: {
     flex: 1,
