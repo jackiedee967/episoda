@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
@@ -20,11 +21,38 @@ export default function CreateAnnouncementScreen() {
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
 
-  // Admin check
-  if (!isAdmin(currentUser?.id)) {
-    router.back();
-    return null;
+  // Admin check - must be in useEffect to avoid setState during render
+  useEffect(() => {
+    if (currentUser?.id) {
+      if (!isAdmin(currentUser.id)) {
+        router.back();
+      } else {
+        setCheckingAdmin(false);
+      }
+    }
+  }, [currentUser?.id]);
+
+  // Show loading while checking admin status
+  if (checkingAdmin) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: 'New Announcement',
+            headerBackTitle: 'Back',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+            headerShadowVisible: false,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </>
+    );
   }
 
   const handleCreateAnnouncement = async () => {
@@ -135,6 +163,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     padding: 20,
