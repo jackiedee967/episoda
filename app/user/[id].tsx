@@ -85,29 +85,90 @@ export default function UserProfile() {
   const [topFollowing, setTopFollowing] = useState<any[]>([]);
   const [currentUserFollowing, setCurrentUserFollowing] = useState<any[]>([]);
   const [profileUser, setProfileUser] = useState<User | null>(null);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-  // Guard against undefined contextCurrentUser during loading
-  const user = contextCurrentUser && id === contextCurrentUser.id 
-    ? contextCurrentUser 
-    : mockUsers.find((u) => u.id === id);
-  const isCurrentUser = contextCurrentUser && id === contextCurrentUser.id;
-  const isUserFollowing = isFollowing(id as string);
+  // Helper to check if string is a UUID
+  const isUUID = (str: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
 
+  // Fetch user by username or ID
   useEffect(() => {
-    if (user) {
-      setProfileUser(user);
-    }
-  }, [user]);
+    const fetchUser = async () => {
+      if (!id) return;
+      
+      setIsLoadingUser(true);
+      const idString = id as string;
+      
+      // Check if current user first
+      if (contextCurrentUser && (idString === contextCurrentUser.id || idString === contextCurrentUser.username)) {
+        setProfileUser(contextCurrentUser);
+        setResolvedUserId(contextCurrentUser.id);
+        setIsLoadingUser(false);
+        return;
+      }
+      
+      // If it's a UUID, lookup by id
+      // If it's a username, lookup by username
+      const isIdUUID = isUUID(idString);
+      
+      try {
+        let query = supabase.from('profiles').select('*');
+        
+        if (isIdUUID) {
+          query = query.eq('id', idString);
+        } else {
+          query = query.eq('username', idString);
+        }
+        
+        const { data, error } = await query.single();
+        
+        if (error || !data) {
+          console.log('User not found:', idString);
+          setProfileUser(null);
+          setResolvedUserId(null);
+        } else {
+          // Map Supabase profile to User type
+          const mappedUser: User = {
+            id: data.id,
+            username: data.username || 'unknown',
+            displayName: data.display_name || data.username || 'Unknown',
+            avatar: data.avatar || 'https://i.pravatar.cc/150?img=1',
+            bio: data.bio || '',
+            postsCount: 0,
+            followersCount: 0,
+            followingCount: 0,
+            isFollowing: false,
+          };
+          setProfileUser(mappedUser);
+          setResolvedUserId(data.id);
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        setProfileUser(null);
+        setResolvedUserId(null);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+    
+    fetchUser();
+  }, [id, contextCurrentUser]);
+
+  const isCurrentUser = contextCurrentUser && resolvedUserId === contextCurrentUser.id;
+  const isUserFollowing = isFollowing(resolvedUserId || id as string);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist ? isShowInPlaylist(pl.id, showId) : false);
   };
 
-  const loadStats = async () => {
+  const loadStats = async (userId: string) => {
     setIsLoadingStats(true);
     try {
-      const episodesCount = await getEpisodesWatchedCount(id as string);
-      const likesCount = await getTotalLikesReceived(id as string);
+      const episodesCount = await getEpisodesWatchedCount(userId);
+      const likesCount = await getTotalLikesReceived(userId);
       setEpisodesWatched(episodesCount);
       setTotalLikes(likesCount);
     } catch (error) {
@@ -117,12 +178,12 @@ export default function UserProfile() {
     }
   };
 
-  const loadFollowData = async () => {
+  const loadFollowData = async (userId: string) => {
     try {
-      const followersData = await getFollowers(id as string);
-      const followingData = await getFollowing(id as string);
-      const topFollowersData = await getTopFollowers(id as string, 3);
-      const topFollowingData = await getTopFollowing(id as string, 3);
+      const followersData = await getFollowers(userId);
+      const followingData = await getFollowing(userId);
+      const topFollowersData = await getTopFollowers(userId, 3);
+      const topFollowingData = await getTopFollowing(userId, 3);
       
       // Also fetch current user's following list for friends in common calculation
       const currentUserFollowingData = !isCurrentUser && contextCurrentUser 
@@ -144,30 +205,35 @@ export default function UserProfile() {
     }
   };
 
+  // Load user data when resolvedUserId is available
   useEffect(() => {
+    if (!resolvedUserId || isLoadingUser) return;
+    
     const loadUserData = async () => {
-      await loadPlaylists(id as string);
-      await loadStats();
-      await loadFollowData();
+      await loadPlaylists(resolvedUserId);
+      await loadStats(resolvedUserId);
+      await loadFollowData(resolvedUserId);
     };
 
     loadUserData();
-  }, [id]);
+  }, [resolvedUserId, isLoadingUser]);
 
   useEffect(() => {
+    if (!resolvedUserId) return;
     const userPlaylistsData = playlists.filter(p => 
-      p.userId === id && (isCurrentUser || p.isPublic)
+      p.userId === resolvedUserId && (isCurrentUser || p.isPublic)
     );
     setUserPlaylists(userPlaylistsData);
-  }, [id, playlists, isCurrentUser]);
+  }, [resolvedUserId, playlists, isCurrentUser]);
 
   const allUserActivity = useMemo(() => {
-    if (!id) return [];
-    return getProfileFeed(id as string);
-  }, [getProfileFeed, id]);
+    if (!resolvedUserId) return [];
+    return getProfileFeed(resolvedUserId);
+  }, [getProfileFeed, resolvedUserId]);
 
   const myRotation = useMemo((): Show[] => {
-    const userShowPosts = posts.filter((p) => p.user.id === id);
+    if (!resolvedUserId) return [];
+    const userShowPosts = posts.filter((p) => p.user.id === resolvedUserId);
     const sortedPosts = [...userShowPosts].sort((a, b) => 
       b.timestamp.getTime() - a.timestamp.getTime()
     );
@@ -187,13 +253,13 @@ export default function UserProfile() {
     }
     
     return uniqueShows;
-  }, [posts, id]);
+  }, [posts, resolvedUserId]);
 
   const commonShows = isCurrentUser ? [] : mockShows.slice(0, 2);
 
   const watchHistory = useMemo(() => 
-    getWatchHistoryFromContext(id as string),
-    [id]
+    resolvedUserId ? getWatchHistoryFromContext(resolvedUserId) : [],
+    [resolvedUserId]
   );
 
   // Calculate friends in common (people who follow the profile user AND are followed by the current viewer)
@@ -234,14 +300,28 @@ export default function UserProfile() {
         await followUser(userId);
       }
       
-      await loadFollowData();
+      if (resolvedUserId) {
+        await loadFollowData(resolvedUserId);
+      }
     } catch (error) {
       console.error('Error toggling follow:', error);
       Alert.alert('Error', 'Failed to update follow status. Please try again.');
     }
   };
 
-  if (!user || !profileUser) {
+  // Show loading state while fetching user
+  if (isLoadingUser) {
+    return (
+      <View style={styles.pageContainer}>
+        <Stack.Screen options={{ title: 'Loading...', headerShown: false }} />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (!profileUser) {
     return (
       <View style={styles.pageContainer}>
         <Stack.Screen options={{ title: 'User Not Found', headerShown: false }} />
@@ -252,12 +332,14 @@ export default function UserProfile() {
 
   const handleBlock = () => {
     setIsBlocked(!isBlocked);
-    if (!isBlocked) {
-      unfollowUser(id as string);
+    if (!isBlocked && resolvedUserId) {
+      unfollowUser(resolvedUserId);
     }
   };
 
   const handleReport = async (reason: ReportReason, details: string) => {
+    if (!resolvedUserId) return;
+    
     try {
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       
@@ -270,7 +352,7 @@ export default function UserProfile() {
         .from('reports')
         .insert({
           reporter_id: authUser.id,
-          reported_user_id: id as string,
+          reported_user_id: resolvedUserId,
           reason: reason,
           details: details || null,
           status: 'pending',
@@ -440,7 +522,7 @@ export default function UserProfile() {
         <View style={styles.actionButtonsSection}>
           <Pressable 
             style={[styles.followButton, isUserFollowing && styles.followButtonActive]} 
-            onPress={() => handleFollowToggle(id as string)}
+            onPress={() => resolvedUserId && handleFollowToggle(resolvedUserId)}
           >
             <Text style={[styles.followButtonText, isUserFollowing && styles.followButtonTextActive]}>
               {isUserFollowing ? 'Following' : 'Follow'}
@@ -936,6 +1018,15 @@ const styles = StyleSheet.create({
     color: colors.almostWhite,
     textAlign: 'center',
     marginTop: 100,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.subtitle,
+    color: colors.almostWhite,
   },
   
   // Section 1: Profile Info
