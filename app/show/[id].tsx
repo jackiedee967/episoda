@@ -1903,7 +1903,7 @@ const styles = StyleSheet.create({
   },
   seasonTitleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     gap: 8,
   },
   seasonTitle: {
