@@ -33,7 +33,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Star } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { getShowById, DatabaseShow, getEpisodesByShowId, DatabaseEpisode, upsertEpisodeMetadata, saveShow } from '@/services/showDatabase';
 import { getAllEpisodes, getShowDetails, fetchShowEndYear } from '@/services/trakt';
@@ -1151,19 +1151,18 @@ export default function ShowHub() {
                 setRatingModalVisible(true);
               }}
             >
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Text 
-                  key={star} 
-                  style={[
-                    styles.posterStar,
-                    userShowRating > 0 && userShowRating >= star - 0.5 
-                      ? styles.posterStarFilled 
-                      : styles.posterStarEmpty
-                  ]}
-                >
-                  {userShowRating > 0 && userShowRating >= star - 0.5 ? '★' : '☆'}
-                </Text>
-              ))}
+              {[1, 2, 3, 4, 5].map((star) => {
+                const isFilled = userShowRating > 0 && userShowRating >= star - 0.5;
+                return (
+                  <Star 
+                    key={star} 
+                    size={20}
+                    color={tokens.colors.greenHighlight}
+                    fill={isFilled ? tokens.colors.greenHighlight : 'transparent'}
+                    strokeWidth={1.5}
+                  />
+                );
+              })}
             </Pressable>
           </View>
           <View style={styles.detailsColumn}>
