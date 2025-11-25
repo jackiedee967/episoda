@@ -1266,7 +1266,7 @@ const styles = StyleSheet.create({
   // Tab Content
   tabContent: {
     paddingHorizontal: 16,
-    gap: 16,
+    gap: 10,
   },
   emptyState: {
     alignItems: 'center',
