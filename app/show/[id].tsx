@@ -1154,12 +1154,11 @@ export default function ShowHub() {
               {[1, 2, 3, 4, 5].map((star) => {
                 const isFilled = userShowRating > 0 && userShowRating >= star;
                 const isHalfFilled = userShowRating > 0 && userShowRating >= star - 0.5 && userShowRating < star;
-                const isEmpty = !isFilled && !isHalfFilled;
                 return (
                   <View key={star} style={{ position: 'relative', width: 20, height: 20 }}>
                     <Star 
                       size={20}
-                      color={isEmpty ? tokens.colors.grey1 : tokens.colors.greenHighlight}
+                      color={isFilled ? tokens.colors.greenHighlight : tokens.colors.grey1}
                       fill={isFilled ? tokens.colors.greenHighlight : 'transparent'}
                       strokeWidth={1}
                     />
