@@ -312,6 +312,25 @@ export function getProviderLogoUrl(logoPath: string): string {
   return `https://image.tmdb.org/t/p/w92${logoPath}`;
 }
 
+function getBaseServiceName(providerName: string): string {
+  return providerName
+    .toLowerCase()
+    .replace(/\s*(via|with|on)\s+.*$/i, '')
+    .replace(/\s*(amazon|prime video)\s+channel[s]?$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isChannelAddon(providerName: string): boolean {
+  const lowerName = providerName.toLowerCase();
+  return (
+    lowerName.includes('amazon channel') ||
+    lowerName.includes('prime video channel') ||
+    lowerName.includes(' via ') ||
+    lowerName.includes(' with ')
+  );
+}
+
 export async function getWatchProviders(tmdbId: number, countryCode: string = 'US'): Promise<WatchProvider[]> {
   if (!TMDB_API_KEY) {
     console.log('⚠️ TMDB API key not configured for watch providers');
@@ -337,27 +356,57 @@ export async function getWatchProviders(tmdbId: number, countryCode: string = 'U
       return [];
     }
 
-    const providers: WatchProvider[] = [];
+    const allProviders: WatchProvider[] = [];
     const seenIds = new Set<number>();
 
-    const addProviders = (list: WatchProvider[] | undefined) => {
+    const collectProviders = (list: WatchProvider[] | undefined) => {
       if (!list) return;
       for (const provider of list) {
         if (!seenIds.has(provider.provider_id)) {
           seenIds.add(provider.provider_id);
-          providers.push(provider);
+          allProviders.push(provider);
         }
       }
     };
 
-    addProviders(countryData.flatrate);
-    addProviders(countryData.free);
-    addProviders(countryData.ads);
+    collectProviders(countryData.flatrate);
+    collectProviders(countryData.free);
+    collectProviders(countryData.ads);
 
-    providers.sort((a, b) => a.display_priority - b.display_priority);
+    const mainProviders: WatchProvider[] = [];
+    const channelAddons: WatchProvider[] = [];
+    
+    for (const provider of allProviders) {
+      if (isChannelAddon(provider.provider_name)) {
+        channelAddons.push(provider);
+      } else {
+        mainProviders.push(provider);
+      }
+    }
 
-    console.log(`✅ Found ${providers.length} streaming providers for ${countryCode}`);
-    return providers;
+    const seenBaseNames = new Set<string>();
+    const finalProviders: WatchProvider[] = [];
+
+    for (const provider of mainProviders) {
+      const baseName = getBaseServiceName(provider.provider_name);
+      if (!seenBaseNames.has(baseName)) {
+        seenBaseNames.add(baseName);
+        finalProviders.push(provider);
+      }
+    }
+
+    for (const provider of channelAddons) {
+      const baseName = getBaseServiceName(provider.provider_name);
+      if (!seenBaseNames.has(baseName)) {
+        seenBaseNames.add(baseName);
+        finalProviders.push(provider);
+      }
+    }
+
+    finalProviders.sort((a, b) => a.display_priority - b.display_priority);
+
+    console.log(`✅ Found ${finalProviders.length} unique streaming providers for ${countryCode}`);
+    return finalProviders;
   } catch (error) {
     console.error(`❌ Error fetching watch providers:`, error);
     return [];

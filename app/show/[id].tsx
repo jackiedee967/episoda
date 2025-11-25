@@ -991,44 +991,44 @@ export default function ShowHub() {
     return (
       <View style={styles.showInfoContainer}>
         <View style={styles.showDetailsRow}>
-          <View style={styles.posterColumn}>
-            <View style={styles.posterWrapper}>
-              <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} contentFit="cover" />
-              <Pressable 
-                style={({ pressed }) => [
-                  styles.saveIcon,
-                  pressed && styles.saveIconPressed,
-                ]} 
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setPlaylistModalVisible(true);
-                }}
-              >
-                <IconSymbol 
-                  name={isShowSaved ? "bookmark.fill" : "bookmark"} 
-                  size={18} 
-                  color={tokens.colors.pureWhite} 
-                />
-              </Pressable>
-            </View>
-            {streamingProviders.length > 0 && (
-              <View style={styles.streamingProvidersRow}>
-                {streamingProviders.slice(0, 5).map((provider) => (
-                  <View key={provider.provider_id} style={styles.providerLogoContainer}>
-                    <Image
-                      source={{ uri: getProviderLogoUrl(provider.logo_path) }}
-                      style={styles.providerLogo}
-                      contentFit="cover"
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
+          <View style={styles.posterWrapper}>
+            <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} contentFit="cover" />
+            <Pressable 
+              style={({ pressed }) => [
+                styles.saveIcon,
+                pressed && styles.saveIconPressed,
+              ]} 
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setPlaylistModalVisible(true);
+              }}
+            >
+              <IconSymbol 
+                name={isShowSaved ? "bookmark.fill" : "bookmark"} 
+                size={18} 
+                color={tokens.colors.pureWhite} 
+              />
+            </Pressable>
           </View>
           <View style={styles.detailsColumn}>
-            {yearRange && (
-              <Text style={styles.yearRange}>{yearRange}</Text>
-            )}
+            <View style={styles.yearAndProvidersRow}>
+              {yearRange && (
+                <Text style={styles.yearRange}>{yearRange}</Text>
+              )}
+              {streamingProviders.length > 0 && (
+                <View style={styles.streamingProvidersRow}>
+                  {streamingProviders.slice(0, 5).map((provider) => (
+                    <View key={provider.provider_id} style={styles.providerLogoContainer}>
+                      <Image
+                        source={{ uri: getProviderLogoUrl(provider.logo_path) }}
+                        style={styles.providerLogo}
+                        contentFit="cover"
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
             <Text style={styles.showTitleInside}>{show.title}</Text>
             <Text style={styles.description} numberOfLines={6}>
               {show.description}
@@ -1460,10 +1460,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
-  posterColumn: {
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
   posterWrapper: {
     position: 'relative',
     width: 120,
@@ -1506,27 +1502,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  yearAndProvidersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   streamingProvidersRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 8,
-    width: 120,
-    flexWrap: 'wrap',
+    gap: 4,
   },
   providerLogoContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 5,
     overflow: 'hidden',
     backgroundColor: tokens.colors.grey4,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
   },
   providerLogo: {
-    width: 26,
-    height: 26,
+    width: 20,
+    height: 20,
   },
   ratingContainer: {
     flexDirection: 'row',
