@@ -299,9 +299,9 @@ export default function HelpDeskScreen() {
       case 'Support':
         return colors.blue;
       case 'Feedback':
-        return colors.green;
+        return colors.greenHighlight;
       case 'Admin Announcement':
-        return colors.green;
+        return colors.greenHighlight;
       default:
         return colors.textSecondary;
     }
@@ -686,7 +686,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   announcementBadge: {
-    backgroundColor: colors.green,
+    backgroundColor: colors.greenHighlight,
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,
