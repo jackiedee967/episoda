@@ -11,7 +11,7 @@ import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
-import { ChevronRight, Bookmark } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
@@ -599,8 +599,8 @@ export default function HomeScreen() {
                     }}
                   >
                     <IconSymbol 
-                      name={isShowSaved(show.id, show.traktId) ? "bookmark.fill" : "bookmark"} 
-                      size={18} 
+                      name={isShowSaved(show.id, show.traktId) ? "heart.fill" : "heart"} 
+                      size={20} 
                       color={tokens.colors.pureWhite} 
                     />
                   </Pressable>
@@ -728,8 +728,8 @@ export default function HomeScreen() {
                     }}
                   >
                     <IconSymbol 
-                      name={isShowSaved(show.id, show.traktId) ? "bookmark.fill" : "bookmark"} 
-                      size={18} 
+                      name={isShowSaved(show.id, show.traktId) ? "heart.fill" : "heart"} 
+                      size={20} 
                       color={tokens.colors.pureWhite} 
                     />
                   </Pressable>
@@ -1123,8 +1123,11 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   mutualFriendsOverlay: {
     position: 'absolute',

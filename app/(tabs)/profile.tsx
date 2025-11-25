@@ -573,8 +573,8 @@ export default function ProfileScreen() {
                 }}
               >
                 <IconSymbol 
-                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"} 
-                  size={16} 
+                  name={isShowSaved(show.id) ? "heart.fill" : "heart"} 
+                  size={18} 
                   color={colors.pureWhite} 
                 />
               </Pressable>
@@ -692,7 +692,7 @@ export default function ProfileScreen() {
           />
           <Text style={styles.emptyStateTitle}>No playlists yet</Text>
           <Text style={styles.emptyStateText}>
-            Tap the bookmark icon on any show's poster to save it a playlist!
+            Tap the heart icon on any show's poster to save it to a playlist!
           </Text>
         </View>
       )}
@@ -1053,8 +1053,11 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   saveIconPressed: {
     opacity: 0.7,

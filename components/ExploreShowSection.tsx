@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import tokens from '@/styles/tokens';
-import { Bookmark } from 'lucide-react-native';
 import { IconSymbol } from './IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Friends as BaseFriends } from './ui-pages/base/friends';
@@ -147,8 +146,8 @@ export default function ExploreShowSection({
                   onPress={(e) => handleBookmarkPress(show, e)}
                 >
                   <IconSymbol
-                    name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
-                    size={16}
+                    name={isShowSaved(show.id) ? 'heart.fill' : 'heart'}
+                    size={18}
                     color="#FFFFFF"
                   />
                 </Pressable>
@@ -238,8 +237,11 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   saveIconPressed: {
     opacity: 0.7,

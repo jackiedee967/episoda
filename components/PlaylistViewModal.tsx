@@ -17,7 +17,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
 import { Show, Playlist } from '@/types';
 import * as Haptics from 'expo-haptics';
-import { Trash2, Bookmark } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -300,13 +300,13 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
                         </Pressable>
                       ) : (
                         <Pressable
-                          style={styles.bookmarkIconContainer}
+                          style={styles.heartIconContainer}
                           onPress={() => {
-                            console.log('🔥 Bookmark icon clicked');
+                            console.log('🔥 Heart icon clicked');
                           }}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Bookmark size={18} color={tokens.colors.black} fill={tokens.colors.black} />
+                          <IconSymbol name="heart.fill" size={18} color={tokens.colors.black} />
                         </Pressable>
                       )}
                     </View>
@@ -447,14 +447,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 10,
   },
-  bookmarkIconContainer: {
+  heartIconContainer: {
     position: 'absolute',
     top: 6,
     right: 6,
     width: 30,
     height: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
     padding: 6,
     alignItems: 'center',
     justifyContent: 'center',

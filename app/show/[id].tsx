@@ -1136,8 +1136,8 @@ export default function ShowHub() {
               }}
             >
               <IconSymbol 
-                name={isShowSaved ? "bookmark.fill" : "bookmark"} 
-                size={18} 
+                name={isShowSaved ? "heart.fill" : "heart"} 
+                size={20} 
                 color={tokens.colors.pureWhite} 
               />
             </Pressable>
@@ -1658,8 +1658,11 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   saveIconPressed: {
     opacity: 0.7,

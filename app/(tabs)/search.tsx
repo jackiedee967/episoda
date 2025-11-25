@@ -1895,7 +1895,7 @@ export default function SearchScreen() {
                 onPress={(e) => handleSavePress(show, e)}
               >
                 <IconSymbol
-                  name={isShowSaved(show.id) ? "bookmark.fill" : "bookmark"}
+                  name={isShowSaved(show.id) ? "heart.fill" : "heart"}
                   size={20}
                   color={isShowSaved(show.id) ? tokens.colors.green : tokens.colors.grey1}
                 />
@@ -2257,7 +2257,7 @@ export default function SearchScreen() {
                     </View>
                   )}
                   
-                  {/* Bookmark Icon */}
+                  {/* Heart Icon */}
                   <Pressable
                     style={({ pressed }) => [
                       styles.gridSaveIcon,
@@ -2271,8 +2271,8 @@ export default function SearchScreen() {
                     }}
                   >
                     <IconSymbol
-                      name="bookmark"
-                      size={16}
+                      name="heart"
+                      size={18}
                       color="#FFFFFF"
                     />
                   </Pressable>
@@ -2356,7 +2356,7 @@ export default function SearchScreen() {
                     </View>
                   )}
                   
-                  {/* Bookmark Icon */}
+                  {/* Heart Icon */}
                   <Pressable
                     style={({ pressed }) => [
                       styles.gridSaveIcon,
@@ -2370,8 +2370,8 @@ export default function SearchScreen() {
                     }}
                   >
                     <IconSymbol
-                      name="bookmark"
-                      size={16}
+                      name="heart"
+                      size={18}
                       color="#FFFFFF"
                     />
                   </Pressable>
@@ -3058,8 +3058,11 @@ const styles = StyleSheet.create({
     height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   gridSaveIconPressed: {
     opacity: 0.7,

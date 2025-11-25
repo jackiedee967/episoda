@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { colors, typography, components, spacing } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
-import { Bookmark } from 'lucide-react-native';
+import { IconSymbol } from '@/components/IconSymbol';
 
 interface EpisodeCardProps {
   title: string;
@@ -66,11 +66,11 @@ export default function EpisodeCard({
             </Text>
           </View>
           {onBookmark ? (
-            <Pressable onPress={handleBookmark} style={styles.bookmarkButton}>
-              <Bookmark
+            <Pressable onPress={handleBookmark} style={styles.heartButton}>
+              <IconSymbol
+                name={isBookmarked ? "heart.fill" : "heart"}
                 size={18}
                 color={isBookmarked ? colors.greenHighlight : colors.grey1}
-                fill={isBookmarked ? colors.greenHighlight : 'transparent'}
               />
             </Pressable>
           ) : null}
@@ -97,11 +97,11 @@ export default function EpisodeCard({
         ) : null}
         <View style={styles.compactOverlay}>
           {onBookmark ? (
-            <Pressable onPress={handleBookmark} style={styles.bookmarkButtonCard}>
-              <Bookmark
+            <Pressable onPress={handleBookmark} style={styles.heartButtonCard}>
+              <IconSymbol
+                name={isBookmarked ? "heart.fill" : "heart"}
                 size={16}
                 color={isBookmarked ? colors.greenHighlight : colors.pureWhite}
-                fill={isBookmarked ? colors.greenHighlight : 'transparent'}
               />
             </Pressable>
           ) : null}
@@ -133,11 +133,11 @@ export default function EpisodeCard({
       ) : null}
       <View style={styles.overlay}>
         {onBookmark ? (
-          <Pressable onPress={handleBookmark} style={styles.bookmarkButtonCard}>
-            <Bookmark
+          <Pressable onPress={handleBookmark} style={styles.heartButtonCard}>
+            <IconSymbol
+              name={isBookmarked ? "heart.fill" : "heart"}
               size={20}
               color={isBookmarked ? colors.greenHighlight : colors.pureWhite}
-              fill={isBookmarked ? colors.greenHighlight : 'transparent'}
             />
           </Pressable>
         ) : null}
@@ -300,13 +300,16 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
   },
-  bookmarkButton: {
+  heartButton: {
     padding: 4,
   },
-  bookmarkButtonCard: {
+  heartButtonCard: {
     padding: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   pressed: {
     opacity: 0.8,

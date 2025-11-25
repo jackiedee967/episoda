@@ -149,8 +149,8 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
             onPress={handleSavePress}
           >
             <IconSymbol 
-              name={isInPlaylist ? "bookmark.fill" : "bookmark"} 
-              size={18} 
+              name={isInPlaylist ? "heart.fill" : "heart"} 
+              size={20} 
               color={tokens.colors.pureWhite} 
             />
           </Pressable>
@@ -206,8 +206,11 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   saveIconPressed: {
     opacity: 0.7,

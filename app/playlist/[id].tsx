@@ -16,7 +16,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
 import { Show, Playlist } from '@/types';
 import * as Haptics from 'expo-haptics';
-import { Trash2, Bookmark } from 'lucide-react-native';
+import { Trash2 } from 'lucide-react-native';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -287,13 +287,13 @@ export default function PlaylistDetailScreen() {
                       </Pressable>
                     ) : (
                       <Pressable
-                        style={styles.bookmarkIconContainer}
+                        style={styles.heartIconContainer}
                         onPress={(e) => {
                           e.stopPropagation();
                         }}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Bookmark size={18} color={colors.text} fill={colors.text} />
+                        <IconSymbol name="heart.fill" size={18} color={colors.text} />
                       </Pressable>
                     )}
                   </Pressable>
@@ -404,12 +404,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 6,
   },
-  bookmarkIconContainer: {
+  heartIconContainer: {
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
     padding: 6,
   },
   showTitle: {

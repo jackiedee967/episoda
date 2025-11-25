@@ -103,7 +103,7 @@ export default function RecommendedTitlesScreen() {
                     onPress={(e) => handleSavePress(show, e)}
                   >
                     <IconSymbol
-                      name={isShowSaved(show.id) ? 'bookmark.fill' : 'bookmark'}
+                      name={isShowSaved(show.id) ? 'heart.fill' : 'heart'}
                       size={18}
                       color="#FFFFFF"
                     />
@@ -207,8 +207,11 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 5,
   },
   saveIconPressed: {
     opacity: 0.7,
