@@ -305,11 +305,6 @@ const styles = StyleSheet.create({
   },
   heartButtonCard: {
     padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-    elevation: 5,
   },
   pressed: {
     opacity: 0.8,
