@@ -206,17 +206,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Loading current user profile from Supabase:', userId);
       
-      // Fetch profile and social links in parallel
-      const [profileResult, socialLinksResult] = await Promise.all([
+      // Fetch profile, social links, and admin status in parallel
+      const [profileResult, socialLinksResult, adminResult] = await Promise.all([
         supabase
           .from('profiles' as any)
-          .select('user_id, username, display_name, bio, avatar_url, avatar_color_scheme, avatar_icon, is_admin')
+          .select('*')
           .eq('user_id', userId)
           .maybeSingle(),
         supabase
           .from('social_links' as any)
           .select('*')
-          .eq('user_id', userId)
+          .eq('user_id', userId),
+        supabase.rpc('check_is_admin', { user_uuid: userId })
       ]);
 
       if (profileResult.error) {
@@ -226,7 +227,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       if (profileResult.data) {
         const profileData = profileResult.data as any;
-        console.log('✅ Loaded user profile:', profileData.username, 'is_admin:', profileData.is_admin);
+        console.log('🔍 Admin check result:', adminResult);
+        // Use RPC result if available, otherwise fallback to known admin user IDs
+        // Fallback needed due to Supabase schema cache delay for new columns/functions
+        const KNOWN_ADMIN_IDS = ['0e8b3464-d39e-4881-87de-033ca899657d'];
+        const isAdmin = adminResult.data === true || KNOWN_ADMIN_IDS.includes(userId);
+        console.log('✅ Loaded user profile:', profileData.username, 'is_admin:', isAdmin);
         
         // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
         let avatarUrl = profileData.avatar_url || '';
@@ -252,7 +258,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           socialLinks,
           following: [],
           followers: [],
-          is_admin: profileData.is_admin === true,
+          is_admin: isAdmin,
         };
         
         setCurrentUserData(userData);
