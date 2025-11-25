@@ -252,6 +252,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           socialLinks,
           following: [],
           followers: [],
+          is_admin: profileData.is_admin === true,
         };
         
         setCurrentUserData(userData);
