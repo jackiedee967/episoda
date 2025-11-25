@@ -1161,7 +1161,7 @@ export default function ShowHub() {
                       : styles.posterStarEmpty
                   ]}
                 >
-                  ★
+                  {userShowRating > 0 && userShowRating >= star - 0.5 ? '★' : '☆'}
                 </Text>
               ))}
             </Pressable>
@@ -1671,7 +1671,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 6,
     gap: 4,
   },
   posterRatingContainerPressed: {
@@ -1685,7 +1685,7 @@ const styles = StyleSheet.create({
     color: tokens.colors.greenHighlight,
   },
   posterStarEmpty: {
-    color: tokens.colors.grey2,
+    color: tokens.colors.greenHighlight,
   },
   detailsColumn: {
     flex: 1,
