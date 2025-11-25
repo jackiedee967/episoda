@@ -45,18 +45,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
 import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
 
-import { getUserShowRatingFromStorage } from '@/components/ShowRatingModal';
+import { getUserShowRatingFromStorage, getShowRatingStatsFromDB } from '@/components/ShowRatingModal';
 
 async function getUserShowRating(userId: string, showId: string): Promise<number | null> {
-  console.log('📡 Fetching user show rating from local storage', { userId, showId });
+  console.log('📡 Fetching user show rating from Supabase', { userId, showId });
   const rating = await getUserShowRatingFromStorage(userId, showId);
   console.log('✅ User rating found:', rating ?? 'none');
   return rating;
 }
 
 async function getShowRatingStats(showId: string): Promise<{ count: number; average: number | null }> {
-  console.log('📡 Show rating stats not available (local storage only)');
-  return { count: 0, average: null };
+  console.log('📡 Fetching show rating stats from Supabase', { showId });
+  const stats = await getShowRatingStatsFromDB(showId);
+  console.log('✅ Rating stats:', stats);
+  return stats;
 }
 
 type TabKey = 'friends' | 'all' | 'episodes';

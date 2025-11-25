@@ -12,38 +12,47 @@ import { BlurView } from 'expo-blur';
 import { Star } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, typography } from '@/styles/tokens';
+import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
 import { Show } from '@/types';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
-const RATINGS_STORAGE_KEY = '@episoda_show_ratings';
-
-interface StoredRatings {
-  [showId: string]: {
-    rating: number;
-    updatedAt: string;
-  };
-}
-
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
-  console.log('📡 Saving show rating to local storage', { userId, showId, rating });
+  console.log('📡 Saving show rating to Supabase', { userId, showId, rating });
   
   try {
-    const storageKey = `${RATINGS_STORAGE_KEY}_${userId}`;
-    const existingData = await AsyncStorage.getItem(storageKey);
-    const ratings: StoredRatings = existingData ? JSON.parse(existingData) : {};
+    const { data: existing } = await (supabase
+      .from('show_ratings' as any)
+      .select('id')
+      .eq('user_id', userId)
+      .eq('show_id', showId)
+      .maybeSingle());
     
-    ratings[showId] = {
-      rating: rating,
-      updatedAt: new Date().toISOString()
-    };
-    
-    await AsyncStorage.setItem(storageKey, JSON.stringify(ratings));
-    console.log('✅ Rating saved successfully to local storage');
+    if (existing) {
+      const { error } = await (supabase
+        .from('show_ratings' as any)
+        .update({ rating, updated_at: new Date().toISOString() })
+        .eq('id', existing.id));
+      
+      if (error) throw error;
+      console.log('✅ Rating updated successfully');
+    } else {
+      const { error } = await (supabase
+        .from('show_ratings' as any)
+        .insert({
+          user_id: userId,
+          show_id: showId,
+          rating,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+      
+      if (error) throw error;
+      console.log('✅ Rating saved successfully');
+    }
   } catch (error) {
     console.error('Error saving rating:', error);
     throw error;
@@ -52,15 +61,46 @@ async function saveShowRating(userId: string, showId: string, rating: number): P
 
 export async function getUserShowRatingFromStorage(userId: string, showId: string): Promise<number | null> {
   try {
-    const storageKey = `${RATINGS_STORAGE_KEY}_${userId}`;
-    const existingData = await AsyncStorage.getItem(storageKey);
-    if (!existingData) return null;
+    const { data, error } = await (supabase
+      .from('show_ratings' as any)
+      .select('rating')
+      .eq('user_id', userId)
+      .eq('show_id', showId)
+      .maybeSingle());
     
-    const ratings: StoredRatings = JSON.parse(existingData);
-    return ratings[showId]?.rating ?? null;
+    if (error) {
+      console.error('Error fetching rating:', error);
+      return null;
+    }
+    
+    return data?.rating ?? null;
   } catch (error) {
     console.error('Error fetching rating:', error);
     return null;
+  }
+}
+
+export async function getShowRatingStatsFromDB(showId: string): Promise<{ count: number; average: number | null }> {
+  try {
+    const { data, error } = await (supabase
+      .from('show_ratings' as any)
+      .select('rating')
+      .eq('show_id', showId));
+    
+    if (error || !data) {
+      console.error('Error fetching rating stats:', error);
+      return { count: 0, average: null };
+    }
+    
+    const count = data.length;
+    const average = count > 0
+      ? Math.round((data.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / count) * 10) / 10
+      : null;
+    
+    return { count, average };
+  } catch (error) {
+    console.error('Error fetching rating stats:', error);
+    return { count: 0, average: null };
   }
 }
 
