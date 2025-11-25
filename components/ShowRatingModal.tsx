@@ -21,6 +21,14 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const RATING_POST_MARKER = '[SHOW_RATING_ONLY]';
 
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
   console.log('📡 Saving show rating via posts table', { userId, showId, rating });
   
@@ -42,7 +50,7 @@ async function saveShowRating(userId: string, showId: string, rating: number): P
       if (error) throw error;
       console.log('✅ Rating updated in posts table');
     } else {
-      const newId = `sr-${userId.slice(0,8)}-${showId.slice(0,8)}-${Date.now()}`;
+      const newId = generateUUID();
       const { error } = await supabase
         .from('posts')
         .insert({
