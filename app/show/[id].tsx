@@ -1513,17 +1513,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   providerLogoContainer: {
-    width: 22,
-    height: 22,
-    borderRadius: 5,
+    width: 32,
+    height: 32,
+    borderRadius: 7,
     overflow: 'hidden',
     backgroundColor: tokens.colors.grey4,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
   },
   providerLogo: {
-    width: 20,
-    height: 20,
+    width: 30,
+    height: 30,
   },
   ratingContainer: {
     flexDirection: 'row',
