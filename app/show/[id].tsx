@@ -54,6 +54,7 @@ function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
   return {
     id: dbShow.id,
     title: dbShow.title,
+    year: dbShow.year || undefined,
     poster: dbShow.poster_url ?? null,
     backdrop: dbShow.backdrop_url || null,
     description: dbShow.description || 'No description available.',
@@ -99,6 +100,7 @@ export default function ShowHub() {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [hasSetInitialTab, setHasSetInitialTab] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [bannerFailed, setBannerFailed] = useState(false);
 
   const showPosts = useMemo(() => posts.filter((p) => p.show.id === id), [posts, id]);
   
@@ -203,6 +205,7 @@ export default function ShowHub() {
 
       setShow(null);
       setLoadingShow(true);
+      setBannerFailed(false);
       setShowError(null);
 
       try {
@@ -726,12 +729,30 @@ export default function ShowHub() {
   const renderBanner = () => {
     if (!show) return null;
     const backdropUrl = getBackdropUrl(show.backdrop, show.title);
+    
+    // Hide banner if it failed to load, no backdrop URL, or if backdrop matches poster (raw DB values)
+    const isDuplicateArt = show.backdrop && show.poster && show.backdrop === show.poster;
+    if (bannerFailed || !backdropUrl || isDuplicateArt) {
+      return (
+        <View style={styles.noBannerHeader}>
+          <Pressable onPress={() => router.back()} style={styles.backButtonNoBanner}>
+            <ChevronLeft size={18} color={tokens.colors.pureWhite} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+          <Pressable onPress={handleSearchInShow} style={styles.searchButtonNoBanner}>
+            <SearchDuotoneLine />
+          </Pressable>
+        </View>
+      );
+    }
+    
     return (
       <View style={styles.bannerContainer}>
         <Image 
           source={{ uri: backdropUrl }} 
           style={styles.bannerImage}
           contentFit="cover"
+          onError={() => setBannerFailed(true)}
         />
         <View style={styles.bannerOverlay}>
           <Pressable onPress={() => router.back()} style={styles.backButtonOverlay}>
@@ -762,9 +783,22 @@ export default function ShowHub() {
     return showEpisodes.length;
   };
 
+  const getYearRange = () => {
+    if (!show?.year) return null;
+    
+    // If we have endYear from show data, use it
+    if (show.endYear && show.endYear !== show.year) {
+      return `${show.year} - ${show.endYear}`;
+    }
+    
+    // Otherwise just return the start year
+    return String(show.year);
+  };
+
   const renderShowInfo = () => {
     const totalSeasons = calculateSeasonCount() || show.totalSeasons || 0;
     const totalEpisodes = calculateEpisodeCount() || show.totalEpisodes || 0;
+    const yearRange = getYearRange();
 
     return (
       <View style={styles.showInfoContainer}>
@@ -789,6 +823,9 @@ export default function ShowHub() {
             </Pressable>
           </View>
           <View style={styles.detailsColumn}>
+            {yearRange && (
+              <Text style={styles.yearRange}>{yearRange}</Text>
+            )}
             <Text style={styles.showTitleInside}>{show.title}</Text>
             <Text style={styles.description} numberOfLines={6}>
               {show.description}
@@ -1169,6 +1206,31 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.35)',
     borderRadius: 20,
   },
+  noBannerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+  },
+  backButtonNoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    height: 40,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderRadius: 20,
+  },
+  searchButtonNoBanner: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderRadius: 20,
+  },
   backText: {
     color: tokens.colors.pureWhite,
     fontFamily: 'Funnel Display',
@@ -1183,6 +1245,12 @@ const styles = StyleSheet.create({
   showTitleInside: {
     ...tokens.typography.titleL,
     color: tokens.colors.pureWhite,
+  },
+  yearRange: {
+    color: tokens.colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '300',
   },
   showDetailsRow: {
     flexDirection: 'row',
