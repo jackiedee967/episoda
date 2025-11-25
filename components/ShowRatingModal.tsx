@@ -19,39 +19,46 @@ import { Show } from '@/types';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+const RATING_POST_MARKER = '[SHOW_RATING_ONLY]';
 
 async function saveShowRating(userId: string, showId: string, rating: number): Promise<void> {
-  console.log('📡 Saving show rating to Supabase', { userId, showId, rating });
+  console.log('📡 Saving show rating via posts table', { userId, showId, rating });
   
   try {
-    const { data: existing } = await (supabase
-      .from('show_ratings' as any)
+    const { data: existing } = await supabase
+      .from('posts')
       .select('id')
       .eq('user_id', userId)
       .eq('show_id', showId)
-      .maybeSingle());
+      .eq('body', RATING_POST_MARKER)
+      .maybeSingle();
     
     if (existing) {
-      const { error } = await (supabase
-        .from('show_ratings' as any)
+      const { error } = await supabase
+        .from('posts')
         .update({ rating, updated_at: new Date().toISOString() })
-        .eq('id', existing.id));
+        .eq('id', existing.id);
       
       if (error) throw error;
-      console.log('✅ Rating updated successfully');
+      console.log('✅ Rating updated in posts table');
     } else {
-      const { error } = await (supabase
-        .from('show_ratings' as any)
+      const newId = `sr-${userId.slice(0,8)}-${showId.slice(0,8)}-${Date.now()}`;
+      const { error } = await supabase
+        .from('posts')
         .insert({
+          id: newId,
           user_id: userId,
           show_id: showId,
-          rating,
+          show_title: '',
+          show_poster: '',
+          body: RATING_POST_MARKER,
+          rating: rating,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }));
+        });
       
       if (error) throw error;
-      console.log('✅ Rating saved successfully');
+      console.log('✅ Rating saved in posts table');
     }
   } catch (error) {
     console.error('Error saving rating:', error);
@@ -61,15 +68,16 @@ async function saveShowRating(userId: string, showId: string, rating: number): P
 
 export async function getUserShowRatingFromStorage(userId: string, showId: string): Promise<number | null> {
   try {
-    const { data, error } = await (supabase
-      .from('show_ratings' as any)
+    const { data, error } = await supabase
+      .from('posts')
       .select('rating')
       .eq('user_id', userId)
       .eq('show_id', showId)
-      .maybeSingle());
+      .eq('body', RATING_POST_MARKER)
+      .maybeSingle();
     
     if (error) {
-      console.error('Error fetching rating:', error);
+      console.error('Error fetching user rating:', error);
       return null;
     }
     
@@ -82,10 +90,12 @@ export async function getUserShowRatingFromStorage(userId: string, showId: strin
 
 export async function getShowRatingStatsFromDB(showId: string): Promise<{ count: number; average: number | null }> {
   try {
-    const { data, error } = await (supabase
-      .from('show_ratings' as any)
+    const { data, error } = await supabase
+      .from('posts')
       .select('rating')
-      .eq('show_id', showId));
+      .eq('show_id', showId)
+      .eq('body', RATING_POST_MARKER)
+      .not('rating', 'is', null);
     
     if (error || !data) {
       console.error('Error fetching rating stats:', error);
@@ -94,7 +104,7 @@ export async function getShowRatingStatsFromDB(showId: string): Promise<{ count:
     
     const count = data.length;
     const average = count > 0
-      ? Math.round((data.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / count) * 10) / 10
+      ? Math.round((data.reduce((sum, r) => sum + (r.rating || 0), 0) / count) * 10) / 10
       : null;
     
     return { count, average };
