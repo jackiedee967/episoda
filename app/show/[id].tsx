@@ -1152,15 +1152,27 @@ export default function ShowHub() {
               }}
             >
               {[1, 2, 3, 4, 5].map((star) => {
-                const isFilled = userShowRating > 0 && userShowRating >= star - 0.5;
+                const isFilled = userShowRating > 0 && userShowRating >= star;
+                const isHalfFilled = userShowRating > 0 && userShowRating >= star - 0.5 && userShowRating < star;
                 return (
-                  <Star 
-                    key={star} 
-                    size={20}
-                    color={tokens.colors.greenHighlight}
-                    fill={isFilled ? tokens.colors.greenHighlight : 'transparent'}
-                    strokeWidth={1}
-                  />
+                  <View key={star} style={{ position: 'relative', width: 20, height: 20 }}>
+                    <Star 
+                      size={20}
+                      color={tokens.colors.greenHighlight}
+                      fill={isFilled ? tokens.colors.greenHighlight : 'transparent'}
+                      strokeWidth={1}
+                    />
+                    {isHalfFilled && (
+                      <View style={{ position: 'absolute', top: 0, left: 0, width: 10, height: 20, overflow: 'hidden' }}>
+                        <Star 
+                          size={20}
+                          color={tokens.colors.greenHighlight}
+                          fill={tokens.colors.greenHighlight}
+                          strokeWidth={1}
+                        />
+                      </View>
+                    )}
+                  </View>
                 );
               })}
             </Pressable>
@@ -1623,7 +1635,6 @@ const styles = StyleSheet.create({
   },
   showInfoContainer: {
     width: '100%',
-    maxWidth: 392,
     marginBottom: 21,
   },
   showTitleInside: {
@@ -1812,7 +1823,6 @@ const styles = StyleSheet.create({
   },
   logButton: {
     width: '100%',
-    maxWidth: 392,
     paddingVertical: 11,
     paddingHorizontal: 34,
     justifyContent: 'center',
@@ -1831,13 +1841,11 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     width: '100%',
-    maxWidth: 392,
     marginBottom: 21,
     alignItems: 'stretch',
   },
   feedContainer: {
     width: '100%',
-    maxWidth: 392,
     gap: 10,
     paddingBottom: 100,
   },
