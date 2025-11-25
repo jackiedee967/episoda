@@ -991,24 +991,39 @@ export default function ShowHub() {
     return (
       <View style={styles.showInfoContainer}>
         <View style={styles.showDetailsRow}>
-          <View style={styles.posterWrapper}>
-            <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} contentFit="cover" />
-            <Pressable 
-              style={({ pressed }) => [
-                styles.saveIcon,
-                pressed && styles.saveIconPressed,
-              ]} 
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setPlaylistModalVisible(true);
-              }}
-            >
-              <IconSymbol 
-                name={isShowSaved ? "bookmark.fill" : "bookmark"} 
-                size={18} 
-                color={tokens.colors.pureWhite} 
-              />
-            </Pressable>
+          <View style={styles.posterColumn}>
+            <View style={styles.posterWrapper}>
+              <FadeInImage source={{ uri: getPosterUrl(show.poster, show.title) }} style={styles.poster} contentFit="cover" />
+              <Pressable 
+                style={({ pressed }) => [
+                  styles.saveIcon,
+                  pressed && styles.saveIconPressed,
+                ]} 
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPlaylistModalVisible(true);
+                }}
+              >
+                <IconSymbol 
+                  name={isShowSaved ? "bookmark.fill" : "bookmark"} 
+                  size={18} 
+                  color={tokens.colors.pureWhite} 
+                />
+              </Pressable>
+            </View>
+            {streamingProviders.length > 0 && (
+              <View style={styles.streamingProvidersRow}>
+                {streamingProviders.slice(0, 5).map((provider) => (
+                  <View key={provider.provider_id} style={styles.providerLogoContainer}>
+                    <Image
+                      source={{ uri: getProviderLogoUrl(provider.logo_path) }}
+                      style={styles.providerLogo}
+                      contentFit="cover"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
           <View style={styles.detailsColumn}>
             {yearRange && (
@@ -1030,19 +1045,6 @@ export default function ShowHub() {
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
-            {streamingProviders.length > 0 && (
-              <View style={styles.streamingProvidersRow}>
-                {streamingProviders.slice(0, 5).map((provider) => (
-                  <View key={provider.provider_id} style={styles.providerLogoContainer}>
-                    <Image
-                      source={{ uri: getProviderLogoUrl(provider.logo_path) }}
-                      style={styles.providerLogo}
-                      contentFit="cover"
-                    />
-                  </View>
-                ))}
-              </View>
-            )}
             {friendsWatching.length > 0 ? (
               <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
                 <View style={styles.friendAvatarsRow}>
@@ -1458,6 +1460,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
+  posterColumn: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
   posterWrapper: {
     position: 'relative',
     width: 120,
@@ -1503,8 +1509,11 @@ const styles = StyleSheet.create({
   streamingProvidersRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    marginTop: 4,
+    marginTop: 8,
+    width: 120,
+    flexWrap: 'wrap',
   },
   providerLogoContainer: {
     width: 28,
@@ -1512,10 +1521,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
     backgroundColor: tokens.colors.grey4,
+    borderWidth: 1,
+    borderColor: tokens.colors.cardStroke,
   },
   providerLogo: {
-    width: 28,
-    height: 28,
+    width: 26,
+    height: 26,
   },
   ratingContainer: {
     flexDirection: 'row',
