@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import tokens from '@/styles/tokens';
 import { Show } from '@/types';
@@ -59,8 +60,15 @@ export default function WatchHistoryCard(props: WatchHistoryCardProps) {
               style={[
                 styles.progressBarFill, 
                 { width: `${progressPercentage}%` }
-              ]} 
-            />
+              ]}
+            >
+              <LinearGradient
+                colors={[tokens.colors.tabStroke2, tokens.colors.tabBack6]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientFill}
+              />
+            </View>
           </View>
         </View>
         <Text style={styles.episodesCount}>
@@ -128,7 +136,11 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: tokens.colors.greenHighlight,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  gradientFill: {
+    flex: 1,
     borderRadius: 2,
   },
   episodesCount: {

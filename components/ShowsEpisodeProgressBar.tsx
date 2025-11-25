@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import tokens from '@/styles/tokens';
 
 export interface ShowsEpisodeProgressBarProps {
@@ -47,8 +48,15 @@ export default function ShowsEpisodeProgressBar(props: ShowsEpisodeProgressBarPr
               style={[
                 styles.progressBarFill, 
                 { width: `${progressPercentage}%` }
-              ]} 
-            />
+              ]}
+            >
+              <LinearGradient
+                colors={[tokens.colors.tabStroke2, tokens.colors.tabBack6]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientFill}
+              />
+            </View>
           </View>
         </View>
         <Text testID="370:101727" style={styles.episodesCount}>
@@ -106,7 +114,11 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: tokens.colors.greenHighlight,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  gradientFill: {
+    flex: 1,
     borderRadius: 2,
   },
   episodesCount: {
