@@ -39,6 +39,8 @@ interface PostModalProps {
   preselectedShow?: Show;
   preselectedEpisode?: Episode;
   preselectedEpisodes?: Episode[];
+  prefilledRating?: number;
+  skipToPostDetails?: boolean;
   onPostSuccess?: (postId: string, postedEpisodes: Episode[]) => void;
 }
 
@@ -131,7 +133,7 @@ function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
   );
 }
 
-export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, onPostSuccess }: PostModalProps) {
+export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, prefilledRating, skipToPostDetails, onPostSuccess }: PostModalProps) {
   const { 
     createPost, 
     currentUser, 
@@ -222,8 +224,18 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     setSelectedShow(preselectedShow || null);
     setSelectedEpisodes(preselectedEpisodes || (preselectedEpisode ? [preselectedEpisode] : []));
     
+    // Set prefilled rating if provided (for show ratings flow)
+    if (prefilledRating !== undefined && prefilledRating > 0) {
+      setRating(prefilledRating);
+    }
+    
     // Smart step selection based on what's preselected
-    if (preselectedShow && (preselectedEpisodes || preselectedEpisode)) {
+    if (skipToPostDetails && preselectedShow) {
+      // Flow 3: Coming from show rating modal → skip straight to post details with rating
+      console.log('✅ Show rating flow - skipping to post details with rating:', prefilledRating);
+      setIsFetchingEpisodes(false);
+      setStep('postDetails');
+    } else if (preselectedShow && (preselectedEpisodes || preselectedEpisode)) {
       // Flow 2: Show and episodes already selected from ShowHub → skip straight to rating page
       console.log('✅ Episodes preselected from ShowHub - skipping to rating page');
       setIsFetchingEpisodes(false);
@@ -243,7 +255,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       // No preselection → start from show selection
       setStep('selectShow');
     }
-  }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes]);
+  }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes, skipToPostDetails, prefilledRating]);
 
   // Fallback: if recommendations aren't ready when modal opens, trigger a load
   useEffect(() => {

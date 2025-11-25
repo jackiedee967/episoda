@@ -21,6 +21,7 @@ import { Vector3Divider } from '@/components/Vector3Divider';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
+import ShowRatingModal from '@/components/ShowRatingModal';
 import FriendsWatchingModal from '@/components/FriendsWatchingModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
@@ -110,6 +111,10 @@ export default function ShowHub() {
   const [refreshing, setRefreshing] = useState(false);
   const [bannerFailed, setBannerFailed] = useState(false);
   const [streamingProviders, setStreamingProviders] = useState<WatchProvider[]>([]);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [userShowRating, setUserShowRating] = useState<number>(0);
+  const [showRatingForPost, setShowRatingForPost] = useState<number>(0);
+  const [communityRating, setCommunityRating] = useState<{ average: number; count: number } | null>(null);
   const endYearFetchedRef = React.useRef<string | null>(null); // Track which show we've fetched end year for
   const providersFetchedRef = React.useRef<string | null>(null); // Track which show we've fetched providers for
 
@@ -209,6 +214,122 @@ export default function ShowHub() {
 
     loadLoggedEpisodes();
   }, [currentUser, show?.id, posts]);
+
+  // Load user's existing show rating
+  useEffect(() => {
+    async function loadUserShowRating() {
+      if (!show || !currentUser?.id) {
+        setUserShowRating(0);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('show_ratings')
+          .select('rating')
+          .eq('user_id', currentUser.id)
+          .eq('show_id', show.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading user show rating:', error);
+          return;
+        }
+
+        if (data) {
+          setUserShowRating(Number(data.rating));
+          console.log(`✅ User has rated ${show.title}: ${data.rating} stars`);
+        } else {
+          setUserShowRating(0);
+        }
+      } catch (err) {
+        console.error('Error loading user show rating:', err);
+      }
+    }
+
+    loadUserShowRating();
+  }, [show?.id, currentUser?.id]);
+
+  // Load community ratings (average and count) for this show - efficient aggregation
+  useEffect(() => {
+    async function loadCommunityRating() {
+      if (!show?.id) {
+        setCommunityRating(null);
+        return;
+      }
+
+      try {
+        // Use efficient count queries instead of fetching all rows
+        // Count and sum from show_ratings table
+        const { count: showRatingCount, error: countError } = await supabase
+          .from('show_ratings')
+          .select('*', { count: 'exact', head: true })
+          .eq('show_id', show.id);
+
+        if (countError) {
+          console.error('Error counting show ratings:', countError);
+          setCommunityRating(null);
+          return;
+        }
+
+        // Count post ratings for this show
+        const { count: postRatingCount, error: postCountError } = await supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('show_id', show.id)
+          .gt('rating', 0);
+
+        if (postCountError) {
+          console.error('Error counting post ratings:', postCountError);
+        }
+
+        const totalCount = (showRatingCount || 0) + (postRatingCount || 0);
+
+        // Only fetch actual ratings if we have enough for community rating (10+)
+        if (totalCount >= 10) {
+          // Fetch ratings for average calculation (limited to reasonable batch)
+          const [showRatingsResult, postRatingsResult] = await Promise.all([
+            supabase
+              .from('show_ratings')
+              .select('rating')
+              .eq('show_id', show.id),
+            supabase
+              .from('posts')
+              .select('rating')
+              .eq('show_id', show.id)
+              .gt('rating', 0)
+          ]);
+
+          const allRatings: number[] = [];
+          
+          if (showRatingsResult.data) {
+            showRatingsResult.data.forEach((r: any) => allRatings.push(Number(r.rating)));
+          }
+          
+          if (postRatingsResult.data) {
+            postRatingsResult.data.forEach((r: any) => allRatings.push(Number(r.rating)));
+          }
+
+          if (allRatings.length > 0) {
+            const average = allRatings.reduce((a, b) => a + b, 0) / allRatings.length;
+            setCommunityRating({ average, count: allRatings.length });
+            console.log(`✅ Community rating for ${show.title}: ${average.toFixed(1)} (${allRatings.length} ratings)`);
+          }
+        } else if (totalCount > 0) {
+          // Less than 10 ratings - store count but we'll use API rating
+          setCommunityRating({ average: 0, count: totalCount });
+          console.log(`📊 ${show.title} has ${totalCount} ratings (needs 10+ for community average)`);
+        } else {
+          setCommunityRating(null);
+        }
+      } catch (err) {
+        console.error('Error loading community ratings:', err);
+        setCommunityRating(null);
+      }
+    }
+
+    loadCommunityRating();
+  }, [show?.id, userShowRating]);
 
   useEffect(() => {
     async function loadShow() {
@@ -858,6 +979,7 @@ export default function ShowHub() {
     setModalVisible(false);
     setTimeout(() => {
       setSelectedEpisode(undefined);
+      setShowRatingForPost(0);
     }, 300);
   };
 
@@ -1034,14 +1156,37 @@ export default function ShowHub() {
               {show.description}
             </Text>
             <View style={styles.statsRow}>
-              {show.rating > 0 ? (
-                <View style={styles.ratingContainer}>
-                  <Text style={styles.ratingText}>
-                    {convertToFiveStarRating(show.rating).toFixed(1)}
-                  </Text>
-                  <Text style={styles.starIcon}>★</Text>
-                </View>
-              ) : null}
+              <Pressable 
+                style={({ pressed }) => [
+                  styles.ratingContainer,
+                  pressed && styles.ratingContainerPressed,
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setRatingModalVisible(true);
+                }}
+              >
+                {userShowRating > 0 ? (
+                  <>
+                    <Text style={styles.ratingText}>{userShowRating.toFixed(1)}</Text>
+                    <Text style={[styles.starIcon, styles.userRatedStar]}>★</Text>
+                  </>
+                ) : communityRating && communityRating.count >= 10 && communityRating.average > 0 ? (
+                  <>
+                    <Text style={styles.ratingText}>{communityRating.average.toFixed(1)}</Text>
+                    <Text style={[styles.starIcon, styles.communityRatingStar]}>★</Text>
+                  </>
+                ) : show.rating > 0 ? (
+                  <>
+                    <Text style={styles.ratingText}>
+                      {convertToFiveStarRating(show.rating).toFixed(1)}
+                    </Text>
+                    <Text style={styles.starIcon}>★</Text>
+                  </>
+                ) : (
+                  <Text style={styles.rateShowText}>Rate</Text>
+                )}
+              </Pressable>
               <Text style={styles.statText}>{totalSeasons} {totalSeasons === 1 ? 'Season' : 'Seasons'}</Text>
               <Text style={styles.statText}>{totalEpisodes} {totalEpisodes === 1 ? 'Episode' : 'Episodes'}</Text>
             </View>
@@ -1311,6 +1456,8 @@ export default function ShowHub() {
         preselectedShow={show}
         preselectedEpisode={selectedEpisode}
         preselectedEpisodes={selectedEpisodeIds.size > 0 ? showEpisodes.filter(ep => selectedEpisodeIds.has(ep.id)) : undefined}
+        prefilledRating={showRatingForPost}
+        skipToPostDetails={showRatingForPost > 0}
         onPostSuccess={handlePostSuccess}
       />
       <PlaylistModal
@@ -1324,6 +1471,34 @@ export default function ShowHub() {
         onClose={() => setFriendsModalVisible(false)}
         friends={friendsWatching}
         showTitle={show.title}
+      />
+      <ShowRatingModal
+        visible={ratingModalVisible}
+        onClose={() => {
+          setRatingModalVisible(false);
+          // Reload user rating after modal closes
+          if (currentUser?.id && show?.id) {
+            supabase
+              .from('show_ratings')
+              .select('rating')
+              .eq('user_id', currentUser.id)
+              .eq('show_id', show.id)
+              .single()
+              .then(({ data }) => {
+                if (data) {
+                  setUserShowRating(Number(data.rating));
+                }
+              });
+          }
+        }}
+        show={show}
+        onShareAsPost={(rating) => {
+          setShowRatingForPost(rating);
+          setSelectedEpisode(undefined);
+          setSelectedEpisodeIds(new Set());
+          setModalVisible(true);
+        }}
+        existingRating={userShowRating}
       />
       <FloatingTabBar 
         tabs={[
@@ -1529,6 +1704,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  ratingContainerPressed: {
+    opacity: 0.7,
   },
   ratingText: {
     color: tokens.colors.grey1,
@@ -1538,8 +1720,20 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   starIcon: {
-    color: tokens.colors.greenHighlight,
+    color: tokens.colors.grey1,
     fontSize: 10,
+  },
+  userRatedStar: {
+    color: tokens.colors.greenHighlight,
+  },
+  communityRatingStar: {
+    color: '#FFD700',
+  },
+  rateShowText: {
+    color: tokens.colors.grey1,
+    fontFamily: 'Funnel Display',
+    fontSize: 10,
+    fontWeight: '300',
   },
   statText: {
     color: tokens.colors.grey1,
