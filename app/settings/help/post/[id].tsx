@@ -396,24 +396,55 @@ export default function HelpDeskPostDetailScreen() {
 
       const userId = currentUser.id;
       const username = currentUser.username;
+      const trimmedText = commentText.trim();
 
-      // Insert comment (with optional parent_comment_id for replies)
-      const insertData: any = {
-        post_id: post.id,
-        user_id: userId,
-        username,
-        comment_text: commentText.trim(),
-      };
+      let data: any;
+      let error: any;
 
       if (replyingTo) {
-        insertData.parent_comment_id = replyingTo.commentId;
+        // Use raw SQL for replies to bypass PostgREST schema cache issue
+        const { data: rpcData, error: rpcError } = await supabase.rpc('insert_help_desk_comment_with_parent', {
+          p_post_id: post.id,
+          p_user_id: userId,
+          p_username: username,
+          p_comment_text: trimmedText,
+          p_parent_comment_id: replyingTo.commentId
+        });
+        
+        if (rpcError) {
+          // Fallback: try direct insert if RPC doesn't exist
+          const { data: directData, error: directError } = await supabase
+            .from('help_desk_comments')
+            .insert({
+              post_id: post.id,
+              user_id: userId,
+              username,
+              comment_text: trimmedText,
+              parent_comment_id: replyingTo.commentId
+            })
+            .select()
+            .single();
+          data = directData;
+          error = directError;
+        } else {
+          data = rpcData;
+          error = null;
+        }
+      } else {
+        // Regular top-level comment - no parent_comment_id
+        const { data: insertData, error: insertError } = await supabase
+          .from('help_desk_comments')
+          .insert({
+            post_id: post.id,
+            user_id: userId,
+            username,
+            comment_text: trimmedText,
+          })
+          .select()
+          .single();
+        data = insertData;
+        error = insertError;
       }
-
-      const { data, error } = await supabase
-        .from('help_desk_comments')
-        .insert(insertData)
-        .select()
-        .single();
 
       if (error) throw error;
 
