@@ -8,7 +8,7 @@
  */
 
 export const ADMIN_USER_IDS = [
-  'a0000000-0000-0000-0000-000000000001', // Jacqueline (current user - jvckie)
+  '0e8b3464-d39e-4881-87de-033ca899657d', // Jacqueline (jvckiee)
 ];
 
 /**
