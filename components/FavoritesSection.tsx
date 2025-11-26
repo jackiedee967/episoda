@@ -80,34 +80,68 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const loadFavorites = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_user_favorites', {
-        p_user_id: userId
-      });
+      
+      // Get favorite_shows from profiles table (use 'as any' to bypass TypeScript schema cache)
+      const { data: profileData, error: profileError } = await (supabase as any)
+        .from('profiles')
+        .select('favorite_shows')
+        .eq('id', userId)
+        .single();
 
-      if (error) {
-        console.error('Error loading favorites:', error);
+      if (profileError) {
+        console.error('Error loading favorites from profile:', profileError);
         return;
       }
 
-      const mappedFavorites: FavoriteShow[] = (data || []).map((fav: any) => ({
-        id: fav.id,
-        show_id: fav.show_id,
-        display_order: fav.display_order,
-        show: {
-          id: fav.show_id,
-          traktId: fav.show_trakt_id,
-          title: fav.show_title,
-          year: undefined,
-          poster: fav.show_poster_url,
-          backdrop: undefined,
-          description: '',
-          rating: 0,
-          totalSeasons: 0,
-          totalEpisodes: 0,
-          friendsWatching: 0,
-        },
-      }));
+      const favoriteShowsData = profileData?.favorite_shows || [];
+      
+      if (favoriteShowsData.length === 0) {
+        setFavorites([]);
+        return;
+      }
+      
+      // Get show details for each favorite
+      const showIds = favoriteShowsData.map((f: any) => f.show_id);
+      const { data: showsData, error: showsError } = await supabase
+        .from('shows')
+        .select('id, trakt_id, title, poster_url, backdrop_url')
+        .in('id', showIds);
+      
+      if (showsError) {
+        console.error('Error loading show details:', showsError);
+        return;
+      }
+      
+      const showsMap = new Map((showsData || []).map((s: any) => [s.id, s]));
 
+      const mappedFavorites: FavoriteShow[] = favoriteShowsData
+        .map((fav: any, index: number) => {
+          const showData = showsMap.get(fav.show_id);
+          if (!showData) return null;
+          
+          return {
+            id: `fav-${index}`,
+            show_id: fav.show_id,
+            display_order: fav.display_order,
+            show: {
+              id: showData.id,
+              traktId: showData.trakt_id,
+              title: showData.title,
+              year: undefined,
+              poster: showData.poster_url,
+              backdrop: showData.backdrop_url,
+              description: '',
+              rating: 0,
+              totalSeasons: 0,
+              totalEpisodes: 0,
+              friendsWatching: 0,
+            },
+          };
+        })
+        .filter(Boolean) as FavoriteShow[];
+
+      // Sort by display_order
+      mappedFavorites.sort((a, b) => a.display_order - b.display_order);
       setFavorites(mappedFavorites);
     } catch (err) {
       console.error('Error in loadFavorites:', err);
@@ -300,14 +334,37 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         }
       }
       
-      const { error } = await supabase.rpc('add_user_favorite', {
-        p_user_id: userId,
-        p_show_id: showId,
-        p_display_order: selectedSlot + 1,
+      // Get current favorites from profile (use 'as any' to bypass TypeScript schema cache)
+      const { data: profileData, error: fetchError } = await (supabase as any)
+        .from('profiles')
+        .select('favorite_shows')
+        .eq('id', userId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+        return;
+      }
+      
+      const currentFavorites = profileData?.favorite_shows || [];
+      const displayOrder = selectedSlot + 1;
+      
+      // Remove any existing favorite at this slot, then add new one
+      const updatedFavorites = currentFavorites.filter((f: any) => f.display_order !== displayOrder);
+      updatedFavorites.push({
+        show_id: showId,
+        display_order: displayOrder,
+        trakt_id: result.traktShow?.ids?.trakt || result.show.traktId,
       });
       
-      if (error) {
-        console.error('Error adding favorite:', error);
+      // Update profile with new favorites
+      const { error: updateError } = await (supabase as any)
+        .from('profiles')
+        .update({ favorite_shows: updatedFavorites })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('Error updating favorites:', updateError);
         return;
       }
       
@@ -318,18 +375,37 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     }
   };
 
-  const handleRemoveFavorite = async (favoriteId: string) => {
+  const handleRemoveFavorite = async (displayOrder: number) => {
     if (!isOwnProfile) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
-      const { error } = await supabase.rpc('remove_user_favorite', {
-        p_favorite_id: favoriteId
-      });
+      // Get current favorites from profile (use 'as any' to bypass TypeScript schema cache)
+      const { data: profileData, error: fetchError } = await (supabase as any)
+        .from('profiles')
+        .select('favorite_shows')
+        .eq('id', userId)
+        .single();
       
-      if (error) {
-        console.error('Error removing favorite:', error);
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+        return;
+      }
+      
+      const currentFavorites = profileData?.favorite_shows || [];
+      
+      // Remove the favorite at this display order
+      const updatedFavorites = currentFavorites.filter((f: any) => f.display_order !== displayOrder);
+      
+      // Update profile with new favorites
+      const { error: updateError } = await (supabase as any)
+        .from('profiles')
+        .update({ favorite_shows: updatedFavorites })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('Error removing favorite:', updateError);
         return;
       }
       
@@ -355,14 +431,37 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         }
       }
       
-      const { error } = await supabase.rpc('add_user_favorite', {
-        p_user_id: userId,
-        p_show_id: showId,
-        p_display_order: selectedSlot + 1,
+      // Get current favorites from profile (use 'as any' to bypass TypeScript schema cache)
+      const { data: profileData, error: fetchError } = await (supabase as any)
+        .from('profiles')
+        .select('favorite_shows')
+        .eq('id', userId)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+        return;
+      }
+      
+      const currentFavorites = profileData?.favorite_shows || [];
+      const displayOrder = selectedSlot + 1;
+      
+      // Remove any existing favorite at this slot, then add new one
+      const updatedFavorites = currentFavorites.filter((f: any) => f.display_order !== displayOrder);
+      updatedFavorites.push({
+        show_id: showId,
+        display_order: displayOrder,
+        trakt_id: result.traktShow?.ids?.trakt || result.show.traktId,
       });
       
-      if (error) {
-        console.error('Error adding favorite:', error);
+      // Update profile with new favorites
+      const { error: updateError } = await (supabase as any)
+        .from('profiles')
+        .update({ favorite_shows: updatedFavorites })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.error('Error updating favorites:', updateError);
         return;
       }
       
@@ -424,7 +523,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
               ]} 
               onPress={(e) => {
                 e.stopPropagation();
-                handleRemoveFavorite(favorite.id);
+                handleRemoveFavorite(favorite.display_order);
               }}
             >
               <View style={styles.deleteIconBackground}>
