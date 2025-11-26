@@ -20,7 +20,7 @@ import { Show } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
 import { searchShows, TraktShow } from '@/services/trakt';
-import { saveShow } from '@/services/showDatabase';
+import { ensureShowId } from '@/services/showRegistry';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import PlaylistModal from '@/components/PlaylistModal';
@@ -343,21 +343,13 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     console.log('🎯 handleShowSelect called for slot:', selectedSlot, 'show:', result.show.title);
     
     try {
-      let showId = result.show.id;
+      // BULLETPROOF: Use ensureShowId to guarantee valid database UUID
+      const showId = await ensureShowId({
+        traktId: result.traktId,
+        traktShow: result.traktShow,
+      });
       
-      // Always save show if ID doesn't look like a valid UUID (e.g., "trakt-39105")
-      const isValidUUID = showId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId);
-      
-      if ((!result.isDatabaseBacked || !isValidUUID) && result.traktShow) {
-        console.log('📦 Saving show to database first...');
-        const savedShow = await saveShow(result.traktShow);
-        
-        if (savedShow) {
-          showId = savedShow.id;
-          console.log('✅ Show saved with ID:', showId);
-        }
-      }
-      
+      console.log('✅ Guaranteed show ID:', showId);
       console.log('📝 Fetching current profile favorites for user:', userId);
       // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
@@ -454,21 +446,13 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     console.log('🎯 handleRecommendationSelect called for slot:', selectedSlot, 'show:', result.show.title);
     
     try {
-      let showId = result.show.id;
+      // BULLETPROOF: Use ensureShowId to guarantee valid database UUID
+      const showId = await ensureShowId({
+        traktId: result.traktId,
+        traktShow: result.traktShow,
+      });
       
-      // Always save show if ID doesn't look like a valid UUID (e.g., "trakt-39105")
-      const isValidUUID = showId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId);
-      
-      if ((!result.isDatabaseBacked || !isValidUUID) && result.traktShow) {
-        console.log('📦 Saving show to database first...');
-        const savedShow = await saveShow(result.traktShow);
-        
-        if (savedShow) {
-          showId = savedShow.id;
-          console.log('✅ Show saved with ID:', showId);
-        }
-      }
-      
+      console.log('✅ Guaranteed show ID:', showId);
       console.log('📝 Fetching current profile favorites for user:', userId);
       // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
