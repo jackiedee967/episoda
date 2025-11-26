@@ -323,18 +323,22 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     if (selectedSlot === null) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('🎯 handleShowSelect called for slot:', selectedSlot, 'show:', result.show.title);
     
     try {
       let showId = result.show.id;
       
       if (!result.isDatabaseBacked && result.traktShow) {
+        console.log('📦 Saving show to database first...');
         const savedShow = await saveShow(result.traktShow);
         
         if (savedShow) {
           showId = savedShow.id;
+          console.log('✅ Show saved with ID:', showId);
         }
       }
       
+      console.log('📝 Fetching current profile favorites for user:', userId);
       // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
         .from('profiles')
@@ -343,9 +347,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         .single();
       
       if (fetchError) {
-        console.error('Error fetching profile:', fetchError);
+        console.error('❌ Error fetching profile:', fetchError);
         return;
       }
+      
+      console.log('📋 Current favorites:', profileData?.favorite_shows);
       
       const favoritesArray = profileData?.favorite_shows || [];
       const displayOrder = selectedSlot + 1;
@@ -358,21 +364,26 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         trakt_id: result.traktShow?.ids?.trakt || result.show.traktId,
       });
       
+      console.log('📤 Updating favorites to:', updatedFavorites);
+      
       // Update via direct table query
-      const { error: updateError } = await (supabase as any)
+      const { data: updateData, error: updateError } = await (supabase as any)
         .from('profiles')
         .update({ favorite_shows: updatedFavorites })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
       
       if (updateError) {
-        console.error('Error updating favorites:', updateError);
+        console.error('❌ Error updating favorites:', updateError);
         return;
       }
+      
+      console.log('✅ Update response:', updateData);
       
       await loadFavorites();
       closeModal();
     } catch (err) {
-      console.error('Error in handleShowSelect:', err);
+      console.error('❌ Error in handleShowSelect:', err);
     }
   };
 
@@ -420,18 +431,22 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     if (selectedSlot === null) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('🎯 handleRecommendationSelect called for slot:', selectedSlot, 'show:', result.show.title);
     
     try {
       let showId = result.show.id;
       
       if (!result.isDatabaseBacked && result.traktShow) {
+        console.log('📦 Saving show to database first...');
         const savedShow = await saveShow(result.traktShow);
         
         if (savedShow) {
           showId = savedShow.id;
+          console.log('✅ Show saved with ID:', showId);
         }
       }
       
+      console.log('📝 Fetching current profile favorites for user:', userId);
       // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
         .from('profiles')
@@ -440,9 +455,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         .single();
       
       if (fetchError) {
-        console.error('Error fetching profile:', fetchError);
+        console.error('❌ Error fetching profile:', fetchError);
         return;
       }
+      
+      console.log('📋 Current favorites:', profileData?.favorite_shows);
       
       const favoritesArray = profileData?.favorite_shows || [];
       const displayOrder = selectedSlot + 1;
@@ -455,21 +472,26 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         trakt_id: result.traktShow?.ids?.trakt || result.show.traktId,
       });
       
+      console.log('📤 Updating favorites to:', updatedFavorites);
+      
       // Update via direct table query
-      const { error: updateError } = await (supabase as any)
+      const { data: updateData, error: updateError } = await (supabase as any)
         .from('profiles')
         .update({ favorite_shows: updatedFavorites })
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select();
       
       if (updateError) {
-        console.error('Error updating favorites:', updateError);
+        console.error('❌ Error updating favorites:', updateError);
         return;
       }
+      
+      console.log('✅ Update response:', updateData);
       
       await loadFavorites();
       closeModal();
     } catch (err) {
-      console.error('Error in handleRecommendationSelect:', err);
+      console.error('❌ Error in handleRecommendationSelect:', err);
     }
   };
 
