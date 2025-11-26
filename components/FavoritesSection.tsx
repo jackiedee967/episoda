@@ -25,6 +25,7 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import PlaylistModal from '@/components/PlaylistModal';
 import { X } from 'lucide-react-native';
+import SkeletonBlock from '@/components/skeleton/SkeletonBlock';
 
 interface FavoriteShow {
   id: string;
@@ -64,7 +65,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const [favorites, setFavorites] = useState<FavoriteShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  
+  // Fade animation for smooth content transition
+  const contentFadeAnim = useRef(new Animated.Value(0)).current;
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -145,13 +150,23 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       // Sort by display_order
       mappedFavorites.sort((a, b) => a.display_order - b.display_order);
       setFavorites(mappedFavorites);
+      
+      // Trigger smooth fade-in transition
+      if (!initialLoadComplete) {
+        setShowSkeleton(false);
+        Animated.timing(contentFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }
     } catch (err) {
       console.error('Error in loadFavorites:', err);
     } finally {
       setLoading(false);
       setInitialLoadComplete(true);
     }
-  }, [userId]);
+  }, [userId, initialLoadComplete, contentFadeAnim]);
 
   useEffect(() => {
     loadFavorites();
@@ -503,16 +518,30 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     }
   };
 
-  // Only hide on initial load - don't hide during refreshes to prevent jumpiness
-  if (loading && !initialLoadComplete) {
-    return null;
-  }
-
-  if (!isOwnProfile && favorites.length === 0) {
+  // Hide section for other users if they have no favorites (after loading)
+  if (!isOwnProfile && !loading && favorites.length === 0) {
     return null;
   }
 
   const filledSlots = new Map(favorites.map(f => [f.display_order, f]));
+
+  // Skeleton loading state with gradient shimmer
+  const renderSkeleton = () => (
+    <View style={styles.container}>
+      <Text style={styles.sectionTitle}>Favorites</Text>
+      <View style={styles.postersRow}>
+        {[0, 1, 2].map((index) => (
+          <SkeletonBlock 
+            key={index}
+            width={108} 
+            height={140} 
+            borderRadius={8} 
+            style={styles.skeletonPoster}
+          />
+        ))}
+      </View>
+    </View>
+  );
 
   const renderSlot = (slotIndex: number) => {
     // display_order is 1-based (1, 2, 3), slotIndex is 0-based (0, 1, 2)
@@ -710,8 +739,13 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     </Modal>
   );
 
+  // Show skeleton during initial load
+  if (showSkeleton) {
+    return renderSkeleton();
+  }
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: contentFadeAnim }]}>
       <Text style={styles.sectionTitle}>Favorites</Text>
       <View style={styles.favoritesRow}>
         {[0, 1, 2].map(slotIndex => renderSlot(slotIndex))}
@@ -728,7 +762,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
           show={selectedShowForPlaylist}
         />
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -745,6 +779,15 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  postersRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  skeletonPoster: {
+    flex: 1,
+    aspectRatio: 2 / 3,
+    height: undefined,
   },
   posterContainer: {
     position: 'relative',
