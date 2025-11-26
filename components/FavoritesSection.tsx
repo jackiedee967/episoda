@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   posterContainer: {
     position: 'relative',
-    width: 128.67,
+    flex: 1,
     aspectRatio: 2 / 3,
     borderRadius: 14,
     overflow: 'hidden',
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.9 }],
   },
   placeholderContainer: {
-    width: 128.67,
+    flex: 1,
     aspectRatio: 2 / 3,
     borderRadius: 14,
     backgroundColor: tokens.colors.cardBackground,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptySlot: {
-    width: 128.67,
+    flex: 1,
     aspectRatio: 2 / 3,
     borderRadius: 14,
   },
