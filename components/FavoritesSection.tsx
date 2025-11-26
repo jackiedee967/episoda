@@ -63,6 +63,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   
   const [favorites, setFavorites] = useState<FavoriteShow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -148,6 +149,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       console.error('Error in loadFavorites:', err);
     } finally {
       setLoading(false);
+      setInitialLoadComplete(true);
     }
   }, [userId]);
 
@@ -328,7 +330,10 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     try {
       let showId = result.show.id;
       
-      if (!result.isDatabaseBacked && result.traktShow) {
+      // Always save show if ID doesn't look like a valid UUID (e.g., "trakt-39105")
+      const isValidUUID = showId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId);
+      
+      if ((!result.isDatabaseBacked || !isValidUUID) && result.traktShow) {
         console.log('📦 Saving show to database first...');
         const savedShow = await saveShow(result.traktShow);
         
@@ -436,7 +441,10 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     try {
       let showId = result.show.id;
       
-      if (!result.isDatabaseBacked && result.traktShow) {
+      // Always save show if ID doesn't look like a valid UUID (e.g., "trakt-39105")
+      const isValidUUID = showId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(showId);
+      
+      if ((!result.isDatabaseBacked || !isValidUUID) && result.traktShow) {
         console.log('📦 Saving show to database first...');
         const savedShow = await saveShow(result.traktShow);
         
@@ -495,7 +503,8 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     }
   };
 
-  if (loading) {
+  // Only hide on initial load - don't hide during refreshes to prevent jumpiness
+  if (loading && !initialLoadComplete) {
     return null;
   }
 
