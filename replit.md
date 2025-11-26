@@ -11,7 +11,6 @@ I prefer iterative development, focusing on one feature or fix at a time. Please
 - Do not modify `integrations/supabase/client.ts` without explicit approval
 - Do not modify `app.config.js` without understanding production vs dev implications
 - This is an ACTIVE PRODUCTION APP with users - breaking changes are unacceptable
-- See `CRITICAL_DO_NOT_MODIFY.md` for complete list of protected files
 
 ## System Architecture
 
@@ -24,45 +23,31 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Navigation**: Expo Router (file-based routing)
 - **State Management**: React Context API
 - **Styling**: StyleSheet API with a centralized design token system (`styles/tokens.ts`)
-- **Authentication**: Supabase Auth (phone OTP, Apple Sign-In) with a 7-screen onboarding flow. Includes a critical fix for an "Unknown User" production bug by using an `authReady` flag to prevent premature cache clearing.
+- **Authentication**: Supabase Auth with a 7-screen onboarding flow and specific fixes for production stability.
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
-- **Database Schema**: All table names standardized to match Supabase PostgREST cached schema (e.g., `post_likes`, `post_reposts`, `comments` with `comment_text`). Table names cannot be changed due to Supabase managed PostgREST cache.
+- **Database Schema**: All table names standardized to match Supabase PostgREST cached schema (e.g., `post_likes`, `post_reposts`, `comments`). Table names cannot be changed due to Supabase managed PostgREST cache.
 
 ### Feature Specifications
-- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed with infinite scroll, user profiles, "You May Know" suggestions with mutual friends.
-- **Infinite Scroll**: Homepage activity feed uses FlatList virtualization with automatic pagination and "end of feed" messaging.
-- **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommended titles, dynamic episode progress bar, and "Currently Watching" section. Includes a production-grade rating conversion system and a robust poster fallback chain.
-- **Explore Page**: Redesigned search/explore page featuring 6 distinct curated content rows ("For You", "Trending", "Because You Watched" - 3 dynamic rows, "Popular Rewatches"). Includes intelligent year/year-range display for shows, mutual friends count, and genre-based filtering.
-- **Mutual Friends UI**: Consistent top-left badge display across all show poster views (Explore, Homepage For You, Currently Watching) using `BaseFriends` component with Map-based caching for performance.
-- **Recommendation Algorithm**: Production-grade system with strict universal hard filters (animation, language, rating, genre, era) and a progressive relaxation system to ensure a minimum of 20 recommendations. Uses a composite ranking based on similarity (60%) and popularity (40%). Features a centralized filtering mechanism and expands candidate pools with popular shows from the seed's primary genre if needed.
-- **Genre Discovery System**: Three-view routing architecture (Explore grid, Genre detail, Section detail). Migrated from TMDB to Trakt's native genre API for accurate genre representation and uses production-grade pagination with retry logic and defensive null handling.
-- **Authentication Flow**: Robust 7-screen onboarding with progressive data collection.
-- **Episode Metadata Refresh System**: Production-grade automatic refresh system using `upsertEpisodeMetadata()` for constant synchronization. Background refresh fetches all metadata from Trakt API in a single batch, enriched with TVMaze artwork. Database-first approach for episode counts and optimized map-based lookups.
-- **Episode Thumbnail Fallback System**: Robust 5-strategy cascade for fetching episode thumbnails on Episode Hub: (1) Use stored TVMaze ID, (2) Lookup by IMDb ID, (3) Lookup by TVDB ID, (4) Fetch IDs from Trakt API and retry, (5) Search TVMaze by show title. Resolved IDs are saved to database for faster future loads. Ensures maximum thumbnail coverage across all shows.
-- **Show Auto-Refresh System**: ShowHub automatically detects incomplete show data (missing year, description, or backdrop) and fetches fresh data from Trakt API in the background. Updates database with description/backdrop/rating and local state with year from Trakt for immediate UI display. Includes defensive error handling for API failures without breaking UI.
-- **Year Range Display**: Shows display full year ranges (e.g., "2008 - 2013" for Breaking Bad) by fetching end year from Trakt's last episode air date. Uses ref-based guard to prevent duplicate API calls and works for both incomplete shows (via main refresh) and complete shows (via separate targeted fetch). Format: "YYYY - YYYY" for ended shows, just "YYYY" for ongoing shows or shows where start/end year match.
-- **Streaming Providers Display**: ShowHub displays streaming service logos (Netflix, Hulu, etc.) positioned inline with the year text (year left, logos right) using TMDB Watch Providers API. Features intelligent deduplication that normalizes provider names to base services (e.g., "HBO Max" vs "HBO Max Amazon Channel"), prefers main services over channel add-ons, but falls back to add-ons when they're the only availability option. Shows up to 5 logos in 22x22px rounded containers with Card Stroke borders. State properly resets between shows to prevent stale data.
-- **UI Enhancements**: Relative time display, refined progress bar, accurate episode counts, standardized episode formatting, navigation highlighting, and custom profile tab display.
-- **Redesigned Pages**: Welcome, Phone Number Entry, Episode Hub, Post Page, Profile Page, Show Hub, and Explore Page.
-- **Modular & Component-Based**: Organized into logical directories with reusable UI components.
-- **PostModal Flow**: Guides users through selecting a show, fetching/validating episodes, saving to DB, creating a post, and redirecting. Supports custom tags and a half-star rating system.
+- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed with infinite scroll, user profiles, "You May Know" suggestions, user mention system with autocomplete and notifications.
+- **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommended titles, dynamic episode progress bar, "Currently Watching" section, show-level rating, and a favorites section. Includes robust poster fallback chain and episode metadata/thumbnail refresh systems.
+- **Explore Page**: Redesigned search/explore page featuring 6 distinct curated content rows, intelligent year/year-range display, mutual friends count, and genre-based filtering.
+- **Recommendation Algorithm**: Production-grade system with strict universal hard filters and progressive relaxation, using composite ranking based on similarity (60%) and popularity (40%).
+- **Genre Discovery System**: Three-view routing architecture using Trakt's native genre API with production-grade pagination.
+- **Streaming Providers Display**: ShowHub displays streaming service logos using TMDB Watch Providers API with intelligent deduplication and fallback logic.
+- **Rewatch Episode Tracking**: 3-click cycling for episode selection states (unselected → watched → rewatched → unselected) with visual indicators and database tracking.
 - **Account Management**: Account deletion and phone number change features.
-- **Invite Friends System**: Two-trigger invite modal: (1) Profile share button shows modal before iOS share sheet, (2) One-time automatic modal after 5 minutes cumulative app usage. Built with `InviteFriendsModal` component and `useAppUsageTracker` hook using AsyncStorage persistence and ref-based state tracking to prevent stale closures.
-- **User Mention System**: Production-ready @mention tagging in posts/comments with autocomplete dropdown, clickable mention links, and notifications. Integrated into PostModal (post creation), post detail page (comment/reply creation), with clickable mentions displayed via MentionText in PostCard, post detail page, and CommentCard. Features fully controlled input model with cursor delta calculation for reliable mention detection. Mentions extracted from text at submission time (defensive against stale state). Optimized for performance with 300ms debouncing, follow list caching, and single-query mutual friends calculation via SQL RPC function. Database schema includes `comment_mentions`, `post_mentions`, and `notifications` tables. Mention autocomplete sorts by: following > mutual friends > alphabetical. Internal autocomplete state reset when input cleared.
-- **Show-Level Rating System**: Users can rate entire shows (not just episodes) via ShowRatingModal with half-star picker (0.5-5 stars). Ratings are stored in `show_ratings` table with unique constraint on user_id+show_id. Display priority: user's rating (green star) > community average when 10+ ratings exist (gold star) > API rating (gray star) > "Rate" text. Uses efficient Supabase count queries before fetching ratings. Includes "Share as Post" option that opens PostModal with prefilled rating, skipping to post details directly.
-- **Favorites Section**: Profile feature allowing users to showcase up to 3 favorite shows. Displays below "Currently Watching" section with dotted-border placeholder boxes (+ icon) for empty slots and show posters for filled slots. Own profile shows all 3 slots with add/remove capability; other user profiles hide section when empty. Uses `profiles.favorite_shows` JSONB column storing array: `[{show_id, display_order, trakt_id}]`. This approach leverages existing profiles RLS policies for security and bypasses Supabase PostgREST schema cache issues with new tables. Reuses existing "Select a Show" modal pattern with search and recommendations. X remove button appears at bottom-right of posters (own profile only). Uses `(supabase as any)` pattern to bypass TypeScript type mismatches for the new column.
+- **Invite Friends System**: Two-trigger invite modal for user acquisition.
 
 ### System Design Choices
-- **Development vs Production**: Single Supabase production instance (mb wuoqoktdgudzaemjhx). Future recommendation: Create separate dev instance for safe testing.
-- **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` environment variables (not secrets) to enable Expo bundler access during all build types. No hardcoded fallbacks to prevent silent failures.
-- **Data Management**: All data managed via real Supabase data; mock data removed. Supabase-backed user profile cache.
-- **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system for metadata, posters, and episode thumbnails.
-- **Search Enrichment System**: Background worker enhances search results with complete metadata using throttled parallel fetching, progressive enhancement, and smart caching.
-- **Database Persistence**: Shows and episodes saved to Supabase before post creation, with robust UUID management.
-- **Performance Optimizations**: Database-first approach for episode loading, lazy loading of seasons, background loading for remaining seasons, smart season logic, and optimized queries for community and friend feeds. Homepage uses cached recommendations from DataContext.
-- **Smart Show Recommendations**: Personalized recommendation system using user posts, genre interests, and trending shows with instant-loading caching and friend-based recommendations.
+- **Development vs Production**: Single Supabase production instance; recommendation for separate dev instance.
+- **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_` environment variables for all build types.
+- **Data Management**: All data managed via real Supabase data; Supabase-backed user profile cache.
+- **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system.
+- **Search Enrichment System**: Background worker for enhancing search results with metadata, progressive enhancement, and caching.
+- **Performance Optimizations**: Database-first approach, lazy loading, background loading, and optimized queries.
+- **Smart Show Recommendations**: Personalized system with instant-loading caching and friend-based recommendations.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system.
-- **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, among others. Table names `post_likes` and `post_reposts` are locked by Supabase PostgREST cache.
+- **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache.
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.
@@ -73,33 +58,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Expo**: Core framework for React Native.
 - **AsyncStorage**: Local storage.
 - **expo-symbols**: UI icons.
-- **lucide-react-native**: UI icons (Edit, Settings, HelpCircle, Eye, Flame, EyeOff, Instagram, Music, Globe).
+- **lucide-react-native**: UI icons.
 - **react-native-phone-number-input**: Phone number input formatting.
 - **LinearGradient**: Gradient backgrounds.
 - **@expo-google-fonts/instrument-serif**: Custom font.
-
-## Production Deployment
-
-### Environment Variables Configuration
-**CRITICAL**: Supabase credentials MUST use `EXPO_PUBLIC_` prefix to work in production builds:
-
-1. **Replit Development** (current setup):
-   - `EXPO_PUBLIC_SUPABASE_URL` - Set in Replit Secrets (Shared environment)
-   - `EXPO_PUBLIC_SUPABASE_ANON_KEY` - Set in Replit Secrets (Shared environment)
-
-2. **EAS Build (iOS/Android Production)**:
-   ```bash
-   # Set secrets for EAS builds
-   eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value "https://your-project.supabase.co"
-   eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "your-anon-key"
-   ```
-
-3. **Verification**:
-   - Web preview: Check console for "✅ Supabase Client initialized"
-   - iOS build: Test 2FA login flow end-to-end
-   - Ensure no hardcoded DEV credentials in `app.config.js` or `integrations/supabase/client.ts`
-
-### Recent Updates
-- **2024-11**: Fixed routing timing issue causing blank screen on Expo web by adding `segments.length` check before redirects (prevents router.replace before segments mount)
-- **2024-11**: Migrated Supabase credentials from hardcoded fallbacks to EXPO_PUBLIC_ environment variables for production safety
-- **2024-11**: Implemented invite friends feature with dual triggers: profile share button flow and one-time 5-minute usage milestone. Fixed critical stale closure bugs in usage tracker by using refs for authoritative state.
