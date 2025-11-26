@@ -25,7 +25,7 @@ import ShowRatingModal from '@/components/ShowRatingModal';
 import FriendsWatchingModal from '@/components/FriendsWatchingModal';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import EpisodeCard from '@/components/EpisodeCard';
-import EpisodeListCard from '@/components/EpisodeListCard';
+import EpisodeListCard, { EpisodeSelectionState } from '@/components/EpisodeListCard';
 import FloatingTabBar from '@/components/FloatingTabBar';
 import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
 import { mockShows, mockUsers } from '@/data/mockData';
@@ -118,7 +118,7 @@ export default function ShowHub() {
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | undefined>(undefined);
   const [seasons, setSeasons] = useState<SeasonData[]>([]);
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
-  const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<Set<string>>(new Set());
+  const [episodeSelections, setEpisodeSelections] = useState<Map<string, EpisodeSelectionState>>(new Map());
   const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
   const [show, setShow] = useState<Show | null>(null);
   const [loadingShow, setLoadingShow] = useState(true);
@@ -925,20 +925,25 @@ export default function ShowHub() {
   };
 
   const toggleEpisodeSelection = (episodeId: string) => {
-    setSelectedEpisodeIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(episodeId)) {
-        newSet.delete(episodeId);
+    setEpisodeSelections(prev => {
+      const newMap = new Map(prev);
+      const currentState = newMap.get(episodeId) || 'none';
+      
+      if (currentState === 'none') {
+        newMap.set(episodeId, 'watched');
+      } else if (currentState === 'watched') {
+        newMap.set(episodeId, 'rewatched');
       } else {
-        newSet.add(episodeId);
+        newMap.delete(episodeId);
       }
-      return newSet;
+      
+      return newMap;
     });
   };
 
   const handleLogSelectedEpisodes = () => {
-    const episodesToLog = Array.from(selectedEpisodeIds);
-    const episodes = showEpisodes.filter(ep => episodesToLog.includes(ep.id));
+    const selectedIds = Array.from(episodeSelections.keys());
+    const episodes = showEpisodes.filter(ep => selectedIds.includes(ep.id));
     
     if (episodes.length > 0) {
       setSelectedEpisode(undefined);
@@ -947,7 +952,6 @@ export default function ShowHub() {
   };
 
   const handlePostSuccess = (postId: string, postedEpisodes: Episode[]) => {
-    // Mark only the episodes that were actually included in the post as logged
     setLoggedEpisodeIds(prev => {
       const newSet = new Set(prev);
       postedEpisodes.forEach(episode => {
@@ -955,9 +959,8 @@ export default function ShowHub() {
       });
       return newSet;
     });
-    setSelectedEpisodeIds(new Set());
+    setEpisodeSelections(new Map());
     
-    // Navigate to the post page
     router.push(`/post/${postId}`);
   };
 
@@ -1283,15 +1286,10 @@ export default function ShowHub() {
     const handleLogButtonPress = () => {
       if (!show) return;
       
-      // Get selected episodes (if any)
-      const episodesToLog = Array.from(selectedEpisodeIds);
-      const episodes = showEpisodes.filter(ep => episodesToLog.includes(ep.id));
+      const selectedIds = Array.from(episodeSelections.keys());
+      const episodes = showEpisodes.filter(ep => selectedIds.includes(ep.id));
       
-      // Open modal with preselected show and episodes (if any selected)
       setModalVisible(true);
-      
-      // If no episodes selected, user will be able to select from modal
-      // If episodes selected, modal will go straight to rating page
     };
     
     return (
@@ -1333,7 +1331,7 @@ export default function ShowHub() {
       ? episodePosts.reduce((sum, p) => sum + (p.rating || 0), 0) / episodePosts.length 
       : 0;
     
-    const isSelected = selectedEpisodeIds.has(episode.id);
+    const selectionState = episodeSelections.get(episode.id) || 'none';
     const isLogged = loggedEpisodeIds.has(episode.id);
 
     return (
@@ -1345,7 +1343,7 @@ export default function ShowHub() {
         rating={averageRating > 0 ? averageRating : undefined}
         postCount={postCount > 0 ? postCount : undefined}
         thumbnail={episode.thumbnail}
-        isSelected={isSelected}
+        selectionState={isLogged && selectionState === 'none' ? 'watched' : selectionState}
         isLogged={isLogged}
         onPress={() => toggleEpisodeSelection(episode.id)}
         onToggleSelect={() => toggleEpisodeSelection(episode.id)}
@@ -1490,7 +1488,8 @@ export default function ShowHub() {
         onClose={handleCloseModal} 
         preselectedShow={show}
         preselectedEpisode={selectedEpisode}
-        preselectedEpisodes={selectedEpisodeIds.size > 0 ? showEpisodes.filter(ep => selectedEpisodeIds.has(ep.id)) : undefined}
+        preselectedEpisodes={episodeSelections.size > 0 ? showEpisodes.filter(ep => episodeSelections.has(ep.id)) : undefined}
+        episodeSelections={episodeSelections}
         prefilledRating={showRatingForPost}
         skipToPostDetails={showRatingForPost > 0}
         onPostSuccess={handlePostSuccess}
@@ -1526,7 +1525,7 @@ export default function ShowHub() {
         onShareAsPost={(rating) => {
           setShowRatingForPost(rating);
           setSelectedEpisode(undefined);
-          setSelectedEpisodeIds(new Set());
+          setEpisodeSelections(new Map());
           setModalVisible(true);
         }}
         existingRating={userShowRating}
@@ -1539,7 +1538,7 @@ export default function ShowHub() {
           { name: 'Profile', icon: 'person.fill', route: '/profile' },
         ]}
         selectionMode={activeTab === 'episodes'}
-        selectedCount={selectedEpisodeIds.size}
+        selectedCount={episodeSelections.size}
         onLogPress={handleLogSelectedEpisodes}
       />
     </>

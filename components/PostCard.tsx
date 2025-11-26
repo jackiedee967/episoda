@@ -155,6 +155,75 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
     await unreportPostAction(latestPost.id);
   };
 
+  const getWatchedText = () => {
+    if (!latestPost.episodes || latestPost.episodes.length === 0) {
+      return 'watched';
+    }
+    
+    const rewatchIds = latestPost.rewatchEpisodeIds || [];
+    const allRewatched = latestPost.episodes.every(ep => rewatchIds.includes(ep.id));
+    const allWatched = rewatchIds.length === 0;
+    
+    if (allRewatched) return 'rewatched';
+    if (allWatched) return 'watched';
+    return 'watched';
+  };
+
+  const renderEpisodeTags = () => {
+    if (!latestPost.episodes || latestPost.episodes.length === 0) return null;
+    
+    const rewatchIds = latestPost.rewatchEpisodeIds || [];
+    const watchedEpisodes = latestPost.episodes.filter(ep => !rewatchIds.includes(ep.id));
+    const rewatchedEpisodes = latestPost.episodes.filter(ep => rewatchIds.includes(ep.id));
+    
+    const isMixed = watchedEpisodes.length > 0 && rewatchedEpisodes.length > 0;
+    
+    if (isMixed) {
+      return (
+        <>
+          {watchedEpisodes.map((episode, index) => (
+            <PostTags
+              key={episode.id || `watched-${index}`}
+              prop="Large"
+              state="S_E_"
+              text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/episode/${episode.id}`);
+              }}
+            />
+          ))}
+          <Text style={styles.andRewatchedText}> and rewatched</Text>
+          {rewatchedEpisodes.map((episode, index) => (
+            <PostTags
+              key={episode.id || `rewatched-${index}`}
+              prop="Large"
+              state="S_E_"
+              text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/episode/${episode.id}`);
+              }}
+            />
+          ))}
+        </>
+      );
+    }
+    
+    return latestPost.episodes.map((episode, index) => (
+      <PostTags
+        key={episode.id || index}
+        prop="Large"
+        state="S_E_"
+        text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push(`/episode/${episode.id}`);
+        }}
+      />
+    ));
+  };
+
   if (isReported) {
     return (
       <Pressable style={styles.card} onPress={handlePostPress}>
@@ -200,7 +269,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <Text style={styles.justWatchedText}>
-                <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> watched
+                <Text style={styles.usernameText} onPress={handleUserPress}>{latestPost.user.displayName}</Text> {getWatchedText()}
               </Text>
               <View style={styles.tagsRow}>
                 {(() => {
@@ -216,18 +285,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
                     />
                   );
                 })()}
-                {latestPost.episodes && latestPost.episodes.length > 0 ? latestPost.episodes.map((episode, index) => (
-                  <PostTags
-                    key={episode.id || index}
-                    prop="Large"
-                    state="S_E_"
-                    text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push(`/episode/${episode.id}`);
-                    }}
-                  />
-                )) : null}
+                {renderEpisodeTags()}
               </View>
               {latestPost.rating ? (
                 <StarRatings rating={latestPost.rating} size={14} />
@@ -368,6 +426,11 @@ const styles = StyleSheet.create({
   },
   usernameText: {
     color: tokens.colors.greenHighlight,
+  },
+  andRewatchedText: {
+    color: tokens.colors.almostWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
   },
   tagsRow: {
     flexDirection: 'row',

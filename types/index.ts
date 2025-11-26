@@ -69,6 +69,7 @@ export interface Post {
   show: Show;
   episode?: Episode; // Legacy single episode (backwards compatibility)
   episodes?: Episode[]; // New multi-episode posts
+  rewatchEpisodeIds?: string[]; // IDs of episodes that are rewatches
   title?: string;
   body: string;
   rating?: number;

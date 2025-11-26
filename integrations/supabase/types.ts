@@ -201,6 +201,7 @@ export type Database = {
           show_title: string
           show_poster: string
           episode_ids: string[]
+          rewatch_episode_ids: string[]
           title: string | null
           body: string
           rating: number | null
@@ -218,6 +219,7 @@ export type Database = {
           show_title: string
           show_poster: string
           episode_ids?: string[]
+          rewatch_episode_ids?: string[]
           title?: string | null
           body: string
           rating?: number | null
@@ -235,6 +237,7 @@ export type Database = {
           show_title?: string
           show_poster?: string
           episode_ids?: string[]
+          rewatch_episode_ids?: string[]
           title?: string | null
           body?: string
           rating?: number | null
@@ -403,6 +406,7 @@ export type Database = {
           show_id: string
           episode_id: string
           watched_at: string
+          is_rewatch: boolean
         }
         Insert: {
           id?: string
@@ -410,6 +414,7 @@ export type Database = {
           show_id: string
           episode_id: string
           watched_at?: string
+          is_rewatch?: boolean
         }
         Update: {
           id?: string
@@ -417,6 +422,7 @@ export type Database = {
           show_id?: string
           episode_id?: string
           watched_at?: string
+          is_rewatch?: boolean
         }
         Relationships: [
           {

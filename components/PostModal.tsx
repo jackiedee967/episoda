@@ -26,7 +26,7 @@ import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason,
 import { saveShow, saveEpisode, getShowByTraktId, getShowById } from '@/services/showDatabase';
 import { ensureShowId } from '@/services/showRegistry';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
-import EpisodeListCard from '@/components/EpisodeListCard';
+import EpisodeListCard, { EpisodeSelectionState } from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown, Star } from 'lucide-react-native';
 import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,6 +40,7 @@ interface PostModalProps {
   preselectedShow?: Show;
   preselectedEpisode?: Episode;
   preselectedEpisodes?: Episode[];
+  episodeSelections?: Map<string, EpisodeSelectionState>;
   prefilledRating?: number;
   skipToPostDetails?: boolean;
   onPostSuccess?: (postId: string, postedEpisodes: Episode[]) => void;
@@ -134,7 +135,7 @@ function HalfStarRating({ rating, onRatingChange }: HalfStarRatingProps) {
   );
 }
 
-export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, prefilledRating, skipToPostDetails, onPostSuccess }: PostModalProps) {
+export default function PostModal({ visible, onClose, preselectedShow, preselectedEpisode, preselectedEpisodes, episodeSelections, prefilledRating, skipToPostDetails, onPostSuccess }: PostModalProps) {
   const { 
     createPost, 
     currentUser, 
@@ -1225,10 +1226,15 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         console.log('📝 Creating post in Supabase...');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+        const rewatchEpisodeIds = dbEpisodes
+          .filter(ep => episodeSelections?.get(ep.id) === 'rewatched')
+          .map(ep => ep.id);
+
         const newPost = await createPost({
           user: currentUser,
           show: showForPost,
           episodes: dbEpisodes.length > 0 ? dbEpisodes : undefined,
+          rewatchEpisodeIds: rewatchEpisodeIds.length > 0 ? rewatchEpisodeIds : undefined,
           title: postTitle.trim() || undefined,
           body: postBody.trim(),
           rating: rating > 0 ? rating : undefined,
@@ -1394,10 +1400,15 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         console.log('📝 Creating post in Supabase...');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+        const rewatchEpisodeIdsFallback = dbEpisodes
+          .filter(ep => episodeSelections?.get(ep.id) === 'rewatched')
+          .map(ep => ep.id);
+
         const newPost = await createPost({
           user: currentUser,
           show: showForPost,
           episodes: dbEpisodes.length > 0 ? dbEpisodes : undefined,
+          rewatchEpisodeIds: rewatchEpisodeIdsFallback.length > 0 ? rewatchEpisodeIdsFallback : undefined,
           title: postTitle.trim() || undefined,
           body: postBody.trim(),
           rating: rating > 0 ? rating : undefined,

@@ -5,6 +5,9 @@ import tokens from '@/styles/tokens';
 import { Star, Check } from 'lucide-react-native';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import FadeInImage from './FadeInImage';
+import RewatchIcon from './RewatchIcon';
+
+export type EpisodeSelectionState = 'none' | 'watched' | 'rewatched';
 
 interface EpisodeListCardProps {
   episodeNumber: string;
@@ -15,6 +18,7 @@ interface EpisodeListCardProps {
   thumbnail?: string;
   isSelected?: boolean;
   isLogged?: boolean;
+  selectionState?: EpisodeSelectionState;
   onPress?: () => void;
   onToggleSelect?: () => void;
   theme?: 'light' | 'dark';
@@ -29,6 +33,7 @@ export default function EpisodeListCard({
   thumbnail,
   isSelected = false,
   isLogged = false,
+  selectionState,
   onPress,
   onToggleSelect,
   theme = 'dark'
@@ -49,13 +54,21 @@ export default function EpisodeListCard({
     }
   };
 
-  const showCheckmark = isSelected || isLogged;
+  const effectiveState: EpisodeSelectionState = selectionState ?? (isSelected || isLogged ? 'watched' : 'none');
+  const isWatched = effectiveState === 'watched';
+  const isRewatched = effectiveState === 'rewatched';
+  const hasSelection = isWatched || isRewatched;
   
-  // Light theme: purple highlighting. Dark theme: original green/stroke colors
-  const cardBorderColor = theme === 'light'
-    ? (showCheckmark ? tokens.colors.tabStroke2 : tokens.colors.grey2)
-    : (showCheckmark ? tokens.colors.greenHighlight : tokens.colors.cardStroke);
+  const getCardBorderColor = () => {
+    if (theme === 'light') {
+      return hasSelection ? tokens.colors.tabStroke2 : tokens.colors.grey2;
+    }
+    if (isRewatched) return tokens.colors.tabStroke2;
+    if (isWatched) return tokens.colors.greenHighlight;
+    return tokens.colors.cardStroke;
+  };
     
+  const cardBorderColor = getCardBorderColor();
   const cardBackgroundColor = theme === 'light' ? tokens.colors.almostWhite : tokens.colors.cardBackground;
   const titleColor = theme === 'light' ? tokens.colors.black : tokens.colors.pureWhite;
   const descriptionColor = theme === 'light' ? tokens.colors.grey3 : tokens.colors.grey2;
@@ -64,9 +77,27 @@ export default function EpisodeListCard({
   const tagBorderColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.tabStroke2;
   const tagTextColor = theme === 'light' ? tokens.colors.pureWhite : tokens.colors.tabStroke2;
   
-  const checkmarkBorderColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.greenHighlight;
-  const checkmarkBackgroundColor = theme === 'light' ? tokens.colors.tabStroke2 : tokens.colors.greenHighlight;
-  const checkmarkColor = theme === 'light' ? tokens.colors.pureWhite : tokens.colors.black;
+  const getToggleBorderColor = () => {
+    if (theme === 'light') return tokens.colors.tabStroke2;
+    if (isRewatched) return tokens.colors.tabStroke2;
+    return tokens.colors.greenHighlight;
+  };
+  
+  const getToggleBackgroundColor = () => {
+    if (!hasSelection) return 'transparent';
+    if (theme === 'light') return tokens.colors.tabStroke2;
+    if (isRewatched) return tokens.colors.tabStroke2;
+    return tokens.colors.greenHighlight;
+  };
+  
+  const getToggleIconColor = () => {
+    if (theme === 'light') return tokens.colors.pureWhite;
+    return tokens.colors.black;
+  };
+  
+  const toggleBorderColor = getToggleBorderColor();
+  const toggleBackgroundColor = getToggleBackgroundColor();
+  const toggleIconColor = getToggleIconColor();
 
   return (
     <Pressable 
@@ -117,15 +148,20 @@ export default function EpisodeListCard({
           onPress={handleTogglePress}
           style={[
             styles.checkmarkButton,
-            { borderColor: checkmarkBorderColor },
-            showCheckmark ? { backgroundColor: checkmarkBackgroundColor } : null
+            { borderColor: toggleBorderColor },
+            hasSelection ? { backgroundColor: toggleBackgroundColor } : null
           ]}
         >
-          {showCheckmark ? (
+          {isWatched ? (
             <Check 
               size={10} 
-              color={checkmarkColor}
+              color={toggleIconColor}
               strokeWidth={3}
+            />
+          ) : isRewatched ? (
+            <RewatchIcon 
+              size={10} 
+              color={toggleIconColor}
             />
           ) : null}
         </Pressable>

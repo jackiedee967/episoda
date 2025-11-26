@@ -1382,6 +1382,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             },
             episodes: episodes.length > 0 ? episodes : undefined,
             episode: episodes.length > 0 ? episodes[0] : undefined,
+            rewatchEpisodeIds: dbPost.rewatch_episode_ids || [],
             title: dbPost.title || undefined,
             body: dbPost.body || '',
             timestamp: new Date(dbPost.created_at),
@@ -1517,13 +1518,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       console.log('✅ User authenticated:', user.id);
       const episodeIds = postData.episodes?.map(ep => ep.id) || [];
+      const rewatchEpisodeIds = postData.rewatchEpisodeIds || [];
       
       const insertPayload = {
         user_id: user.id,
         show_id: postData.show.id,
         show_title: postData.show.title,
-        show_poster: postData.show.poster,
+        show_poster: postData.show.poster || '',
         episode_ids: episodeIds,
+        rewatch_episode_ids: rewatchEpisodeIds,
         title: postData.title,
         body: postData.body,
         rating: postData.rating,
@@ -1563,12 +1566,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return updatedPosts;
       });
 
-      // Log episodes to watch_history
+      // Log episodes to watch_history with rewatch flag
       if (episodeIds.length > 0) {
         const watchHistoryEntries = episodeIds.map(episodeId => ({
           user_id: user.id,
           show_id: postData.show.id,
           episode_id: episodeId,
+          is_rewatch: rewatchEpisodeIds.includes(episodeId),
         }));
 
         await supabase
