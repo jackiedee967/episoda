@@ -81,27 +81,28 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     try {
       setLoading(true);
       
-      // Get favorite_shows from profiles table (use 'as any' to bypass TypeScript schema cache)
+      // Use direct table query with 'as any' to bypass TypeScript schema cache
       const { data: profileData, error: profileError } = await (supabase as any)
         .from('profiles')
         .select('favorite_shows')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
       if (profileError) {
         console.error('Error loading favorites from profile:', profileError);
+        setFavorites([]);
         return;
       }
 
-      const favoriteShowsData = profileData?.favorite_shows || [];
+      const favoritesArray = profileData?.favorite_shows || [];
       
-      if (favoriteShowsData.length === 0) {
+      if (favoritesArray.length === 0) {
         setFavorites([]);
         return;
       }
       
       // Get show details for each favorite
-      const showIds = favoriteShowsData.map((f: any) => f.show_id);
+      const showIds = favoritesArray.map((f: any) => f.show_id);
       const { data: showsData, error: showsError } = await supabase
         .from('shows')
         .select('id, trakt_id, title, poster_url, backdrop_url')
@@ -114,7 +115,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       
       const showsMap = new Map((showsData || []).map((s: any) => [s.id, s]));
 
-      const mappedFavorites: FavoriteShow[] = favoriteShowsData
+      const mappedFavorites: FavoriteShow[] = favoritesArray
         .map((fav: any, index: number) => {
           const showData = showsMap.get(fav.show_id);
           if (!showData) return null;
@@ -334,11 +335,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         }
       }
       
-      // Get current favorites from profile (use 'as any' to bypass TypeScript schema cache)
+      // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
         .from('profiles')
         .select('favorite_shows')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
       
       if (fetchError) {
@@ -346,22 +347,22 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         return;
       }
       
-      const currentFavorites = profileData?.favorite_shows || [];
+      const favoritesArray = profileData?.favorite_shows || [];
       const displayOrder = selectedSlot + 1;
       
       // Remove any existing favorite at this slot, then add new one
-      const updatedFavorites = currentFavorites.filter((f: any) => f.display_order !== displayOrder);
+      const updatedFavorites = favoritesArray.filter((f: any) => f.display_order !== displayOrder);
       updatedFavorites.push({
         show_id: showId,
         display_order: displayOrder,
         trakt_id: result.traktShow?.ids?.trakt || result.show.traktId,
       });
       
-      // Update profile with new favorites
+      // Update via direct table query
       const { error: updateError } = await (supabase as any)
         .from('profiles')
         .update({ favorite_shows: updatedFavorites })
-        .eq('id', userId);
+        .eq('user_id', userId);
       
       if (updateError) {
         console.error('Error updating favorites:', updateError);
@@ -381,11 +382,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
-      // Get current favorites from profile (use 'as any' to bypass TypeScript schema cache)
+      // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
         .from('profiles')
         .select('favorite_shows')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
       
       if (fetchError) {
@@ -393,16 +394,16 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         return;
       }
       
-      const currentFavorites = profileData?.favorite_shows || [];
+      const favoritesArray = profileData?.favorite_shows || [];
       
       // Remove the favorite at this display order
-      const updatedFavorites = currentFavorites.filter((f: any) => f.display_order !== displayOrder);
+      const updatedFavorites = favoritesArray.filter((f: any) => f.display_order !== displayOrder);
       
-      // Update profile with new favorites
+      // Update via direct table query
       const { error: updateError } = await (supabase as any)
         .from('profiles')
         .update({ favorite_shows: updatedFavorites })
-        .eq('id', userId);
+        .eq('user_id', userId);
       
       if (updateError) {
         console.error('Error removing favorite:', updateError);
@@ -431,11 +432,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         }
       }
       
-      // Get current favorites from profile (use 'as any' to bypass TypeScript schema cache)
+      // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
         .from('profiles')
         .select('favorite_shows')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
       
       if (fetchError) {
@@ -443,22 +444,22 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         return;
       }
       
-      const currentFavorites = profileData?.favorite_shows || [];
+      const favoritesArray = profileData?.favorite_shows || [];
       const displayOrder = selectedSlot + 1;
       
       // Remove any existing favorite at this slot, then add new one
-      const updatedFavorites = currentFavorites.filter((f: any) => f.display_order !== displayOrder);
+      const updatedFavorites = favoritesArray.filter((f: any) => f.display_order !== displayOrder);
       updatedFavorites.push({
         show_id: showId,
         display_order: displayOrder,
         trakt_id: result.traktShow?.ids?.trakt || result.show.traktId,
       });
       
-      // Update profile with new favorites
+      // Update via direct table query
       const { error: updateError } = await (supabase as any)
         .from('profiles')
         .update({ favorite_shows: updatedFavorites })
-        .eq('id', userId);
+        .eq('user_id', userId);
       
       if (updateError) {
         console.error('Error updating favorites:', updateError);
