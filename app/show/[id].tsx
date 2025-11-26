@@ -863,7 +863,7 @@ export default function ShowHub() {
 
   useEffect(() => {
     if (activeTab !== 'episodes') {
-      setSelectedEpisodeIds(new Set());
+      setEpisodeSelections(new Map());
     }
   }, [activeTab]);
 
