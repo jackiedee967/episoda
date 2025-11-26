@@ -483,7 +483,8 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const filledSlots = new Map(favorites.map(f => [f.display_order, f]));
 
   const renderSlot = (slotIndex: number) => {
-    const favorite = filledSlots.get(slotIndex);
+    // display_order is 1-based (1, 2, 3), slotIndex is 0-based (0, 1, 2)
+    const favorite = filledSlots.get(slotIndex + 1);
     
     if (favorite) {
       return (
