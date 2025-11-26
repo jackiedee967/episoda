@@ -20,7 +20,7 @@ import { Show } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
 import { searchShows, TraktShow } from '@/services/trakt';
-import { saveShow, getShowByTraktId } from '@/services/showDatabase';
+import { saveShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import PlaylistModal from '@/components/PlaylistModal';
@@ -80,27 +80,9 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const loadFavorites = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
-        .from('user_favorites')
-        .select(`
-          id,
-          show_id,
-          display_order,
-          shows (
-            id,
-            trakt_id,
-            title,
-            year,
-            poster_url,
-            backdrop_url,
-            description,
-            rating,
-            total_seasons,
-            total_episodes
-          )
-        `)
-        .eq('user_id', userId)
-        .order('display_order', { ascending: true });
+      const { data, error } = await supabase.rpc('get_user_favorites', {
+        p_user_id: userId
+      });
 
       if (error) {
         console.error('Error loading favorites:', error);
@@ -112,16 +94,16 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         show_id: fav.show_id,
         display_order: fav.display_order,
         show: {
-          id: fav.shows.id,
-          traktId: fav.shows.trakt_id,
-          title: fav.shows.title,
-          year: fav.shows.year,
-          poster: fav.shows.poster_url,
-          backdrop: fav.shows.backdrop_url,
-          description: fav.shows.description || '',
-          rating: fav.shows.rating || 0,
-          totalSeasons: fav.shows.total_seasons || 0,
-          totalEpisodes: fav.shows.total_episodes || 0,
+          id: fav.show_id,
+          traktId: fav.show_trakt_id,
+          title: fav.show_title,
+          year: undefined,
+          poster: fav.show_poster_url,
+          backdrop: undefined,
+          description: '',
+          rating: 0,
+          totalSeasons: 0,
+          totalEpisodes: 0,
           friendsWatching: 0,
         },
       }));
@@ -189,44 +171,87 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       
       try {
         const searchResponse = await searchShows(searchQuery);
-        const mappedResults: SearchResult[] = await Promise.all(
-          searchResponse.results.slice(0, 12).map(async (result) => {
-            const traktShow = result.show;
-            const dbShow = await getShowByTraktId(traktShow.ids.trakt);
-            
-            const show: Show = dbShow ? {
-              id: dbShow.id,
-              traktId: dbShow.trakt_id,
-              title: dbShow.title,
-              year: dbShow.year || undefined,
-              poster: dbShow.poster_url,
-              backdrop: dbShow.backdrop_url,
-              description: dbShow.description || '',
-              rating: dbShow.rating || 0,
-              totalSeasons: dbShow.total_seasons || 0,
-              totalEpisodes: dbShow.total_episodes || 0,
-              friendsWatching: 0,
-            } : {
-              id: `trakt-${traktShow.ids.trakt}`,
-              traktId: traktShow.ids.trakt,
-              title: traktShow.title,
-              year: traktShow.year,
-              poster: traktShow.ids.tmdb ? `https://image.tmdb.org/t/p/w500/${traktShow.ids.tmdb}` : null,
-              description: traktShow.overview || '',
-              rating: traktShow.rating || 0,
-              totalSeasons: 0,
-              totalEpisodes: 0,
-              friendsWatching: 0,
-            };
-            
+        const traktShows = searchResponse.results.map(r => r.show);
+        
+        if (traktShows.length === 0) {
+          setSearchResults([]);
+          setIsSearching(false);
+          return;
+        }
+        
+        const { mapTraktShowToShow } = await import('@/services/showMappers');
+        const { showEnrichmentManager } = await import('@/services/showEnrichment');
+        
+        const traktIds = traktShows.map(s => s.ids.trakt);
+        const { data: dbShows } = await supabase
+          .from('shows')
+          .select('id, trakt_id, poster_url, backdrop_url, tvmaze_id, imdb_id, total_seasons')
+          .in('trakt_id', traktIds);
+        
+        const dbShowsMap = new Map(
+          (dbShows || []).map(show => [show.trakt_id, show])
+        );
+        
+        const visibleShows = traktShows.slice(0, 12);
+        
+        const enrichmentPromises = visibleShows.map(async (traktShow) => {
+          const dbShow = dbShowsMap.get(traktShow.ids.trakt);
+          if (dbShow?.poster_url) {
             return {
-              show,
+              traktShow,
+              posterUrl: dbShow.poster_url,
+              totalSeasons: dbShow.total_seasons || 0,
+              dbId: dbShow.id,
+            };
+          }
+          
+          const enriched = await showEnrichmentManager.enrichShow(traktShow);
+          
+          try {
+            await saveShow(traktShow, {
+              enrichedPosterUrl: enriched.posterUrl || undefined,
+              enrichedBackdropUrl: enriched.backdropUrl || undefined,
+              enrichedTVMazeId: enriched.tvmazeId || undefined,
+              enrichedImdbId: enriched.imdbId || undefined,
+              enrichedSeasonCount: enriched.totalSeasons || undefined,
+            });
+          } catch (saveError) {
+            console.warn(`Failed to cache ${traktShow.title}:`, saveError);
+          }
+          
+          return {
+            traktShow,
+            posterUrl: enriched.posterUrl,
+            totalSeasons: enriched.totalSeasons || 0,
+            dbId: null,
+          };
+        });
+        
+        const enrichedResults = await Promise.allSettled(enrichmentPromises);
+        
+        const mappedResults: SearchResult[] = enrichedResults.map((result, index) => {
+          const traktShow = visibleShows[index];
+          const dbShow = dbShowsMap.get(traktShow.ids.trakt);
+          
+          if (result.status === 'fulfilled') {
+            return {
+              show: mapTraktShowToShow(traktShow, {
+                posterUrl: result.value.posterUrl,
+                totalSeasons: result.value.totalSeasons,
+              }),
+              traktShow,
+              isDatabaseBacked: !!dbShow || !!result.value.dbId,
+              traktId: traktShow.ids.trakt,
+            };
+          } else {
+            return {
+              show: mapTraktShowToShow(traktShow, undefined),
               traktShow,
               isDatabaseBacked: !!dbShow,
               traktId: traktShow.ids.trakt,
             };
-          })
-        );
+          }
+        });
         
         setSearchResults(mappedResults);
       } catch (err) {
@@ -275,20 +300,14 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         }
       }
       
-      const { error } = await (supabase as any)
-        .from('user_favorites')
-        .insert({
-          user_id: userId,
-          show_id: showId,
-          display_order: selectedSlot,
-        });
+      const { error } = await supabase.rpc('add_user_favorite', {
+        p_user_id: userId,
+        p_show_id: showId,
+        p_display_order: selectedSlot + 1,
+      });
       
       if (error) {
-        if (error.code === '23505') {
-          console.log('Show already in favorites');
-        } else {
-          console.error('Error adding favorite:', error);
-        }
+        console.error('Error adding favorite:', error);
         return;
       }
       
@@ -305,10 +324,9 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
-      const { error } = await (supabase as any)
-        .from('user_favorites')
-        .delete()
-        .eq('id', favoriteId);
+      const { error } = await supabase.rpc('remove_user_favorite', {
+        p_favorite_id: favoriteId
+      });
       
       if (error) {
         console.error('Error removing favorite:', error);
@@ -337,20 +355,14 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         }
       }
       
-      const { error } = await (supabase as any)
-        .from('user_favorites')
-        .insert({
-          user_id: userId,
-          show_id: showId,
-          display_order: selectedSlot,
-        });
+      const { error } = await supabase.rpc('add_user_favorite', {
+        p_user_id: userId,
+        p_show_id: showId,
+        p_display_order: selectedSlot + 1,
+      });
       
       if (error) {
-        if (error.code === '23505') {
-          console.log('Show already in favorites');
-        } else {
-          console.error('Error adding favorite:', error);
-        }
+        console.error('Error adding favorite:', error);
         return;
       }
       
