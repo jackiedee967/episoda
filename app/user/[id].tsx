@@ -37,6 +37,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { Image } from 'expo-image';
+import FavoritesSection from '@/components/FavoritesSection';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -895,6 +896,13 @@ export default function UserProfile() {
           {renderActionButtons()}
           {renderStatsGrid()}
           {renderMyRotation()}
+          
+          {profileUser && (
+            <FavoritesSection 
+              userId={profileUser.id} 
+              isOwnProfile={isOwnProfile} 
+            />
+          )}
           
           <View style={styles.tabSelectorContainer}>
             <TabSelector

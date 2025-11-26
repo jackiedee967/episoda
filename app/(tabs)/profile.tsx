@@ -25,6 +25,7 @@ import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
+import FavoritesSection from '@/components/FavoritesSection';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -741,6 +742,13 @@ export default function ProfileScreen() {
           {renderActionButtons()}
           {renderStatsGrid()}
           {renderMyRotation()}
+          
+          {profileUser && (
+            <FavoritesSection 
+              userId={profileUser.id} 
+              isOwnProfile={true} 
+            />
+          )}
           
           <View style={styles.tabSelectorContainer}>
             <TabSelector
