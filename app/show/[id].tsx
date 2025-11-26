@@ -937,9 +937,17 @@ export default function ShowHub() {
         newMap.set(episodeId, 'watched');
       } else if (currentState === 'watched') {
         newMap.set(episodeId, 'rewatched');
-      } else {
-        // 'rewatched' -> delete from map (goes back to none/unselected)
-        newMap.delete(episodeId);
+      } else if (currentState === 'rewatched') {
+        // For logged episodes: rewatched -> unselected (explicit unselection)
+        // For non-logged episodes: rewatched -> none (back to default)
+        if (isLogged) {
+          newMap.set(episodeId, 'unselected');
+        } else {
+          newMap.delete(episodeId);
+        }
+      } else if (currentState === 'unselected') {
+        // unselected -> watched (start the cycle again)
+        newMap.set(episodeId, 'watched');
       }
       
       return newMap;

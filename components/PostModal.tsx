@@ -1227,7 +1227,20 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         const rewatchEpisodeIds = dbEpisodes
-          .filter(ep => episodeSelections?.get(ep.id) === 'rewatched')
+          .filter(ep => {
+            // Match by season/episode number since episodeSelections uses ShowHub IDs
+            // and dbEpisodes have database UUIDs
+            for (const [selId, state] of episodeSelections?.entries() || []) {
+              if (state === 'rewatched') {
+                // Find the original episode from preselectedEpisodes to get season/episode number
+                const originalEp = preselectedEpisodes?.find(e => e.id === selId);
+                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          })
           .map(ep => ep.id);
 
         const newPost = await createPost({
@@ -1401,7 +1414,19 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         const rewatchEpisodeIdsFallback = dbEpisodes
-          .filter(ep => episodeSelections?.get(ep.id) === 'rewatched')
+          .filter(ep => {
+            // Match by season/episode number since episodeSelections uses ShowHub IDs
+            // and dbEpisodes have database UUIDs
+            for (const [selId, state] of episodeSelections?.entries() || []) {
+              if (state === 'rewatched') {
+                const originalEp = preselectedEpisodes?.find(e => e.id === selId);
+                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          })
           .map(ep => ep.id);
 
         const newPost = await createPost({

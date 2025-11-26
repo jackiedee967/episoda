@@ -7,7 +7,7 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import FadeInImage from './FadeInImage';
 import RewatchIcon from './RewatchIcon';
 
-export type EpisodeSelectionState = 'none' | 'watched' | 'rewatched';
+export type EpisodeSelectionState = 'none' | 'watched' | 'rewatched' | 'unselected';
 
 interface EpisodeListCardProps {
   episodeNumber: string;
@@ -55,14 +55,16 @@ export default function EpisodeListCard({
   };
 
   const effectiveState: EpisodeSelectionState = selectionState ?? (isSelected || isLogged ? 'watched' : 'none');
+  const isUnselected = effectiveState === 'unselected';
   const isWatched = effectiveState === 'watched';
   const isRewatched = effectiveState === 'rewatched';
-  const hasSelection = isWatched || isRewatched;
+  const hasSelection = (isWatched || isRewatched) && !isUnselected;
   
   const getCardBorderColor = () => {
     if (theme === 'light') {
       return hasSelection ? tokens.colors.tabStroke2 : tokens.colors.grey2;
     }
+    if (isUnselected) return tokens.colors.cardStroke;
     if (isRewatched) return tokens.colors.tabStroke2;
     if (isWatched) return tokens.colors.greenHighlight;
     return tokens.colors.cardStroke;
