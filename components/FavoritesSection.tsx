@@ -21,6 +21,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { useData } from '@/contexts/DataContext';
 import { searchShows, TraktShow } from '@/services/trakt';
 import { ensureShowId } from '@/services/showRegistry';
+import { saveShow } from '@/services/showDatabase';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import PlaylistModal from '@/components/PlaylistModal';

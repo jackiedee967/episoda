@@ -24,6 +24,7 @@ import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
 import { searchShows, getShowSeasons, getSeasonEpisodes, TraktShow, TraktSeason, TraktEpisode } from '@/services/trakt';
 import { saveShow, saveEpisode, getShowByTraktId, getShowById } from '@/services/showDatabase';
+import { ensureShowId } from '@/services/showRegistry';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import EpisodeListCard from '@/components/EpisodeListCard';
 import { ChevronUp, ChevronDown, Star } from 'lucide-react-native';
@@ -796,11 +797,21 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   const handleShowSelect = async (show: Show, traktShow: TraktShow) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedShow(show);
-    setSelectedTraktShow(traktShow);
     setIsFetchingEpisodes(true);
     
     try {
+      // BULLETPROOF: Ensure show is saved to database and get valid UUID
+      const guaranteedShowId = await ensureShowId({
+        traktId: traktShow.ids.trakt,
+        traktShow,
+      });
+      console.log('✅ PostModal: Guaranteed show ID:', guaranteedShowId);
+      
+      // Update show with the guaranteed database ID
+      const showWithValidId = { ...show, id: guaranteedShowId };
+      setSelectedShow(showWithValidId);
+      setSelectedTraktShow(traktShow);
+      
       const traktId = traktShow.ids.trakt;
       const showMappersModule = await import('@/services/showMappers');
       const traktModule = await import('@/services/trakt');
@@ -811,12 +822,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       const { data: dbEpisodes } = await supabase
         .from('episodes')
         .select('*')
-        .eq('show_id', show.id);
+        .eq('show_id', guaranteedShowId);
       
       if (dbEpisodes && dbEpisodes.length > 0) {
         console.log(`⚡ Found ${dbEpisodes.length} cached episodes, fetching ALL from Trakt for complete list...`);
         
-        const watchedKeys = await getWatchedEpisodeKeys(show.id);
+        const watchedKeys = await getWatchedEpisodeKeys(guaranteedShowId);
         const seasonsData = await getShowSeasons(traktId);
         const traktEpsMap = new Map<string, TraktEpisode>();
         
@@ -832,8 +843,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         const seasonMap = new Map<number, Episode[]>();
         
         for (const episode of firstSeasonEpisodes) {
-          const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-          const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+          const mappedEpisode = mapTraktEpisodeToEpisode(episode, guaranteedShowId, null);
+          const episodeKey = `${guaranteedShowId}-${episode.season}-${episode.number}`;
           
           if (!seasonMap.has(episode.season)) {
             seasonMap.set(episode.season, []);
@@ -866,7 +877,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         setStep('selectEpisodes');
         
         const remainingSeasons = seasonsData.filter(s => s.number > 0 && s.number !== firstSeason?.number);
-        console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${show.title}...`);
+        console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${showWithValidId.title}...`);
         if (remainingSeasons.length > 0) {
           Promise.all(
             remainingSeasons.map(season => 
@@ -882,8 +893,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             allEpisodesData.forEach((episodesData, idx) => {
               const season = remainingSeasons[idx];
               episodesData.forEach(episode => {
-                const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-                const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+                const mappedEpisode = mapTraktEpisodeToEpisode(episode, guaranteedShowId, null);
+                const episodeKey = `${guaranteedShowId}-${episode.season}-${episode.number}`;
                 
                 if (!updatedSeasonMap.has(episode.season)) {
                   updatedSeasonMap.set(episode.season, []);
@@ -918,7 +929,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       
       console.log('📡 Fetching episodes from Trakt API...');
       const seasonsData = await getShowSeasons(traktId);
-      const watchedKeys = await getWatchedEpisodeKeys(show.id);
+      const watchedKeys = await getWatchedEpisodeKeys(guaranteedShowId);
       
       const seasonMap = new Map<number, Episode[]>();
       const traktEpsMap = new Map<string, TraktEpisode>();
@@ -928,8 +939,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         const episodesData = await getSeasonEpisodes(traktId, firstSeason.number);
         
         for (const episode of episodesData) {
-          const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-          const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+          const mappedEpisode = mapTraktEpisodeToEpisode(episode, guaranteedShowId, null);
+          const episodeKey = `${guaranteedShowId}-${episode.season}-${episode.number}`;
           
           if (!seasonMap.has(episode.season)) {
             seasonMap.set(episode.season, []);
@@ -958,7 +969,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       setStep('selectEpisodes');
       
       const remainingSeasons = seasonsData.filter(s => s.number > 0 && s.number !== firstSeason?.number);
-      console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${show.title}...`);
+      console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${showWithValidId.title}...`);
       if (remainingSeasons.length > 0) {
         Promise.all(
           remainingSeasons.map(season => 
@@ -974,8 +985,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           allEpisodesData.forEach((episodesData, idx) => {
             const season = remainingSeasons[idx];
             episodesData.forEach(episode => {
-              const mappedEpisode = mapTraktEpisodeToEpisode(episode, show.id, null);
-              const episodeKey = `${show.id}-${episode.season}-${episode.number}`;
+              const mappedEpisode = mapTraktEpisodeToEpisode(episode, guaranteedShowId, null);
+              const episodeKey = `${guaranteedShowId}-${episode.season}-${episode.number}`;
               
               if (!updatedSeasonMap.has(episode.season)) {
                 updatedSeasonMap.set(episode.season, []);
