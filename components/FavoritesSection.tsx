@@ -717,12 +717,14 @@ const styles = StyleSheet.create({
   },
   showsList: {
     flex: 1,
+    minHeight: 300,
   },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
     gap: 12,
+    minHeight: 300,
   },
   loadingText: {
     ...tokens.typography.p1,
