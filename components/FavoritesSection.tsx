@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    ...tokens.typography.titleL,
+    ...tokens.typography.subtitle,
     color: tokens.colors.black,
   },
   closeButton: {
@@ -689,11 +689,13 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.colors.cardBackground,
+    backgroundColor: tokens.colors.almostWhite,
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: tokens.colors.grey2,
+    paddingHorizontal: 16,
+    height: 46,
+    gap: 12,
     marginBottom: 16,
   },
   searchInput: {
