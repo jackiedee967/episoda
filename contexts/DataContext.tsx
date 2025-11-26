@@ -1535,11 +1535,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       console.log('📤 Inserting post with payload:', insertPayload);
         
-      const { data, error } = await supabase
+      let { data, error } = await (supabase as any)
         .from('posts')
         .insert(insertPayload)
         .select()
         .single();
+
+      // Handle Supabase schema cache issue for rewatch_episode_ids column
+      if (error && error.code === 'PGRST204' && error.message?.includes('rewatch_episode_ids')) {
+        console.warn('⚠️ Schema cache issue for rewatch_episode_ids - retrying without it...');
+        const { rewatch_episode_ids, ...payloadWithoutRewatch } = insertPayload;
+        const retryResult = await supabase
+          .from('posts')
+          .insert(payloadWithoutRewatch)
+          .select()
+          .single();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) {
         console.error('❌ FAILED TO SAVE POST TO SUPABASE:', error);
@@ -1575,9 +1588,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
           is_rewatch: rewatchEpisodeIds.includes(episodeId),
         }));
 
-        await supabase
+        const { error: whError } = await (supabase as any)
           .from('watch_history')
           .insert(watchHistoryEntries);
+        
+        // Handle schema cache issue for is_rewatch column
+        if (whError && whError.code === 'PGRST204' && whError.message?.includes('is_rewatch')) {
+          console.warn('⚠️ Schema cache issue for is_rewatch - retrying without it...');
+          const entriesWithoutRewatch = episodeIds.map(episodeId => ({
+            user_id: user.id,
+            show_id: postData.show.id,
+            episode_id: episodeId,
+          }));
+          await supabase.from('watch_history').insert(entriesWithoutRewatch);
+        }
       }
 
       // Update profile stats

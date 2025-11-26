@@ -927,13 +927,18 @@ export default function ShowHub() {
   const toggleEpisodeSelection = (episodeId: string) => {
     setEpisodeSelections(prev => {
       const newMap = new Map(prev);
-      const currentState = newMap.get(episodeId) || 'none';
+      const mapState = newMap.get(episodeId);
+      const isLogged = loggedEpisodeIds.has(episodeId);
+      
+      // For logged episodes not in map, treat as 'watched' (their displayed state)
+      const currentState = mapState || (isLogged ? 'watched' : 'none');
       
       if (currentState === 'none') {
         newMap.set(episodeId, 'watched');
       } else if (currentState === 'watched') {
         newMap.set(episodeId, 'rewatched');
       } else {
+        // 'rewatched' -> delete from map (goes back to none/unselected)
         newMap.delete(episodeId);
       }
       
