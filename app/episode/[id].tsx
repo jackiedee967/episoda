@@ -30,7 +30,8 @@ import { Star } from 'lucide-react-native';
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { getShowColorScheme } from '@/utils/showColors';
 import FadeInImage from '@/components/FadeInImage';
-import { getEpisode as getTVMazeEpisode } from '@/services/tvmaze';
+import { getEpisode as getTVMazeEpisode, getShowByImdbId, getShowByTvdbId, searchShowByName } from '@/services/tvmaze';
+import { getShowDetails } from '@/services/trakt';
 
 type TabKey = 'friends' | 'all';
 
@@ -97,28 +98,128 @@ export default function EpisodeHub() {
           return;
         }
 
-        // If thumbnail is missing and we have TVMaze ID, try to fetch it
+        // Robust thumbnail fetching with multiple fallback strategies
         let thumbnailUrl = episodeData.thumbnail_url;
-        if (!thumbnailUrl && showData.tvmaze_id) {
-          console.log('🖼️ Fetching missing thumbnail from TVMaze...');
-          try {
-            const tvmazeEpisode = await getTVMazeEpisode(
-              showData.tvmaze_id, 
-              episodeData.season_number, 
-              episodeData.episode_number
-            );
-            thumbnailUrl = tvmazeEpisode?.image?.original || null;
-            
-            // Update database with fetched thumbnail
-            if (thumbnailUrl) {
-              console.log('✅ Updating episode with thumbnail:', thumbnailUrl);
-              await supabase
-                .from('episodes')
-                .update({ thumbnail_url: thumbnailUrl })
-                .eq('id', episodeData.id);
+        if (!thumbnailUrl) {
+          console.log('🖼️ Fetching missing episode thumbnail...');
+          let tvmazeShowId = showData.tvmaze_id;
+          
+          // Strategy 1: Use existing TVMaze ID
+          if (tvmazeShowId) {
+            console.log('📍 Strategy 1: Using stored TVMaze ID:', tvmazeShowId);
+          }
+          
+          // Strategy 2: Look up TVMaze by IMDb ID
+          if (!tvmazeShowId && showData.imdb_id) {
+            console.log('📍 Strategy 2: Looking up TVMaze by IMDb ID:', showData.imdb_id);
+            try {
+              const tvmazeShow = await getShowByImdbId(showData.imdb_id);
+              if (tvmazeShow) {
+                tvmazeShowId = tvmazeShow.id;
+                // Save TVMaze ID to database for future use
+                await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+                console.log('✅ Found and saved TVMaze ID:', tvmazeShowId);
+              }
+            } catch (err) {
+              console.log('⚠️ IMDb lookup failed:', err);
             }
-          } catch (err) {
-            console.error('Failed to fetch thumbnail from TVMaze:', err);
+          }
+          
+          // Strategy 3: Look up TVMaze by TVDB ID
+          if (!tvmazeShowId && showData.tvdb_id) {
+            console.log('📍 Strategy 3: Looking up TVMaze by TVDB ID:', showData.tvdb_id);
+            try {
+              const tvmazeShow = await getShowByTvdbId(showData.tvdb_id);
+              if (tvmazeShow) {
+                tvmazeShowId = tvmazeShow.id;
+                await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+                console.log('✅ Found and saved TVMaze ID:', tvmazeShowId);
+              }
+            } catch (err) {
+              console.log('⚠️ TVDB lookup failed:', err);
+            }
+          }
+          
+          // Strategy 4: Get IDs from Trakt API and try again
+          if (!tvmazeShowId && showData.trakt_id) {
+            console.log('📍 Strategy 4: Fetching IDs from Trakt API...');
+            try {
+              const traktShow = await getShowDetails(showData.trakt_id);
+              const imdbId = traktShow?.ids?.imdb;
+              const tvdbId = traktShow?.ids?.tvdb;
+              
+              // Try IMDb lookup
+              if (imdbId) {
+                const tvmazeShow = await getShowByImdbId(imdbId);
+                if (tvmazeShow) {
+                  tvmazeShowId = tvmazeShow.id;
+                  // Save all IDs to database
+                  await supabase.from('shows').update({ 
+                    tvmaze_id: tvmazeShowId,
+                    imdb_id: imdbId,
+                    tvdb_id: tvdbId || showData.tvdb_id 
+                  }).eq('id', showData.id);
+                  console.log('✅ Found TVMaze ID via Trakt IMDb:', tvmazeShowId);
+                }
+              }
+              
+              // Try TVDB lookup if IMDb failed
+              if (!tvmazeShowId && tvdbId) {
+                const tvmazeShow = await getShowByTvdbId(tvdbId);
+                if (tvmazeShow) {
+                  tvmazeShowId = tvmazeShow.id;
+                  await supabase.from('shows').update({ 
+                    tvmaze_id: tvmazeShowId,
+                    tvdb_id: tvdbId 
+                  }).eq('id', showData.id);
+                  console.log('✅ Found TVMaze ID via Trakt TVDB:', tvmazeShowId);
+                }
+              }
+            } catch (err) {
+              console.log('⚠️ Trakt lookup failed:', err);
+            }
+          }
+          
+          // Strategy 5: Search TVMaze by show name as last resort
+          if (!tvmazeShowId && showData.title) {
+            console.log('📍 Strategy 5: Searching TVMaze by title:', showData.title);
+            try {
+              const tvmazeShow = await searchShowByName(showData.title);
+              if (tvmazeShow) {
+                tvmazeShowId = tvmazeShow.id;
+                await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+                console.log('✅ Found TVMaze ID by name search:', tvmazeShowId);
+              }
+            } catch (err) {
+              console.log('⚠️ Name search failed:', err);
+            }
+          }
+          
+          // Now fetch the episode thumbnail using the resolved TVMaze ID
+          if (tvmazeShowId) {
+            try {
+              const tvmazeEpisode = await getTVMazeEpisode(
+                tvmazeShowId, 
+                episodeData.season_number, 
+                episodeData.episode_number
+              );
+              thumbnailUrl = tvmazeEpisode?.image?.original || null;
+              
+              // Update database with fetched thumbnail
+              if (thumbnailUrl) {
+                console.log('✅ Got episode thumbnail:', thumbnailUrl);
+                await supabase
+                  .from('episodes')
+                  .update({ thumbnail_url: thumbnailUrl })
+                  .eq('id', episodeData.id);
+              } else {
+                console.log('⚠️ Episode has no thumbnail on TVMaze');
+              }
+            } catch (err) {
+              console.error('❌ Failed to fetch thumbnail from TVMaze:', err);
+            }
+          } else {
+            console.log('⚠️ Could not resolve TVMaze ID - no thumbnail available');
           }
         }
 
@@ -191,29 +292,69 @@ export default function EpisodeHub() {
         return;
       }
 
-      // If thumbnail is missing and we have TVMaze ID, try to fetch it
+      // Robust thumbnail fetching with multiple fallback strategies
       let thumbnailUrl = episodeData.thumbnail_url;
-      if (!thumbnailUrl && showData.tvmaze_id) {
-        try {
-          const tvmazeEpisode = await getTVMazeEpisode(
-            showData.tvmaze_id, 
-            episodeData.season_number, 
-            episodeData.episode_number
-          );
-          thumbnailUrl = tvmazeEpisode?.image?.original || null;
-          
-          if (thumbnailUrl) {
-            await supabase
-              .from('episodes')
-              .update({ thumbnail_url: thumbnailUrl })
-              .eq('id', episodeData.id);
-          }
-        } catch (err) {
-          console.error('Failed to fetch thumbnail from TVMaze:', err);
+      if (!thumbnailUrl) {
+        let tvmazeShowId = showData.tvmaze_id;
+        
+        // Try multiple strategies to resolve TVMaze ID
+        if (!tvmazeShowId && showData.imdb_id) {
+          try {
+            const tvmazeShow = await getShowByImdbId(showData.imdb_id);
+            if (tvmazeShow) {
+              tvmazeShowId = tvmazeShow.id;
+              await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+            }
+          } catch (err) { /* ignore */ }
+        }
+        
+        if (!tvmazeShowId && showData.tvdb_id) {
+          try {
+            const tvmazeShow = await getShowByTvdbId(showData.tvdb_id);
+            if (tvmazeShow) {
+              tvmazeShowId = tvmazeShow.id;
+              await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+            }
+          } catch (err) { /* ignore */ }
+        }
+        
+        if (!tvmazeShowId && showData.trakt_id) {
+          try {
+            const traktShow = await getShowDetails(showData.trakt_id);
+            const imdbId = traktShow?.ids?.imdb;
+            if (imdbId) {
+              const tvmazeShow = await getShowByImdbId(imdbId);
+              if (tvmazeShow) {
+                tvmazeShowId = tvmazeShow.id;
+                await supabase.from('shows').update({ 
+                  tvmaze_id: tvmazeShowId, imdb_id: imdbId 
+                }).eq('id', showData.id);
+              }
+            }
+          } catch (err) { /* ignore */ }
+        }
+        
+        if (!tvmazeShowId && showData.title) {
+          try {
+            const tvmazeShow = await searchShowByName(showData.title);
+            if (tvmazeShow) {
+              tvmazeShowId = tvmazeShow.id;
+              await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+            }
+          } catch (err) { /* ignore */ }
+        }
+        
+        if (tvmazeShowId) {
+          try {
+            const tvmazeEpisode = await getTVMazeEpisode(tvmazeShowId, episodeData.season_number, episodeData.episode_number);
+            thumbnailUrl = tvmazeEpisode?.image?.original || null;
+            if (thumbnailUrl) {
+              await supabase.from('episodes').update({ thumbnail_url: thumbnailUrl }).eq('id', episodeData.id);
+            }
+          } catch (err) { /* ignore */ }
         }
       }
 
-      // Transform episode data
       const episodeObj: Episode = {
         id: episodeData.id,
         showId: episodeData.show_id,
@@ -270,17 +411,53 @@ export default function EpisodeHub() {
 
           if (showError || !showData) return;
 
+          // Robust thumbnail fetching with multiple fallback strategies (silent)
           let thumbnailUrl = episodeData.thumbnail_url;
-          if (!thumbnailUrl && showData.tvmaze_id) {
-            try {
-              const tvmazeEpisode = await getTVMazeEpisode(
-                showData.tvmaze_id, 
-                episodeData.season_number, 
-                episodeData.episode_number
-              );
-              thumbnailUrl = tvmazeEpisode?.image?.original || null;
-            } catch (err) {
-              console.error('Failed to fetch thumbnail:', err);
+          if (!thumbnailUrl) {
+            let tvmazeShowId = showData.tvmaze_id;
+            
+            if (!tvmazeShowId && showData.imdb_id) {
+              try {
+                const tvmazeShow = await getShowByImdbId(showData.imdb_id);
+                if (tvmazeShow) {
+                  tvmazeShowId = tvmazeShow.id;
+                  await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+                }
+              } catch (err) { /* ignore */ }
+            }
+            
+            if (!tvmazeShowId && showData.trakt_id) {
+              try {
+                const traktShow = await getShowDetails(showData.trakt_id);
+                const imdbId = traktShow?.ids?.imdb;
+                if (imdbId) {
+                  const tvmazeShow = await getShowByImdbId(imdbId);
+                  if (tvmazeShow) {
+                    tvmazeShowId = tvmazeShow.id;
+                    await supabase.from('shows').update({ tvmaze_id: tvmazeShowId, imdb_id: imdbId }).eq('id', showData.id);
+                  }
+                }
+              } catch (err) { /* ignore */ }
+            }
+            
+            if (!tvmazeShowId && showData.title) {
+              try {
+                const tvmazeShow = await searchShowByName(showData.title);
+                if (tvmazeShow) {
+                  tvmazeShowId = tvmazeShow.id;
+                  await supabase.from('shows').update({ tvmaze_id: tvmazeShowId }).eq('id', showData.id);
+                }
+              } catch (err) { /* ignore */ }
+            }
+            
+            if (tvmazeShowId) {
+              try {
+                const tvmazeEpisode = await getTVMazeEpisode(tvmazeShowId, episodeData.season_number, episodeData.episode_number);
+                thumbnailUrl = tvmazeEpisode?.image?.original || null;
+                if (thumbnailUrl) {
+                  await supabase.from('episodes').update({ thumbnail_url: thumbnailUrl }).eq('id', episodeData.id);
+                }
+              } catch (err) { /* ignore */ }
             }
           }
 
