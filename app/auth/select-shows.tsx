@@ -20,7 +20,7 @@ import tokens from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import * as Haptics from 'expo-haptics';
-import { searchShows, TraktShow, getTrendingShows, TraktSearchResult } from '@/services/trakt';
+import { searchShows, TraktShow, getTrendingShows, TraktSearchResult, getShowsByGenre } from '@/services/trakt';
 import { mapTraktShowToShow } from '@/services/showMappers';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { searchShowByName, getPosterUrl as getTMDBPosterUrl } from '@/services/tmdb';
@@ -179,10 +179,12 @@ export default function SelectShowsScreen() {
     setIsSearching(true);
     
     try {
-      const response = await searchShows(genre);
+      // Use the proper genre API endpoint which returns shows ordered by popularity
+      const genreSlug = genre.toLowerCase().replace(/\s+/g, '-');
+      const response = await getShowsByGenre(genreSlug, { limit: 30 });
+      
       const mappedShows: ShowWithSelection[] = await Promise.all(
-        response.results.slice(0, 30).map(async (result: TraktSearchResult) => {
-          const traktShow = result.show;
+        response.shows.map(async (traktShow: TraktShow) => {
           const show = mapTraktShowToShow(traktShow);
           const tmdbPoster = await fetchPosterForTraktShow(traktShow);
           const poster = getPosterUrl(tmdbPoster, show.title);
