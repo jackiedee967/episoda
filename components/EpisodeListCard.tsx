@@ -61,17 +61,23 @@ export default function EpisodeListCard({
   const hasSelection = (isWatched || isRewatched) && !isUnselected;
   
   const getCardBorderColor = () => {
-    if (theme === 'light') {
-      return hasSelection ? tokens.colors.tabStroke2 : tokens.colors.grey2;
-    }
-    if (isUnselected) return tokens.colors.cardStroke;
+    if (isUnselected) return theme === 'light' ? tokens.colors.grey2 : tokens.colors.cardStroke;
     if (isRewatched) return tokens.colors.tabStroke2;
     if (isWatched) return tokens.colors.greenHighlight;
-    return tokens.colors.cardStroke;
+    return theme === 'light' ? tokens.colors.grey2 : tokens.colors.cardStroke;
+  };
+  
+  const getCardBackgroundColor = () => {
+    const baseColor = theme === 'light' ? tokens.colors.almostWhite : tokens.colors.cardBackground;
+    if (isUnselected) return baseColor;
+    // Use rgba for 10% opacity backgrounds - greenHighlight is #8bfc76, tabStroke2 is #9334e9
+    if (isRewatched) return 'rgba(147, 52, 233, 0.1)'; // tabStroke2 at 10% opacity
+    if (isWatched) return 'rgba(139, 252, 118, 0.1)'; // greenHighlight at 10% opacity
+    return baseColor;
   };
     
   const cardBorderColor = getCardBorderColor();
-  const cardBackgroundColor = theme === 'light' ? tokens.colors.almostWhite : tokens.colors.cardBackground;
+  const cardBackgroundColor = getCardBackgroundColor();
   const titleColor = theme === 'light' ? tokens.colors.black : tokens.colors.pureWhite;
   const descriptionColor = theme === 'light' ? tokens.colors.grey3 : tokens.colors.grey2;
   
@@ -80,20 +86,19 @@ export default function EpisodeListCard({
   const tagTextColor = theme === 'light' ? tokens.colors.pureWhite : tokens.colors.tabStroke2;
   
   const getToggleBorderColor = () => {
-    if (theme === 'light') return tokens.colors.tabStroke2;
     if (isRewatched) return tokens.colors.tabStroke2;
-    return tokens.colors.greenHighlight;
+    if (isWatched) return tokens.colors.greenHighlight;
+    return theme === 'light' ? tokens.colors.grey2 : tokens.colors.greenHighlight;
   };
   
   const getToggleBackgroundColor = () => {
     if (!hasSelection) return 'transparent';
-    if (theme === 'light') return tokens.colors.tabStroke2;
     if (isRewatched) return tokens.colors.tabStroke2;
     return tokens.colors.greenHighlight;
   };
   
   const getToggleIconColor = () => {
-    if (theme === 'light') return tokens.colors.pureWhite;
+    if (isRewatched) return tokens.colors.pureWhite;
     return tokens.colors.black;
   };
   
@@ -101,10 +106,12 @@ export default function EpisodeListCard({
   const toggleBackgroundColor = getToggleBackgroundColor();
   const toggleIconColor = getToggleIconColor();
 
+  const cardBorderWidth = hasSelection ? 1 : 0.5;
+
   return (
     <Pressable 
       onPress={handleCardPress}
-      style={[styles.episodeCard, { borderColor: cardBorderColor, backgroundColor: cardBackgroundColor }]}
+      style={[styles.episodeCard, { borderColor: cardBorderColor, backgroundColor: cardBackgroundColor, borderWidth: cardBorderWidth }]}
     >
       {thumbnail ? (
         <FadeInImage 
