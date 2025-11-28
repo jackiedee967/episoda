@@ -320,6 +320,8 @@ function getBaseServiceName(providerName: string): string {
     .replace(/\s+prime\s+video\s+channel$/i, '')
     .replace(/\s+channel$/i, '')
     .replace(/\s*(via|with|on)\s+.+$/i, '')
+    .replace(/\s+basic\s+with\s+ads$/i, '')
+    .replace(/\s+with\s+ads$/i, '')
     .replace(/\s+basic$/i, '')
     .replace(/\s+ads$/i, '')
     .replace(/\s+ad-supported$/i, '')
@@ -397,20 +399,24 @@ export async function getWatchProviders(tmdbId: number, countryCode: string = 'U
     }
 
     const seenBaseNames = new Set<string>();
+    const seenLogoPaths = new Set<string>();
     const finalProviders: WatchProvider[] = [];
 
     for (const provider of mainProviders) {
       const baseName = getBaseServiceName(provider.provider_name);
-      if (!seenBaseNames.has(baseName)) {
+      // Deduplicate by base name OR by logo path (some variants have same logo)
+      if (!seenBaseNames.has(baseName) && !seenLogoPaths.has(provider.logo_path)) {
         seenBaseNames.add(baseName);
+        seenLogoPaths.add(provider.logo_path);
         finalProviders.push(provider);
       }
     }
 
     for (const provider of channelAddons) {
       const baseName = getBaseServiceName(provider.provider_name);
-      if (!seenBaseNames.has(baseName)) {
+      if (!seenBaseNames.has(baseName) && !seenLogoPaths.has(provider.logo_path)) {
         seenBaseNames.add(baseName);
+        seenLogoPaths.add(provider.logo_path);
         finalProviders.push(provider);
       }
     }
