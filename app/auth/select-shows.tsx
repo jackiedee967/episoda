@@ -447,17 +447,18 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   genreScroll: {
-    maxHeight: 50,
     marginBottom: 16,
+    flexGrow: 0,
   },
   genreScrollContent: {
     gap: 10,
     paddingRight: 20,
+    alignItems: 'center',
   },
   genreButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
     backgroundColor: tokens.colors.cardBackground,
