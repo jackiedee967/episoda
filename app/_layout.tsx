@@ -155,9 +155,17 @@ export default function RootLayout() {
     if (loaded) {
       SplashScreen.hideAsync();
     }
+    // Fallback for web - hide splash after timeout even if fonts not fully loaded
+    if (Platform.OS === 'web') {
+      const timeout = setTimeout(() => {
+        SplashScreen.hideAsync();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
   }, [loaded]);
 
-  if (!loaded) {
+  // On web, don't block render waiting for fonts
+  if (!loaded && Platform.OS !== 'web') {
     return null;
   }
 

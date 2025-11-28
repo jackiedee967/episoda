@@ -38,10 +38,10 @@ export default function SplashScreen() {
   };
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: '#7BA8FF' }]}>
       <ImageBackground
         source={{ uri: welcomeBackground }}
-        style={styles.backgroundImage}
+        style={[styles.backgroundImage, { backgroundColor: '#7BA8FF' }]}
         resizeMode="stretch"
       >
         {/* Top decorative images */}
