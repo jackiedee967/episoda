@@ -1175,13 +1175,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: tokens.colors.greenHighlight,
-    backgroundColor: tokens.colors.greenHighlight,
+    backgroundColor: tokens.colors.cardBackground,
   },
   logEpisodeButtonText: {
     ...tokens.typography.p3M,
-    color: tokens.colors.black,
+    color: tokens.colors.pureWhite,
   },
   
   // You May Know - exact specs
