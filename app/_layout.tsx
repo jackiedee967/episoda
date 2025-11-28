@@ -229,6 +229,18 @@ export default function RootLayout() {
                 }} 
               />
               <Stack.Screen 
+                name="auth/display-name" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
+                name="auth/select-shows" 
+                options={{ 
+                  headerShown: false,
+                }} 
+              />
+              <Stack.Screen 
                 name="show/[id]" 
                 options={{ 
                   headerShown: true,
