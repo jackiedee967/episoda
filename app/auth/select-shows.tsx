@@ -42,7 +42,9 @@ async function fetchPosterForTraktShow(traktShow: TraktShow): Promise<string | n
 const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const POSTER_WIDTH = (SCREEN_WIDTH - 60) / 3;
+const GRID_PADDING = 20;
+const POSTER_GAP = 10;
+const POSTER_WIDTH = (SCREEN_WIDTH - (GRID_PADDING * 2) - (POSTER_GAP * 2)) / 3;
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5;
 
 export const options = {
@@ -489,8 +491,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   gridRow: {
-    justifyContent: 'space-between',
-    marginBottom: 10,
+    gap: POSTER_GAP,
+    marginBottom: POSTER_GAP,
   },
   posterContainer: {
     width: POSTER_WIDTH,
