@@ -235,6 +235,7 @@ export default function SelectShowsScreen() {
           title: '',
           body: '',
           tags: [],
+          isSpoiler: false,
           user: {
             id: user.id,
             username: currentUser?.username || '',
@@ -448,20 +449,23 @@ const styles = StyleSheet.create({
   },
   genreScroll: {
     marginBottom: 16,
-    flexGrow: 0,
+    minHeight: 44,
+    maxHeight: 44,
   },
   genreScrollContent: {
     gap: 10,
     paddingRight: 20,
-    alignItems: 'center',
+    paddingVertical: 2,
   },
   genreButton: {
+    height: 40,
     paddingHorizontal: 16,
-    paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: tokens.colors.cardStroke,
     backgroundColor: tokens.colors.cardBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   genreButtonSelected: {
     backgroundColor: tokens.colors.greenHighlight,
