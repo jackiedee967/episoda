@@ -85,8 +85,11 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadFavorites = useCallback(async () => {
+    console.log('📚 FavoritesSection loadFavorites called with userId:', userId);
+    
     // Guard against empty userId to prevent "invalid input syntax for type uuid" error
     if (!userId || userId.trim() === '') {
+      console.log('⚠️ FavoritesSection: Empty userId, skipping load');
       setFavorites([]);
       setLoading(false);
       setInitialLoadComplete(true);
@@ -96,24 +99,44 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     
     try {
       setLoading(true);
+      console.log('📚 FavoritesSection: Fetching favorites for user:', userId);
       
       // Use direct table query with 'as any' to bypass TypeScript schema cache
-      const { data: profileData, error: profileError } = await (supabase as any)
-        .from('profiles')
-        .select('favorite_shows')
-        .eq('user_id', userId)
-        .single();
-
-      if (profileError) {
-        console.error('Error loading favorites from profile:', profileError);
+      let profileData, profileError;
+      try {
+        const result = await (supabase as any)
+          .from('profiles')
+          .select('favorite_shows')
+          .eq('user_id', userId)
+          .single();
+        profileData = result.data;
+        profileError = result.error;
+        console.log('📚 FavoritesSection: Query completed, error:', profileError);
+      } catch (queryErr) {
+        console.error('❌ FavoritesSection: Query exception:', queryErr);
         setFavorites([]);
+        setShowSkeleton(false);
+        setInitialLoadComplete(true);
         return;
       }
 
+      if (profileError) {
+        console.error('❌ FavoritesSection: Error loading favorites from profile:', profileError);
+        setFavorites([]);
+        setShowSkeleton(false);
+        setInitialLoadComplete(true);
+        return;
+      }
+
+      console.log('📚 FavoritesSection: Profile data received:', profileData);
       const favoritesArray = profileData?.favorite_shows || [];
+      console.log('📚 FavoritesSection: Favorites array:', favoritesArray);
       
       if (favoritesArray.length === 0) {
+        console.log('📚 FavoritesSection: No favorites found, showing empty state');
         setFavorites([]);
+        setShowSkeleton(false);
+        setInitialLoadComplete(true);
         return;
       }
       
@@ -523,15 +546,18 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const renderSkeleton = () => (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Favorites</Text>
-      <View style={styles.postersRow}>
+      <View style={styles.favoritesRow}>
         {[0, 1, 2].map((index) => (
-          <SkeletonBlock 
-            key={index}
-            width={108} 
-            height={140} 
-            borderRadius={8} 
-            style={styles.skeletonPoster}
-          />
+          <View key={index} style={styles.skeletonPoster}>
+            <View style={styles.skeletonInner}>
+              <SkeletonBlock 
+                width={200}
+                height={300}
+                borderRadius={14}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
         ))}
       </View>
     </View>
@@ -781,7 +807,12 @@ const styles = StyleSheet.create({
   skeletonPoster: {
     flex: 1,
     aspectRatio: 2 / 3,
-    height: undefined,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  skeletonInner: {
+    width: '100%',
+    height: '100%',
   },
   posterContainer: {
     position: 'relative',
