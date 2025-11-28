@@ -60,7 +60,7 @@ export default function FoundersWelcomeModal({ visible, onClose }: FoundersWelco
                 Thanks for being here with us at the start 💛
               </Text>
             </View>
-            <Button variant="secondary" onPress={handleExplore} fullWidth>
+            <Button variant="primary" onPress={handleExplore} fullWidth>
               Explore
             </Button>
           </ScrollView>
