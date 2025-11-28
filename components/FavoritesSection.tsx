@@ -85,6 +85,15 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadFavorites = useCallback(async () => {
+    // Guard against empty userId to prevent "invalid input syntax for type uuid" error
+    if (!userId || userId.trim() === '') {
+      setFavorites([]);
+      setLoading(false);
+      setInitialLoadComplete(true);
+      setShowSkeleton(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       
