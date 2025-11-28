@@ -92,8 +92,14 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       console.log('⚠️ FavoritesSection: Empty userId, skipping load');
       setFavorites([]);
       setLoading(false);
-      setInitialLoadComplete(true);
       setShowSkeleton(false);
+      // Trigger fade-in animation
+      Animated.timing(contentFadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      setInitialLoadComplete(true);
       return;
     }
     
@@ -116,6 +122,12 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         console.error('❌ FavoritesSection: Query exception:', queryErr);
         setFavorites([]);
         setShowSkeleton(false);
+        // Trigger fade-in animation
+        Animated.timing(contentFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
         setInitialLoadComplete(true);
         return;
       }
@@ -124,6 +136,12 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         console.error('❌ FavoritesSection: Error loading favorites from profile:', profileError);
         setFavorites([]);
         setShowSkeleton(false);
+        // Trigger fade-in animation
+        Animated.timing(contentFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
         setInitialLoadComplete(true);
         return;
       }
@@ -136,6 +154,12 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         console.log('📚 FavoritesSection: No favorites found, showing empty state');
         setFavorites([]);
         setShowSkeleton(false);
+        // Trigger fade-in animation
+        Animated.timing(contentFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
         setInitialLoadComplete(true);
         return;
       }
