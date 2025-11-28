@@ -125,6 +125,7 @@ export default function OnboardingCarouselScreen() {
     <ImageBackground
       source={backgroundImage}
       style={styles.container}
+      imageStyle={StyleSheet.absoluteFillObject}
       resizeMode="stretch"
     >
         <FlatList
