@@ -5,7 +5,7 @@ const getTMDBApiKey = () => {
   const key = 
     process.env.TMDB_API_KEY ||
     Constants.expoConfig?.extra?.tmdbApiKey ||
-    Constants.manifest?.extra?.tmdbApiKey ||
+    (Constants.manifest as any)?.extra?.tmdbApiKey ||
     Constants.manifest2?.extra?.expoClient?.extra?.tmdbApiKey ||
     '';
   
@@ -323,9 +323,36 @@ function getBaseServiceName(providerName: string): string {
     .replace(/\s+basic$/i, '')
     .replace(/\s+ads$/i, '')
     .replace(/\s+ad-supported$/i, '')
+    .replace(/\s+with\s+showtime$/i, '')
+    .replace(/\s+essential$/i, '')
     .replace(/\+$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
+  
+  if (name.includes('paramount')) {
+    return 'paramount';
+  }
+  if (name.includes('peacock')) {
+    return 'peacock';
+  }
+  if (name.includes('hulu')) {
+    return 'hulu';
+  }
+  if (name.includes('max') || name.includes('hbo')) {
+    return 'max';
+  }
+  if (name.includes('disney')) {
+    return 'disney';
+  }
+  if (name.includes('netflix')) {
+    return 'netflix';
+  }
+  if (name.includes('amazon') || name.includes('prime video')) {
+    return 'amazon';
+  }
+  if (name.includes('apple tv')) {
+    return 'apple';
+  }
   
   return name;
 }

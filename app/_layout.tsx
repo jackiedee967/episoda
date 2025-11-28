@@ -33,7 +33,10 @@ import { SystemBars } from "react-native-edge-to-edge";
 import { colors } from "@/styles/commonStyles";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+// Skip on web to avoid blocking the viewport
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync();
+}
 
 function AuthNavigator() {
   const { session, user, isLoading, authReady, onboardingStatus } = useAuth();
@@ -41,12 +44,15 @@ function AuthNavigator() {
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (!navigationState?.key || isLoading || !authReady) {
+    // On web, skip navigationState.key check as it never populates during hydration
+    const isNavigationReady = Platform.OS === 'web' ? true : !!navigationState?.key;
+    
+    if (!isNavigationReady || isLoading || !authReady) {
       return;
     }
 
-    // Wait for router to mount segments before redirecting (prevents blank screen on web)
-    if (!segments.length) {
+    // On web, don't wait for segments - proceed with redirect immediately
+    if (Platform.OS !== 'web' && !segments.length) {
       return;
     }
 
@@ -152,15 +158,14 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    // On web, hide splash immediately since native splash doesn't apply
+    if (Platform.OS === 'web') {
+      SplashScreen.hideAsync();
+      return;
+    }
+    // On native, hide when fonts are loaded
     if (loaded) {
       SplashScreen.hideAsync();
-    }
-    // Fallback for web - hide splash after timeout even if fonts not fully loaded
-    if (Platform.OS === 'web') {
-      const timeout = setTimeout(() => {
-        SplashScreen.hideAsync();
-      }, 2000);
-      return () => clearTimeout(timeout);
     }
   }, [loaded]);
 
