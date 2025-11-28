@@ -5,6 +5,7 @@ import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
 import PlaylistModal from '@/components/PlaylistModal';
 import InviteFriendsModal from '@/components/InviteFriendsModal';
+import FoundersWelcomeModal from '@/components/FoundersWelcomeModal';
 import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
@@ -21,6 +22,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Post } from '@/types';
 import { getCommunityPosts } from '@/services/communityPosts';
 import { useAppUsageTracker } from '@/hooks/useAppUsageTracker';
+import { useFoundersWelcome } from '@/hooks/useFoundersWelcome';
 
 type SuggestedUser = User & {
   mutualFriends: Array<{
@@ -54,6 +56,10 @@ export default function HomeScreen() {
   
   // Track app usage for one-time invite modal
   const { shouldShowInviteModal, markInviteModalShown } = useAppUsageTracker();
+  
+  // Track founders welcome modal for first-time users
+  const { shouldShowFoundersModal, markFoundersModalShown } = useFoundersWelcome();
+  const [showFoundersModal, setShowFoundersModal] = useState(false);
 
   // Calculate poster dimensions dynamically to show exactly 2.5 posters
   const posterDimensions = useMemo(() => {
@@ -128,6 +134,13 @@ export default function HomeScreen() {
       setShowInviteModal(true);
     }
   }, [shouldShowInviteModal]);
+
+  // Show founders welcome modal for first-time users
+  useEffect(() => {
+    if (shouldShowFoundersModal) {
+      setShowFoundersModal(true);
+    }
+  }, [shouldShowFoundersModal]);
 
   // Fetch suggested users with mutual friends
   useEffect(() => {
@@ -986,6 +999,14 @@ export default function HomeScreen() {
               Alert.alert('Error', 'Failed to share.');
             }
           }
+        }}
+      />
+
+      <FoundersWelcomeModal
+        visible={showFoundersModal}
+        onClose={() => {
+          setShowFoundersModal(false);
+          markFoundersModalShown();
         }}
       />
     </View>

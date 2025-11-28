@@ -37,6 +37,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Rewatch Episode Tracking**: 3-click cycling for episode selection states (unselected → watched → rewatched → unselected) with visual indicators and database tracking.
 - **Account Management**: Account deletion and phone number change features.
 - **Invite Friends System**: Two-trigger invite modal for user acquisition.
+- **Founders Welcome Modal**: One-time welcome popup for first-time users featuring personalized message from founders Jasmine & Jackie, encouraging feedback and community engagement.
 
 ### System Design Choices
 - **Development vs Production**: Single Supabase production instance; recommendation for separate dev instance.
