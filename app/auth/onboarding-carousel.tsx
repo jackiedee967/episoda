@@ -6,22 +6,22 @@ import {
   FlatList,
   Dimensions,
   Pressable,
-  Image,
-  ImageBackground,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
+import { Asset } from 'expo-asset';
 
 const step1Image = require('../../assets/onboarding/step1.png');
 const step2Image = require('../../assets/onboarding/step2.png');
 const step3Image = require('../../assets/onboarding/step3.png');
 const step4Image = require('../../assets/onboarding/step4.png');
-const backgroundImage = require('../../assets/onboarding/background.jpg');
+const backgroundImage = Asset.fromModule(require('../../assets/onboarding/background.jpg')).uri;
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ONBOARDING_SLIDES = [
   {
@@ -108,7 +108,7 @@ export default function OnboardingCarouselScreen() {
           <Image
             source={item.image}
             style={styles.mockupImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </View>
         <View style={styles.textContainer}>
@@ -122,12 +122,12 @@ export default function OnboardingCarouselScreen() {
   const isLastSlide = currentIndex === ONBOARDING_SLIDES.length - 1;
 
   return (
-    <ImageBackground
-      source={backgroundImage}
-      style={styles.container}
-      imageStyle={StyleSheet.absoluteFillObject}
-      resizeMode="stretch"
-    >
+    <View style={styles.container}>
+        <Image
+          source={{ uri: backgroundImage }}
+          style={styles.backgroundImage}
+          contentFit="fill"
+        />
         <FlatList
           ref={flatListRef}
           data={ONBOARDING_SLIDES}
@@ -174,13 +174,22 @@ export default function OnboardingCarouselScreen() {
             </View>
           ) : null}
         </View>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  backgroundImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
   },
   slide: {
     width: SCREEN_WIDTH,
