@@ -55,6 +55,13 @@ module.exports = {
       "expo-dev-client",
       "react-native-edge-to-edge",
       [
+        "expo-notifications",
+        {
+          icon: "./assets/images/natively-dark.png",
+          color: "#A8FF00"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           ios: {

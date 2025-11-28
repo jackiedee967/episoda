@@ -255,7 +255,7 @@ export default function SelectShowsScreen() {
       }
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/(tabs)/' as any);
+      router.replace('/auth/notification-permission' as any);
     } catch (error) {
       console.error('Error saving initial shows:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

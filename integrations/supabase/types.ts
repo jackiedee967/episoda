@@ -459,6 +459,16 @@ export type Database = {
           is_admin: boolean
           created_at: string
           updated_at: string
+          expo_push_token: string | null
+          notification_preferences: {
+            likes: boolean
+            comments: boolean
+            follows: boolean
+            mentions: boolean
+            admin_announcements: boolean
+            friend_logs_watched_show: boolean
+            friend_logs_playlist_show: boolean
+          } | null
         }
         Insert: {
           user_id: string
@@ -473,6 +483,16 @@ export type Database = {
           is_admin?: boolean
           created_at?: string
           updated_at?: string
+          expo_push_token?: string | null
+          notification_preferences?: {
+            likes: boolean
+            comments: boolean
+            follows: boolean
+            mentions: boolean
+            admin_announcements: boolean
+            friend_logs_watched_show: boolean
+            friend_logs_playlist_show: boolean
+          } | null
         }
         Update: {
           user_id?: string
@@ -487,6 +507,16 @@ export type Database = {
           is_admin?: boolean
           created_at?: string
           updated_at?: string
+          expo_push_token?: string | null
+          notification_preferences?: {
+            likes: boolean
+            comments: boolean
+            follows: boolean
+            mentions: boolean
+            admin_announcements: boolean
+            friend_logs_watched_show: boolean
+            friend_logs_playlist_show: boolean
+          } | null
         }
         Relationships: []
       }
