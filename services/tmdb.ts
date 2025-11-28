@@ -313,18 +313,34 @@ export function getProviderLogoUrl(logoPath: string): string {
 }
 
 function getBaseServiceName(providerName: string): string {
-  let name = providerName.toLowerCase();
+  let name = providerName.toLowerCase().trim();
   
+  // Remove platform-specific suffixes first (order matters - most specific first)
   name = name
+    // Apple TV Channel variants
+    .replace(/\s+apple\s+tv\s+channel\s*$/i, '')
+    .replace(/\s+apple\s+tv$/i, '')
+    // Amazon Channel variants
     .replace(/\s+amazon\s+channel$/i, '')
     .replace(/\s+prime\s+video\s+channel$/i, '')
     .replace(/\s+channel$/i, '')
-    .replace(/\s*(via|with|on)\s+.+$/i, '')
+    // Roku variants
+    .replace(/\s+roku\s+premium\s+channel$/i, '')
+    .replace(/\s+roku\s+channel$/i, '')
+    // Standard/Premium/Plus variants
+    .replace(/\s+standard\s+with\s+ads$/i, '')
     .replace(/\s+basic\s+with\s+ads$/i, '')
     .replace(/\s+with\s+ads$/i, '')
+    .replace(/\s+standard$/i, '')
+    .replace(/\s+premium$/i, '')
+    .replace(/\s+plus$/i, '')
     .replace(/\s+basic$/i, '')
+    .replace(/\s+free$/i, '')
+    .replace(/\s+ad[s-]?supported$/i, '')
     .replace(/\s+ads$/i, '')
-    .replace(/\s+ad-supported$/i, '')
+    // "via/with/on" patterns
+    .replace(/\s*(via|with|on|by)\s+.+$/i, '')
+    // Clean up
     .replace(/\+$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -337,11 +353,15 @@ function isChannelAddon(providerName: string): boolean {
   return (
     lowerName.includes('amazon channel') ||
     lowerName.includes('prime video channel') ||
+    lowerName.includes('apple tv channel') ||
+    lowerName.includes('roku channel') ||
     lowerName.includes(' via ') ||
-    lowerName.includes(' with ') ||
+    lowerName.includes(' with ads') ||
     lowerName.includes(' ads') ||
     lowerName.includes('ad-supported') ||
-    lowerName.endsWith(' basic')
+    lowerName.includes(' standard') ||
+    lowerName.endsWith(' basic') ||
+    lowerName.endsWith(' free')
   );
 }
 
