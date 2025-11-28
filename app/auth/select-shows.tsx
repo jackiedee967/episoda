@@ -83,7 +83,7 @@ interface ShowWithSelection extends Show {
 export default function SelectShowsScreen() {
   const router = useRouter();
   const { completeOnboarding, user } = useAuth();
-  const { createPost, ensureShowUuid } = useData();
+  const { createPost, ensureShowUuid, currentUser } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [shows, setShows] = useState<ShowWithSelection[]>([]);
@@ -237,9 +237,9 @@ export default function SelectShowsScreen() {
           tags: [],
           user: {
             id: user.id,
-            username: '',
-            displayName: '',
-            avatar: '',
+            username: currentUser?.username || '',
+            displayName: currentUser?.displayName || '',
+            avatar: currentUser?.avatar || '',
           },
           skipRating: true,
         });
