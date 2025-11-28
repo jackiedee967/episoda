@@ -229,7 +229,7 @@ export default function SelectShowsScreen() {
         
         const showWithUuid = { ...show, id: showUuid };
         
-        await (createPost as any)({
+        await createPost({
           show: showWithUuid,
           episodes: [],
           title: '',

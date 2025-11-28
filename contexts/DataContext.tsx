@@ -18,6 +18,10 @@ interface RepostData {
   timestamp: Date;
 }
 
+export interface CreatePostData extends Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'> {
+  skipRating?: boolean;
+}
+
 export interface WatchHistoryItem {
   show: Show;
   mostRecentEpisode: Episode | null;
@@ -37,7 +41,7 @@ interface DataContextType {
   loadPlaylists: (userId?: string) => Promise<void>;
   recordTraktIdMapping: (traktId: number, uuid: string) => void;
   posts: Post[];
-  createPost: (post: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>) => Promise<Post>;
+  createPost: (post: CreatePostData) => Promise<Post>;
   deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -1479,11 +1483,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [authUserId, loadPosts, loadPlaylists, loadReportedPosts]);
 
-  const createPost = useCallback(async (postData: Omit<Post, 'id' | 'timestamp' | 'likes' | 'comments' | 'reposts' | 'isLiked'>): Promise<Post> => {
+  const createPost = useCallback(async (postData: CreatePostData): Promise<Post> => {
+    const { skipRating, ...postWithoutSkipRating } = postData;
     // Create temporary post with fake ID for optimistic UI
     const tempId = `post_${Date.now()}`;
     const tempPost: Post = {
-      ...postData,
+      ...postWithoutSkipRating,
       id: tempId,
       timestamp: new Date(),
       likes: 0,
