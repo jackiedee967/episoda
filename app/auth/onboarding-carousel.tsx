@@ -138,6 +138,15 @@ export default function OnboardingCarouselScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
           bounces={false}
+          snapToAlignment="center"
+          decelerationRate="fast"
+          getItemLayout={(_, index) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * index,
+            index,
+          })}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ alignItems: 'center' }}
         />
 
         <View style={styles.footer}>
