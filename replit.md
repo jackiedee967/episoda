@@ -38,6 +38,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Account Management**: Account deletion and phone number change features.
 - **Invite Friends System**: Two-trigger invite modal for user acquisition.
 - **Founders Welcome Modal**: One-time welcome popup for first-time users featuring personalized message from founders Jasmine & Jackie, encouraging feedback and community engagement.
+- **Push Notifications System**: Expo Push Notifications with Supabase Edge Functions for delivery. Notification types: likes, comments, follows, mentions, admin announcements, friend logs watched show, friend logs playlist show. Permission prompt appears in onboarding after "Select 3 Shows" step before Founders modal.
 
 ### System Design Choices
 - **Development vs Production**: Single Supabase production instance; recommendation for separate dev instance.
@@ -48,7 +49,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Performance Optimizations**: Database-first approach, lazy loading, background loading, and optimized queries.
 - **Smart Show Recommendations**: Personalized system with instant-loading caching and friend-based recommendations.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system.
-- **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache.
+- **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache. `profiles` table now includes `expo_push_token` and `notification_preferences` (JSONB) columns for push notifications.
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.
@@ -63,3 +64,5 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **react-native-phone-number-input**: Phone number input formatting.
 - **LinearGradient**: Gradient backgrounds.
 - **@expo-google-fonts/instrument-serif**: Custom font.
+- **expo-notifications**: Push notification handling.
+- **expo-device**: Device detection for push notification eligibility.

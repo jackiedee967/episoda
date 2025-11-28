@@ -1,24 +1,26 @@
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
+import tokens from '@/styles/tokens';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/integrations/supabase/client';
 import { NotificationPreferences } from '@/types';
 
+const DEFAULT_PREFERENCES: NotificationPreferences = {
+  likes: true,
+  comments: true,
+  follows: true,
+  mentions: true,
+  admin_announcements: true,
+  friend_logs_watched_show: true,
+  friend_logs_playlist_show: true,
+};
+
 export default function NotificationsSettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [preferences, setPreferences] = useState<NotificationPreferences>({
-    newFollower: true,
-    postLiked: true,
-    postCommented: true,
-    commentReplied: true,
-    mentioned: true,
-    friendPosted: true,
-    friendActivity: true,
-  });
+  const [preferences, setPreferences] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
 
   useEffect(() => {
     loadPreferences();
@@ -35,22 +37,17 @@ export default function NotificationsSettingsScreen() {
       }
 
       const { data, error } = await supabase
-        .from('notification_preferences')
-        .select('*')
+        .from('profiles')
+        .select('notification_preferences')
         .eq('user_id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading preferences:', error);
-      } else if (data) {
+      } else if (data?.notification_preferences) {
         setPreferences({
-          newFollower: data.new_follower,
-          postLiked: data.post_liked,
-          postCommented: data.post_commented,
-          commentReplied: data.comment_replied,
-          mentioned: data.mentioned,
-          friendPosted: data.friend_posted,
-          friendActivity: data.friend_activity,
+          ...DEFAULT_PREFERENCES,
+          ...data.notification_preferences,
         });
       }
     } catch (error) {
@@ -71,45 +68,22 @@ export default function NotificationsSettingsScreen() {
         return;
       }
 
-      // Convert camelCase to snake_case for database
-      const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+      const updatedPreferences = { ...preferences, [key]: value };
 
-      const { data: existing, error: checkError } = await supabase
-        .from('notification_preferences')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          notification_preferences: updatedPreferences,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      if (existing) {
-        const { error: updateError } = await supabase
-          .from('notification_preferences')
-          .update({
-            [dbKey]: value,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('notification_preferences')
-          .insert({
-            user_id: user.id,
-            [dbKey]: value,
-          });
-
-        if (insertError) throw insertError;
-      }
+      if (updateError) throw updateError;
 
       console.log(`Saved ${key} = ${value}`);
     } catch (error) {
       console.error('Error saving preference:', error);
       Alert.alert('Error', 'Failed to save notification preference. Please try again.');
-      // Revert the change
       setPreferences(prev => ({ ...prev, [key]: !value }));
     } finally {
       setSaving(false);
@@ -139,7 +113,7 @@ export default function NotificationsSettingsScreen() {
           }} 
         />
         <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color={colors.secondary} />
+          <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
         </View>
       </>
     );
@@ -163,37 +137,22 @@ export default function NotificationsSettingsScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
             <Text style={styles.sectionDescription}>
-              Choose which notifications you want to receive. Changes are saved automatically.
+              Choose which push notifications you want to receive. Changes are saved automatically.
             </Text>
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionTitle}>INTERACTIONS</Text>
             <View style={styles.notificationContainer}>
               <View style={styles.notificationItem}>
                 <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>New Follower</Text>
-                  <Text style={styles.notificationDescription}>When someone follows you</Text>
-                </View>
-                <Switch
-                  value={preferences.newFollower}
-                  onValueChange={() => togglePreference('newFollower')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
-                  thumbColor={colors.card}
-                  disabled={saving}
-                />
-              </View>
-
-              <View style={styles.divider} />
-
-              <View style={styles.notificationItem}>
-                <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>Post Liked</Text>
+                  <Text style={styles.notificationLabel}>Likes</Text>
                   <Text style={styles.notificationDescription}>When someone likes your post</Text>
                 </View>
                 <Switch
-                  value={preferences.postLiked}
-                  onValueChange={() => togglePreference('postLiked')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  value={preferences.likes}
+                  onValueChange={() => togglePreference('likes')}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
                   thumbColor={colors.card}
                   disabled={saving}
                 />
@@ -203,13 +162,13 @@ export default function NotificationsSettingsScreen() {
 
               <View style={styles.notificationItem}>
                 <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>Post Commented</Text>
+                  <Text style={styles.notificationLabel}>Comments</Text>
                   <Text style={styles.notificationDescription}>When someone comments on your post</Text>
                 </View>
                 <Switch
-                  value={preferences.postCommented}
-                  onValueChange={() => togglePreference('postCommented')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  value={preferences.comments}
+                  onValueChange={() => togglePreference('comments')}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
                   thumbColor={colors.card}
                   disabled={saving}
                 />
@@ -219,13 +178,13 @@ export default function NotificationsSettingsScreen() {
 
               <View style={styles.notificationItem}>
                 <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>Comment Replied</Text>
-                  <Text style={styles.notificationDescription}>When someone replies to your comment</Text>
+                  <Text style={styles.notificationLabel}>Follows</Text>
+                  <Text style={styles.notificationDescription}>When someone follows you</Text>
                 </View>
                 <Switch
-                  value={preferences.commentReplied}
-                  onValueChange={() => togglePreference('commentReplied')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  value={preferences.follows}
+                  onValueChange={() => togglePreference('follows')}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
                   thumbColor={colors.card}
                   disabled={saving}
                 />
@@ -235,13 +194,32 @@ export default function NotificationsSettingsScreen() {
 
               <View style={styles.notificationItem}>
                 <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>Mentioned</Text>
-                  <Text style={styles.notificationDescription}>When someone mentions you</Text>
+                  <Text style={styles.notificationLabel}>Mentions</Text>
+                  <Text style={styles.notificationDescription}>When someone mentions you in a post or comment</Text>
                 </View>
                 <Switch
-                  value={preferences.mentioned}
-                  onValueChange={() => togglePreference('mentioned')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  value={preferences.mentions}
+                  onValueChange={() => togglePreference('mentions')}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
+                  thumbColor={colors.card}
+                  disabled={saving}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>FRIEND ACTIVITY</Text>
+            <View style={styles.notificationContainer}>
+              <View style={styles.notificationItem}>
+                <View style={styles.notificationInfo}>
+                  <Text style={styles.notificationLabel}>Friend Logs Show You've Watched</Text>
+                  <Text style={styles.notificationDescription}>When a friend logs a show in your watch history</Text>
+                </View>
+                <Switch
+                  value={preferences.friend_logs_watched_show}
+                  onValueChange={() => togglePreference('friend_logs_watched_show')}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
                   thumbColor={colors.card}
                   disabled={saving}
                 />
@@ -251,29 +229,32 @@ export default function NotificationsSettingsScreen() {
 
               <View style={styles.notificationItem}>
                 <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>Friend Posted</Text>
-                  <Text style={styles.notificationDescription}>When a friend posts something new</Text>
+                  <Text style={styles.notificationLabel}>Friend Logs Show on Your Playlist</Text>
+                  <Text style={styles.notificationDescription}>When a friend logs a show from your playlists</Text>
                 </View>
                 <Switch
-                  value={preferences.friendPosted}
-                  onValueChange={() => togglePreference('friendPosted')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  value={preferences.friend_logs_playlist_show}
+                  onValueChange={() => togglePreference('friend_logs_playlist_show')}
                   thumbColor={colors.card}
                   disabled={saving}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
                 />
               </View>
+            </View>
+          </View>
 
-              <View style={styles.divider} />
-
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>EPISODA UPDATES</Text>
+            <View style={styles.notificationContainer}>
               <View style={styles.notificationItem}>
                 <View style={styles.notificationInfo}>
-                  <Text style={styles.notificationLabel}>Friend Activity</Text>
-                  <Text style={styles.notificationDescription}>When friends like or comment</Text>
+                  <Text style={styles.notificationLabel}>Announcements</Text>
+                  <Text style={styles.notificationDescription}>Updates and announcements from the EPISODA team</Text>
                 </View>
                 <Switch
-                  value={preferences.friendActivity}
-                  onValueChange={() => togglePreference('friendActivity')}
-                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  value={preferences.admin_announcements}
+                  onValueChange={() => togglePreference('admin_announcements')}
+                  trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
                   thumbColor={colors.card}
                   disabled={saving}
                 />
@@ -302,6 +283,13 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 16,
+  },
+  sectionTitle: {
+    ...typography.p3Bold,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    paddingHorizontal: 16,
+    marginBottom: 8,
   },
   sectionDescription: {
     ...typography.p1,

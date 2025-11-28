@@ -134,13 +134,13 @@ export interface Playlist {
 }
 
 export interface NotificationPreferences {
-  newFollower: boolean;
-  postLiked: boolean;
-  postCommented: boolean;
-  commentReplied: boolean;
-  mentioned: boolean;
-  friendPosted: boolean;
-  friendActivity: boolean;
+  likes: boolean;
+  comments: boolean;
+  follows: boolean;
+  mentions: boolean;
+  admin_announcements: boolean;
+  friend_logs_watched_show: boolean;
+  friend_logs_playlist_show: boolean;
 }
 
 export interface BlockedUser {

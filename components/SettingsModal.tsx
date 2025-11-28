@@ -392,58 +392,19 @@ export default function SettingsModal({
 
       console.log('Social links updated successfully');
 
-      // 3. Update notification preferences
-      console.log('Checking notification preferences...');
-      const { data: existingPrefs, error: checkPrefsError } = await supabase
-        .from('notification_preferences')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      // 3. Update notification preferences in profiles table
+      console.log('Updating notification preferences in profile...');
+      const { error: updatePrefsError } = await supabase
+        .from('profiles')
+        .update({
+          notification_preferences: notificationPreferences,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
 
-      if (checkPrefsError && checkPrefsError.code !== 'PGRST116') {
-        console.error('Error checking notification preferences:', checkPrefsError);
-        throw new Error('Failed to check notification preferences: ' + checkPrefsError.message);
-      }
-
-      if (existingPrefs) {
-        console.log('Updating existing notification preferences...');
-        const { error: updatePrefsError } = await supabase
-          .from('notification_preferences')
-          .update({
-            new_follower: notificationPreferences.newFollower,
-            post_liked: notificationPreferences.postLiked,
-            post_commented: notificationPreferences.postCommented,
-            comment_replied: notificationPreferences.commentReplied,
-            mentioned: notificationPreferences.mentioned,
-            friend_posted: notificationPreferences.friendPosted,
-            friend_activity: notificationPreferences.friendActivity,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id);
-
-        if (updatePrefsError) {
-          console.error('Error updating notification preferences:', updatePrefsError);
-          throw new Error('Failed to update notification preferences: ' + updatePrefsError.message);
-        }
-      } else {
-        console.log('Creating new notification preferences...');
-        const { error: insertPrefsError } = await supabase
-          .from('notification_preferences')
-          .insert({
-            user_id: user.id,
-            new_follower: notificationPreferences.newFollower,
-            post_liked: notificationPreferences.postLiked,
-            post_commented: notificationPreferences.postCommented,
-            comment_replied: notificationPreferences.commentReplied,
-            mentioned: notificationPreferences.mentioned,
-            friend_posted: notificationPreferences.friendPosted,
-            friend_activity: notificationPreferences.friendActivity,
-          });
-
-        if (insertPrefsError) {
-          console.error('Error inserting notification preferences:', insertPrefsError);
-          throw new Error('Failed to save notification preferences: ' + insertPrefsError.message);
-        }
+      if (updatePrefsError) {
+        console.error('Error updating notification preferences:', updatePrefsError);
+        throw new Error('Failed to update notification preferences: ' + updatePrefsError.message);
       }
 
       console.log('Notification preferences updated successfully');
@@ -709,98 +670,98 @@ export default function SettingsModal({
 
   const renderNotificationsTab = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Notification Preferences</Text>
+      <Text style={styles.sectionTitle}>Push Notification Preferences</Text>
       <Text style={styles.sectionDescription}>
         Choose which notifications you want to receive
       </Text>
 
       <View style={styles.notificationItem}>
         <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>New Follower</Text>
-          <Text style={styles.notificationDescription}>When someone follows you</Text>
-        </View>
-        <Switch
-          value={notificationPreferences.newFollower}
-          onValueChange={() => toggleNotification('newFollower')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
-          thumbColor={colors.card}
-        />
-      </View>
-
-      <View style={styles.notificationItem}>
-        <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>Post Liked</Text>
+          <Text style={styles.notificationLabel}>Likes</Text>
           <Text style={styles.notificationDescription}>When someone likes your post</Text>
         </View>
         <Switch
-          value={notificationPreferences.postLiked}
-          onValueChange={() => toggleNotification('postLiked')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
+          value={notificationPreferences.likes}
+          onValueChange={() => toggleNotification('likes')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
           thumbColor={colors.card}
         />
       </View>
 
       <View style={styles.notificationItem}>
         <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>Post Commented</Text>
+          <Text style={styles.notificationLabel}>Comments</Text>
           <Text style={styles.notificationDescription}>When someone comments on your post</Text>
         </View>
         <Switch
-          value={notificationPreferences.postCommented}
-          onValueChange={() => toggleNotification('postCommented')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
+          value={notificationPreferences.comments}
+          onValueChange={() => toggleNotification('comments')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
           thumbColor={colors.card}
         />
       </View>
 
       <View style={styles.notificationItem}>
         <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>Comment Replied</Text>
-          <Text style={styles.notificationDescription}>When someone replies to your comment</Text>
+          <Text style={styles.notificationLabel}>Follows</Text>
+          <Text style={styles.notificationDescription}>When someone follows you</Text>
         </View>
         <Switch
-          value={notificationPreferences.commentReplied}
-          onValueChange={() => toggleNotification('commentReplied')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
+          value={notificationPreferences.follows}
+          onValueChange={() => toggleNotification('follows')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
           thumbColor={colors.card}
         />
       </View>
 
       <View style={styles.notificationItem}>
         <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>Mentioned</Text>
-          <Text style={styles.notificationDescription}>When someone mentions you</Text>
+          <Text style={styles.notificationLabel}>Mentions</Text>
+          <Text style={styles.notificationDescription}>When someone mentions you in a post or comment</Text>
         </View>
         <Switch
-          value={notificationPreferences.mentioned}
-          onValueChange={() => toggleNotification('mentioned')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
+          value={notificationPreferences.mentions}
+          onValueChange={() => toggleNotification('mentions')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
           thumbColor={colors.card}
         />
       </View>
 
       <View style={styles.notificationItem}>
         <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>Friend Posted</Text>
-          <Text style={styles.notificationDescription}>When a friend posts something new</Text>
+          <Text style={styles.notificationLabel}>EPISODA Announcements</Text>
+          <Text style={styles.notificationDescription}>Updates and announcements from the team</Text>
         </View>
         <Switch
-          value={notificationPreferences.friendPosted}
-          onValueChange={() => toggleNotification('friendPosted')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
+          value={notificationPreferences.admin_announcements}
+          onValueChange={() => toggleNotification('admin_announcements')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
           thumbColor={colors.card}
         />
       </View>
 
       <View style={styles.notificationItem}>
         <View style={styles.notificationInfo}>
-          <Text style={styles.notificationLabel}>Friend Activity</Text>
-          <Text style={styles.notificationDescription}>When friends like or comment</Text>
+          <Text style={styles.notificationLabel}>Friend Logs Show You've Watched</Text>
+          <Text style={styles.notificationDescription}>When a friend logs a show in your watch history</Text>
         </View>
         <Switch
-          value={notificationPreferences.friendActivity}
-          onValueChange={() => toggleNotification('friendActivity')}
-          trackColor={{ false: colors.border, true: colors.secondary }}
+          value={notificationPreferences.friend_logs_watched_show}
+          onValueChange={() => toggleNotification('friend_logs_watched_show')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
+          thumbColor={colors.card}
+        />
+      </View>
+
+      <View style={styles.notificationItem}>
+        <View style={styles.notificationInfo}>
+          <Text style={styles.notificationLabel}>Friend Logs Show on Your Playlist</Text>
+          <Text style={styles.notificationDescription}>When a friend logs a show from your playlists</Text>
+        </View>
+        <Switch
+          value={notificationPreferences.friend_logs_playlist_show}
+          onValueChange={() => toggleNotification('friend_logs_playlist_show')}
+          trackColor={{ false: colors.border, true: tokens.colors.greenHighlight }}
           thumbColor={colors.card}
         />
       </View>
