@@ -840,19 +840,22 @@ export default function ShowHub() {
     }
   }, [activeTab]);
 
-  // Smart auto-tab selection based on content availability
+  // Smart auto-tab selection based on content availability with thresholds
   useEffect(() => {
     if (!show || hasSetInitialTab || !currentUser) return;
 
     const friendIds = currentUser.following || [];
     const friendPosts = showPosts.filter(post => friendIds.includes(post.user.id));
-    const hasFriendPosts = friendPosts.length > 0;
-    const hasAnyPosts = showPosts.length > 0;
+    const friendPostCount = friendPosts.length;
+    const totalPostCount = showPosts.length;
 
-    // Prioritize: Friends → Everyone → Episodes
-    if (hasFriendPosts) {
+    // Threshold-based prioritization:
+    // >3 friend posts → Friends tab
+    // >7 total posts → Everyone tab
+    // Otherwise → Episodes tab
+    if (friendPostCount > 3) {
       setActiveTab('friends');
-    } else if (hasAnyPosts) {
+    } else if (totalPostCount > 7) {
       setActiveTab('all');
     } else {
       setActiveTab('episodes');
