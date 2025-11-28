@@ -5,7 +5,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { assignRandomAvatar } from '@/utils/profilePictureGenerator';
 import { deleteAccountViaEdgeFunction } from '@/utils/deleteAccountApi';
 
-type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'display_name_set' | 'birthday_set' | 'completed';
+type OnboardingStatus = 'not_started' | 'phone_verified' | 'username_set' | 'display_name_set' | 'birthday_set' | 'shows_selected' | 'completed';
 
 interface AuthContextType {
   session: Session | null;

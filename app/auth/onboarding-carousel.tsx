@@ -78,13 +78,10 @@ export default function OnboardingCarouselScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      if (completeOnboarding) {
-        await completeOnboarding();
-      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/(tabs)/' as any);
+      router.replace('/auth/select-shows' as any);
     } catch (error) {
-      console.error('Complete onboarding error:', error);
+      console.error('Navigate to select shows error:', error);
     } finally {
       setLoading(false);
     }

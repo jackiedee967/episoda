@@ -55,7 +55,8 @@ function AuthNavigator() {
       'phone_verified': { allowed: ['phone-entry', 'verify-otp', 'username-select'], required: '/auth/username-select' },
       'username_set': { allowed: ['display-name'], required: '/auth/display-name' },
       'display_name_set': { allowed: ['birthday-entry'], required: '/auth/birthday-entry' },
-      'birthday_set': { allowed: ['onboarding-carousel'], required: '/auth/onboarding-carousel' },
+      'birthday_set': { allowed: ['onboarding-carousel', 'select-shows'], required: '/auth/onboarding-carousel' },
+      'shows_selected': { allowed: ['select-shows'], required: '/auth/select-shows' },
       'completed': { allowed: [], required: '/(tabs)/' },
     };
 
