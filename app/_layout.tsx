@@ -33,10 +33,7 @@ import { SystemBars } from "react-native-edge-to-edge";
 import { colors } from "@/styles/commonStyles";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-// Skip on web to avoid blocking the viewport
-if (Platform.OS !== 'web') {
-  SplashScreen.preventAutoHideAsync();
-}
+SplashScreen.preventAutoHideAsync();
 
 function AuthNavigator() {
   const { session, user, isLoading, authReady, onboardingStatus } = useAuth();
@@ -44,15 +41,12 @@ function AuthNavigator() {
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    // On web, skip navigationState.key check as it never populates during hydration
-    const isNavigationReady = Platform.OS === 'web' ? true : !!navigationState?.key;
-    
-    if (!isNavigationReady || isLoading || !authReady) {
+    if (!navigationState?.key || isLoading || !authReady) {
       return;
     }
 
-    // On web, don't wait for segments - proceed with redirect immediately
-    if (Platform.OS !== 'web' && !segments.length) {
+    // Wait for router to mount segments before redirecting (prevents blank screen on web)
+    if (!segments.length) {
       return;
     }
 
@@ -72,11 +66,6 @@ function AuthNavigator() {
     if (!session) {
       if (!inAuthGroup) {
         console.log('🔒 No session - redirecting to splash');
-        // On web, use direct location change for more reliable redirect
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.location.href = '/auth';
-          return;
-        }
         router.replace('/auth' as any);
       }
       return;
@@ -163,19 +152,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    // On web, hide splash immediately since native splash doesn't apply
-    if (Platform.OS === 'web') {
-      SplashScreen.hideAsync();
-      return;
-    }
-    // On native, hide when fonts are loaded
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
 
-  // On web, don't block render waiting for fonts
-  if (!loaded && Platform.OS !== 'web') {
+  if (!loaded) {
     return null;
   }
 

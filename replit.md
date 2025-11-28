@@ -38,13 +38,6 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Account Management**: Account deletion and phone number change features.
 - **Invite Friends System**: Two-trigger invite modal for user acquisition.
 
-### Web Preview Development
-- **Web Preview Status**: Functional for development workflow with platform-specific fallbacks
-- **Auth Screen**: Beautiful gradient web fallback UI at `/auth` route with EPISODA branding
-- **Root Route Handling**: AuthNavigator in `_layout.tsx` handles all unauthenticated redirects (no separate index.tsx)
-- **Platform Detection**: Uses `Platform.OS === 'web'` checks for web-specific rendering
-- **Key Files**: `app/_layout.tsx` (AuthNavigator), `app/auth/index.tsx` (web auth splash)
-
 ### System Design Choices
 - **Development vs Production**: Single Supabase production instance; recommendation for separate dev instance.
 - **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_` environment variables for all build types.
