@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ImageBackground, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ImageBackground, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
 import { colors } from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const welcomeBackground = Asset.fromModule(require('../../assets/images/auth/welcome-background.jpg')).uri;
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
@@ -36,6 +37,38 @@ export default function SplashScreen() {
       setAppleLoading(false);
     }
   };
+
+  if (Platform.OS === 'web') {
+    return (
+      <LinearGradient
+        colors={['#FF6B6B', '#A855F7', '#3B82F6', '#10B981']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.wrapper}
+      >
+        <View style={styles.webContent}>
+          <Text style={styles.webLogo}>EPISODA</Text>
+          <Text style={styles.webTagline}>Make every episode social</Text>
+          
+          <View style={styles.webButtonContainer}>
+            <Text style={styles.signInText}>Sign in to get started</Text>
+            
+            <Pressable style={styles.phoneButton} onPress={handlePhoneSignIn}>
+              <Text style={styles.phoneButtonText}>Sign in with phone</Text>
+            </Pressable>
+
+            <Pressable 
+              style={styles.appleButton} 
+              onPress={handleAppleSignIn}
+              disabled={appleLoading}
+            >
+              <Text style={styles.appleButtonText}>Sign in with Apple</Text>
+            </Pressable>
+          </View>
+        </View>
+      </LinearGradient>
+    );
+  }
 
   return (
     <View style={[styles.wrapper, { backgroundColor: '#7BA8FF' }]}>
@@ -229,5 +262,32 @@ const styles = StyleSheet.create({
     fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 17,
     fontWeight: '500',
+  },
+  webContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  webLogo: {
+    color: colors.pureWhite,
+    fontSize: 48,
+    fontWeight: '700',
+    fontFamily: 'FunnelDisplay_700Bold',
+    letterSpacing: 2,
+    marginBottom: 16,
+  },
+  webTagline: {
+    color: colors.pureWhite,
+    fontSize: 24,
+    fontWeight: '400',
+    fontFamily: 'InstrumentSerif_400Regular',
+    marginBottom: 60,
+  },
+  webButtonContainer: {
+    width: '100%',
+    maxWidth: 362,
+    alignItems: 'center',
+    gap: 12,
   },
 });

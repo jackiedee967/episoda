@@ -72,6 +72,11 @@ function AuthNavigator() {
     if (!session) {
       if (!inAuthGroup) {
         console.log('🔒 No session - redirecting to splash');
+        // On web, use direct location change for more reliable redirect
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.href = '/auth';
+          return;
+        }
         router.replace('/auth' as any);
       }
       return;
@@ -197,6 +202,7 @@ export default function RootLayout() {
                 },
               }}
             >
+              <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen 
                 name="auth/index" 
