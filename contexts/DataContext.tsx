@@ -2468,8 +2468,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const getWatchHistory = useCallback((userId: string): WatchHistoryItem[] => {
-    // Get all posts by this user that have episodes
-    const userPosts = posts.filter(p => p.user.id === userId && p.episodes && p.episodes.length > 0);
+    // Get all posts by this user that have a show (including ones with no episodes for onboarding)
+    const userPosts = posts.filter(p => p.user.id === userId && p.show);
     
     // Group posts by show
     const showMap = new Map<string, { show: Show; episodes: Set<string>; lastDate: Date; latestPost: Post }>();
