@@ -96,6 +96,7 @@ export async function saveShow(
     tmdb_id: traktShow.ids.tmdb,
     tvmaze_id: tvmazeId,
     title: traktShow.title,
+    year: traktShow.year || null,
     description: traktShow.overview || null,
     poster_url: posterUrl,
     backdrop_url: backdropUrl,
@@ -103,6 +104,7 @@ export async function saveShow(
     total_seasons: options.enrichedSeasonCount ?? null,
     total_episodes: traktShow.aired_episodes || null,
     color_scheme: colorScheme,
+    genres: traktShow.genres || [],
     updated_at: new Date().toISOString(),
   };
 
@@ -158,6 +160,7 @@ export async function upsertShowFromAppModel(show: {
     total_seasons: show.totalSeasons ?? null,
     total_episodes: show.totalEpisodes ?? null,
     color_scheme: colorScheme,
+    genres: [],
     updated_at: new Date().toISOString(),
   };
 
