@@ -41,8 +41,13 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Push Notifications System**: Expo Push Notifications with Supabase Edge Functions for delivery. Notification types: likes, comments, follows, mentions, admin announcements, friend logs watched show, friend logs playlist show. Permission prompt appears in onboarding after "Select 3 Shows" step before Founders modal.
 
 ### System Design Choices
-- **Development vs Production**: Single Supabase production instance; recommendation for separate dev instance.
-- **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_` environment variables for all build types.
+- **Development vs Production**: Separate Supabase instances for safe development.
+  - **EPISODA-Dev** (atzrteveximvujzoneuu): Development/testing database
+  - **EPISODA-Prod** (mbwuoqoktdgudzaemjhx): Production database with real users
+- **Environment Switching**: Automatic via Replit environment variables:
+  - Development environment → Dev database
+  - Production environment → Prod database
+- **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_` environment variables, split by environment.
 - **Data Management**: All data managed via real Supabase data; Supabase-backed user profile cache.
 - **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system.
 - **Search Enrichment System**: Background worker for enhancing search results with metadata, progressive enhancement, and caching.
@@ -50,6 +55,41 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Smart Show Recommendations**: Personalized system with instant-loading caching and friend-based recommendations.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system.
 - **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache. `profiles` table now includes `expo_push_token` and `notification_preferences` (JSONB) columns for push notifications.
+
+## Development & Deployment Workflow
+
+### Environment Setup
+1. **Development (Replit)**: Uses EPISODA-Dev Supabase automatically
+2. **Production (EAS Build)**: Uses EPISODA-Prod Supabase automatically
+
+### Safe Deployment Process
+
+**1. Database Changes**
+- Test all schema changes in dev database first
+- Use `supabase/dev_database_schema.sql` as reference for dev setup
+- Make changes additive (add new columns, don't delete old ones immediately)
+- Backup production before any migration
+
+**2. App Updates**
+- **Over-the-Air (OTA)**: For UI fixes, feature updates (instant, no App Store)
+- **Full Build**: For native code changes, new permissions (1-3 day Apple review)
+
+**3. Pre-Launch Checklist**
+- [ ] Test in dev environment
+- [ ] Check signup/login still works
+- [ ] Verify old user accounts aren't broken
+- [ ] Backup production database
+- [ ] Test on real iPhone
+
+**4. Rollback Plan**
+- Database: Restore from Supabase automatic backups
+- App (OTA): Instantly revert to previous version via Expo
+- App (Store): Re-submit old version (1-3 days)
+
+### Key Files
+- `supabase/dev_database_schema.sql`: Complete schema for dev database setup
+- `integrations/supabase/client.ts`: Auto-switches between dev/prod based on environment
+- `supabase/migrations/`: Version-controlled database migrations
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.
