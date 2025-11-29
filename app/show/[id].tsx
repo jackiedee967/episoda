@@ -198,6 +198,14 @@ export default function ShowHub() {
         // Collect all episode UUIDs and rewatch UUIDs from posts
         const episodeUUIDs = new Set<string>();
         const rewatchUUIDs = new Set<string>();
+        
+        // Debug: Log raw posts data to check rewatch_episode_ids from DB
+        console.log('📦 Raw posts from DB for episode states:', userPosts.map((p: any) => ({
+          episode_ids: p.episode_ids,
+          rewatch_episode_ids: p.rewatch_episode_ids,
+          hasRewatchColumn: 'rewatch_episode_ids' in p,
+        })));
+        
         userPosts.forEach((post: any) => {
           post.episode_ids?.forEach((id: string) => episodeUUIDs.add(id));
           post.rewatch_episode_ids?.forEach((id: string) => rewatchUUIDs.add(id));
