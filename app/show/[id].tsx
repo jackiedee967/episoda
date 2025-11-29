@@ -120,6 +120,7 @@ export default function ShowHub() {
   const [loadingEpisodes, setLoadingEpisodes] = useState(false);
   const [episodeSelections, setEpisodeSelections] = useState<Map<string, EpisodeSelectionState>>(new Map());
   const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
+  const [rewatchedEpisodeIds, setRewatchedEpisodeIds] = useState<Set<string>>(new Set());
   const [show, setShow] = useState<Show | null>(null);
   const [loadingShow, setLoadingShow] = useState(true);
   const [showError, setShowError] = useState<string | null>(null);
@@ -168,16 +169,17 @@ export default function ShowHub() {
     async function loadLoggedEpisodes() {
       if (!show || !currentUser || !show.id) {
         setLoggedEpisodeIds(new Set());
+        setRewatchedEpisodeIds(new Set());
         return;
       }
 
       try {
         console.log('🔍 Querying posts for user:', currentUser.id, 'show:', show.id, show.title);
         
-        // Query posts to get episode IDs
+        // Query posts to get episode IDs AND rewatch episode IDs
         const { data: userPosts, error: postsError } = await supabase
           .from('posts')
-          .select('episode_ids')
+          .select('episode_ids, rewatch_episode_ids')
           .eq('user_id', currentUser.id)
           .eq('show_id', show.id);
 
@@ -189,20 +191,34 @@ export default function ShowHub() {
         if (!userPosts || userPosts.length === 0) {
           console.log('ℹ️ No logged episodes found for this show');
           setLoggedEpisodeIds(new Set());
+          setRewatchedEpisodeIds(new Set());
           return;
         }
 
-        // Collect all episode UUIDs from posts
+        // Collect all episode UUIDs and rewatch UUIDs from posts
         const episodeUUIDs = new Set<string>();
+        const rewatchUUIDs = new Set<string>();
         userPosts.forEach((post: any) => {
           post.episode_ids?.forEach((id: string) => episodeUUIDs.add(id));
+          post.rewatch_episode_ids?.forEach((id: string) => rewatchUUIDs.add(id));
         });
+
+        // Combine all episode UUIDs (regular + rewatch) for the query
+        // This ensures we fetch metadata for all logged episodes, including rewatch-only ones
+        const allEpisodeUUIDs = new Set([...episodeUUIDs, ...rewatchUUIDs]);
+        
+        if (allEpisodeUUIDs.size === 0) {
+          console.log('ℹ️ No episode UUIDs found in posts');
+          setLoggedEpisodeIds(new Set());
+          setRewatchedEpisodeIds(new Set());
+          return;
+        }
 
         // Fetch episode details to map to Trakt-style IDs
         const { data: episodesData, error: episodesError } = await supabase
           .from('episodes')
           .select('id, season_number, episode_number')
-          .in('id', Array.from(episodeUUIDs));
+          .in('id', Array.from(allEpisodeUUIDs));
 
         if (episodesError) {
           console.error('❌ Error loading episodes:', episodesError);
@@ -217,13 +233,20 @@ export default function ShowHub() {
         }
 
         const loggedIds = new Set<string>();
+        const rewatchIds = new Set<string>();
         (episodesData || []).forEach((ep: any) => {
           const episodeId = `${dbShow.trakt_id}-S${ep.season_number}E${ep.episode_number}`;
           loggedIds.add(episodeId);
+          
+          // Check if this episode was marked as a rewatch
+          if (rewatchUUIDs.has(ep.id)) {
+            rewatchIds.add(episodeId);
+          }
         });
 
-        console.log(`✅ Loaded ${loggedIds.size} logged episodes for ${show.title}`);
+        console.log(`✅ Loaded ${loggedIds.size} logged episodes (${rewatchIds.size} rewatched) for ${show.title}`);
         setLoggedEpisodeIds(loggedIds);
+        setRewatchedEpisodeIds(rewatchIds);
       } catch (error) {
         console.error('❌ Error loading logged episodes:', error);
       }
@@ -932,9 +955,10 @@ export default function ShowHub() {
       const newMap = new Map(prev);
       const mapState = newMap.get(episodeId);
       const isLogged = loggedEpisodeIds.has(episodeId);
+      const isRewatched = rewatchedEpisodeIds.has(episodeId);
       
-      // For logged episodes not in map, treat as 'watched' (their displayed state)
-      const currentState = mapState || (isLogged ? 'watched' : 'none');
+      // For logged episodes not in map, treat as 'watched' or 'rewatched' based on history
+      const currentState = mapState || (isLogged ? (isRewatched ? 'rewatched' : 'watched') : 'none');
       
       if (currentState === 'none') {
         newMap.set(episodeId, 'watched');
@@ -1349,6 +1373,17 @@ export default function ShowHub() {
     
     const selectionState = episodeSelections.get(episode.id) || 'none';
     const isLogged = loggedEpisodeIds.has(episode.id);
+    const isRewatched = rewatchedEpisodeIds.has(episode.id);
+    
+    // Determine the effective selection state:
+    // - If user has made a selection (in episodeSelections map), use that
+    // - If episode was previously logged as a rewatch, show as 'rewatched'
+    // - If episode was logged but not rewatched, show as 'watched'
+    // - Otherwise, show as 'none'
+    let effectiveState: EpisodeSelectionState = selectionState;
+    if (selectionState === 'none' && isLogged) {
+      effectiveState = isRewatched ? 'rewatched' : 'watched';
+    }
 
     return (
       <EpisodeListCard
@@ -1359,7 +1394,7 @@ export default function ShowHub() {
         rating={averageRating > 0 ? averageRating : undefined}
         postCount={postCount > 0 ? postCount : undefined}
         thumbnail={episode.thumbnail}
-        selectionState={isLogged && selectionState === 'none' ? 'watched' : selectionState}
+        selectionState={effectiveState}
         isLogged={isLogged}
         onPress={() => toggleEpisodeSelection(episode.id)}
         onToggleSelect={() => toggleEpisodeSelection(episode.id)}

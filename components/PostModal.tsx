@@ -150,6 +150,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [step, setStep] = useState<Step>('selectShow');
   const [selectedShow, setSelectedShow] = useState<Show | null>(preselectedShow || null);
   const [selectedEpisodes, setSelectedEpisodes] = useState<Episode[]>([]);
+  const [localEpisodeSelections, setLocalEpisodeSelections] = useState<Map<string, EpisodeSelectionState>>(new Map());
   const [postTitle, setPostTitle] = useState('');
   const [postBody, setPostBody] = useState('');
   const [postMentions, setPostMentions] = useState<string[]>([]);
@@ -1035,12 +1036,47 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   const handleEpisodeToggle = (episode: Episode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedEpisodes(prev => {
-      const isSelected = prev.some(ep => ep.id === episode.id);
-      if (isSelected) {
-        return prev.filter(ep => ep.id !== episode.id);
+    
+    const episodeKey = getEpisodeKey(episode);
+    const isLogged = loggedEpisodeIds.has(episodeKey);
+    
+    // Get current state before updating
+    const mapState = localEpisodeSelections.get(episode.id);
+    const currentState = mapState || (isLogged ? 'watched' : 'none');
+    
+    // Determine the next state
+    let nextState: EpisodeSelectionState;
+    if (currentState === 'none') {
+      nextState = 'watched';
+    } else if (currentState === 'watched') {
+      nextState = 'rewatched';
+    } else if (currentState === 'rewatched') {
+      nextState = isLogged ? 'unselected' : 'none';
+    } else {
+      // unselected -> watched
+      nextState = 'watched';
+    }
+    
+    // Update selection map
+    setLocalEpisodeSelections(prev => {
+      const newMap = new Map(prev);
+      if (nextState === 'none') {
+        newMap.delete(episode.id);
       } else {
-        return [...prev, episode];
+        newMap.set(episode.id, nextState);
+      }
+      return newMap;
+    });
+    
+    // Update selectedEpisodes - include episode if it's watched or rewatched
+    setSelectedEpisodes(prev => {
+      if (nextState === 'watched' || nextState === 'rewatched') {
+        // Add or keep in list
+        const filtered = prev.filter(ep => ep.id !== episode.id);
+        return [...filtered, episode];
+      } else {
+        // Remove from list (none or unselected)
+        return prev.filter(ep => ep.id !== episode.id);
       }
     });
   };
@@ -1228,8 +1264,17 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         const rewatchEpisodeIds = dbEpisodes
           .filter(ep => {
-            // Match by season/episode number since episodeSelections uses ShowHub IDs
-            // and dbEpisodes have database UUIDs
+            // Check localEpisodeSelections first (PostModal's Select Episodes flow)
+            for (const [selId, state] of localEpisodeSelections.entries()) {
+              if (state === 'rewatched') {
+                // Find the original episode from selectedEpisodes to get season/episode number
+                const originalEp = selectedEpisodes.find(e => e.id === selId);
+                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                  return true;
+                }
+              }
+            }
+            // Then check episodeSelections prop (ShowHub flow)
             for (const [selId, state] of episodeSelections?.entries() || []) {
               if (state === 'rewatched') {
                 // Find the original episode from preselectedEpisodes to get season/episode number
@@ -1415,8 +1460,16 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         const rewatchEpisodeIdsFallback = dbEpisodes
           .filter(ep => {
-            // Match by season/episode number since episodeSelections uses ShowHub IDs
-            // and dbEpisodes have database UUIDs
+            // Check localEpisodeSelections first (PostModal's Select Episodes flow)
+            for (const [selId, state] of localEpisodeSelections.entries()) {
+              if (state === 'rewatched') {
+                const originalEp = selectedEpisodes.find(e => e.id === selId);
+                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                  return true;
+                }
+              }
+            }
+            // Then check episodeSelections prop (ShowHub flow)
             for (const [selId, state] of episodeSelections?.entries() || []) {
               if (state === 'rewatched') {
                 const originalEp = preselectedEpisodes?.find(e => e.id === selId);
@@ -1492,6 +1545,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     setStep('selectShow');
     setSelectedShow(preselectedShow || null);
     setSelectedEpisodes([]);
+    setLocalEpisodeSelections(new Map());
     setPostTitle('');
     setPostBody('');
     setPostMentions([]);
@@ -1663,8 +1717,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             {season.expanded ? (
               <View style={styles.episodesContainer}>
                 {season.episodes.map(episode => {
-                  const isSelected = selectedEpisodes.some(ep => ep.id === episode.id);
                   const isLogged = loggedEpisodeIds.has(getEpisodeKey(episode));
+                  const selectionState = localEpisodeSelections.get(episode.id) || (isLogged ? 'watched' : 'none');
                   return (
                     <EpisodeListCard
                       key={episode.id}
@@ -1672,7 +1726,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                       title={episode.title}
                       description={episode.description}
                       thumbnail={episode.thumbnail}
-                      isSelected={isSelected}
+                      selectionState={selectionState}
                       isLogged={isLogged}
                       onPress={() => handleEpisodeToggle(episode)}
                       onToggleSelect={() => handleEpisodeToggle(episode)}
