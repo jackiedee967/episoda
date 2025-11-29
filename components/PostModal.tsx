@@ -164,6 +164,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShowForPlaylist, setSelectedShowForPlaylist] = useState<Show | null>(null);
   const [loggedEpisodeIds, setLoggedEpisodeIds] = useState<Set<string>>(new Set());
+  const [rewatchedEpisodeIds, setRewatchedEpisodeIds] = useState<Set<string>>(new Set());
   
   const [showSearchResults, setShowSearchResults] = useState<Array<{ show: Show; traktShow: TraktShow }>>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -196,6 +197,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   useEffect(() => {
     if (!selectedShow || !currentUser) {
       setLoggedEpisodeIds(new Set());
+      setRewatchedEpisodeIds(new Set());
       return;
     }
 
@@ -206,6 +208,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
     // Extract episode keys from all posts (use deterministic format, not UUIDs)
     const loggedIds = new Set<string>();
+    const rewatchedIds = new Set<string>();
+    
     userShowPosts.forEach(post => {
       // Handle single episode (legacy posts)
       if (post.episode) {
@@ -213,11 +217,19 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       }
       // Handle multiple episodes (new posts)
       if (post.episodes && post.episodes.length > 0) {
-        post.episodes.forEach(ep => loggedIds.add(getEpisodeKey(ep)));
+        post.episodes.forEach(ep => {
+          const key = getEpisodeKey(ep);
+          loggedIds.add(key);
+          // Check if this episode is in rewatchEpisodeIds
+          if (post.rewatchEpisodeIds?.includes(ep.id)) {
+            rewatchedIds.add(key);
+          }
+        });
       }
     });
 
     setLoggedEpisodeIds(loggedIds);
+    setRewatchedEpisodeIds(rewatchedIds);
   }, [posts, currentUser, selectedShow]);
 
   useEffect(() => {
@@ -1725,8 +1737,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             {season.expanded ? (
               <View style={styles.episodesContainer}>
                 {season.episodes.map(episode => {
-                  const isLogged = loggedEpisodeIds.has(getEpisodeKey(episode));
-                  const selectionState = localEpisodeSelections.get(episode.id) || (isLogged ? 'watched' : 'none');
+                  const episodeKey = getEpisodeKey(episode);
+                  const isLogged = loggedEpisodeIds.has(episodeKey);
+                  const isRewatched = rewatchedEpisodeIds.has(episodeKey);
+                  const selectionState = localEpisodeSelections.get(episode.id) || (isRewatched ? 'rewatched' : (isLogged ? 'watched' : 'none'));
                   return (
                     <EpisodeListCard
                       key={episode.id}
