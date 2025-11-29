@@ -55,7 +55,8 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Smart Show Recommendations**: Personalized system with instant-loading caching and friend-based recommendations.
 - **Scalability Infrastructure**: Comprehensive scaling guide at `supabase/SCALING_GUIDE.md` covering Supabase tier upgrades, connection pooling, read replicas, and monitoring. Database performance indexes in `supabase/migrations/004_performance_indexes.sql`.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system.
-- **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache. `profiles` table now includes `expo_push_token` and `notification_preferences` (JSONB) columns for push notifications.
+- **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`, `post_reports`, `user_reports`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache. `profiles` table now includes `expo_push_token`, `notification_preferences` (JSONB), `is_admin`, `is_suspended`, `suspended_at`, and `suspended_reason` columns.
+- **Admin Dashboard**: In-app admin panel at `/settings/admin` with server-side authorization. Features: overview stats (users, posts, engagement), reports queue (post/user reports with resolve/dismiss/delete actions), user management (search/suspend/unsuspend). All admin RPC functions check `is_current_user_admin()` for authorization. Migration: `supabase/migrations/007_admin_dashboard.sql`.
 
 ## Development & Deployment Workflow
 

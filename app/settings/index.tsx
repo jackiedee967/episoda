@@ -3,11 +3,12 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
-import { User, Bell, HelpCircle, LogOut } from 'lucide-react-native';
+import { User, Bell, HelpCircle, LogOut, Shield } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useData } from '@/contexts/DataContext';
 import { Asset } from 'expo-asset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +17,10 @@ const appBackground = Asset.fromModule(require('../../assets/images/app-backgrou
 export default function SettingsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { currentUserData } = useData();
   const insets = useSafeAreaInsets();
+  
+  const isAdmin = (currentUserData as any)?.is_admin === true;
 
   const handleSignOut = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -127,6 +131,28 @@ export default function SettingsScreen() {
               </Pressable>
             </View>
           </View>
+
+          {/* Admin Section - Only visible to admins */}
+          {isAdmin && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>ADMIN</Text>
+              
+              <View style={styles.rowContainer}>
+                <Pressable 
+                  style={styles.row}
+                  onPress={() => handleRowPress('/settings/admin')}
+                >
+                  <View style={styles.rowLeft}>
+                    <View style={styles.iconContainer}>
+                      <Shield size={22} color={colors.greenHighlight} />
+                    </View>
+                    <Text style={styles.rowText}>Admin Dashboard</Text>
+                  </View>
+                  <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+            </View>
+          )}
 
           {/* Bye Bye Section */}
           <View style={styles.section}>
