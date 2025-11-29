@@ -96,7 +96,6 @@ export async function saveShow(
     tmdb_id: traktShow.ids.tmdb,
     tvmaze_id: tvmazeId,
     title: traktShow.title,
-    year: traktShow.year || null,
     description: traktShow.overview || null,
     poster_url: posterUrl,
     backdrop_url: backdropUrl,
@@ -104,7 +103,6 @@ export async function saveShow(
     total_seasons: options.enrichedSeasonCount ?? null,
     total_episodes: traktShow.aired_episodes || null,
     color_scheme: colorScheme,
-    genres: traktShow.genres || [],
     updated_at: new Date().toISOString(),
   };
 
@@ -120,25 +118,6 @@ export async function saveShow(
 
   if (error) {
     console.error('❌ Upsert error:', error);
-    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.message?.includes('year') || error.code === 'PGRST204') {
-      console.warn('⚠️ Schema cache issue detected - retrying without problematic columns...');
-      const { genres, color_scheme, year, ...minimalShowData } = showData;
-      const { data: retryData, error: retryError } = await supabase
-        .from('shows')
-        .upsert(minimalShowData, {
-          onConflict: 'trakt_id',
-          ignoreDuplicates: false
-        })
-        .select('id, trakt_id, imdb_id, tvdb_id, tmdb_id, tvmaze_id, title, description, poster_url, backdrop_url, rating, total_seasons, total_episodes, created_at, updated_at')
-        .single();
-      
-      if (retryError) {
-        console.error('❌ Retry failed:', retryError);
-        throw retryError;
-      }
-      console.log('✅ saveShow COMPLETE (without cache-problematic columns), ID:', retryData.id);
-      return { ...retryData, year: null, color_scheme: null, genres: null } as DatabaseShow;
-    }
     throw error;
   }
 
@@ -179,7 +158,6 @@ export async function upsertShowFromAppModel(show: {
     total_seasons: show.totalSeasons ?? null,
     total_episodes: show.totalEpisodes ?? null,
     color_scheme: colorScheme,
-    genres: [],
     updated_at: new Date().toISOString(),
   };
 
@@ -195,25 +173,6 @@ export async function upsertShowFromAppModel(show: {
 
   if (error) {
     console.error('❌ Upsert error:', error);
-    if (error.message?.includes('genres') || error.message?.includes('color_scheme') || error.message?.includes('year') || error.code === 'PGRST204') {
-      console.warn('⚠️ Schema cache issue detected - retrying without problematic columns...');
-      const { genres, color_scheme, ...minimalShowData } = showData;
-      const { data: retryData, error: retryError } = await supabase
-        .from('shows')
-        .upsert(minimalShowData, {
-          onConflict: 'trakt_id',
-          ignoreDuplicates: false
-        })
-        .select('id, trakt_id, imdb_id, tvdb_id, tmdb_id, tvmaze_id, title, description, poster_url, backdrop_url, rating, total_seasons, total_episodes, created_at, updated_at')
-        .single();
-      
-      if (retryError) {
-        console.error('❌ Retry failed:', retryError);
-        throw retryError;
-      }
-      console.log('✅ upsertShowFromAppModel COMPLETE (without cache-problematic columns), ID:', retryData.id);
-      return { ...retryData, year: null, color_scheme: null, genres: null } as DatabaseShow;
-    }
     throw error;
   }
 
