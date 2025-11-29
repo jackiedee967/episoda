@@ -90,6 +90,14 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - `supabase/dev_database_schema.sql`: Complete schema for dev database setup
 - `integrations/supabase/client.ts`: Auto-switches between dev/prod based on environment
 - `supabase/migrations/`: Version-controlled database migrations
+- `supabase/DEPLOYMENT_CHECKLIST.md`: Step-by-step deployment guide
+
+### Agent Reminder
+When the user makes database changes or deploys updates, remind them to:
+1. Test in EPISODA-Dev first before touching production
+2. Follow the deployment checklist at `supabase/DEPLOYMENT_CHECKLIST.md`
+3. Create migration files for any schema changes
+4. Backup production before major changes
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.
