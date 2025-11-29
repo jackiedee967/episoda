@@ -1,4 +1,5 @@
 import { ENV } from '@/config/env';
+import { getCached, setCache, CACHE_TYPES, CACHE_TTL } from './showCache';
 
 const TRAKT_CLIENT_ID = ENV.TRAKT_CLIENT_ID;
 const TRAKT_BASE_URL = 'https://api.trakt.tv';
@@ -141,6 +142,11 @@ export async function getShowDetails(traktId: number | string): Promise<TraktSho
     throw new Error('Trakt API credentials not configured');
   }
 
+  const cached = await getCached<TraktShow>(CACHE_TYPES.SHOW_DETAILS, traktId);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const response = await fetch(
       `${TRAKT_BASE_URL}/shows/${traktId}?extended=full`,
@@ -155,6 +161,9 @@ export async function getShowDetails(traktId: number | string): Promise<TraktSho
     }
 
     const data: TraktShow = await response.json();
+    
+    await setCache(CACHE_TYPES.SHOW_DETAILS, traktId, data, CACHE_TTL.LONG);
+    
     return data;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching show details';
@@ -168,6 +177,11 @@ export async function getShowSeasons(traktId: number | string): Promise<TraktSea
     const errorMsg = 'Trakt API credentials not configured';
     console.error('❌', errorMsg);
     throw new Error(errorMsg);
+  }
+
+  const cached = await getCached<TraktSeason[]>(CACHE_TYPES.SHOW_SEASONS, traktId);
+  if (cached) {
+    return cached;
   }
 
   try {
@@ -184,7 +198,11 @@ export async function getShowSeasons(traktId: number | string): Promise<TraktSea
     }
 
     const data: TraktSeason[] = await response.json();
-    return data.filter(season => season.number > 0);
+    const filtered = data.filter(season => season.number > 0);
+    
+    await setCache(CACHE_TYPES.SHOW_SEASONS, traktId, filtered, CACHE_TTL.LONG);
+    
+    return filtered;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching seasons';
     console.error('❌ Error fetching show seasons from Trakt:', errorMsg);
@@ -202,6 +220,12 @@ export async function getSeasonEpisodes(
     throw new Error(errorMsg);
   }
 
+  const cacheKey = `${traktId}_s${seasonNumber}`;
+  const cached = await getCached<TraktEpisode[]>(CACHE_TYPES.SHOW_EPISODES, cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const response = await fetch(
       `${TRAKT_BASE_URL}/shows/${traktId}/seasons/${seasonNumber}?extended=full`,
@@ -216,6 +240,9 @@ export async function getSeasonEpisodes(
     }
 
     const data: TraktEpisode[] = await response.json();
+    
+    await setCache(CACHE_TYPES.SHOW_EPISODES, cacheKey, data, CACHE_TTL.LONG);
+    
     return data;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error fetching episodes';

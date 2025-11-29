@@ -48,7 +48,7 @@ export async function getCommunityPosts(options: CommunityPostsOptions): Promise
       }
     }
 
-    const fetchLimit = loggedShowIds.length > 0 && loggedShowIds.length <= 10 ? 1000 : 500;
+    const fetchLimit = Math.min(limit * 10, 100);
     const { data: allPosts, error } = await query
       .order('created_at', { ascending: false })
       .limit(fetchLimit);

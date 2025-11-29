@@ -2257,7 +2257,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log('📝 Getting followers for user:', userId);
       
-      // Try to get from Supabase
       const { data, error } = await supabase
         .from('follows')
         .select(`
@@ -2270,7 +2269,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             bio
           )
         `)
-        .eq('following_id', userId);
+        .eq('following_id', userId)
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         console.log('✅ Loaded', data.length, 'followers from Supabase');
@@ -2295,7 +2295,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log('📝 Getting following for user:', userId);
       
-      // Try to get from Supabase
       const { data, error } = await supabase
         .from('follows')
         .select(`
@@ -2308,7 +2307,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             bio
           )
         `)
-        .eq('follower_id', userId);
+        .eq('follower_id', userId)
+        .order('created_at', { ascending: false });
 
       if (!error && data) {
         console.log('✅ Loaded', data.length, 'following from Supabase');
@@ -2331,35 +2331,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getEpisodesWatchedCount = useCallback(async (userId: string): Promise<number> => {
     try {
-      // Try to get from Supabase
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('watch_history')
-        .select('episode_id')
+        .select('episode_id', { count: 'exact', head: true })
         .eq('user_id', userId);
 
-      if (!error && data) {
-        // Count unique episodes
-        const uniqueEpisodes = new Set(data.map(item => item.episode_id));
-        return uniqueEpisodes.size;
+      if (!error && count !== null) {
+        return count;
       }
     } catch (error) {
       console.log('Error fetching episodes watched count from Supabase:', error);
     }
 
-    // Fallback: count from posts (episodes logged)
-    const userPosts = posts.filter(p => p.user.id === userId);
-    const episodeIds = new Set<string>();
-    userPosts.forEach(post => {
-      if (post.episodes && post.episodes.length > 0) {
-        post.episodes.forEach(ep => episodeIds.add(ep.id));
-      }
-    });
-    return episodeIds.size;
-  }, [posts]);
+    return 0;
+  }, []);
 
   const getTotalLikesReceived = useCallback(async (userId: string): Promise<number> => {
     try {
-      // Try to get from Supabase
       const { data, error } = await supabase
         .from('posts')
         .select('likes')
@@ -2372,10 +2360,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.log('Error fetching total likes received from Supabase:', error);
     }
 
-    // Fallback: count from local posts
-    const userPosts = posts.filter(p => p.user.id === userId);
-    return userPosts.reduce((sum, post) => sum + post.likes, 0);
-  }, [posts]);
+    return 0;
+  }, []);
 
   const getTopFollowers = useCallback(async (userId: string, limit: number = 3): Promise<User[]> => {
     try {
