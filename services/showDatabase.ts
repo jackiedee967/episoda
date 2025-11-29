@@ -87,15 +87,7 @@ export async function saveShow(
   console.log('📦 Preparing show data...');
   
   const existingShow = await getShowByTraktId(traktShow.ids.trakt);
-  
-  // If show already exists in database, return it without trying to upsert
-  // This prevents RLS policy issues and unnecessary updates
-  if (existingShow) {
-    console.log('✅ Show already exists in database, returning existing:', existingShow.id);
-    return existingShow;
-  }
-  
-  const colorScheme = assignColorToShow(traktShow.ids.trakt);
+  const colorScheme = existingShow?.color_scheme || assignColorToShow(traktShow.ids.trakt);
   
   const showData = {
     trakt_id: traktShow.ids.trakt,
@@ -171,15 +163,7 @@ export async function upsertShowFromAppModel(show: {
   console.log('🔍 upsertShowFromAppModel START:', show.title);
   
   const existingShow = await getShowByTraktId(show.traktId);
-  
-  // If show already exists in database, return it without trying to upsert
-  // This prevents RLS policy issues and unnecessary updates
-  if (existingShow) {
-    console.log('✅ Show already exists in database, returning existing:', existingShow.id);
-    return existingShow;
-  }
-  
-  const colorScheme = assignColorToShow(show.traktId);
+  const colorScheme = existingShow?.color_scheme || assignColorToShow(show.traktId);
   
   const showData = {
     trakt_id: show.traktId,

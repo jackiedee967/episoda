@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS shows (
   tmdb_id INTEGER,
   tvmaze_id INTEGER,
   title VARCHAR(500) NOT NULL,
+  year INTEGER,
   description TEXT,
   poster_url TEXT,
   backdrop_url TEXT,
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS shows (
   total_seasons INTEGER,
   total_episodes INTEGER,
   color_scheme TEXT,
+  genres TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
