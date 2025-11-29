@@ -1187,6 +1187,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('✅ Loaded', postsData.length, 'posts from Supabase');
+        
+        // Debug: Log raw post data to check rewatch_episode_ids
+        postsData.forEach((p: any) => {
+          if (p.rewatch_episode_ids?.length > 0 || p.episode_ids?.length > 0) {
+            console.log('📦 Raw post from DB:', {
+              id: p.id,
+              episode_ids: p.episode_ids,
+              rewatch_episode_ids: p.rewatch_episode_ids,
+              hasRewatchColumn: 'rewatch_episode_ids' in p,
+            });
+          }
+        });
 
         // Step 2: Extract unique IDs for batch fetching
         const postIds = postsData.map((p: any) => p.id);
