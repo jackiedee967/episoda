@@ -742,9 +742,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statValue: {
-    ...typography.titleL,
+    ...typography.subtitle,
     color: colors.text,
-    fontSize: 28,
   },
   statLabel: {
     ...typography.p3Regular,
