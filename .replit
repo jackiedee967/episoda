@@ -102,5 +102,11 @@ build = ["npm", "run", "build:web"]
 [userenv]
 
 [userenv.shared]
+
+[userenv.development]
+EXPO_PUBLIC_SUPABASE_URL = "https://atzrteveximvujzoneuu.supabase.co"
+EXPO_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0enJ0ZXZleGltdnVqem9uZXV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MjU3ODIsImV4cCI6MjA4MDAwMTc4Mn0.M3t8s5A_2vvT21-yikevk6akpMn9G8Ab90K0RA3HfYo"
+
+[userenv.production]
 EXPO_PUBLIC_SUPABASE_URL = "https://mbwuoqoktdgudzaemjhx.supabase.co"
 EXPO_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1id3VvcW9rdGRndWR6YWVtamh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2MTE4MzAsImV4cCI6MjA3NjE4NzgzMH0.aAWDr1SkB-isZUJGMFHGPrcLIQaa9zOGwOif3Btz7-0"

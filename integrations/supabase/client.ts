@@ -3,7 +3,9 @@ import type { Database } from './types';
 import { createClient } from '@supabase/supabase-js'
 import Constants from 'expo-constants';
 
-// PRODUCTION CREDENTIALS - Use EXPO_PUBLIC_ env vars accessible to Expo bundler
+// Database Configuration
+// Development: atzrteveximvujzoneuu (EPISODA-Dev)
+// Production: mbwuoqoktdgudzaemjhx (EPISODA-Prod)
 const SUPABASE_URL = Constants.expoConfig?.extra?.SUPABASE_URL || 
                      (Constants as any).manifest?.extra?.SUPABASE_URL || 
                      process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -12,7 +14,7 @@ const SUPABASE_ANON_KEY = Constants.expoConfig?.extra?.SUPABASE_ANON_KEY ||
                           (Constants as any).manifest?.extra?.SUPABASE_ANON_KEY || 
                           process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-// PRODUCTION GUARD: Fail-fast if credentials missing
+// Fail-fast if credentials missing
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error(
     '🚨 CRITICAL: Missing Supabase credentials!\n' +
@@ -21,9 +23,13 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-console.log('✅ Supabase Client initialized:', {
-  url: SUPABASE_URL.substring(0, 30) + '...',
-  keyLength: SUPABASE_ANON_KEY.length
+// Identify which database we're connected to
+const isDev = SUPABASE_URL.includes('atzrteveximvujzoneuu');
+const dbName = isDev ? 'EPISODA-Dev' : 'EPISODA-Prod';
+
+console.log(`✅ Supabase Client initialized: ${dbName}`, {
+  environment: isDev ? 'DEVELOPMENT' : 'PRODUCTION',
+  url: SUPABASE_URL.substring(0, 40) + '...'
 });
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
