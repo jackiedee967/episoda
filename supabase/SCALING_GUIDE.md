@@ -54,14 +54,16 @@ EPISODA uses `@supabase/supabase-js` which goes through PostgREST API. Supabase 
 - Pool Mode: Transaction (default)
 - Pool Size: 15-20 per user/db pair (default)
 
-### 3. Enable Point-in-Time Recovery
+### 3. Backup Strategy
 
-**When:** Before real users
-**Where:** Supabase Dashboard > Database > Backups
+**Pre-Launch (0-10K users):** Use daily automatic backups + manual backups
+- Daily backups are included free with Pro plan
+- Create manual backup before any production changes
+- Supabase Dashboard > Database > Backups > "Create new backup"
 
-1. Enable PITR (Pro plan required)
-2. Set retention period (7 days minimum)
-3. Test restore process in Dev first
+**At Scale (10K+ users):** Consider enabling PITR ($100+/mo)
+- Allows restore to any second within retention window
+- Worth it when losing even hours of data is unacceptable
 
 ## Phase 3: Growth (10K-100K Users)
 
