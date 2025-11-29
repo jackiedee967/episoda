@@ -42,14 +42,17 @@ This guide covers the infrastructure changes needed to scale EPISODA to 1 millio
 
 **Recommendation:** Start with Pro ($25/mo), upgrade when DAU > 10K
 
-### 2. Enable Connection Pooling
+### 2. Connection Pooling (Already Enabled!)
 
-**When:** At launch
-**Where:** Supabase Dashboard > Database > Settings > Connection Pooling
+**Status:** Automatic for Supabase JS Client
 
-1. Enable "Transaction" mode pooler
-2. Update connection string in production to use pooler URL
-3. Set pool size based on plan (Pro: 100 connections)
+EPISODA uses `@supabase/supabase-js` which goes through PostgREST API. Supabase automatically handles connection pooling via Supavisor on the backend.
+
+**No code changes needed!**
+
+**Verify settings:** Supabase Dashboard > Database > Settings
+- Pool Mode: Transaction (default)
+- Pool Size: 15-20 per user/db pair (default)
 
 ### 3. Enable Point-in-Time Recovery
 
