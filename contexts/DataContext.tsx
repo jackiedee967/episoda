@@ -2345,13 +2345,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const getTotalLikesReceived = useCallback(async (userId: string): Promise<number> => {
     try {
-      const { data, error } = await supabase
+      // First get all post IDs for this user
+      const { data: userPosts, error: postsError } = await supabase
         .from('posts')
-        .select('likes')
+        .select('id')
         .eq('user_id', userId);
 
-      if (!error && data) {
-        return data.reduce((sum, post) => sum + (post.likes || 0), 0);
+      if (postsError || !userPosts || userPosts.length === 0) {
+        return 0;
+      }
+
+      const postIds = userPosts.map(p => p.id);
+
+      // Count likes on those posts from post_likes table
+      const { count, error } = await supabase
+        .from('post_likes')
+        .select('*', { count: 'exact', head: true })
+        .in('post_id', postIds);
+
+      if (!error && count !== null) {
+        return count;
       }
     } catch (error) {
       console.log('Error fetching total likes received from Supabase:', error);
