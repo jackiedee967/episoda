@@ -711,7 +711,7 @@ export default function UserProfile() {
           <Text style={styles.emptyStateText}>
             {isCurrentUser 
               ? 'Start logging shows to see your posts here!'
-              : `${user.displayName} hasn't posted anything yet.`
+              : `${profileUser?.displayName || 'This user'} hasn't posted anything yet.`
             }
           </Text>
           {isCurrentUser ? (
@@ -749,7 +749,7 @@ export default function UserProfile() {
           <Text style={styles.emptyStateText}>
             {isCurrentUser 
               ? 'Start logging shows to see them here!'
-              : `${user.displayName} hasn't watched anything yet.`
+              : `${profileUser?.displayName || 'This user'} hasn't watched anything yet.`
             }
           </Text>
           {isCurrentUser ? (
@@ -947,13 +947,13 @@ export default function UserProfile() {
           visible={showFriendsInCommonModal}
           onClose={() => setShowFriendsInCommonModal(false)}
           friends={friendsInCommon}
-          profileUsername={user?.username || ''}
+          profileUsername={profileUser?.username || ''}
         />
 
         <BlockReportModal
           visible={showBlockReportModal}
           onClose={() => setShowBlockReportModal(false)}
-          username={user.username}
+          username={profileUser?.username || ''}
           onBlock={handleBlock}
           onReport={handleReport}
         />
