@@ -51,8 +51,9 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Data Management**: All data managed via real Supabase data; Supabase-backed user profile cache.
 - **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system.
 - **Search Enrichment System**: Background worker for enhancing search results with metadata, progressive enhancement, and caching.
-- **Performance Optimizations**: Database-first approach, lazy loading, background loading, and optimized queries.
+- **Performance Optimizations**: Database-first approach, lazy loading, background loading, and optimized queries. TV show metadata caching via `services/showCache.ts` (memory LRU + AsyncStorage with 24hr TTL). SQL COUNT aggregates for episode watched counts.
 - **Smart Show Recommendations**: Personalized system with instant-loading caching and friend-based recommendations.
+- **Scalability Infrastructure**: Comprehensive scaling guide at `supabase/SCALING_GUIDE.md` covering Supabase tier upgrades, connection pooling, read replicas, and monitoring. Database performance indexes in `supabase/migrations/004_performance_indexes.sql`.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system.
 - **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache. `profiles` table now includes `expo_push_token` and `notification_preferences` (JSONB) columns for push notifications.
 
