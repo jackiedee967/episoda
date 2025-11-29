@@ -1275,18 +1275,26 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               }
             }
             // Then check episodeSelections prop (ShowHub flow)
+            // selId format is: `${traktId}-S${season}E${episode}` e.g. "73250-S1E1"
             for (const [selId, state] of episodeSelections?.entries() || []) {
               if (state === 'rewatched') {
-                // Find the original episode from preselectedEpisodes to get season/episode number
-                const originalEp = preselectedEpisodes?.find(e => e.id === selId);
-                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
-                  return true;
+                // Parse season/episode directly from the selection key
+                const match = selId.match(/-S(\d+)E(\d+)$/);
+                if (match) {
+                  const selSeason = parseInt(match[1], 10);
+                  const selEpisode = parseInt(match[2], 10);
+                  if (ep.seasonNumber === selSeason && ep.episodeNumber === selEpisode) {
+                    console.log('🔮 Found rewatched episode:', { selId, season: selSeason, episode: selEpisode, dbEpId: ep.id });
+                    return true;
+                  }
                 }
               }
             }
             return false;
           })
           .map(ep => ep.id);
+        
+        console.log('🎬 Computed rewatchEpisodeIds:', rewatchEpisodeIds);
 
         const newPost = await createPost({
           user: currentUser,
