@@ -1192,7 +1192,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const postIds = postsData.map((p: any) => p.id);
         let uniqueUserIds = [...new Set(postsData.map((p: any) => p.user_id))];
         const uniqueShowIds = [...new Set(postsData.map((p: any) => p.show_id))];
-        const allEpisodeIds = [...new Set(postsData.flatMap((p: any) => p.episode_ids || []))];
+        // Include BOTH episode_ids AND rewatch_episode_ids to ensure rewatch episodes get hydrated
+        const allEpisodeIds = [...new Set(postsData.flatMap((p: any) => [
+          ...(p.episode_ids || []),
+          ...(p.rewatch_episode_ids || [])
+        ]))];
 
         // Fetch reposts first to get reposter user IDs
         const { data: repostsData } = await supabase
