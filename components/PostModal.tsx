@@ -1127,6 +1127,9 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   const handlePost = async () => {
     console.log("🚀 POST CREATION STARTED - Show:", selectedShow?.title, "Rating:", rating, "Episodes:", selectedEpisodes.length, "TraktMap size:", traktEpisodesMap.size);
+    console.log("📦 episodeSelections from ShowHub:", episodeSelections ? Array.from(episodeSelections.entries()) : 'none');
+    console.log("📦 localEpisodeSelections:", Array.from(localEpisodeSelections.entries()));
+    console.log("📦 selectedEpisodes:", selectedEpisodes.map(e => ({ id: e.id, s: e.seasonNumber, e: e.episodeNumber, title: e.title })));
     if (!selectedShow) {
       console.log("❌ BLOCKED: No selected show");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -1282,23 +1285,20 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 // Find the original episode from selectedEpisodes to get season/episode number
                 const originalEp = selectedEpisodes.find(e => e.id === selId);
                 if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                  console.log('🔮 Found rewatched episode (local flow):', { selId, season: originalEp.seasonNumber, episode: originalEp.episodeNumber, dbEpId: ep.id });
                   return true;
                 }
               }
             }
             // Then check episodeSelections prop (ShowHub flow)
-            // selId format is: `${traktId}-S${season}E${episode}` e.g. "73250-S1E1"
+            // ShowHub uses episode IDs as keys (e.g., "uuid-format-id")
             for (const [selId, state] of episodeSelections?.entries() || []) {
               if (state === 'rewatched') {
-                // Parse season/episode directly from the selection key
-                const match = selId.match(/-S(\d+)E(\d+)$/);
-                if (match) {
-                  const selSeason = parseInt(match[1], 10);
-                  const selEpisode = parseInt(match[2], 10);
-                  if (ep.seasonNumber === selSeason && ep.episodeNumber === selEpisode) {
-                    console.log('🔮 Found rewatched episode:', { selId, season: selSeason, episode: selEpisode, dbEpId: ep.id });
-                    return true;
-                  }
+                // Find the original episode from selectedEpisodes using the episode ID
+                const originalEp = selectedEpisodes.find(e => e.id === selId);
+                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                  console.log('🔮 Found rewatched episode (ShowHub flow):', { selId, season: originalEp.seasonNumber, episode: originalEp.episodeNumber, dbEpId: ep.id });
+                  return true;
                 }
               }
             }

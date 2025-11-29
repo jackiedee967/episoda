@@ -1547,7 +1547,10 @@ export default function ShowHub() {
         onClose={handleCloseModal} 
         preselectedShow={show}
         preselectedEpisode={selectedEpisode}
-        preselectedEpisodes={episodeSelections.size > 0 ? showEpisodes.filter(ep => episodeSelections.has(ep.id)) : undefined}
+        preselectedEpisodes={episodeSelections.size > 0 ? showEpisodes.filter(ep => {
+          const state = episodeSelections.get(ep.id);
+          return state === 'watched' || state === 'rewatched';
+        }) : undefined}
         episodeSelections={episodeSelections}
         prefilledRating={showRatingForPost}
         skipToPostDetails={showRatingForPost > 0}
