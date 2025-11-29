@@ -1302,6 +1302,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
 
         const episodesMap = new Map();
+        console.log('🎬 Episodes query result:', { 
+          count: (episodesResult.data || []).length,
+          requestedIds: allEpisodeIds.length,
+          error: (episodesResult as any).error
+        });
         (episodesResult.data || []).forEach((ep: any) => {
           episodesMap.set(ep.id, {
             id: ep.id,
@@ -1367,6 +1372,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
           const episodes = (dbPost.episode_ids || [])
             .map((id: string) => episodesMap.get(id))
             .filter((ep: any) => ep !== undefined);
+          
+          // Debug: Log episode hydration
+          if (dbPost.rewatch_episode_ids?.length > 0) {
+            console.log('🔄 Rewatch post found:', {
+              postId: dbPost.id,
+              episodeIds: dbPost.episode_ids,
+              rewatchIds: dbPost.rewatch_episode_ids,
+              hydratedCount: episodes.length,
+              hydratedIds: episodes.map((e: any) => e.id)
+            });
+          }
 
           return {
             id: dbPost.id,
