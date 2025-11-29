@@ -900,7 +900,7 @@ export default function UserProfile() {
           {profileUser && (
             <FavoritesSection 
               userId={profileUser.id} 
-              isOwnProfile={isOwnProfile} 
+              isOwnProfile={isCurrentUser} 
             />
           )}
           
