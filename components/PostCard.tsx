@@ -156,13 +156,24 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
   };
 
   const getWatchedText = () => {
+    console.log('🎯 getWatchedText called:', {
+      postId: latestPost.id,
+      hasEpisodes: !!latestPost.episodes,
+      episodesCount: latestPost.episodes?.length || 0,
+      episodeIds: latestPost.episodes?.map(ep => ep.id) || [],
+      rewatchEpisodeIds: latestPost.rewatchEpisodeIds || [],
+    });
+    
     if (!latestPost.episodes || latestPost.episodes.length === 0) {
+      console.log('🎯 No episodes - returning watched');
       return 'watched';
     }
     
     const rewatchIds = latestPost.rewatchEpisodeIds || [];
     const allRewatched = latestPost.episodes.every(ep => rewatchIds.includes(ep.id));
     const allWatched = rewatchIds.length === 0;
+    
+    console.log('🎯 Rewatch check:', { rewatchIds, allRewatched, allWatched });
     
     if (allRewatched) return 'rewatched';
     if (allWatched) return 'watched';
