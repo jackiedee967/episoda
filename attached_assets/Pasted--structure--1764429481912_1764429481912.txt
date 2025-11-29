@@ -1,0 +1,74 @@
+| structure                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table: blocks
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  blocker_id uuid NOT NULL
+  blocked_id uuid NOT NULL
+  created_at timestamp with time zone DEFAULT now()                                                                                                                                                                                                                                                                                                                      |
+| Table: help_desk_comments
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  post_id uuid NOT NULL
+  user_id uuid NOT NULL
+  username text NOT NULL
+  comment_text text NOT NULL
+  created_at timestamp with time zone DEFAULT now()                                                                                                                                                                                                                                                          |
+| Table: help_desk_likes
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  post_id uuid NOT NULL
+  user_id uuid NOT NULL
+  created_at timestamp with time zone DEFAULT now()                                                                                                                                                                                                                                                                                                                   |
+| Table: help_desk_posts
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  user_id uuid NOT NULL
+  username text NOT NULL
+  title text NOT NULL
+  details text NOT NULL
+  category text NOT NULL
+  likes_count integer DEFAULT 0
+  comments_count integer DEFAULT 0
+  created_at timestamp with time zone DEFAULT now()
+  updated_at timestamp with time zone DEFAULT now()                                                                                                                    |
+| Table: notification_preferences
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  user_id uuid NOT NULL
+  new_follower boolean DEFAULT true
+  post_liked boolean DEFAULT true
+  post_commented boolean DEFAULT true
+  comment_replied boolean DEFAULT true
+  mentioned boolean DEFAULT true
+  friend_posted boolean DEFAULT true
+  friend_activity boolean DEFAULT true
+  created_at timestamp with time zone DEFAULT now()
+  updated_at timestamp with time zone DEFAULT now()              |
+| Table: replies
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  comment_id uuid NOT NULL
+  user_id uuid NOT NULL
+  reply_text text NOT NULL
+  likes_count integer DEFAULT 0
+  created_at timestamp with time zone DEFAULT now()
+  updated_at timestamp with time zone DEFAULT now()                                                                                                                                                                                                         |
+| Table: reply_likes
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  reply_id uuid NOT NULL
+  user_id uuid NOT NULL
+  created_at timestamp with time zone DEFAULT now()                                                                                                                                                                                                                                                                                                                      |
+| Table: reposts
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  user_id uuid NOT NULL
+  original_post_id text NOT NULL
+  created_at timestamp with time zone DEFAULT now()                                                                                                                                                                                                                                                                                                                  |
+| Table: user_profiles
+  id uuid NOT NULL DEFAULT gen_random_uuid()
+  user_id uuid NOT NULL
+  username character varying(255) NOT NULL
+  display_name character varying(255)
+  avatar_url text
+  bio text
+  social_links jsonb
+  episodes_watched integer DEFAULT 0
+  total_likes_received integer DEFAULT 0
+  follower_count integer DEFAULT 0
+  following_count integer DEFAULT 0
+  created_at timestamp with time zone DEFAULT now()
+  updated_at timestamp with time zone DEFAULT now() |
