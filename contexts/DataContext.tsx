@@ -210,8 +210,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Loading current user profile from Supabase:', userId);
       
-      // Fetch profile, social links, and admin status in parallel
-      const [profileResult, socialLinksResult, adminResult] = await Promise.all([
+      // Fetch profile and social links in parallel
+      const [profileResult, socialLinksResult] = await Promise.all([
         supabase
           .from('profiles' as any)
           .select('*')
@@ -220,8 +220,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         supabase
           .from('social_links' as any)
           .select('*')
-          .eq('user_id', userId),
-        supabase.rpc('check_is_admin', { user_uuid: userId })
+          .eq('user_id', userId)
       ]);
 
       if (profileResult.error) {
@@ -231,11 +230,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       if (profileResult.data) {
         const profileData = profileResult.data as any;
-        console.log('🔍 Admin check result:', adminResult);
-        // Use RPC result if available, otherwise fallback to known admin user IDs
-        // Fallback needed due to Supabase schema cache delay for new columns/functions
+        // Read is_admin directly from profile, with fallback to known admin IDs
         const KNOWN_ADMIN_IDS = ['0e8b3464-d39e-4881-87de-033ca899657d'];
-        const isAdmin = adminResult.data === true || KNOWN_ADMIN_IDS.includes(userId);
+        const isAdmin = profileData.is_admin === true || KNOWN_ADMIN_IDS.includes(userId);
         console.log('✅ Loaded user profile:', profileData.username, 'is_admin:', isAdmin);
         
         // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
