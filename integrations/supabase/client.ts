@@ -27,9 +27,9 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 const isDev = SUPABASE_URL.includes('atzrteveximvujzoneuu');
 const dbName = isDev ? 'EPISODA-Dev' : 'EPISODA-Prod';
 
-console.log(`✅ Supabase Client initialized: ${dbName}`, {
-  environment: isDev ? 'DEVELOPMENT' : 'PRODUCTION',
-  url: SUPABASE_URL.substring(0, 40) + '...'
+console.log(`🔌 SUPABASE CONNECTION: ${dbName}`, {
+  environment: isDev ? '✅ DEVELOPMENT' : '⚠️ PRODUCTION',
+  fullUrl: SUPABASE_URL
 });
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
