@@ -1275,6 +1275,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
         // CRITICAL: Create post FIRST, even if episode saving failed
         console.log('📝 Creating post in Supabase...');
+        console.log('🔍 dbEpisodes:', dbEpisodes.map(e => ({ id: e.id, s: e.seasonNumber, e: e.episodeNumber })));
+        console.log('🔍 selectedEpisodes:', selectedEpisodes.map(e => ({ id: e.id, s: e.seasonNumber, e: e.episodeNumber })));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         const rewatchEpisodeIds = dbEpisodes
@@ -1292,13 +1294,16 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             }
             // Then check episodeSelections prop (ShowHub flow)
             // ShowHub uses episode IDs as keys (e.g., "uuid-format-id")
-            for (const [selId, state] of episodeSelections?.entries() || []) {
-              if (state === 'rewatched') {
-                // Find the original episode from selectedEpisodes using the episode ID
-                const originalEp = selectedEpisodes.find(e => e.id === selId);
-                if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
-                  console.log('🔮 Found rewatched episode (ShowHub flow):', { selId, season: originalEp.seasonNumber, episode: originalEp.episodeNumber, dbEpId: ep.id });
-                  return true;
+            if (episodeSelections && episodeSelections.size > 0) {
+              for (const [selId, state] of episodeSelections.entries()) {
+                if (state === 'rewatched') {
+                  // Find the original episode from selectedEpisodes using the episode ID
+                  const originalEp = selectedEpisodes.find(e => e.id === selId);
+                  console.log('🔍 ShowHub check:', { selId, state, ep: { s: ep.seasonNumber, e: ep.episodeNumber }, originalEp: originalEp ? { id: originalEp.id, s: originalEp.seasonNumber, e: originalEp.episodeNumber } : null });
+                  if (originalEp && originalEp.seasonNumber === ep.seasonNumber && originalEp.episodeNumber === ep.episodeNumber) {
+                    console.log('🔮 Found rewatched episode (ShowHub flow):', { selId, season: originalEp.seasonNumber, episode: originalEp.episodeNumber, dbEpId: ep.id });
+                    return true;
+                  }
                 }
               }
             }

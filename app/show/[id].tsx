@@ -990,7 +990,9 @@ export default function ShowHub() {
   };
 
   const handleLogSelectedEpisodes = () => {
-    const selectedIds = Array.from(episodeSelections.keys());
+    const selectedIds = Array.from(episodeSelections.entries())
+      .filter(([, state]) => state === 'watched' || state === 'rewatched')
+      .map(([id]) => id);
     const episodes = showEpisodes.filter(ep => selectedIds.includes(ep.id));
     
     if (episodes.length > 0) {
@@ -1334,9 +1336,6 @@ export default function ShowHub() {
     const handleLogButtonPress = () => {
       if (!show) return;
       
-      const selectedIds = Array.from(episodeSelections.keys());
-      const episodes = showEpisodes.filter(ep => selectedIds.includes(ep.id));
-      
       setModalVisible(true);
     };
     
@@ -1600,7 +1599,7 @@ export default function ShowHub() {
           { name: 'Profile', icon: 'person.fill', route: '/profile' },
         ]}
         selectionMode={activeTab === 'episodes'}
-        selectedCount={episodeSelections.size}
+        selectedCount={Array.from(episodeSelections.values()).filter(s => s === 'watched' || s === 'rewatched').length}
         onLogPress={handleLogSelectedEpisodes}
       />
     </>
