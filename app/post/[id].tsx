@@ -690,7 +690,15 @@ export default function PostDetail() {
                   <Pressable onPress={handleUserPress}>
                     <Text style={styles.username}>{post.user.displayName}</Text>
                   </Pressable>
-                  {' watched'}
+                  {(() => {
+                    if (!post.episodes || post.episodes.length === 0) return ' watched';
+                    const rewatchIds = post.rewatchEpisodeIds || [];
+                    const allRewatched = post.episodes.every(ep => rewatchIds.includes(ep.id));
+                    const allWatched = rewatchIds.length === 0;
+                    if (allRewatched) return ' rewatched';
+                    if (allWatched) return ' watched';
+                    return ' watched';
+                  })()}
                 </Text>
                 
                 {/* Show and Episode Tags */}
@@ -708,14 +716,50 @@ export default function PostDetail() {
                       />
                     );
                   })()}
-                  {post.episodes && post.episodes.length > 0 ? (
-                    <PostTags
-                      prop="Large"
-                      state="S_E_"
-                      text={`S${post.episodes[0].seasonNumber} E${post.episodes[0].episodeNumber}`}
-                      onPress={() => handleEpisodePress(post.episodes![0].id)}
-                    />
-                  ) : null}
+                  {(() => {
+                    if (!post.episodes || post.episodes.length === 0) return null;
+                    
+                    const rewatchIds = post.rewatchEpisodeIds || [];
+                    const watchedEpisodes = post.episodes.filter(ep => !rewatchIds.includes(ep.id));
+                    const rewatchedEpisodes = post.episodes.filter(ep => rewatchIds.includes(ep.id));
+                    const isMixed = watchedEpisodes.length > 0 && rewatchedEpisodes.length > 0;
+                    
+                    if (isMixed) {
+                      return (
+                        <>
+                          {watchedEpisodes.map((episode) => (
+                            <PostTags
+                              key={episode.id}
+                              prop="Large"
+                              state="S_E_"
+                              text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+                              onPress={() => handleEpisodePress(episode.id)}
+                            />
+                          ))}
+                          <Text style={styles.andRewatchedText}> and rewatched</Text>
+                          {rewatchedEpisodes.map((episode) => (
+                            <PostTags
+                              key={episode.id}
+                              prop="Large"
+                              state="S_E_"
+                              text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+                              onPress={() => handleEpisodePress(episode.id)}
+                            />
+                          ))}
+                        </>
+                      );
+                    }
+                    
+                    return post.episodes.map((episode) => (
+                      <PostTags
+                        key={episode.id}
+                        prop="Large"
+                        state="S_E_"
+                        text={`S${episode.seasonNumber} E${episode.episodeNumber}`}
+                        onPress={() => handleEpisodePress(episode.id)}
+                      />
+                    ));
+                  })()}
                 </View>
 
                 {/* Star Rating */}
@@ -1036,6 +1080,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    alignItems: 'center',
+  },
+  andRewatchedText: {
+    color: tokens.colors.almostWhite,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 13,
+    fontWeight: '300',
   },
   headerDivider: {
     height: 1,
