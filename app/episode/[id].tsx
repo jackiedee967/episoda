@@ -70,6 +70,7 @@ export default function EpisodeHub() {
     const loadEpisodeData = async () => {
       if (!id) return;
       
+      console.log('📺 Episode Hub loading for ID:', id);
       setIsLoading(true);
       try {
         let episodeData: any = null;
@@ -82,25 +83,32 @@ export default function EpisodeHub() {
           .eq('id', id)
           .single();
 
+        console.log('📺 Direct lookup result:', { found: !!directEpisode, error: directError?.code });
+
         if (directEpisode && !directError) {
           episodeData = directEpisode;
+          console.log('📺 Found episode via direct lookup, thumbnail_url:', episodeData.thumbnail_url);
         } else {
           // Fallback: Parse Trakt-style ID (format: "traktId-S{season}E{episode}")
           // Example: "41793-S2E1" -> traktId=41793, season=2, episode=1
           const idStr = String(id);
           const match = idStr.match(/^(\d+)-S(\d+)E(\d+)$/);
+          console.log('📺 Parsing Trakt-style ID:', idStr, 'Match:', match ? 'yes' : 'no');
           
           if (match) {
             const [, traktId, seasonStr, episodeStr] = match;
             const seasonNum = parseInt(seasonStr, 10);
             const episodeNum = parseInt(episodeStr, 10);
+            console.log('📺 Parsed:', { traktId, seasonNum, episodeNum });
             
             // First find the show by trakt_id
-            const { data: showByTrakt } = await supabase
+            const { data: showByTrakt, error: showError } = await supabase
               .from('shows')
               .select('id')
               .eq('trakt_id', parseInt(traktId, 10))
               .single();
+            
+            console.log('📺 Show lookup:', { found: !!showByTrakt, showId: showByTrakt?.id, error: showError?.code });
             
             if (showByTrakt) {
               // Now find the episode by show_id + season + episode
@@ -111,6 +119,12 @@ export default function EpisodeHub() {
                 .eq('season_number', seasonNum)
                 .eq('episode_number', episodeNum)
                 .single();
+              
+              console.log('📺 Episode lookup:', { 
+                found: !!fallbackEpisode, 
+                error: fallbackError?.code,
+                thumbnail_url: fallbackEpisode?.thumbnail_url 
+              });
               
               if (fallbackEpisode && !fallbackError) {
                 episodeData = fallbackEpisode;
