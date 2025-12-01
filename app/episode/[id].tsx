@@ -72,31 +72,73 @@ export default function EpisodeHub() {
       
       setIsLoading(true);
       try {
-        // Fetch episode
-        const { data: episodeData, error: episodeError } = await supabase
+        let episodeData: any = null;
+        let showData: any = null;
+        
+        // First, try direct ID lookup (works for UUID-based IDs)
+        const { data: directEpisode, error: directError } = await supabase
           .from('episodes')
           .select('*')
           .eq('id', id)
           .single();
 
-        if (episodeError || !episodeData) {
-          console.error('Error loading episode:', episodeError);
+        if (directEpisode && !directError) {
+          episodeData = directEpisode;
+        } else {
+          // Fallback: Parse Trakt-style ID (format: "traktId-S{season}E{episode}")
+          // Example: "41793-S2E1" -> traktId=41793, season=2, episode=1
+          const idStr = String(id);
+          const match = idStr.match(/^(\d+)-S(\d+)E(\d+)$/);
+          
+          if (match) {
+            const [, traktId, seasonStr, episodeStr] = match;
+            const seasonNum = parseInt(seasonStr, 10);
+            const episodeNum = parseInt(episodeStr, 10);
+            
+            // First find the show by trakt_id
+            const { data: showByTrakt } = await supabase
+              .from('shows')
+              .select('id')
+              .eq('trakt_id', parseInt(traktId, 10))
+              .single();
+            
+            if (showByTrakt) {
+              // Now find the episode by show_id + season + episode
+              const { data: fallbackEpisode, error: fallbackError } = await supabase
+                .from('episodes')
+                .select('*')
+                .eq('show_id', showByTrakt.id)
+                .eq('season_number', seasonNum)
+                .eq('episode_number', episodeNum)
+                .single();
+              
+              if (fallbackEpisode && !fallbackError) {
+                episodeData = fallbackEpisode;
+              }
+            }
+          }
+        }
+
+        if (!episodeData) {
+          console.error('Episode not found for id:', id);
           setIsLoading(false);
           return;
         }
 
         // Fetch show data
-        const { data: showData, error: showError } = await supabase
+        const { data: fetchedShowData, error: showError } = await supabase
           .from('shows')
           .select('*')
           .eq('id', episodeData.show_id)
           .single();
 
-        if (showError || !showData) {
+        if (showError || !fetchedShowData) {
           console.error('Error loading show:', showError);
           setIsLoading(false);
           return;
         }
+        
+        showData = fetchedShowData;
 
         // Robust thumbnail fetching with multiple fallback strategies
         let thumbnailUrl = episodeData.thumbnail_url;
@@ -268,29 +310,68 @@ export default function EpisodeHub() {
     
     setRefreshing(true);
     try {
-      // Fetch episode
-      const { data: episodeData, error: episodeError } = await supabase
+      let episodeData: any = null;
+      let showData: any = null;
+      
+      // First, try direct ID lookup (works for UUID-based IDs)
+      const { data: directEpisode, error: directError } = await supabase
         .from('episodes')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (episodeError || !episodeData) {
-        console.error('Error loading episode:', episodeError);
+      if (directEpisode && !directError) {
+        episodeData = directEpisode;
+      } else {
+        // Fallback: Parse Trakt-style ID
+        const idStr = String(id);
+        const match = idStr.match(/^(\d+)-S(\d+)E(\d+)$/);
+        
+        if (match) {
+          const [, traktId, seasonStr, episodeStr] = match;
+          const seasonNum = parseInt(seasonStr, 10);
+          const episodeNum = parseInt(episodeStr, 10);
+          
+          const { data: showByTrakt } = await supabase
+            .from('shows')
+            .select('id')
+            .eq('trakt_id', parseInt(traktId, 10))
+            .single();
+          
+          if (showByTrakt) {
+            const { data: fallbackEpisode } = await supabase
+              .from('episodes')
+              .select('*')
+              .eq('show_id', showByTrakt.id)
+              .eq('season_number', seasonNum)
+              .eq('episode_number', episodeNum)
+              .single();
+            
+            if (fallbackEpisode) {
+              episodeData = fallbackEpisode;
+            }
+          }
+        }
+      }
+
+      if (!episodeData) {
+        console.error('Episode not found for refresh');
         return;
       }
 
       // Fetch show data
-      const { data: showData, error: showError } = await supabase
+      const { data: fetchedShowData, error: showError } = await supabase
         .from('shows')
         .select('*')
         .eq('id', episodeData.show_id)
         .single();
 
-      if (showError || !showData) {
+      if (showError || !fetchedShowData) {
         console.error('Error loading show:', showError);
         return;
       }
+      
+      showData = fetchedShowData;
 
       // Robust thumbnail fetching with multiple fallback strategies
       let thumbnailUrl = episodeData.thumbnail_url;
@@ -395,21 +476,61 @@ export default function EpisodeHub() {
         if (!id) return;
         
         try {
-          const { data: episodeData, error: episodeError } = await supabase
+          let episodeData: any = null;
+          let showData: any = null;
+          
+          // First, try direct ID lookup (works for UUID-based IDs)
+          const { data: directEpisode, error: directError } = await supabase
             .from('episodes')
             .select('*')
             .eq('id', id)
             .single();
 
-          if (episodeError || !episodeData) return;
+          if (directEpisode && !directError) {
+            episodeData = directEpisode;
+          } else {
+            // Fallback: Parse Trakt-style ID
+            const idStr = String(id);
+            const match = idStr.match(/^(\d+)-S(\d+)E(\d+)$/);
+            
+            if (match) {
+              const [, traktId, seasonStr, episodeStr] = match;
+              const seasonNum = parseInt(seasonStr, 10);
+              const episodeNum = parseInt(episodeStr, 10);
+              
+              const { data: showByTrakt } = await supabase
+                .from('shows')
+                .select('id')
+                .eq('trakt_id', parseInt(traktId, 10))
+                .single();
+              
+              if (showByTrakt) {
+                const { data: fallbackEpisode } = await supabase
+                  .from('episodes')
+                  .select('*')
+                  .eq('show_id', showByTrakt.id)
+                  .eq('season_number', seasonNum)
+                  .eq('episode_number', episodeNum)
+                  .single();
+                
+                if (fallbackEpisode) {
+                  episodeData = fallbackEpisode;
+                }
+              }
+            }
+          }
 
-          const { data: showData, error: showError } = await supabase
+          if (!episodeData) return;
+
+          const { data: fetchedShowData, error: showError } = await supabase
             .from('shows')
             .select('*')
             .eq('id', episodeData.show_id)
             .single();
 
-          if (showError || !showData) return;
+          if (showError || !fetchedShowData) return;
+          
+          showData = fetchedShowData;
 
           // Robust thumbnail fetching with multiple fallback strategies (silent)
           let thumbnailUrl = episodeData.thumbnail_url;
@@ -632,35 +753,37 @@ export default function EpisodeHub() {
 
           {/* Episode Info Card */}
           <View style={styles.episodeInfoContainer}>
-            <Text style={styles.sectionTitle}>{episode.title}</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.sectionTitle}>{episode.title}</Text>
+              <Pressable 
+                style={({ pressed }) => [
+                  styles.heartButton,
+                  pressed && styles.heartButtonPressed,
+                ]} 
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPlaylistModalVisible(true);
+                }}
+              >
+                <IconSymbol 
+                  name={isShowSaved(show.id) ? "heart.fill" : "heart"} 
+                  size={20} 
+                  color={isShowSaved(show.id) ? tokens.colors.primaryPink : tokens.colors.pureWhite} 
+                />
+              </Pressable>
+            </View>
             <View style={styles.episodeCard}>
-              <View style={styles.thumbnailWrapper}>
-                <View style={styles.thumbnailPlaceholder}>
-                  {episode.thumbnail ? (
+              {episode.thumbnail ? (
+                <View style={styles.thumbnailWrapper}>
+                  <View style={styles.thumbnailPlaceholder}>
                     <FadeInImage
                       source={{ uri: episode.thumbnail }}
                       style={styles.thumbnail}
                       contentFit="cover"
                     />
-                  ) : null}
+                  </View>
                 </View>
-                <Pressable 
-                  style={({ pressed }) => [
-                    styles.saveIcon,
-                    pressed && styles.saveIconPressed,
-                  ]} 
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setPlaylistModalVisible(true);
-                  }}
-                >
-                  <IconSymbol 
-                    name={isShowSaved(show.id) ? "heart.fill" : "heart"} 
-                    size={16} 
-                    color={tokens.colors.pureWhite} 
-                  />
-                </Pressable>
-              </View>
+              ) : null}
               <View style={styles.episodeDetails}>
                 <Text style={styles.episodeDescription} numberOfLines={3}>
                   {episode.description}
@@ -815,11 +938,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 21,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 15,
+  },
   sectionTitle: {
     ...tokens.typography.titleL,
     color: tokens.colors.pureWhite,
-    marginBottom: 15,
-    width: 258,
+    flex: 1,
+    marginRight: 12,
+  },
+  heartButton: {
+    padding: 4,
+  },
+  heartButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.9 }],
   },
   episodeCard: {
     flexDirection: 'row',
