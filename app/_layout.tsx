@@ -2,6 +2,7 @@
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Button from "@/components/Button";
 import { useNetworkState } from "expo-network";
 import {
@@ -164,12 +165,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={EpisodaDarkTheme}>
-        <AuthProvider>
-          <DataProvider>
-            <WidgetProvider>
-              <AuthNavigator />
-              <Stack
+      <ErrorBoundary>
+        <ThemeProvider value={EpisodaDarkTheme}>
+          <AuthProvider>
+            <DataProvider>
+              <WidgetProvider>
+                <AuthNavigator />
+                <Stack
               screenOptions={{
                 animation: "slide_from_right",
                 headerShown: true,
@@ -287,13 +289,14 @@ export default function RootLayout() {
                   animation: "fade",
                 }}
               />
-            </Stack>
-              <StatusBar style="light" />
-              <SystemBars style="light" />
-            </WidgetProvider>
-          </DataProvider>
-        </AuthProvider>
-      </ThemeProvider>
+              </Stack>
+                <StatusBar style="light" />
+                <SystemBars style="light" />
+              </WidgetProvider>
+            </DataProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

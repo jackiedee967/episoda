@@ -106,7 +106,7 @@ interface SearchUser {
   follower_count: number;
 }
 
-type TabType = 'overview' | 'reports' | 'flagged' | 'users';
+type TabType = 'overview' | 'reports' | 'flagged' | 'users' | 'errors';
 
 interface FlaggedPost {
   id: string;
@@ -137,6 +137,26 @@ interface FlaggedComment {
   };
 }
 
+interface AppError {
+  id: string;
+  error_message: string;
+  screen_name: string;
+  platform: string;
+  resolved: boolean;
+  notes: string | null;
+  created_at: string;
+  user_username: string | null;
+  user_display_name: string | null;
+}
+
+interface ErrorStats {
+  total_errors: number;
+  unresolved_errors: number;
+  errors_today: number;
+  errors_this_week: number;
+  top_screens: { screen_name: string; count: number }[] | null;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
@@ -149,6 +169,8 @@ export default function AdminDashboard() {
   const [userReports, setUserReports] = useState<UserReport[]>([]);
   const [flaggedPosts, setFlaggedPosts] = useState<FlaggedPost[]>([]);
   const [flaggedComments, setFlaggedComments] = useState<FlaggedComment[]>([]);
+  const [appErrors, setAppErrors] = useState<AppError[]>([]);
+  const [errorStats, setErrorStats] = useState<ErrorStats | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -198,11 +220,34 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const loadErrors = useCallback(async () => {
+    try {
+      const [errorsResult, statsResult] = await Promise.all([
+        (supabase.rpc as any)('get_recent_errors', { p_limit: 50, p_include_resolved: false }),
+        (supabase.rpc as any)('get_error_stats')
+      ]);
+      
+      if (errorsResult.error) {
+        console.error('Error loading app errors:', errorsResult.error);
+      } else {
+        setAppErrors(errorsResult.data || []);
+      }
+      
+      if (statsResult.error) {
+        console.error('Error loading error stats:', statsResult.error);
+      } else {
+        setErrorStats(statsResult.data);
+      }
+    } catch (error) {
+      console.error('Error loading errors:', error);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    await Promise.all([loadStats(), loadReports(), loadFlaggedContent()]);
+    await Promise.all([loadStats(), loadReports(), loadFlaggedContent(), loadErrors()]);
     setIsLoading(false);
-  }, [loadStats, loadReports, loadFlaggedContent]);
+  }, [loadStats, loadReports, loadFlaggedContent, loadErrors]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -384,6 +429,32 @@ export default function AdminDashboard() {
       await loadStats();
     } catch (error) {
       console.error('Error reviewing flagged comment:', error);
+    }
+  };
+
+  const handleResolveError = async (errorId: string, notes?: string) => {
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm('Mark this error as resolved?')
+      : true;
+
+    if (!confirmed) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const { error } = await (supabase.rpc as any)('resolve_error', {
+        p_error_id: errorId,
+        p_notes: notes || null
+      });
+
+      if (error) {
+        console.error('Error resolving app error:', error);
+        return;
+      }
+
+      await loadErrors();
+    } catch (error) {
+      console.error('Error resolving app error:', error);
     }
   };
 
@@ -820,6 +891,96 @@ export default function AdminDashboard() {
     </View>
   );
 
+  const renderErrors = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>App Errors</Text>
+      
+      {errorStats && (
+        <View style={styles.statsGrid}>
+          {renderStatCard(
+            <AlertTriangle size={24} color="#FF6B6B" />,
+            'Unresolved',
+            errorStats.unresolved_errors
+          )}
+          {renderStatCard(
+            <Clock size={24} color={colors.primary} />,
+            'Today',
+            errorStats.errors_today
+          )}
+          {renderStatCard(
+            <BarChart3 size={24} color={colors.textSecondary} />,
+            'This Week',
+            errorStats.errors_this_week
+          )}
+        </View>
+      )}
+
+      {errorStats?.top_screens && errorStats.top_screens.length > 0 && (
+        <View style={styles.topScreensContainer}>
+          <Text style={styles.subSectionTitle}>Top Error Screens</Text>
+          {errorStats.top_screens.map((screen, index) => (
+            <View key={index} style={styles.topScreenRow}>
+              <Text style={styles.topScreenName}>{screen.screen_name || 'Unknown'}</Text>
+              <Text style={styles.topScreenCount}>{screen.count} errors</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <Text style={[styles.subSectionTitle, { marginTop: 24 }]}>
+        Recent Errors ({appErrors.length})
+      </Text>
+
+      {appErrors.length > 0 ? (
+        appErrors.map((error) => (
+          <View key={error.id} style={styles.reportCard}>
+            <View style={styles.reportHeader}>
+              <View style={[styles.reportBadge, { backgroundColor: '#FF6B6B' }]}>
+                <AlertTriangle size={12} color="#fff" />
+                <Text style={styles.reportBadgeText}>Error</Text>
+              </View>
+              <Text style={styles.reportTime}>
+                {new Date(error.created_at).toLocaleDateString()}
+              </Text>
+            </View>
+            
+            <Text style={styles.errorMessage}>{error.error_message}</Text>
+            
+            <View style={styles.errorMeta}>
+              <Text style={styles.errorMetaText}>
+                Screen: {error.screen_name || 'Unknown'}
+              </Text>
+              <Text style={styles.errorMetaText}>
+                Platform: {error.platform || 'Unknown'}
+              </Text>
+              {error.user_username && (
+                <Text style={styles.errorMetaText}>
+                  User: @{error.user_username}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.actionRow}>
+              <Pressable 
+                style={[styles.actionBtn, styles.approveBtn]}
+                onPress={() => handleResolveError(error.id)}
+              >
+                <CheckCircle size={14} color={colors.black} />
+                <Text style={styles.approveBtnText}>Mark Resolved</Text>
+              </Pressable>
+            </View>
+          </View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <CheckCircle size={48} color={colors.primary} />
+          <Text style={styles.emptyStateText}>No unresolved errors</Text>
+          <Text style={styles.emptyStateSubtext}>The app is running smoothly</Text>
+        </View>
+      )}
+    </View>
+  );
+
   return (
     <>
       <Stack.Screen 
@@ -844,7 +1005,7 @@ export default function AdminDashboard() {
         </View>
 
         <View style={styles.tabBar}>
-          {(['overview', 'reports', 'flagged', 'users'] as TabType[]).map((tab) => (
+          {(['overview', 'reports', 'flagged', 'users', 'errors'] as TabType[]).map((tab) => (
             <Pressable
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -875,6 +1036,7 @@ export default function AdminDashboard() {
           {activeTab === 'reports' && renderReports()}
           {activeTab === 'flagged' && renderFlagged()}
           {activeTab === 'users' && renderUsers()}
+          {activeTab === 'errors' && renderErrors()}
           
           <View style={{ height: 100 }} />
         </ScrollView>
@@ -1296,5 +1458,54 @@ const styles = StyleSheet.create({
     color: colors.error,
     textAlign: 'center',
     marginTop: 40,
+  },
+  errorMessage: {
+    ...typography.p1,
+    color: colors.text,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  errorMeta: {
+    marginTop: 8,
+    gap: 4,
+  },
+  errorMetaText: {
+    ...typography.p3Regular,
+    color: colors.textSecondary,
+  },
+  topScreensContainer: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+  },
+  topScreenRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  topScreenName: {
+    ...typography.p2,
+    color: colors.text,
+  },
+  topScreenCount: {
+    ...typography.p2Bold,
+    color: colors.textSecondary,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
   },
 });
