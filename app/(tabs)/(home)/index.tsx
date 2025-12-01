@@ -36,7 +36,7 @@ type SuggestedUser = User & {
 export default function HomeScreen() {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
-  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, cachedRecommendations, ensureShowUuid } = useData();
+  const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, ensureShowUuid } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
   const [selectedShow, setSelectedShow] = useState<any>(null);
@@ -226,132 +226,132 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!currentUser?.id || posts.length === 0) return;
 
-    // Get user's posts only
-    const userPosts = posts.filter(post => post.user.id === currentUser.id && post.show);
+    // Get user's posts only (most recent first)
+    const userPosts = posts
+      .filter(post => post.user.id === currentUser.id && post.show)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
-    // Extract unique shows (most recent first) and enrich with year/endYear from cachedRecommendations if available
+    // Extract unique shows (most recent first)
     const uniqueShows = new Map();
-    const recommendationsMap = new Map(
-      (cachedRecommendations || []).map(rec => [
-        rec.traktId, 
-        { year: rec.traktShow?.year, endYear: rec.traktShow?.end_year }
-      ])
-    );
     
     for (const post of userPosts) {
       if (post.show && !uniqueShows.has(post.show.id)) {
-        const recData = recommendationsMap.get(post.show.traktId);
-        const enrichedShow = {
-          ...post.show,
-          year: post.show.year || recData?.year,
-          endYear: post.show.endYear || recData?.endYear
-        };
-        uniqueShows.set(post.show.id, enrichedShow);
+        uniqueShows.set(post.show.id, post.show);
         if (uniqueShows.size >= 6) break;
       }
     }
     
     setCurrentlyWatchingShows(Array.from(uniqueShows.values()));
-  }, [currentUser?.id, posts, cachedRecommendations]);
+  }, [currentUser?.id, posts]);
 
-  // Fetch recommended shows (friends' shows + cached interest-based recommendations)
+  // Fetch recommended shows - matches explore page approach (fresh trending + friend activity, sorted by rating)
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    try {
-      // Get traktIds from Currently Watching to exclude them
-      const currentlyWatchingTraktIds = new Set(
-        currentlyWatchingShows
-          .map(show => show.traktId)
-          .filter(Boolean)
-      );
+    const fetchRecommendedShows = async () => {
+      try {
+        // Get traktIds from Currently Watching to exclude them
+        const currentlyWatchingTraktIds = new Set(
+          currentlyWatchingShows
+            .map(show => show.traktId)
+            .filter(Boolean)
+        );
 
-      const followingIds = currentUser.following || [];
-      
-      // 1. Get shows from friends' posts and count unique friends per show
-      const friendsPosts = posts.filter(post => 
-        followingIds.includes(post.user.id) && post.show
-      );
+        const followingIds = currentUser.following || [];
+        
+        // 1. Get shows from friends' posts (like explore page)
+        const friendsPosts = posts.filter(post => 
+          followingIds.includes(post.user.id) && post.show
+        );
 
-      // Use traktId as consistent identifier, count unique friends
-      const showFriendCounts = new Map<number, { show: any; friendCount: number; friendIds: Set<string> }>();
-      
-      for (const post of friendsPosts) {
-        const traktId = post.show.traktId;
-        if (!traktId) continue;
-        
-        // Skip if in Currently Watching
-        if (currentlyWatchingTraktIds.has(traktId)) continue;
-        
-        const existing = showFriendCounts.get(traktId);
-        if (existing) {
-          existing.friendIds.add(post.user.id);
-          existing.friendCount = existing.friendIds.size;
-        } else {
-          showFriendCounts.set(traktId, {
-            show: post.show,
-            friendCount: 1,
-            friendIds: new Set([post.user.id])
-          });
+        // Collect unique shows from friends with user info
+        const friendShowsMap = new Map<number, { show: any; users: any[] }>();
+        for (const post of friendsPosts) {
+          const traktId = post.show?.traktId;
+          if (!traktId || currentlyWatchingTraktIds.has(traktId)) continue;
+          
+          const existing = friendShowsMap.get(traktId);
+          if (existing) {
+            if (!existing.users.find(u => u.id === post.user.id)) {
+              existing.users.push(post.user);
+            }
+          } else {
+            friendShowsMap.set(traktId, {
+              show: {
+                ...post.show,
+                rating: post.show.rating || 0
+              },
+              users: [post.user]
+            });
+          }
         }
-      }
 
-      // Sort by friend count (descending) - DON'T slice yet
-      const friendsShows = Array.from(showFriendCounts.values())
-        .sort((a, b) => b.friendCount - a.friendCount);
-
-      // 2. Use cached recommendations from DataContext (already fetched and enriched)
-      const recommendations = cachedRecommendations || [];
-      
-      // 3. Normalize all shows to consistent format using traktId as key
-      // Ensure every show has an ID (use trakt-{id} as fallback)
-      const normalizedFriendsShows = friendsShows.map(item => ({
-        id: item.show.id || `trakt-${item.show.traktId}`,
-        traktId: item.show.traktId,
-        title: item.show.title,
-        poster: item.show.poster || item.show.posterUrl || null,
-        year: item.show.year,
-        endYear: item.show.endYear
-      }));
-
-      const normalizedInterestShows = recommendations
-        .filter(rec => rec?.show?.poster && rec?.traktId && !currentlyWatchingTraktIds.has(rec.traktId))
-        .map(rec => ({
-          id: rec.show!.id || `trakt-${rec.traktId!}`,
-          traktId: rec.traktId!,
-          title: rec.show!.title,
-          poster: rec.show!.poster,
-          year: rec.traktShow?.year,
-          endYear: rec.traktShow?.end_year
+        const friendShows = Array.from(friendShowsMap.values()).map(item => ({
+          id: item.show.id || `trakt-${item.show.traktId}`,
+          traktId: item.show.traktId,
+          title: item.show.title,
+          poster: item.show.poster || item.show.posterUrl,
+          year: item.show.year,
+          endYear: item.show.endYear,
+          rating: item.show.rating || 0,
+          mutualFriendsWatching: item.users
         }));
 
-      // 4. Merge: friends' shows first (by friend count), then interest-based
-      // Remove duplicates by traktId (keep first occurrence = friend show)
-      const seenTraktIds = new Set<number>();
-      const combined = [];
+        // 2. Fetch fresh trending shows (like explore page does)
+        const { getTrendingShows } = await import('@/services/trakt');
+        const { showEnrichmentManager } = await import('@/services/showEnrichment');
+        const { mapTraktShowToShow } = await import('@/services/showMappers');
 
-      // Add friends' shows first (already sorted by friend count)
-      for (const show of normalizedFriendsShows) {
-        if (!seenTraktIds.has(show.traktId)) {
-          seenTraktIds.add(show.traktId);
-          combined.push(show);
+        const { data: trending } = await getTrendingShows(12);
+        const enrichedTrending = await Promise.all(
+          trending.map(async (traktShow) => {
+            const enrichedData = await showEnrichmentManager.enrichShow(traktShow);
+            const show = mapTraktShowToShow(traktShow, {
+              posterUrl: enrichedData.posterUrl,
+              totalSeasons: enrichedData.totalSeasons,
+              totalEpisodes: traktShow.aired_episodes,
+              endYear: enrichedData.endYear
+            });
+            return {
+              ...show,
+              id: show.id || `trakt-${traktShow.ids.trakt}`,
+              traktId: traktShow.ids.trakt,
+              rating: traktShow.rating || 0,
+              mutualFriendsWatching: []
+            };
+          })
+        );
+
+        // 3. Mix friend shows + trending, sort by rating (like explore page)
+        const seenTraktIds = new Set<number>();
+        const mixed = [];
+
+        // Add friend shows first
+        for (const show of friendShows) {
+          if (!seenTraktIds.has(show.traktId)) {
+            seenTraktIds.add(show.traktId);
+            mixed.push(show);
+          }
         }
-      }
 
-      // Add interest-based shows (only if not already added)
-      for (const show of normalizedInterestShows) {
-        if (!seenTraktIds.has(show.traktId)) {
-          seenTraktIds.add(show.traktId);
-          combined.push(show);
+        // Add trending shows (excluding duplicates and currently watching)
+        for (const show of enrichedTrending) {
+          if (!seenTraktIds.has(show.traktId) && !currentlyWatchingTraktIds.has(show.traktId)) {
+            seenTraktIds.add(show.traktId);
+            mixed.push(show);
+          }
         }
-      }
 
-      // NOW slice to 10
-      setRecommendedShows(combined.slice(0, 10));
-    } catch (error) {
-      console.error('Error fetching recommended shows:', error);
-    }
-  }, [currentUser?.id, currentUser?.following, posts, currentlyWatchingShows, cachedRecommendations]);
+        // Sort by rating and take top 10
+        const sorted = mixed.sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 10);
+        setRecommendedShows(sorted);
+      } catch (error) {
+        console.error('Error fetching recommended shows:', error);
+      }
+    };
+
+    fetchRecommendedShows();
+  }, [currentUser?.id, currentUser?.following, posts, currentlyWatchingShows]);
 
   useEffect(() => {
     const fetchCommunityPosts = async () => {
