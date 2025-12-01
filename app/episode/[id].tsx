@@ -794,10 +794,16 @@ export default function EpisodeHub() {
                       source={{ uri: episode.thumbnail }}
                       style={styles.thumbnail}
                       contentFit="cover"
+                      onLoad={() => console.log('📸 Thumbnail loaded:', episode.thumbnail)}
+                      onError={(e) => console.log('📸 Thumbnail error:', e)}
                     />
                   </View>
                 </View>
-              ) : null}
+              ) : (
+                <View style={styles.thumbnailWrapper}>
+                  <View style={styles.thumbnailPlaceholder} />
+                </View>
+              )}
               <View style={styles.episodeDetails}>
                 <Text style={styles.episodeDescription} numberOfLines={3}>
                   {episode.description}
