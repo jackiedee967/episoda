@@ -1896,6 +1896,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     width: '100%',
+    marginTop: 4,
     marginBottom: 10,
   },
   logButton: {
