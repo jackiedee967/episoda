@@ -991,11 +991,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // Check cache first
     const cachedUuid = traktIdToUuidMap.get(traktId);
     if (cachedUuid) {
-      console.log(`✅ Found cached UUID for Trakt ID ${traktId}: ${cachedUuid}`);
-      return cachedUuid;
+      // Verify the cached UUID actually exists in the database
+      try {
+        const { getShowById } = await import('@/services/showDatabase');
+        const existingShow = await getShowById(cachedUuid);
+        if (existingShow) {
+          console.log(`✅ Found cached UUID for Trakt ID ${traktId}: ${cachedUuid}`);
+          return cachedUuid;
+        } else {
+          console.log(`⚠️ Cached UUID ${cachedUuid} no longer exists in database, will recreate show`);
+          // Clear the stale cache entry
+          setTraktIdToUuidMap(prevMap => {
+            const newMap = new Map(prevMap);
+            newMap.delete(traktId);
+            return newMap;
+          });
+        }
+      } catch (error) {
+        console.log(`⚠️ Error verifying cached UUID, will recreate show:`, error);
+      }
     }
 
-    // Not in cache - need to save to database
+    // Not in cache or cache is stale - need to save to database
     console.log(`💾 Saving show "${show.title}" to database to get UUID...`);
     
     try {
