@@ -93,7 +93,7 @@ export default function ExploreShowSection({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onViewMore();
             }}>
-              <Text style={styles.viewMoreButton}>View More</Text>
+              <Text style={styles.viewMoreText}>View more ›</Text>
             </Pressable>
           )}
         </View>
@@ -188,10 +188,9 @@ const styles = StyleSheet.create({
     ...tokens.typography.p1,
     color: tokens.colors.almostWhite,
   },
-  viewMoreButton: {
-    ...tokens.typography.p3M,
-    color: tokens.colors.greenHighlight,
-    fontSize: 13,
+  viewMoreText: {
+    ...tokens.typography.p3R,
+    color: tokens.colors.almostWhite,
   },
   genreTitleButton: {
     paddingHorizontal: 20,
