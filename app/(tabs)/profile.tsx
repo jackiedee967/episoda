@@ -987,10 +987,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
   },
   statContent: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 3,
+    gap: 6,
   },
   statValue: {
     ...typography.p1,
