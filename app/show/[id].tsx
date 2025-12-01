@@ -1761,7 +1761,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 2,
+    marginTop: -6,
     gap: 4,
   },
   posterRatingContainerPressed: {
