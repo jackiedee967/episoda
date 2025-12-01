@@ -43,7 +43,7 @@ import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
-import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider } from '@/services/tmdb';
+import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider, searchShowByName as searchTMDBShow, getBackdropUrl as getTMDBBackdropUrl } from '@/services/tmdb';
 
 import { getUserShowRatingFromStorage, getShowRatingStatsFromDB } from '@/components/ShowRatingModal';
 
@@ -456,15 +456,28 @@ export default function ShowHub() {
           });
         }
         
-        // Fetch backdrop from TVMaze if we have the ID (with separate error handling)
+        // Fetch backdrop - prioritize TMDB (best coverage), fallback to TVMaze
         let backdropUrl = dbShow.backdrop_url;
-        if (!backdropUrl && dbShow.tvmaze_id) {
+        if (!backdropUrl) {
+          // Tier 1: TMDB (has best backdrop coverage, especially for major shows)
           try {
-            backdropUrl = await getTVMazeBackdrop(dbShow.tvmaze_id);
-            console.log('🖼️ Got backdrop from TVMaze:', backdropUrl ? 'yes' : 'no');
-          } catch (backdropError) {
-            console.warn('⚠️ Failed to fetch backdrop from TVMaze:', backdropError);
-            // Continue with refresh - backdrop is optional
+            const tmdbResult = await searchTMDBShow(traktShow.title, traktShow.year);
+            if (tmdbResult?.backdrop_path) {
+              backdropUrl = getTMDBBackdropUrl(tmdbResult.backdrop_path);
+              console.log('🖼️ Got backdrop from TMDB:', backdropUrl ? 'yes' : 'no');
+            }
+          } catch (tmdbError) {
+            console.warn('⚠️ Failed to fetch backdrop from TMDB:', tmdbError);
+          }
+          
+          // Tier 2: TVMaze fallback (if TMDB didn't have it)
+          if (!backdropUrl && dbShow.tvmaze_id) {
+            try {
+              backdropUrl = await getTVMazeBackdrop(dbShow.tvmaze_id);
+              console.log('🖼️ Got backdrop from TVMaze:', backdropUrl ? 'yes' : 'no');
+            } catch (backdropError) {
+              console.warn('⚠️ Failed to fetch backdrop from TVMaze:', backdropError);
+            }
           }
         }
         
