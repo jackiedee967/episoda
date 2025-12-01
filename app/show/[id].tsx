@@ -1761,7 +1761,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 8,
     paddingBottom: 2,
     gap: 4,
   },
