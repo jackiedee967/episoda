@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
+import { checkPostForModeration } from '@/services/contentModeration';
 
 interface UserData {
   following: string[];
@@ -1571,7 +1572,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const episodeIds = postData.episodes?.map(ep => ep.id) || [];
       const rewatchEpisodeIds = postData.rewatchEpisodeIds || [];
       
-      const insertPayload = {
+      const moderationResult = checkPostForModeration(postData.title, postData.body);
+      if (moderationResult.flagged) {
+        console.log('⚠️ Post flagged for moderation:', moderationResult.reason);
+      }
+      
+      const insertPayload: Record<string, any> = {
         user_id: user.id,
         show_id: postData.show.id,
         show_title: postData.show.title,
@@ -1583,6 +1589,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         rating: postData.rating,
         tags: postData.tags,
       };
+      
+      if (moderationResult.flagged) {
+        insertPayload.flagged_for_moderation = true;
+        insertPayload.moderation_reason = moderationResult.reason;
+        insertPayload.moderation_status = 'pending';
+      }
 
       console.log('📤 Inserting post with payload:', insertPayload);
         

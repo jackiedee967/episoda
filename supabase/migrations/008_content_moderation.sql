@@ -105,6 +105,8 @@ BEGIN
   UPDATE posts
   SET 
     moderation_status = CASE WHEN p_action = 'approve' THEN 'approved' ELSE 'removed' END,
+    flagged_for_moderation = CASE WHEN p_action = 'approve' THEN FALSE ELSE flagged_for_moderation END,
+    moderation_reason = CASE WHEN p_action = 'approve' THEN NULL ELSE moderation_reason END,
     moderation_reviewed_at = NOW(),
     moderation_reviewed_by = auth.uid()
   WHERE id = p_post_id;
@@ -135,6 +137,8 @@ BEGIN
   UPDATE comments
   SET 
     moderation_status = CASE WHEN p_action = 'approve' THEN 'approved' ELSE 'removed' END,
+    flagged_for_moderation = CASE WHEN p_action = 'approve' THEN FALSE ELSE flagged_for_moderation END,
+    moderation_reason = CASE WHEN p_action = 'approve' THEN NULL ELSE moderation_reason END,
     moderation_reviewed_at = NOW(),
     moderation_reviewed_by = auth.uid()
   WHERE id = p_comment_id;

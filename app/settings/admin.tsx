@@ -106,7 +106,36 @@ interface SearchUser {
   follower_count: number;
 }
 
-type TabType = 'overview' | 'reports' | 'users';
+type TabType = 'overview' | 'reports' | 'flagged' | 'users';
+
+interface FlaggedPost {
+  id: string;
+  title: string;
+  body: string;
+  show_title: string;
+  moderation_reason: string;
+  moderation_status: string;
+  created_at: string;
+  author: {
+    user_id: string;
+    username: string;
+    display_name: string;
+  };
+}
+
+interface FlaggedComment {
+  id: string;
+  comment_text: string;
+  post_id: string;
+  moderation_reason: string;
+  moderation_status: string;
+  created_at: string;
+  author: {
+    user_id: string;
+    username: string;
+    display_name: string;
+  };
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -118,6 +147,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [postReports, setPostReports] = useState<PostReport[]>([]);
   const [userReports, setUserReports] = useState<UserReport[]>([]);
+  const [flaggedPosts, setFlaggedPosts] = useState<FlaggedPost[]>([]);
+  const [flaggedComments, setFlaggedComments] = useState<FlaggedComment[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -153,11 +184,25 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  const loadFlaggedContent = useCallback(async () => {
+    try {
+      const { data, error } = await (supabase.rpc as any)('get_flagged_content');
+      if (error) {
+        console.error('Error loading flagged content:', error);
+        return;
+      }
+      setFlaggedPosts(data?.flagged_posts || []);
+      setFlaggedComments(data?.flagged_comments || []);
+    } catch (error) {
+      console.error('Error loading flagged content:', error);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    await Promise.all([loadStats(), loadReports()]);
+    await Promise.all([loadStats(), loadReports(), loadFlaggedContent()]);
     setIsLoading(false);
-  }, [loadStats, loadReports]);
+  }, [loadStats, loadReports, loadFlaggedContent]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -283,6 +328,62 @@ export default function AdminDashboard() {
       await searchUsers(searchQuery);
     } catch (error) {
       console.error('Error unsuspending user:', error);
+    }
+  };
+
+  const handleReviewFlaggedPost = async (postId: string, action: 'approve' | 'remove') => {
+    const actionText = action === 'approve' ? 'approve this post (remove flag)' : 'remove this post';
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(`Are you sure you want to ${actionText}?`)
+      : true;
+
+    if (!confirmed) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const { error } = await (supabase.rpc as any)('review_flagged_post', {
+        p_post_id: postId,
+        p_action: action
+      });
+
+      if (error) {
+        console.error('Error reviewing flagged post:', error);
+        return;
+      }
+
+      await loadFlaggedContent();
+      await loadStats();
+    } catch (error) {
+      console.error('Error reviewing flagged post:', error);
+    }
+  };
+
+  const handleReviewFlaggedComment = async (commentId: string, action: 'approve' | 'remove') => {
+    const actionText = action === 'approve' ? 'approve this comment (remove flag)' : 'remove this comment';
+    const confirmed = Platform.OS === 'web'
+      ? window.confirm(`Are you sure you want to ${actionText}?`)
+      : true;
+
+    if (!confirmed) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const { error } = await (supabase.rpc as any)('review_flagged_comment', {
+        p_comment_id: commentId,
+        p_action: action
+      });
+
+      if (error) {
+        console.error('Error reviewing flagged comment:', error);
+        return;
+      }
+
+      await loadFlaggedContent();
+      await loadStats();
+    } catch (error) {
+      console.error('Error reviewing flagged comment:', error);
     }
   };
 
@@ -519,6 +620,130 @@ export default function AdminDashboard() {
     </View>
   );
 
+  const renderFlagged = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.sectionTitle}>Flagged Content</Text>
+      <Text style={styles.sectionSubtitle}>
+        Auto-detected content with potentially harmful language
+      </Text>
+
+      {isLoading ? (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+      ) : (
+        <>
+          {flaggedPosts.length === 0 && flaggedComments.length === 0 ? (
+            <View style={styles.emptyState}>
+              <CheckCircle size={48} color={colors.greenHighlight} />
+              <Text style={styles.emptyStateText}>All clear!</Text>
+              <Text style={styles.emptyStateSubtext}>No flagged content to review</Text>
+            </View>
+          ) : (
+            <>
+              {flaggedPosts.length > 0 && (
+                <>
+                  <Text style={styles.subSectionTitle}>
+                    Flagged Posts ({flaggedPosts.length})
+                  </Text>
+                  {flaggedPosts.map((post) => (
+                    <View key={post.id} style={styles.reportCard}>
+                      <View style={styles.reportHeader}>
+                        <View style={[styles.reportBadge, { backgroundColor: '#FF6B6B' }]}>
+                          <AlertTriangle size={14} color="#fff" />
+                          <Text style={styles.reportBadgeText}>Auto-Flagged</Text>
+                        </View>
+                        <Text style={styles.reportTime}>
+                          {new Date(post.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+
+                      <View style={styles.reportContent}>
+                        <Text style={styles.reportLabel}>Post by @{post.author?.username}</Text>
+                        {post.title && (
+                          <Text style={styles.reportPostTitle}>{post.title}</Text>
+                        )}
+                        <Text style={styles.reportPostContent} numberOfLines={4}>
+                          {post.body}
+                        </Text>
+                        <Text style={styles.flagReason}>
+                          Reason: {post.moderation_reason}
+                        </Text>
+                      </View>
+
+                      <View style={styles.reportActions}>
+                        <Pressable 
+                          style={[styles.actionBtn, styles.approveBtn]}
+                          onPress={() => handleReviewFlaggedPost(post.id, 'approve')}
+                        >
+                          <CheckCircle size={16} color="#fff" />
+                          <Text style={styles.approveBtnText}>Approve</Text>
+                        </Pressable>
+                        <Pressable 
+                          style={[styles.actionBtn, styles.deleteBtn]}
+                          onPress={() => handleReviewFlaggedPost(post.id, 'remove')}
+                        >
+                          <Trash2 size={16} color="#fff" />
+                          <Text style={styles.deleteBtnText}>Remove</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {flaggedComments.length > 0 && (
+                <>
+                  <Text style={[styles.subSectionTitle, { marginTop: 24 }]}>
+                    Flagged Comments ({flaggedComments.length})
+                  </Text>
+                  {flaggedComments.map((comment) => (
+                    <View key={comment.id} style={styles.reportCard}>
+                      <View style={styles.reportHeader}>
+                        <View style={[styles.reportBadge, { backgroundColor: '#FF6B6B' }]}>
+                          <AlertTriangle size={14} color="#fff" />
+                          <Text style={styles.reportBadgeText}>Auto-Flagged</Text>
+                        </View>
+                        <Text style={styles.reportTime}>
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+
+                      <View style={styles.reportContent}>
+                        <Text style={styles.reportLabel}>Comment by @{comment.author?.username}</Text>
+                        <Text style={styles.reportPostContent} numberOfLines={4}>
+                          {comment.comment_text}
+                        </Text>
+                        <Text style={styles.flagReason}>
+                          Reason: {comment.moderation_reason}
+                        </Text>
+                      </View>
+
+                      <View style={styles.reportActions}>
+                        <Pressable 
+                          style={[styles.actionBtn, styles.approveBtn]}
+                          onPress={() => handleReviewFlaggedComment(comment.id, 'approve')}
+                        >
+                          <CheckCircle size={16} color="#fff" />
+                          <Text style={styles.approveBtnText}>Approve</Text>
+                        </Pressable>
+                        <Pressable 
+                          style={[styles.actionBtn, styles.deleteBtn]}
+                          onPress={() => handleReviewFlaggedComment(comment.id, 'remove')}
+                        >
+                          <Trash2 size={16} color="#fff" />
+                          <Text style={styles.deleteBtnText}>Remove</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </View>
+  );
+
   const renderUsers = () => (
     <View style={styles.tabContent}>
       <Text style={styles.sectionTitle}>User Management</Text>
@@ -619,7 +844,7 @@ export default function AdminDashboard() {
         </View>
 
         <View style={styles.tabBar}>
-          {(['overview', 'reports', 'users'] as TabType[]).map((tab) => (
+          {(['overview', 'reports', 'flagged', 'users'] as TabType[]).map((tab) => (
             <Pressable
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -648,6 +873,7 @@ export default function AdminDashboard() {
         >
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'reports' && renderReports()}
+          {activeTab === 'flagged' && renderFlagged()}
           {activeTab === 'users' && renderUsers()}
           
           <View style={{ height: 100 }} />
@@ -718,6 +944,59 @@ const styles = StyleSheet.create({
     ...typography.titleL,
     color: colors.text,
     marginBottom: 16,
+  },
+  sectionSubtitle: {
+    ...typography.p3Regular,
+    color: colors.textSecondary,
+    marginBottom: 24,
+    marginTop: -8,
+  },
+  flagReason: {
+    ...typography.p3Regular,
+    color: '#FF6B6B',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  reportBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  reportBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  reportTime: {
+    ...typography.p3Regular,
+    color: colors.textSecondary,
+  },
+  reportPostTitle: {
+    ...typography.subtitle,
+    color: colors.text,
+    marginTop: 4,
+  },
+  reportPostContent: {
+    ...typography.p2,
+    color: colors.text,
+    marginTop: 4,
+  },
+  approveBtn: {
+    backgroundColor: colors.greenHighlight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
+  },
+  approveBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   subSectionTitle: {
     ...typography.subtitle,

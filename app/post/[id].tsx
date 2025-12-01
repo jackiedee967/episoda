@@ -31,6 +31,7 @@ import MentionInput from '@/components/MentionInput';
 import MentionText from '@/components/MentionText';
 import { saveCommentMentions, getUserIdsByUsernames, createMentionNotifications, extractMentions } from '@/utils/mentionUtils';
 import BlockReportModal from '@/components/BlockReportModal';
+import { checkContentForModeration } from '@/services/contentModeration';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -287,14 +288,23 @@ export default function PostDetail() {
       
       // Save reply to Supabase
       try {
+        const moderationResult = checkContentForModeration(commentText);
+        const insertPayload: Record<string, any> = {
+          post_id: post.id,
+          user_id: currentUser.id,
+          comment_text: commentText,
+          parent_comment_id: replyingTo.commentId,
+        };
+        if (moderationResult.flagged) {
+          insertPayload.flagged_for_moderation = true;
+          insertPayload.moderation_reason = moderationResult.reason;
+          insertPayload.moderation_status = 'pending';
+          console.log('⚠️ Reply flagged for moderation:', moderationResult.reason);
+        }
+        
         const { data, error } = await supabase
           .from('comments')
-          .insert({
-            post_id: post.id,
-            user_id: currentUser.id,
-            comment_text: commentText,
-            parent_comment_id: replyingTo.commentId,
-          })
+          .insert(insertPayload)
           .select()
           .single();
 
@@ -383,13 +393,22 @@ export default function PostDetail() {
 
       // Save to Supabase
       try {
+        const moderationResult = checkContentForModeration(commentText);
+        const insertPayload: Record<string, any> = {
+          post_id: post.id,
+          user_id: currentUser.id,
+          comment_text: commentText,
+        };
+        if (moderationResult.flagged) {
+          insertPayload.flagged_for_moderation = true;
+          insertPayload.moderation_reason = moderationResult.reason;
+          insertPayload.moderation_status = 'pending';
+          console.log('⚠️ Comment flagged for moderation:', moderationResult.reason);
+        }
+        
         const { data, error } = await supabase
           .from('comments')
-          .insert({
-            post_id: post.id,
-            user_id: currentUser.id,
-            comment_text: commentText,
-          })
+          .insert(insertPayload)
           .select()
           .single();
 
