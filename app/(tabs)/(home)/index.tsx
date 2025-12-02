@@ -1259,8 +1259,7 @@ const styles = StyleSheet.create({
   
   // Activity - exact specs
   friendActivitySection: {
-    gap: 17,
-    marginBottom: 29,
+    marginBottom: 12,
   },
   emptyState: {
     alignItems: 'center',
