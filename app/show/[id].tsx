@@ -1230,20 +1230,20 @@ export default function ShowHub() {
                 const isFilled = userShowRating > 0 && userShowRating >= star;
                 const isHalfFilled = userShowRating > 0 && userShowRating >= star - 0.5 && userShowRating < star;
                 return (
-                  <View key={star} style={{ marginLeft: index > 0 ? 4 : 0, width: 20, height: 20 }}>
+                  <View key={star} style={[styles.posterStarContainer, index > 0 && { marginLeft: 4 }]}>
                     <Star 
                       size={20}
                       color={isFilled ? tokens.colors.greenHighlight : tokens.colors.grey1}
                       fill={isFilled ? tokens.colors.greenHighlight : 'none'}
-                      strokeWidth={1}
+                      strokeWidth={1.5}
                     />
                     {isHalfFilled && (
-                      <View style={{ position: 'absolute', top: 0, left: 0, width: 10, height: 20, overflow: 'hidden' }}>
+                      <View style={styles.posterHalfStarOverlay}>
                         <Star 
                           size={20}
                           color={tokens.colors.greenHighlight}
                           fill={tokens.colors.greenHighlight}
-                          strokeWidth={1}
+                          strokeWidth={1.5}
                         />
                       </View>
                     )}
@@ -1773,6 +1773,19 @@ const styles = StyleSheet.create({
   },
   posterRatingContainerPressed: {
     opacity: 0.7,
+  },
+  posterStarContainer: {
+    width: 20,
+    height: 20,
+    position: 'relative',
+  },
+  posterHalfStarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 10,
+    height: 20,
+    overflow: 'hidden',
   },
   posterStar: {
     fontSize: 20,
