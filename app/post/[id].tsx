@@ -10,7 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ImageBackground,
 } from 'react-native';
+import { Asset } from 'expo-asset';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, RefreshCw, ChevronLeft, Send, MoreVertical } from 'lucide-react-native';
@@ -664,15 +666,15 @@ export default function PostDetail() {
     }
   };
 
-  return (
+  const appBackgroundImage = Asset.fromModule(require('@/assets/images/app-background.jpg'));
+  
+  const containerContent = (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
-        <KeyboardAvoidingView
-          style={styles.keyboardView}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={100}
-        >
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={100}
+      >
           <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {/* Header with Back Button, Menu, and User Avatar */}
             <View style={styles.headerRow}>
@@ -957,32 +959,50 @@ export default function PostDetail() {
               </Pressable>
             </View>
           </View>
-        </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
 
-        {/* Delete Menu - Rendered outside ScrollView for proper click handling */}
-        {canDelete && showDeleteMenu && !isDeletingPost ? (
-          <Pressable 
-            style={styles.menuOverlay} 
-            onPress={() => setShowDeleteMenu(false)}
-          >
-            <View style={styles.deleteMenu}>
-              <Pressable onPress={handleDeletePost} style={styles.deleteMenuItem}>
-                <Text style={styles.deleteMenuText}>Delete Post</Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        ) : null}
+      {/* Delete Menu - Rendered outside ScrollView for proper click handling */}
+      {canDelete && showDeleteMenu && !isDeletingPost ? (
+        <Pressable 
+          style={styles.menuOverlay} 
+          onPress={() => setShowDeleteMenu(false)}
+        >
+          <View style={styles.deleteMenu}>
+            <Pressable onPress={handleDeletePost} style={styles.deleteMenuItem}>
+              <Text style={styles.deleteMenuText}>Delete Post</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      ) : null}
 
-        {/* Report Modal for non-owners */}
-        <BlockReportModal
-          visible={showReportModal}
-          onClose={() => setShowReportModal(false)}
-          username={post?.user.username || ''}
-          onBlock={() => {}} // No blocking for post reports
-          onReport={handleReportPost}
-          reportOnly={true} // Skip block option for post reports
-        />
-      </View>
+      {/* Report Modal for non-owners */}
+      <BlockReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        username={post?.user.username || ''}
+        onBlock={() => {}} // No blocking for post reports
+        onReport={handleReportPost}
+        reportOnly={true} // Skip block option for post reports
+      />
+    </>
+  );
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      {Platform.OS === 'web' ? (
+        <View style={styles.container}>
+          {containerContent}
+        </View>
+      ) : (
+        <ImageBackground
+          source={{ uri: appBackgroundImage.uri }}
+          style={styles.container}
+          resizeMode="cover"
+        >
+          {containerContent}
+        </ImageBackground>
+      )}
     </>
   );
 }
