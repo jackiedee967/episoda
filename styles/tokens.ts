@@ -53,6 +53,13 @@ export const colors = {
 
 // ==================== TYPOGRAPHY ====================
 // Complete typography tokens with all font properties
+// IMPORTANT: fontFamily must match the exact names registered in app/_layout.tsx
+// - FunnelDisplay_300Light (weight 300)
+// - FunnelDisplay_400Regular (weight 400)
+// - FunnelDisplay_500Medium (weight 500)
+// - FunnelDisplay_600SemiBold (weight 600)
+// - FunnelDisplay_700Bold (weight 700)
+// - InstrumentSerif_400Regular (weight 400)
 export const typography = {
   // Titles
   titleXl: {
@@ -74,7 +81,7 @@ export const typography = {
   
   // Subtitles
   subtitle: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 17,
     fontWeight: '500' as const,
     fontStyle: 'normal' as const,
@@ -82,7 +89,7 @@ export const typography = {
     lineHeight: 17,
   },
   subtitleR: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 17,
     fontWeight: '300' as const,
     fontStyle: 'normal' as const,
@@ -90,7 +97,7 @@ export const typography = {
     lineHeight: 20.4,
   },
   smallSubtitle: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 13,
     fontWeight: '500' as const,
     fontStyle: 'normal' as const,
@@ -100,7 +107,7 @@ export const typography = {
   
   // Paragraphs
   p1: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 13,
     fontWeight: '300' as const,
     fontStyle: 'normal' as const,
@@ -108,7 +115,7 @@ export const typography = {
     lineHeight: 15.6,
   },
   p1B: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 13,
     fontWeight: '600' as const,
     fontStyle: 'normal' as const,
@@ -116,7 +123,7 @@ export const typography = {
     lineHeight: 13,
   },
   p1M: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 13,
     fontWeight: '500' as const,
     fontStyle: 'normal' as const,
@@ -124,7 +131,7 @@ export const typography = {
     lineHeight: 15.6,
   },
   p3M: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_500Medium',
     fontSize: 10,
     fontWeight: '500' as const,
     fontStyle: 'normal' as const,
@@ -132,7 +139,7 @@ export const typography = {
     lineHeight: 10,
   },
   p3R: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 10,
     fontWeight: '300' as const,
     fontStyle: 'normal' as const,
@@ -140,7 +147,7 @@ export const typography = {
     lineHeight: 12,
   },
   p3B: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 10,
     fontWeight: '600' as const,
     fontStyle: 'normal' as const,
@@ -148,7 +155,7 @@ export const typography = {
     lineHeight: 10,
   },
   p4: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_300Light',
     fontSize: 8,
     fontWeight: '300' as const,
     fontStyle: 'normal' as const,
@@ -158,7 +165,7 @@ export const typography = {
   
   // Buttons
   buttonSmall: {
-    fontFamily: 'Funnel Display',
+    fontFamily: 'FunnelDisplay_600SemiBold',
     fontSize: 13,
     fontWeight: '600' as const,
     fontStyle: 'normal' as const,

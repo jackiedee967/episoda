@@ -7,11 +7,10 @@ import {
   Text,
   StyleSheet,
   TextInputProps,
-  Image,
 } from 'react-native';
 import { supabase } from '@/integrations/supabase/client';
 import { colors, typography } from '@/styles/tokens';
-import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
+import AvatarImage from '@/components/AvatarImage';
 
 interface MentionInputProps extends Omit<TextInputProps, 'onChangeText'> {
   value: string;
@@ -236,17 +235,18 @@ export default function MentionInput({
 
   // Render user item
   const renderUserItem = ({ item }: { item: User }) => {
-    const avatarDataUri = item.avatar_url || generateAvatarDataURI(
-      item.avatar_color_scheme || 1,
-      item.avatar_icon || 'icon-1-ellipse'
-    );
-
     return (
       <Pressable
         style={styles.autocompleteItem}
         onPress={() => handleSelectUser(item.username)}
       >
-        <Image source={{ uri: avatarDataUri }} style={styles.avatar} />
+        <AvatarImage
+          uri={item.avatar_url}
+          colorSchemeId={item.avatar_color_scheme || 1}
+          iconName={item.avatar_icon || 'icon-1-ellipse'}
+          size={36}
+          style={{ marginRight: 12 }}
+        />
         <View style={styles.userInfo}>
           <Text style={styles.displayName}>{item.display_name || item.username}</Text>
           <Text style={styles.username}>@{item.username}</Text>

@@ -8,7 +8,6 @@ import {
   LayoutChangeEvent,
   Text,
   Pressable,
-  Image,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +15,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { useData } from '@/contexts/DataContext';
+import AvatarImage from '@/components/AvatarImage';
 
 interface TabBarItem {
   name: string;
@@ -122,7 +122,7 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
           {tabs.map((tab, index) => {
             const active = isActive(tab.route);
             const isProfileTab = tab.route === '/profile';
-            const hasAvatar = currentUser && currentUser.avatar;
+            const hasAvatarData = currentUser && (currentUser.avatar || currentUser.avatar_color_scheme);
             
             return (
               <TouchableOpacity
@@ -130,13 +130,13 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
                 style={styles.tab}
                 onPress={() => handleTabPress(tab.route)}
               >
-                {isProfileTab && hasAvatar ? (
-                  <Image
-                    source={{ uri: currentUser.avatar }}
-                    style={[
-                      styles.profileImage,
-                      active && styles.profileImageActive
-                    ]}
+                {isProfileTab && hasAvatarData ? (
+                  <AvatarImage
+                    uri={currentUser.avatar}
+                    colorSchemeId={currentUser.avatar_color_scheme}
+                    iconName={currentUser.avatar_icon}
+                    size={24}
+                    style={active ? styles.profileImageActive : undefined}
                   />
                 ) : (
                   <IconSymbol
@@ -174,7 +174,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     gap: 8,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)',
+    // iOS shadow properties (boxShadow is web-only)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     elevation: 8,
     position: 'relative',
     borderWidth: 0.5,
@@ -193,7 +197,11 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 16,
     paddingHorizontal: 48,
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.4)',
+    // iOS shadow properties (boxShadow is web-only)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     elevation: 8,
   },
   logButtonText: {

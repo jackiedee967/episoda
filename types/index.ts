@@ -4,6 +4,9 @@ export interface User {
   username: string;
   displayName: string;
   avatar: string;
+  avatar_url?: string | null;
+  avatar_color_scheme?: number;
+  avatar_icon?: string;
   bio?: string;
   following?: string[];
   followers?: string[];

@@ -58,9 +58,9 @@ export const colors = {
 
 // Typography aliases mapped to design tokens
 export const typography = {
-  // Font families
-  fontFamily: 'Funnel Display',
-  fontFamilyBold: 'Funnel Display',
+  // Font families - use registered font names from app/_layout.tsx
+  fontFamily: 'FunnelDisplay_400Regular',
+  fontFamilyBold: 'FunnelDisplay_700Bold',
   
   // Text styles from design tokens
   titleXL: tokens.typography.titleXl,
