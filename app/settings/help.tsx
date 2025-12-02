@@ -19,6 +19,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AvatarImage from '@/components/AvatarImage';
 
 const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { supabase } from '@/integrations/supabase/client';
@@ -394,9 +395,12 @@ export default function HelpDeskScreen() {
         }}
       >
         <View style={styles.communityPostHeader}>
-          <Image
-            source={{ uri: currentUser.avatar }}
-            style={styles.communityPostAvatar}
+          <AvatarImage
+            uri={currentUser.avatar_url || currentUser.avatar}
+            colorSchemeId={currentUser.avatar_color_scheme}
+            iconName={currentUser.avatar_icon}
+            size={36}
+            borderRadius={12}
           />
           <View style={styles.communityPostHeaderText}>
             <View style={styles.communityPostUserRow}>

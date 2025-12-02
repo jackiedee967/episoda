@@ -31,6 +31,7 @@ import ShowsEpisodeProgressBar from '@/components/ShowsEpisodeProgressBar';
 import { mockShows, mockUsers } from '@/data/mockData';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import AvatarImage from '@/components/AvatarImage';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp, Star } from 'lucide-react-native';
@@ -1290,14 +1291,21 @@ export default function ShowHub() {
               <Pressable style={styles.friendsWatchingBar} onPress={() => setFriendsModalVisible(true)}>
                 <View style={styles.friendAvatarsRow}>
                   {friendsWatching.slice(0, 4).map((friend, index) => (
-                    <Image
+                    <View
                       key={friend.id}
-                      source={{ uri: friend.avatar }}
                       style={[
-                        styles.friendAvatar,
+                        styles.friendAvatarWrapper,
                         { marginLeft: index > 0 ? -8 : 0, zIndex: friendsWatching.length - index }
                       ]}
-                    />
+                    >
+                      <AvatarImage
+                        uri={friend.avatar_url || friend.avatar}
+                        colorSchemeId={friend.avatar_color_scheme}
+                        iconName={friend.avatar_icon}
+                        size={28}
+                        borderRadius={8}
+                      />
+                    </View>
                   ))}
                 </View>
                 <Text style={styles.friendsWatchingText}>
@@ -1886,6 +1894,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 2,
     borderColor: tokens.colors.cardBackground,
+  },
+  friendAvatarWrapper: {
+    borderWidth: 2,
+    borderColor: tokens.colors.cardBackground,
+    borderRadius: 10,
+    overflow: 'hidden',
   },
   friendsWatchingText: {
     ...tokens.typography.p3R,

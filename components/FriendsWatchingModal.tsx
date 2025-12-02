@@ -11,6 +11,7 @@ import {
 import { X } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
 import FollowButton from './FollowButton';
+import AvatarImage from './AvatarImage';
 import { User } from '@/types';
 import { useData } from '@/contexts/DataContext';
 
@@ -59,7 +60,13 @@ export default function FriendsWatchingModal({
             {friends.map((friend) => (
               <View key={friend.id} style={styles.userCard}>
                 <View style={styles.userInfo}>
-                  <Image source={{ uri: friend.avatar }} style={styles.avatar} />
+                  <AvatarImage
+                    uri={friend.avatar_url || friend.avatar}
+                    colorSchemeId={friend.avatar_color_scheme}
+                    iconName={friend.avatar_icon}
+                    size={48}
+                    borderRadius={14}
+                  />
                   <View style={styles.textContainer}>
                     <Text style={styles.name}>{friend.displayName}</Text>
                     <Text style={styles.username}>@{friend.username}</Text>

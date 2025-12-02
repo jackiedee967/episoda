@@ -10,12 +10,16 @@ import {
 import { colors, typography, components, spacing } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
 import Button from './Button';
+import AvatarImage from './AvatarImage';
 
 interface UserCardProps {
   username: string;
   displayName: string;
   bio?: string;
   avatar?: ImageSourcePropType | string;
+  avatarUrl?: string;
+  avatarColorScheme?: number;
+  avatarIcon?: string;
   isFollowing?: boolean;
   variant?: 'default' | 'compact' | 'large';
   stats?: {
@@ -33,6 +37,9 @@ export default function UserCard({
   displayName,
   bio,
   avatar,
+  avatarUrl,
+  avatarColorScheme,
+  avatarIcon,
   isFollowing = false,
   variant = 'default',
   stats,
@@ -40,6 +47,7 @@ export default function UserCard({
   onFollowPress,
   showFollowButton = true,
 }: UserCardProps) {
+  const avatarUri = avatarUrl || (typeof avatar === 'string' ? avatar : undefined);
   const handlePress = () => {
     if (onPress) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -62,13 +70,13 @@ export default function UserCard({
           pressed && styles.pressed,
         ]}
       >
-        {avatar ? (
-          <Image
-            source={typeof avatar === 'string' ? { uri: avatar } : avatar}
-            style={styles.compactAvatar}
-            resizeMode="cover"
-          />
-        ) : null}
+        <AvatarImage
+          uri={avatarUri}
+          colorSchemeId={avatarColorScheme}
+          iconName={avatarIcon}
+          size={32}
+          borderRadius={10}
+        />
         <View style={styles.compactInfo}>
           <Text style={styles.compactDisplayName} numberOfLines={1}>
             {displayName}
@@ -85,13 +93,13 @@ export default function UserCard({
     return (
       <View style={styles.largeCard}>
         <Pressable onPress={handlePress} style={styles.largeHeader}>
-          {avatar ? (
-            <Image
-              source={typeof avatar === 'string' ? { uri: avatar } : avatar}
-              style={styles.largeAvatar}
-              resizeMode="cover"
-            />
-          ) : null}
+          <AvatarImage
+            uri={avatarUri}
+            colorSchemeId={avatarColorScheme}
+            iconName={avatarIcon}
+            size={60}
+            borderRadius={18}
+          />
           <View style={styles.largeInfo}>
             <Text style={styles.largeDisplayName}>{displayName}</Text>
             <Text style={styles.largeUsername}>@{username}</Text>
@@ -138,13 +146,13 @@ export default function UserCard({
         pressed && styles.pressed,
       ]}
     >
-      {avatar ? (
-        <Image
-          source={typeof avatar === 'string' ? { uri: avatar } : avatar}
-          style={styles.avatar}
-          resizeMode="cover"
-        />
-      ) : null}
+      <AvatarImage
+        uri={avatarUri}
+        colorSchemeId={avatarColorScheme}
+        iconName={avatarIcon}
+        size={48}
+        borderRadius={14}
+      />
       <View style={styles.info}>
         <Text style={styles.displayName} numberOfLines={1}>
           {displayName}
@@ -246,7 +254,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   compactUsername: {
-    ...typography.p3,
+    ...typography.p3Regular,
     color: colors.textSecondary,
   },
   largeUsername: {

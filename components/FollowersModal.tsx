@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import FollowButton from '@/components/FollowButton';
+import AvatarImage from '@/components/AvatarImage';
 import { User } from '@/types';
 import tokens from '@/styles/tokens';
 import { useRouter } from 'expo-router';
@@ -116,7 +117,13 @@ export default function FollowersModal({
                       style={styles.userPressable}
                       onPress={() => handleUserPress(user.id)}
                     >
-                      <Image source={{ uri: user.avatar }} style={styles.avatar} />
+                      <AvatarImage
+                        uri={user.avatar_url || user.avatar}
+                        colorSchemeId={user.avatar_color_scheme}
+                        iconName={user.avatar_icon}
+                        size={48}
+                        borderRadius={14}
+                      />
                       <View style={styles.userInfo}>
                         <Text style={styles.displayName}>{user.displayName}</Text>
                         <Text style={styles.username}>@{user.username}</Text>

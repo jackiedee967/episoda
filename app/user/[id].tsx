@@ -35,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import AvatarImage from '@/components/AvatarImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { Image } from 'expo-image';
 import FavoritesSection from '@/components/FavoritesSection';
@@ -464,15 +465,13 @@ export default function UserProfile() {
     
     return (
     <View style={styles.profileInfoSection}>
-      {profileUser.avatar ? (
-        <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-          <Text style={styles.avatarPlaceholderText}>
-            {(profileUser.displayName || profileUser.username || '?').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
+      <AvatarImage
+        uri={profileUser.avatar_url || profileUser.avatar}
+        colorSchemeId={profileUser.avatar_color_scheme}
+        iconName={profileUser.avatar_icon}
+        size={80}
+        borderRadius={24}
+      />
       
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>

@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import CommentSkeleton from '@/components/skeleton/CommentSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import AvatarImage from '@/components/AvatarImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import { getShowColorScheme } from '@/utils/showColors';
 import MentionInput from '@/components/MentionInput';
@@ -695,7 +696,13 @@ export default function PostDetail() {
                   </Pressable>
                 ) : null}
                 <Pressable onPress={handleUserPress}>
-                  <FadeInImage source={{ uri: post.user.avatar }} style={styles.headerUserAvatar} contentFit="cover" />
+                  <AvatarImage
+                    uri={post.user.avatar_url || post.user.avatar}
+                    colorSchemeId={post.user.avatar_color_scheme}
+                    iconName={post.user.avatar_icon}
+                    size={36}
+                    borderRadius={12}
+                  />
                 </Pressable>
               </View>
             </View>

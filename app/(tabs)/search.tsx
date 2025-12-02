@@ -24,6 +24,7 @@ import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import AvatarImage from '@/components/AvatarImage';
 import { supabase } from '@/integrations/supabase/client';
 import { isTraktHealthy } from '@/services/traktHealth';
 import { getTrendingShows, getRecentlyReleasedShows, getPopularShowsByGenre, getRelatedShows, getPlayedShows, TraktPaginatedResponse, TraktPaginationInfo, getShowsByGenre } from '@/services/trakt';
@@ -1939,6 +1940,9 @@ export default function SearchScreen() {
                 displayName={user.displayName}
                 bio={user.bio}
                 avatar={user.avatar}
+                avatarUrl={user.avatar_url}
+                avatarColorScheme={user.avatar_color_scheme}
+                avatarIcon={user.avatar_icon}
                 isFollowing={isFollowing(user.id)}
                 onPress={() => router.push(`/user/${user.id}`)}
                 onFollowPress={() => handleFollowToggle(user.id)}
@@ -1969,7 +1973,13 @@ export default function SearchScreen() {
               onPress={() => router.push(`/post/${comment.postId}`)}
             >
               <View style={styles.commentCardContent}>
-                <FadeInImage source={{ uri: comment.user.avatar }} style={styles.commentAvatar} contentFit="cover" />
+                <AvatarImage
+                  uri={comment.user.avatar_url || comment.user.avatar}
+                  colorSchemeId={comment.user.avatar_color_scheme}
+                  iconName={comment.user.avatar_icon}
+                  size={40}
+                  borderRadius={12}
+                />
                 <View style={styles.commentInfo}>
                   <Text style={styles.commentTextMixed}>
                     <Text style={styles.commentTextGreen}>{comment.user.displayName}</Text>
