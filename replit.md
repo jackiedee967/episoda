@@ -39,6 +39,7 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Invite Friends System**: Two-trigger invite modal for user acquisition.
 - **Founders Welcome Modal**: One-time welcome popup for first-time users featuring personalized message from founders Jasmine & Jackie, encouraging feedback and community engagement.
 - **Push Notifications System**: Expo Push Notifications with Supabase Edge Functions for delivery. Notification types: likes, comments, follows, mentions, admin announcements, friend logs watched show, friend logs playlist show. Permission prompt appears in onboarding after "Select 3 Shows" step before Founders modal.
+- **Legal & Attribution**: Terms of Service and Privacy Policy accessible via clickable links on signup screen with slide-up modal display. Acknowledgments page (`/settings/acknowledgments`) displays required attribution for TMDB, Trakt, and TVMaze APIs with logos and links.
 
 ### System Design Choices
 - **Development vs Production**: Separate Supabase instances for safe development.
