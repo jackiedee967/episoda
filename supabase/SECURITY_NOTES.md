@@ -30,60 +30,63 @@
 - Proper user ownership policies in place
 - Notifications table secured to prevent actor_id spoofing
 
+### 6. Rate Limiting (IMPLEMENTED)
+- **MIGRATION**: `012_rate_limiting.sql` creates rate limiting infrastructure
+- **SERVICE**: `services/rateLimiting.ts` provides client-side rate limit checks
+
+Rate limits implemented:
+| Action | Limit | Window |
+|--------|-------|--------|
+| OTP requests | 3 per phone | 1 hour |
+| Post creation | 20 per user | 1 hour |
+| Comment creation | 60 per user | 1 hour |
+| Follow requests | 100 per user | 1 hour |
+| Report submissions | 10 per user | 24 hours |
+
+Integration points:
+- `app/auth/login.tsx` - OTP rate limiting
+- `app/auth/verify-otp.tsx` - Resend OTP rate limiting
+- `contexts/DataContext.tsx` - Post and follow rate limiting
+- `app/post/[id].tsx` - Comment rate limiting
+
+### 7. SecureStore for Auth Tokens (IMPLEMENTED)
+- **SERVICE**: `services/secureStorage.ts` provides encrypted storage adapter
+- Auth tokens now stored using SecureStore on iOS/Android (encrypted)
+- Falls back to AsyncStorage on web for compatibility
+- Updated `integrations/supabase/client.ts` to use SecureStorageAdapter
+
+### 8. Content Sanitization / XSS Prevention (IMPLEMENTED)
+- **SERVICE**: `services/contentModeration.ts` enhanced with:
+  - `sanitizeText()` - Full HTML escape for storage
+  - `sanitizeForDisplay()` - Strip dangerous tags for display
+  - `containsDangerousContent()` - Detect potential XSS vectors
+
+Protected against:
+- `<script>` tag injection
+- `javascript:` URL schemes
+- Event handler injection (onclick, onerror, etc.)
+- `<iframe>`, `<embed>`, `<object>` injection
+- Data URI attacks
+
 ---
 
-## Rate Limiting Recommendations (Future Implementation)
+## Certificate Pinning (Not Implemented)
 
-Rate limiting should be implemented at the Supabase Edge Function level or via API gateway. Priority areas:
+Certificate pinning requires native code modifications which are not compatible with Expo managed workflow. To implement:
 
-### HIGH Priority
+1. **Option A: Development Build**
+   - Switch to Expo development builds
+   - Use `react-native-ssl-pinning` library
+   - Add native configuration in app.json/app.config.js
 
-1. **Phone OTP Requests**
-   - Risk: SMS bombing attacks, carrier costs
-   - Recommendation: 3 requests per phone number per hour
-   - Implementation: Edge function with Redis/Supabase rate limit table
+2. **Option B: Custom Dev Client**
+   - Generate custom Expo Dev Client
+   - Include SSL pinning in native code
 
-2. **Post Creation**
-   - Risk: Spam flooding
-   - Recommendation: 20 posts per user per hour
-   - Implementation: RPC function with rate check
-
-3. **Comment Creation**
-   - Risk: Comment spam
-   - Recommendation: 60 comments per user per hour
-
-### MEDIUM Priority
-
-4. **Follow Requests**
-   - Recommendation: 100 follows per user per hour
-
-5. **Report Submissions**
-   - Recommendation: 10 reports per user per day
-
-### Implementation Options
-
-**Option A: Supabase Rate Limit Table**
-```sql
-CREATE TABLE rate_limits (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES profiles(user_id),
-  action_type TEXT NOT NULL,
-  count INTEGER DEFAULT 1,
-  window_start TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(user_id, action_type, window_start)
-);
-
-CREATE OR REPLACE FUNCTION check_rate_limit(
-  p_user_id UUID,
-  p_action TEXT,
-  p_limit INTEGER,
-  p_window_minutes INTEGER
-) RETURNS BOOLEAN...
-```
-
-**Option B: Supabase Edge Function with Upstash Redis**
-- Use Upstash Redis for distributed rate limiting
-- Better for high-traffic scenarios
+For now, the app relies on:
+- TLS 1.3 encryption (standard)
+- Supabase's certificate management
+- Platform-level certificate validation
 
 ---
 
@@ -109,6 +112,8 @@ The following vulnerabilities exist but are in **development/build tools only** 
 ## Deployment Reminder
 
 When deploying to production:
-1. Run migrations `010_protect_admin_columns.sql` and `011_input_length_validation.sql` in BOTH dev and prod databases
+1. Run migrations `010_protect_admin_columns.sql`, `011_input_length_validation.sql`, and `012_rate_limiting.sql` in BOTH dev and prod databases
 2. Verify admin columns protection is working
 3. Test that input validation constraints are enforced
+4. Verify rate limiting is functioning correctly
+5. Confirm SecureStore is working on device (requires device/simulator testing)

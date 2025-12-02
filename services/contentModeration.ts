@@ -91,3 +91,55 @@ export function checkPostForModeration(title: string | undefined, body: string |
   
   return { flagged: false, reason: null, detectedSlurs: [] };
 }
+
+export function sanitizeText(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
+  return text
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .replace(/data:/gi, 'data_')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;')
+    .trim();
+}
+
+export function sanitizeForDisplay(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
+  return text
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim();
+}
+
+export function containsDangerousContent(text: string): boolean {
+  if (!text || typeof text !== 'string') {
+    return false;
+  }
+  
+  const dangerousPatterns = [
+    /<script/i,
+    /javascript:/i,
+    /on\w+\s*=/i,
+    /<iframe/i,
+    /<embed/i,
+    /<object/i,
+    /data:text\/html/i,
+    /vbscript:/i,
+  ];
+  
+  return dangerousPatterns.some(pattern => pattern.test(text));
+}
