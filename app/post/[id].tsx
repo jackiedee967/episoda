@@ -32,6 +32,7 @@ import MentionText from '@/components/MentionText';
 import { saveCommentMentions, getUserIdsByUsernames, createMentionNotifications, extractMentions } from '@/utils/mentionUtils';
 import BlockReportModal from '@/components/BlockReportModal';
 import { checkContentForModeration } from '@/services/contentModeration';
+import { checkRateLimit } from '@/services/rateLimiting';
 
 function getRelativeTime(timestamp: Date): string {
   const now = new Date();
@@ -247,6 +248,15 @@ export default function PostDetail() {
     if (!commentText.trim()) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Check rate limit before creating comment
+    if (currentUser?.id) {
+      const rateLimitResult = await checkRateLimit(currentUser.id, 'comment');
+      if (!rateLimitResult.allowed) {
+        Alert.alert('Rate Limit', rateLimitResult.error || 'You\'ve posted too many comments recently. Please slow down.');
+        return;
+      }
+    }
 
     if (replyingTo) {
       // Submit as a reply with Supabase persistence

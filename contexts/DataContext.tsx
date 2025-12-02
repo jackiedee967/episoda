@@ -7,6 +7,7 @@ import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
 import { checkPostForModeration } from '@/services/contentModeration';
+import { checkRateLimit } from '@/services/rateLimiting';
 
 interface UserData {
   following: string[];
@@ -1569,6 +1570,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('✅ User authenticated:', user.id);
+      
+      // Check rate limit before creating post
+      const rateLimitResult = await checkRateLimit(user.id, 'post');
+      if (!rateLimitResult.allowed) {
+        // Revert optimistic update
+        setPosts(prev => prev.filter(p => p.id !== tempId));
+        Alert.alert('Rate Limit', rateLimitResult.error || 'You\'ve created too many posts recently. Please wait before posting again.');
+        throw new Error('Rate limited');
+      }
+      
       const episodeIds = postData.episodes?.map(ep => ep.id) || [];
       const rewatchEpisodeIds = postData.rewatchEpisodeIds || [];
       
@@ -2169,6 +2180,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
           AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(updatedUserData));
           return updatedUserData;
         });
+        return;
+      }
+
+      // Check rate limit before following
+      const rateLimitResult = await checkRateLimit(authUserId, 'follow');
+      if (!rateLimitResult.allowed) {
+        Alert.alert('Rate Limit', rateLimitResult.error || 'You\'ve followed too many users recently. Please wait before following more.');
         return;
       }
 
