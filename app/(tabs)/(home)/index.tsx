@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions, RefreshControl, Share, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import PostCard from '@/components/PostCard';
@@ -37,6 +38,7 @@ type SuggestedUser = User & {
 export default function HomeScreen() {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { posts, currentUser, followUser, unfollowUser, isFollowing, allReposts, isShowInPlaylist, playlists, getHomeFeed, ensureShowUuid } = useData();
   const [postModalVisible, setPostModalVisible] = useState(false);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
@@ -497,7 +499,7 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <Image 
         source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}

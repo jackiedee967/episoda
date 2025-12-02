@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
@@ -31,6 +32,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { authReady } = useAuth();
   const { 
     posts, 
@@ -393,7 +395,7 @@ export default function ProfileScreen() {
     if (!profileUser) return null;
     
     return (
-    <View style={styles.profileInfoSection}>
+    <View style={[styles.profileInfoSection, { paddingTop: insets.top + 20 }]}>
       <AvatarImage
         uri={profileUser.avatar_url || profileUser.avatar}
         colorSchemeId={profileUser.avatar_color_scheme}
@@ -711,7 +713,7 @@ export default function ProfileScreen() {
       <View style={styles.pageContainer}>
         {/* Invite Friends Button - Top Right Corner (Owner Only) */}
         <Pressable 
-          style={styles.inviteFloatingButton}
+          style={[styles.inviteFloatingButton, { top: insets.top + 16 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setShowInviteFriendsModal(true);

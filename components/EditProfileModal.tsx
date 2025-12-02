@@ -12,6 +12,8 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { colors, typography } from '@/styles/tokens';
 import { X, Instagram, Music, Globe } from 'lucide-react-native';
@@ -466,10 +468,14 @@ export default function EditProfileModal({
       onRequestClose={onClose}
       animationType="none"
     >
-      <View style={styles.modalOverlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        
-        <Animated.View
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.backdrop} onPress={onClose} />
+          
+          <Animated.View
           style={[
             styles.modalContent,
             {
@@ -678,7 +684,8 @@ export default function EditProfileModal({
             </Pressable>
           </View>
         </Animated.View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

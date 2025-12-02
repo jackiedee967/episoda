@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, ImageBackground, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -114,6 +115,7 @@ const getSectionTitle = (sectionKey: string, params?: any): string => {
 export default function SearchScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const { posts, playlists, isShowInPlaylist, followUser, unfollowUser, isFollowing, currentUser, ensureShowUuid } = useData();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -2181,7 +2183,7 @@ export default function SearchScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.pageContainer}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <Text style={styles.title}>Explore</Text>
           <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />

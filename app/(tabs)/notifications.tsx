@@ -10,6 +10,7 @@ import {
   Share,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import { Notification } from '@/types';
@@ -25,6 +26,7 @@ type Tab = 'you' | 'friends';
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('you');
 
   const mockNotifications: Notification[] = [];
@@ -208,7 +210,7 @@ export default function NotificationsScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.pageContainer}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <Text style={styles.title}>Notifications</Text>
         </View>
 
