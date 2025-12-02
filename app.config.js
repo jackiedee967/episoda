@@ -33,7 +33,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.anonymous.EPISODA",
+      bundleIdentifier: "io.episoda.app",
       deploymentTarget: "15.1",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
