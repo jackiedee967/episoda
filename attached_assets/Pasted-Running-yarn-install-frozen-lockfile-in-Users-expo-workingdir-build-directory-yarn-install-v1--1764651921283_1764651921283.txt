@@ -1,0 +1,51 @@
+Running "yarn install --frozen-lockfile" in /Users/expo/workingdir/build/ directory
+yarn install v1.22.22
+info No lockfile found.
+warning Resolution field "latest" has an invalid version entry and may be ignored
+[1/4] Resolving packages...
+warning @babel/plugin-proposal-export-namespace-from@7.18.9: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-export-namespace-from instead.
+warning @bacons/apple-targets > @bacons/xcode > @expo/plist > @xmldom/xmldom@0.7.13: this version is no longer supported, please update to at least 0.8.*
+warning @expo/ngrok > uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+warning expo > @expo/cli > @react-native/dev-middleware > chromium-edge-launcher > rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+warning expo > @expo/cli > @react-native/dev-middleware > chromium-edge-launcher > rimraf > glob@7.2.3: Glob versions prior to v9 are no longer supported
+warning expo > babel-preset-expo > @react-native/babel-preset > @react-native/babel-plugin-codegen > @react-native/codegen > glob@7.2.3: Glob versions prior to v9 are no longer supported
+warning expo > @expo/cli > @react-native/dev-middleware > chromium-edge-launcher > rimraf > glob > inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+warning react-native > glob@7.2.3: Glob versions prior to v9 are no longer supported
+warning react-native > babel-jest > babel-plugin-istanbul > test-exclude > glob@7.2.3: Glob versions prior to v9 are no longer supported
+warning workbox-cli > workbox-build > source-map@0.8.0-beta.0: The work that was done in this beta branch won't be included in future versions
+warning workbox-cli > workbox-build > @rollup/plugin-replace > magic-string > sourcemap-codec@1.4.8: Please use @jridgewell/sourcemap-codec instead
+warning eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+warning eslint > @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+warning eslint > file-entry-cache > flat-cache > rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+warning eslint > @humanwhocodes/config-array > @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+warning " > react-native-css-interop@0.1.22" has unmet peer dependency "tailwindcss@~3".
+warning "react-native-phone-number-input > react-native-country-picker-modal > modal-react-native-web@0.2.0" has incorrect peer dependency "react@16.x.x".
+warning "react-native-phone-number-input > react-native-country-picker-modal > modal-react-native-web@0.2.0" has unmet peer dependency "react-art@16.x.x".
+warning "react-native-phone-number-input > react-native-country-picker-modal > modal-react-native-web@0.2.0" has incorrect peer dependency "react-dom@16.x.x".
+warning "react-native-phone-number-input > react-native-country-picker-modal > modal-react-native-web@0.2.0" has incorrect peer dependency "react-native-web@0.9.x".
+warning "react-native-phone-number-input > react-native-country-picker-modal > @callstack/react-theme-provider@3.0.3" has incorrect peer dependency "react@^16.3.0".
+warning " > react-native-unistyles@3.0.19" has unmet peer dependency "@react-native/normalize-colors@*".
+warning " > ts-node@10.9.2" has unmet peer dependency "@types/node@*".
+warning " > workbox-webpack-plugin@7.4.0" has unmet peer dependency "webpack@^4.4.0 || ^5.91.0".
+warning " > webpack-cli@6.0.1" has unmet peer dependency "webpack@^5.82.0".
+warning "webpack-cli > @webpack-cli/configtest@3.0.1" has unmet peer dependency "webpack@^5.82.0".
+warning "webpack-cli > @webpack-cli/serve@3.0.1" has unmet peer dependency "webpack@^5.82.0".
+warning "webpack-cli > @webpack-cli/info@3.0.1" has unmet peer dependency "webpack@^5.82.0".
+warning Workspaces can only be enabled in private projects.
+warning Workspaces can only be enabled in private projects.
+[4/4] Building fresh packages...
+error /Users/expo/workingdir/build/node_modules/sharp: Command failed.
+Exit code: 1
+Command: node install/check.js || npm run build
+Arguments: 
+Directory: /Users/expo/workingdir/build/node_modules/sharp
+Output:
+> sharp@0.34.5 build
+> node install/build.js
+
+sharp: Attempting to build from source via node-gyp
+sharp: See https://sharp.pixelplumbing.com/install#building-from-source
+sharp: Please add node-addon-api to your dependencies
+info Visit https://yarnpkg.com/en/docs/cli/install for documentation about this command.

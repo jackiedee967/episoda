@@ -11,6 +11,9 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "NODE_ENV": "production"
+      },
       "ios": {
         "image": "latest"
       }
