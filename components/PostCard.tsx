@@ -14,6 +14,7 @@ import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import FadeInImage from './FadeInImage';
 import { getShowColorScheme } from '@/utils/showColors';
 import MentionText from '@/components/MentionText';
+import AvatarImage from '@/components/AvatarImage';
 
 // Utility function to format relative time
 function getRelativeTime(timestamp: Date): string {
@@ -303,7 +304,13 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
               ) : null}
             </View>
             <Pressable onPress={handleUserPress}>
-              <FadeInImage source={{ uri: latestPost.user.avatar }} style={styles.userProfilePic} contentFit="cover" />
+              <AvatarImage
+                uri={latestPost.user.avatar_url || latestPost.user.avatar}
+                colorSchemeId={latestPost.user.avatar_color_scheme}
+                iconName={latestPost.user.avatar_icon}
+                size={36}
+                borderRadius={10}
+              />
             </Pressable>
           </View>
         </View>

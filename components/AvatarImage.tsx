@@ -8,6 +8,7 @@ interface AvatarImageProps {
   colorSchemeId?: number;
   iconName?: string;
   size?: number;
+  borderRadius?: number;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -115,21 +116,22 @@ function GeneratedAvatar({ colorSchemeId, iconName, size }: { colorSchemeId: num
   );
 }
 
-export default function AvatarImage({ uri, colorSchemeId, iconName, size = 40, style }: AvatarImageProps) {
+export default function AvatarImage({ uri, colorSchemeId, iconName, size = 40, borderRadius, style }: AvatarImageProps) {
   const hasValidUri = uri && !uri.startsWith('data:image/svg+xml');
+  const actualBorderRadius = borderRadius ?? size / 2;
   
   if (hasValidUri) {
     return (
       <Image
         source={{ uri }}
-        style={[{ width: size, height: size, borderRadius: size / 2 } as ImageStyle, style as ImageStyle]}
+        style={[{ width: size, height: size, borderRadius: actualBorderRadius } as ImageStyle, style as ImageStyle]}
         resizeMode="cover"
       />
     );
   }
   
   return (
-    <View style={[{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }, style]}>
+    <View style={[{ width: size, height: size, borderRadius: actualBorderRadius, overflow: 'hidden' }, style]}>
       <GeneratedAvatar
         colorSchemeId={colorSchemeId || 1}
         iconName={iconName || 'icon-1-ellipse'}

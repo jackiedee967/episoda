@@ -19,6 +19,7 @@ import * as Clipboard from 'expo-clipboard';
 import Button from '@/components/Button';
 import tokens from '@/styles/tokens';
 import FadeInImage from '@/components/FadeInImage';
+import AvatarImage from '@/components/AvatarImage';
 
 type Tab = 'you' | 'friends';
 
@@ -166,10 +167,12 @@ export default function NotificationsScreen() {
         onPress={() => handleNotificationPress(notification)}
       >
         <View style={styles.cardContent}>
-          <FadeInImage
-            source={{ uri: notification.actor.avatar }}
-            style={styles.actorAvatar}
-            contentFit="cover"
+          <AvatarImage
+            uri={notification.actor.avatar_url || notification.actor.avatar}
+            colorSchemeId={notification.actor.avatar_color_scheme}
+            iconName={notification.actor.avatar_icon}
+            size={40}
+            borderRadius={12}
           />
           <View style={styles.textContent}>
             <Text style={styles.notificationText} numberOfLines={2}>

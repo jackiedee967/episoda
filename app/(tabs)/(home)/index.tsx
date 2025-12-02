@@ -23,6 +23,7 @@ import { User, Post } from '@/types';
 import { getCommunityPosts } from '@/services/communityPosts';
 import { useAppUsageTracker } from '@/hooks/useAppUsageTracker';
 import { useFoundersWelcome } from '@/hooks/useFoundersWelcome';
+import AvatarImage from '@/components/AvatarImage';
 
 type SuggestedUser = User & {
   mutualFriends: Array<{
@@ -504,9 +505,12 @@ export default function HomeScreen() {
         resizeMode="contain"
       />
       <Pressable onPress={handleProfilePress}>
-        <Image 
-          source={{ uri: currentUser.avatar }}
-          style={styles.profilePic}
+        <AvatarImage
+          uri={currentUser.avatar_url || currentUser.avatar}
+          colorSchemeId={currentUser.avatar_color_scheme}
+          iconName={currentUser.avatar_icon}
+          size={36}
+          borderRadius={12}
         />
       </Pressable>
     </View>
@@ -791,7 +795,13 @@ export default function HomeScreen() {
               onPress={() => handleUserPress(user.id)}
               activeOpacity={0.7}
             >
-              <Image source={{ uri: user.avatar }} style={styles.userProfilePic} />
+              <AvatarImage
+                uri={user.avatar_url || user.avatar}
+                colorSchemeId={user.avatar_color_scheme}
+                iconName={user.avatar_icon}
+                size={60}
+                borderRadius={16}
+              />
               <Text style={styles.userCardName} numberOfLines={1}>{user.displayName}</Text>
               <Text style={styles.userCardUsername} numberOfLines={1}>@{user.username}</Text>
               <Friends 

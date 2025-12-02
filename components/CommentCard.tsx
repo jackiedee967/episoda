@@ -8,6 +8,7 @@ import { Comment } from '@/types';
 import { useRouter } from 'expo-router';
 import { Heart, MessageCircle } from 'lucide-react-native';
 import MentionText from '@/components/MentionText';
+import AvatarImage from '@/components/AvatarImage';
 
 interface CommentCardProps {
   comment: Comment;
@@ -77,24 +78,16 @@ export default function CommentCard({ comment, depth = 0, onLike, onReplyStart }
     return null;
   }
 
-  const dynamicAvatarStyle = {
-    width: avatarSize,
-    height: avatarSize,
-    borderRadius: avatarRadius,
-  };
-
   return (
     <View style={[styles.container, leftIndent > 0 && { marginLeft: leftIndent }]}>
       <Pressable onPress={handleUserPress} style={styles.avatarContainer}>
-        {comment.user.avatar ? (
-          <Image source={{ uri: comment.user.avatar }} style={[styles.avatar, dynamicAvatarStyle]} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder, dynamicAvatarStyle]}>
-            <Text style={[styles.avatarPlaceholderText, { fontSize: avatarSize / 2 }]}>
-              {comment.user.displayName?.charAt(0) || '?'}
-            </Text>
-          </View>
-        )}
+        <AvatarImage
+          uri={comment.user.avatar_url || comment.user.avatar}
+          colorSchemeId={comment.user.avatar_color_scheme}
+          iconName={comment.user.avatar_icon}
+          size={avatarSize}
+          borderRadius={avatarRadius}
+        />
       </Pressable>
 
       <View style={styles.content}>

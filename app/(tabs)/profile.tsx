@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Pressable, Alert, Platform, Linking, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking, RefreshControl } from 'react-native';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { colors, typography } from '@/styles/tokens';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
@@ -20,12 +20,12 @@ import { Instagram, Music, Globe, MoreHorizontal } from 'lucide-react-native';
 import { Show, SocialLink, User } from '@/types';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/integrations/supabase/client';
-import { generateAvatarDataURI } from '@/utils/profilePictureGenerator';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import FavoritesSection from '@/components/FavoritesSection';
+import AvatarImage from '@/components/AvatarImage';
 
 type Tab = 'posts' | 'shows' | 'playlists';
 
@@ -108,17 +108,14 @@ export default function ProfileScreen() {
           // Keep the contextCurrentUser.id to maintain compatibility with mock data
           // Only update profile-specific fields from Supabase
           setProfileUser(prev => {
-            // Generate avatar data URI if no uploaded avatar but has auto-generated avatar config
-            let avatarUrl = profile.avatar_url || prev?.avatar;
-            if (!profile.avatar_url && profile.avatar_color_scheme && profile.avatar_icon) {
-              avatarUrl = generateAvatarDataURI(profile.avatar_color_scheme, profile.avatar_icon);
-            }
-            
             return {
               ...prev,
               username: profile.username || prev?.username,
               displayName: profile.display_name || prev?.displayName,
-              avatar: avatarUrl,
+              avatar: profile.avatar_url || prev?.avatar || '',
+              avatar_url: profile.avatar_url || null,
+              avatar_color_scheme: profile.avatar_color_scheme || prev?.avatar_color_scheme,
+              avatar_icon: profile.avatar_icon || prev?.avatar_icon,
               bio: profile.bio || '',
               socialLinks: socialLinks?.map(link => ({
                 platform: link.platform as SocialLink['platform'],
@@ -397,15 +394,14 @@ export default function ProfileScreen() {
     
     return (
     <View style={styles.profileInfoSection}>
-      {profileUser.avatar ? (
-        <Image source={{ uri: profileUser.avatar }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-          <Text style={styles.avatarPlaceholderText}>
-            {(profileUser.displayName || profileUser.username || '?').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
+      <AvatarImage
+        uri={profileUser.avatar_url || profileUser.avatar}
+        colorSchemeId={profileUser.avatar_color_scheme}
+        iconName={profileUser.avatar_icon}
+        size={127}
+        style={styles.avatarContainer}
+        borderRadius={20}
+      />
       
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>
@@ -879,23 +875,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
   },
-  avatar: {
-    width: 127,
-    height: 127,
-    borderRadius: 20,
+  avatarContainer: {
     marginBottom: 10,
-  },
-  avatarPlaceholder: {
-    backgroundColor: colors.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-  },
-  avatarPlaceholderText: {
-    ...typography.largeTitle,
-    color: colors.greenHighlight,
-    fontSize: 48,
   },
   profileTextContainer: {
     width: 331,
