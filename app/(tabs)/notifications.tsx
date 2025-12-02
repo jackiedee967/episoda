@@ -9,9 +9,11 @@ import {
   Platform,
   Share,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
+import { Asset } from 'expo-asset';
 import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import { Notification } from '@/types';
 import { mockUsers, mockPosts, currentUser, mockComments } from '@/data/mockData';
@@ -21,6 +23,8 @@ import Button from '@/components/Button';
 import tokens from '@/styles/tokens';
 import FadeInImage from '@/components/FadeInImage';
 import AvatarImage from '@/components/AvatarImage';
+
+const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 
 type Tab = 'you' | 'friends';
 
@@ -206,50 +210,69 @@ export default function NotificationsScreen() {
   const notifications = (activeTab === 'you' ? mockNotifications : mockFriendNotifications)
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
+  const content = (
+    <>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <Text style={styles.title}>Notifications</Text>
+      </View>
+
+      <View style={styles.tabSelectorWrapper}>
+        <TabSelector
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(key) => setActiveTab(key as Tab)}
+          variant="default"
+        />
+      </View>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.resultsContainer}>
+          {notifications.length === 0 ? (
+            <View style={styles.emptyState}>
+              <FadeInImage 
+                source={require('@/assets/images/invite-friends.png')} 
+                style={styles.emptyStateImage}
+                contentFit="contain"
+              />
+              <Text style={styles.emptyStateText}>Invite your friends!</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Invite friends to see what they're watching, talk theories and delusions, and find your next binge!
+              </Text>
+              <Button 
+                variant="primary" 
+                onPress={handleInviteFriends}
+                style={styles.inviteButton}
+              >
+                Invite Friends
+              </Button>
+            </View>
+          ) : (
+            notifications.map(renderNotification)
+          )}
+        </View>
+      </ScrollView>
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.pageContainer}>{content}</View>
+      </>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.pageContainer}>
-        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-          <Text style={styles.title}>Notifications</Text>
-        </View>
-
-        <View style={styles.tabSelectorWrapper}>
-          <TabSelector
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(key) => setActiveTab(key as Tab)}
-            variant="default"
-          />
-        </View>
-
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.resultsContainer}>
-            {notifications.length === 0 ? (
-              <View style={styles.emptyState}>
-                <FadeInImage 
-                  source={require('@/assets/images/invite-friends.png')} 
-                  style={styles.emptyStateImage}
-                  contentFit="contain"
-                />
-                <Text style={styles.emptyStateText}>Invite your friends!</Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Invite friends to see what they're watching, talk theories and delusions, and find your next binge!
-                </Text>
-                <Button 
-                  variant="primary" 
-                  onPress={handleInviteFriends}
-                  style={styles.inviteButton}
-                >
-                  Invite Friends
-                </Button>
-              </View>
-            ) : (
-              notifications.map(renderNotification)
-            )}
-          </View>
-        </ScrollView>
-      </View>
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.pageContainer}
+        resizeMode="cover"
+      >
+        {content}
+      </ImageBackground>
     </>
   );
 }

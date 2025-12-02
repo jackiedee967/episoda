@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking, RefreshControl, ImageBackground } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { Asset } from 'expo-asset';
 import { colors, typography } from '@/styles/tokens';
+
+const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -708,149 +711,167 @@ export default function ProfileScreen() {
     );
   }
 
+  const content = (
+    <>
+      {/* Invite Friends Button - Top Right Corner (Owner Only) */}
+      <Pressable 
+        style={[styles.inviteFloatingButton, { top: insets.top + 16 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setShowInviteFriendsModal(true);
+        }}
+      >
+        <Image 
+          source={require('@/assets/images/user-plus.png')} 
+          style={styles.inviteButtonIcon}
+        />
+      </Pressable>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.almostWhite}
+            colors={[colors.almostWhite]}
+          />
+        }
+      >
+        {renderProfileInfo()}
+        {renderActionButtons()}
+        {renderStatsGrid()}
+        {renderMyRotation()}
+        
+        {profileUser && (
+          <FavoritesSection 
+            userId={profileUser.id} 
+            isOwnProfile={true} 
+          />
+        )}
+        
+        <View style={styles.tabSelectorContainer}>
+          <TabSelector
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={(tabKey) => setActiveTab(tabKey as Tab)}
+            variant="default"
+          />
+        </View>
+
+        {activeTab === 'posts' ? renderPostsTab() : null}
+        {activeTab === 'shows' ? renderShowsTab() : null}
+        {activeTab === 'playlists' ? renderPlaylistsTab() : null}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      <FollowersModal
+        visible={showFollowersModal || showFollowingModal}
+        onClose={() => {
+          setShowFollowersModal(false);
+          setShowFollowingModal(false);
+        }}
+        users={(() => {
+          const usersList = followersType === 'followers' ? followers : following;
+          const currentUserId = profileUser.id;
+          if (!currentUserId) return usersList;
+          
+          const currentUserIndex = usersList.findIndex(u => u.id === currentUserId);
+          if (currentUserIndex === -1) return usersList;
+          
+          const sortedUsers = [...usersList];
+          const [currentUser] = sortedUsers.splice(currentUserIndex, 1);
+          return [currentUser, ...sortedUsers];
+        })()}
+        title={followersType === 'followers' ? 'Followers' : 'Following'}
+        currentUserId={profileUser.id}
+        followingIds={following.map(u => u.id)}
+        onFollowToggle={handleFollowToggle}
+      />
+
+      <PostModal
+        visible={showPostModal}
+        onClose={() => setShowPostModal(false)}
+      />
+
+      <EditProfileModal
+        visible={showEditProfileModal}
+        onClose={() => setShowEditProfileModal(false)}
+        displayName={profileUser.displayName}
+        username={profileUser.username}
+        bio={profileUser.bio || ''}
+        avatar={profileUser.avatar || ''}
+        socialLinks={profileUser.socialLinks || []}
+        onSave={handleSaveProfile}
+      />
+
+      <InviteFriendsModal
+        visible={showInviteFriendsModal}
+        onClose={() => setShowInviteFriendsModal(false)}
+        onInvite={async () => {
+          const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
+          const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
+          
+          try {
+            const { Share } = await import('react-native');
+            const result = await Share.share({
+              message: message,
+              url: APP_STORE_URL,
+            });
+
+            if (result.action === Share.sharedAction) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setShowInviteFriendsModal(false);
+            }
+          } catch (error) {
+            console.error('Error sharing:', error);
+            if (Platform.OS === 'web') {
+              window.alert('Failed to share. Link copied to clipboard.');
+            } else {
+              Alert.alert('Error', 'Failed to share.');
+            }
+          }
+        }}
+      />
+
+      {showPlaylistModal ? (
+        <PlaylistModal
+          visible={!!showPlaylistModal}
+          onClose={() => setShowPlaylistModal(null)}
+          show={showPlaylistModal}
+          onAddToPlaylist={() => {}}
+        />
+      ) : null}
+
+      {showPlaylistViewModal ? (
+        <PlaylistViewModal
+          visible={!!showPlaylistViewModal}
+          onClose={() => setShowPlaylistViewModal(null)}
+          playlistId={showPlaylistViewModal}
+        />
+      ) : null}
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.pageContainer}>{content}</View>
+      </>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.pageContainer}>
-        {/* Invite Friends Button - Top Right Corner (Owner Only) */}
-        <Pressable 
-          style={[styles.inviteFloatingButton, { top: insets.top + 16 }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowInviteFriendsModal(true);
-          }}
-        >
-          <Image 
-            source={require('@/assets/images/user-plus.png')} 
-            style={styles.inviteButtonIcon}
-          />
-        </Pressable>
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={colors.almostWhite}
-              colors={[colors.almostWhite]}
-            />
-          }
-        >
-          {renderProfileInfo()}
-          {renderActionButtons()}
-          {renderStatsGrid()}
-          {renderMyRotation()}
-          
-          {profileUser && (
-            <FavoritesSection 
-              userId={profileUser.id} 
-              isOwnProfile={true} 
-            />
-          )}
-          
-          <View style={styles.tabSelectorContainer}>
-            <TabSelector
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={(tabKey) => setActiveTab(tabKey as Tab)}
-              variant="default"
-            />
-          </View>
-
-          {activeTab === 'posts' ? renderPostsTab() : null}
-          {activeTab === 'shows' ? renderShowsTab() : null}
-          {activeTab === 'playlists' ? renderPlaylistsTab() : null}
-          <View style={{ height: 100 }} />
-        </ScrollView>
-
-        <FollowersModal
-          visible={showFollowersModal || showFollowingModal}
-          onClose={() => {
-            setShowFollowersModal(false);
-            setShowFollowingModal(false);
-          }}
-          users={(() => {
-            const usersList = followersType === 'followers' ? followers : following;
-            const currentUserId = profileUser.id;
-            if (!currentUserId) return usersList;
-            
-            const currentUserIndex = usersList.findIndex(u => u.id === currentUserId);
-            if (currentUserIndex === -1) return usersList;
-            
-            const sortedUsers = [...usersList];
-            const [currentUser] = sortedUsers.splice(currentUserIndex, 1);
-            return [currentUser, ...sortedUsers];
-          })()}
-          title={followersType === 'followers' ? 'Followers' : 'Following'}
-          currentUserId={profileUser.id}
-          followingIds={following.map(u => u.id)}
-          onFollowToggle={handleFollowToggle}
-        />
-
-        <PostModal
-          visible={showPostModal}
-          onClose={() => setShowPostModal(false)}
-        />
-
-        <EditProfileModal
-          visible={showEditProfileModal}
-          onClose={() => setShowEditProfileModal(false)}
-          displayName={profileUser.displayName}
-          username={profileUser.username}
-          bio={profileUser.bio || ''}
-          avatar={profileUser.avatar || ''}
-          socialLinks={profileUser.socialLinks || []}
-          onSave={handleSaveProfile}
-        />
-
-        <InviteFriendsModal
-          visible={showInviteFriendsModal}
-          onClose={() => setShowInviteFriendsModal(false)}
-          onInvite={async () => {
-            // Trigger iOS share sheet
-            const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
-            const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
-            
-            try {
-              const { Share } = await import('react-native');
-              const result = await Share.share({
-                message: message,
-                url: APP_STORE_URL,
-              });
-
-              if (result.action === Share.sharedAction) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                setShowInviteFriendsModal(false);
-              }
-            } catch (error) {
-              console.error('Error sharing:', error);
-              if (Platform.OS === 'web') {
-                window.alert('Failed to share. Link copied to clipboard.');
-              } else {
-                Alert.alert('Error', 'Failed to share.');
-              }
-            }
-          }}
-        />
-
-        {showPlaylistModal ? (
-          <PlaylistModal
-            visible={!!showPlaylistModal}
-            onClose={() => setShowPlaylistModal(null)}
-            show={showPlaylistModal}
-            onAddToPlaylist={() => {}}
-          />
-        ) : null}
-
-        {showPlaylistViewModal ? (
-          <PlaylistViewModal
-            visible={!!showPlaylistViewModal}
-            onClose={() => setShowPlaylistViewModal(null)}
-            playlistId={showPlaylistViewModal}
-          />
-        ) : null}
-      </View>
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.pageContainer}
+        resizeMode="cover"
+      >
+        {content}
+      </ImageBackground>
     </>
   );
 }

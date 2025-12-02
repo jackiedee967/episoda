@@ -3,10 +3,13 @@ import { View, Text, StyleSheet, TextInput, FlatList, Pressable, Platform, Image
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import { Asset } from 'expo-asset';
 import { IconSymbol } from '@/components/IconSymbol';
 import TabSelector, { Tab } from '@/components/TabSelector';
 import UserCard from '@/components/UserCard';
 import { mockShows, mockUsers, mockComments } from '@/data/mockData';
+
+const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { Show, User, Comment } from '@/types';
 import PlaylistModal from '@/components/PlaylistModal';
 import { useData } from '@/contexts/DataContext';
@@ -2179,11 +2182,9 @@ export default function SearchScreen() {
 
   // Note: renderResults() has been removed - we now use FlatList with renderItem instead
 
-  return (
+  const content = (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.pageContainer}>
-        <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
           <Text style={styles.title}>Explore</Text>
           <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color={tokens.colors.grey1} />
@@ -2597,7 +2598,28 @@ export default function SearchScreen() {
           onAddToPlaylist={handleAddToPlaylist}
         />
       ) : null}
-      </View>
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.pageContainer}>{content}</View>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.pageContainer}
+        resizeMode="cover"
+      >
+        {content}
+      </ImageBackground>
     </>
   );
 }

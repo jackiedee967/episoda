@@ -11,6 +11,9 @@ import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Asset } from 'expo-asset';
+
+const appBackground = Asset.fromModule(require('../../../assets/images/app-background.jpg')).uri;
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight } from 'lucide-react-native';
@@ -936,8 +939,8 @@ export default function HomeScreen() {
     }
   }, [hasMorePosts, isLoadingMore, loadMorePosts]);
 
-  return (
-    <View style={styles.container}>
+  const content = (
+    <>
       <FlatList
         data={feedData}
         renderItem={renderFeedItem}
@@ -988,7 +991,6 @@ export default function HomeScreen() {
           markInviteModalShown();
         }}
         onInvite={async () => {
-          // Trigger iOS share sheet
           const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
           const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
           
@@ -1021,7 +1023,21 @@ export default function HomeScreen() {
           markFoundersModalShown();
         }}
       />
-    </View>
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    return <View style={styles.container}>{content}</View>;
+  }
+
+  return (
+    <ImageBackground
+      source={{ uri: appBackground }}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      {content}
+    </ImageBackground>
   );
 }
 
