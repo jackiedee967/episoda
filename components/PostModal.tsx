@@ -534,12 +534,35 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           if (dbShows && dbShows.length > 0) {
             console.log(`📦 Found ${dbShows.length} shows from database fallback`);
             const { mapDatabaseShowToShow, mapDatabaseShowToTraktShow } = await import('@/services/showMappers');
-            const mappedShows = dbShows.map(dbShow => {
-              return {
-                show: mapDatabaseShowToShow(dbShow as any),
-                traktShow: mapDatabaseShowToTraktShow(dbShow as any)
-              };
-            });
+            const { DatabaseShow } = await import('@/services/showDatabase');
+            const mappedShows = dbShows
+              .filter(dbShow => dbShow.id && dbShow.trakt_id && dbShow.title)
+              .map(dbShow => {
+                const typedShow = dbShow as unknown as typeof DatabaseShow extends new () => infer T ? T : {
+                  id: string;
+                  trakt_id: number;
+                  title: string;
+                  year: number | null;
+                  description: string | null;
+                  poster_url: string | null;
+                  backdrop_url: string | null;
+                  rating: number | null;
+                  total_seasons: number | null;
+                  total_episodes: number | null;
+                  color_scheme: string | null;
+                  imdb_id: string | null;
+                  tmdb_id: number | null;
+                  tvdb_id: number | null;
+                  tvmaze_id: number | null;
+                  genres?: string[] | null;
+                  created_at: string;
+                  updated_at: string;
+                };
+                return {
+                  show: mapDatabaseShowToShow(typedShow as any),
+                  traktShow: mapDatabaseShowToTraktShow(typedShow as any)
+                };
+              });
             setShowSearchResults(mappedShows);
             setIsSearching(false);
             return;
