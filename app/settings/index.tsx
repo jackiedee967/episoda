@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
-import { User, Bell, HelpCircle, LogOut, Shield } from 'lucide-react-native';
+import { User, Bell, HelpCircle, LogOut, Shield, Heart } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
@@ -126,6 +126,26 @@ export default function SettingsScreen() {
                     <HelpCircle size={22} color={colors.text} />
                   </View>
                   <Text style={styles.rowText}>The Help Desk</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* About Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>ABOUT</Text>
+            
+            <View style={styles.rowContainer}>
+              <Pressable 
+                style={styles.row}
+                onPress={() => handleRowPress('/settings/acknowledgments')}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={styles.iconContainer}>
+                    <Heart size={22} color={colors.text} />
+                  </View>
+                  <Text style={styles.rowText}>Acknowledgments</Text>
                 </View>
                 <IconSymbol name="chevron.right" size={20} color={colors.textSecondary} />
               </Pressable>
