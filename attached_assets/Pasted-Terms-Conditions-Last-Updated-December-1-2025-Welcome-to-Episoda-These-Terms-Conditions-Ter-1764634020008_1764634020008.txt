@@ -1,0 +1,144 @@
+Terms & Conditions
+Last Updated: December 1, 2025
+Welcome to Episoda! These Terms & Conditions ("Terms") govern your use of the Episoda mobile application and services (collectively, the "Service"). By creating an account or using Episoda, you agree to these Terms.
+1. Acceptance of Terms
+By accessing or using Episoda, you agree to be bound by these Terms and our Privacy Policy. If you do not agree, do not use the Service.
+2. Eligibility
+You must be at least 13 years old to use Episoda. If you are under 18, you represent that you have your parent or guardian's permission to use the Service.
+3. Account Registration
+3.1 Account Creation
+
+You must provide accurate and complete information when creating an account
+You are responsible for maintaining the confidentiality of your account credentials
+You are responsible for all activity that occurs under your account
+
+3.2 Account Security
+
+You must notify us immediately of any unauthorized access to your account
+We are not liable for any loss or damage arising from your failure to protect your account information
+
+4. User Content
+4.1 Your Content
+
+You retain ownership of all content you post on Episoda (reviews, comments, ratings, lists, etc.)
+By posting content, you grant Episoda a worldwide, non-exclusive, royalty-free license to use, display, reproduce, and distribute your content within the Service
+
+4.2 Content Standards
+You agree NOT to post content that:
+
+Is illegal, harmful, threatening, abusive, harassing, defamatory, or invasive of privacy
+Contains hate speech, discrimination, or promotes violence
+Infringes on intellectual property rights
+Contains spam, advertising, or promotional content without authorization
+Contains spoilers without appropriate warnings
+Impersonates any person or entity
+
+4.3 Content Moderation
+
+We reserve the right to remove any content that violates these Terms
+We may suspend or terminate accounts that repeatedly violate our content policies
+
+5. TV Show Data & Third-Party Content
+5.1 Show Information
+
+TV show data (titles, descriptions, images, ratings) is provided by third-party APIs
+We do not claim ownership of this content
+Show data accuracy is not guaranteed
+
+5.2 User Reviews & Opinions
+
+Reviews and ratings reflect individual user opinions
+Episoda is not responsible for the accuracy of user-generated reviews
+
+6. Prohibited Conduct
+You agree NOT to:
+
+Use the Service for any illegal purpose
+Harass, abuse, or harm other users
+Attempt to gain unauthorized access to the Service or other users' accounts
+Use automated systems (bots, scrapers) without permission
+Interfere with or disrupt the Service
+Create multiple accounts to manipulate ratings or circumvent bans
+Sell, transfer, or share your account
+
+7. Blocking & Reporting
+7.1 User Controls
+
+You can block other users to prevent them from interacting with you
+You can report users or content that violates these Terms
+
+7.2 Our Actions
+
+We will investigate reported content and users
+We may remove content or suspend/terminate accounts for violations
+
+8. Intellectual Property
+8.1 Episoda's Rights
+
+The Episoda app, including its design, features, and code, is owned by Episoda
+Our trademarks, logos, and brand elements may not be used without permission
+
+8.2 DMCA Compliance
+
+If you believe content on Episoda infringes your copyright, contact us at hello@episoda.io
+We comply with the Digital Millennium Copyright Act (DMCA)
+
+9. Disclaimers
+9.1 Service Availability
+
+Episoda is provided "as is" without warranties of any kind
+We do not guarantee uninterrupted or error-free service
+We may modify, suspend, or discontinue the Service at any time
+
+9.2 User Interactions
+
+You are responsible for your interactions with other users
+We are not liable for disputes between users
+
+10. Limitation of Liability
+To the maximum extent permitted by law:
+
+Episoda is not liable for any indirect, incidental, or consequential damages
+Our total liability shall not exceed the amount you paid us (if any) in the past 12 months
+Some jurisdictions do not allow these limitations, so they may not apply to you
+
+11. Indemnification
+You agree to indemnify and hold Episoda harmless from any claims, damages, or expenses arising from:
+
+Your use of the Service
+Your violation of these Terms
+Your violation of any third-party rights
+
+12. Termination
+12.1 By You
+
+You may delete your account at any time through the app settings
+
+12.2 By Us
+
+We may suspend or terminate your account if you violate these Terms
+We may terminate accounts for inactivity or at our discretion
+Upon termination, your right to use the Service ends immediately
+
+13. Changes to Terms
+
+We may update these Terms from time to time
+We will notify you of material changes via the app or email
+Continued use after changes constitutes acceptance of new Terms
+
+14. Governing Law
+These Terms are governed by the laws of the State of California and the United States, without regard to conflict of law principles.
+15. Dispute Resolution
+15.1 Informal Resolution
+
+Before filing a claim, contact us at hello@episoda.io to attempt informal resolution
+
+15.2 Arbitration
+
+Any disputes will be resolved through binding arbitration in Los Angeles, California rather than in court
+
+16. Contact Us
+If you have questions about these Terms, contact us at:
+
+Email: hello@episoda.io
+Website: episoda.io
