@@ -8,10 +8,6 @@ const getOMDBApiKey = () => {
     process.env.OMDB_API_KEY ||
     '';
   
-  if (!key) {
-    console.warn('⚠️ OMDB API key not configured. Poster enrichment will be limited to TVMaze.');
-  }
-  
   return key;
 };
 

@@ -9,10 +9,6 @@ const getTMDBApiKey = () => {
     Constants.manifest2?.extra?.expoClient?.extra?.tmdbApiKey ||
     '';
   
-  if (!key) {
-    console.warn('⚠️ TMDB API key not configured. Poster enrichment will fall back to OMDB/TVMaze.');
-  }
-  
   return key;
 };
 
