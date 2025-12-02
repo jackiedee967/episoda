@@ -2040,6 +2040,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       timestamp: new Date(),
     };
 
+    // Optimistic update
     setReposts(prev => {
       const updatedReposts = [...prev, newRepost];
       saveRepostsToStorage(updatedReposts);
@@ -2057,9 +2058,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       return updatedPosts;
     });
+
+    // Save to Supabase
+    try {
+      const { error } = await supabase
+        .from('post_reposts')
+        .insert({
+          post_id: postId,
+          user_id: currentUser.id,
+        });
+
+      if (error) {
+        console.error('Error saving repost to Supabase:', error);
+        // Rollback on error
+        setReposts(prev => prev.filter(r => !(r.postId === postId && r.userId === currentUser.id)));
+        setPosts(prev => prev.map(post =>
+          post.id === postId
+            ? { ...post, reposts: Math.max(0, post.reposts - 1) }
+            : post
+        ));
+      }
+    } catch (error) {
+      console.error('Error saving repost:', error);
+    }
   }, [currentUser.id, isHydrated]);
 
   const unrepostPost = useCallback(async (postId: string) => {
+    // Optimistic update
     setReposts(prev => {
       const updatedReposts = prev.filter(
         r => !(r.postId === postId && r.userId === currentUser.id)
@@ -2079,6 +2104,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
       return updatedPosts;
     });
+
+    // Delete from Supabase
+    try {
+      const { error } = await supabase
+        .from('post_reposts')
+        .delete()
+        .eq('post_id', postId)
+        .eq('user_id', currentUser.id);
+
+      if (error) {
+        console.error('Error deleting repost from Supabase:', error);
+      }
+    } catch (error) {
+      console.error('Error unreposting:', error);
+    }
   }, [currentUser.id, isHydrated]);
 
   const hasUserReposted = useCallback((postId: string): boolean => {

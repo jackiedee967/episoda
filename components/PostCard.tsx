@@ -404,8 +404,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   repostBannerText: {
-    ...tokens.typography.p4,
     color: tokens.colors.grey1,
+    fontFamily: 'FunnelDisplay_300Light',
+    fontSize: 10,
   },
   userPostInfo: {
     flexDirection: 'row',
