@@ -232,22 +232,45 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!currentUser?.id || posts.length === 0) return;
 
-    // Get user's posts only (most recent first)
-    const userPosts = posts
-      .filter(post => post.user.id === currentUser.id && post.show)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    // Extract unique shows (most recent first)
-    const uniqueShows = new Map();
-    
-    for (const post of userPosts) {
-      if (post.show && !uniqueShows.has(post.show.id)) {
-        uniqueShows.set(post.show.id, post.show);
-        if (uniqueShows.size >= 6) break;
+    const fetchCurrentlyWatching = async () => {
+      // Get user's posts only (most recent first)
+      const userPosts = posts
+        .filter(post => post.user.id === currentUser.id && post.show)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      // Extract unique shows (most recent first)
+      const uniqueShows = new Map();
+      
+      for (const post of userPosts) {
+        if (post.show && !uniqueShows.has(post.show.id)) {
+          uniqueShows.set(post.show.id, post.show);
+          if (uniqueShows.size >= 6) break;
+        }
       }
-    }
+      
+      const shows = Array.from(uniqueShows.values());
+      
+      // Enrich shows missing endYear with data from Trakt
+      const { fetchShowEndYear } = await import('@/services/trakt');
+      const enrichedShows = await Promise.all(
+        shows.map(async (show) => {
+          if (!show.endYear && show.traktId) {
+            try {
+              const endYear = await fetchShowEndYear(show.traktId, undefined, show.year);
+              return { ...show, endYear };
+            } catch (err) {
+              console.warn(`Failed to fetch endYear for ${show.title}:`, err);
+              return show;
+            }
+          }
+          return show;
+        })
+      );
+      
+      setCurrentlyWatchingShows(enrichedShows);
+    };
     
-    setCurrentlyWatchingShows(Array.from(uniqueShows.values()));
+    fetchCurrentlyWatching();
   }, [currentUser?.id, posts]);
 
   // Fetch recommended shows - matches explore page approach (fresh trending + friend activity, sorted by rating)

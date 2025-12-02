@@ -448,16 +448,24 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       
       console.log('📤 Updating favorites to:', updatedFavorites);
       
-      // Update via direct table query
-      const { data: updateData, error: updateError } = await (supabase as any)
-        .from('profiles')
-        .update({ favorite_shows: updatedFavorites })
-        .eq('user_id', userId)
-        .select();
+      // Update via RPC function (bypasses PostgREST cache issues)
+      const { data: updateData, error: updateError } = await supabase.rpc('update_user_favorites', {
+        p_user_id: userId,
+        p_favorites: updatedFavorites
+      });
       
       if (updateError) {
-        console.error('❌ Error updating favorites:', updateError);
-        return;
+        console.error('❌ Error updating favorites via RPC:', updateError);
+        // Fallback to direct table query
+        const { error: fallbackError } = await (supabase as any)
+          .from('profiles')
+          .update({ favorite_shows: updatedFavorites })
+          .eq('user_id', userId);
+        
+        if (fallbackError) {
+          console.error('❌ Fallback update also failed:', fallbackError);
+          return;
+        }
       }
       
       console.log('✅ Update response:', updateData);
@@ -492,15 +500,24 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       // Remove the favorite at this display order
       const updatedFavorites = favoritesArray.filter((f: any) => f.display_order !== displayOrder);
       
-      // Update via direct table query
-      const { error: updateError } = await (supabase as any)
-        .from('profiles')
-        .update({ favorite_shows: updatedFavorites })
-        .eq('user_id', userId);
+      // Update via RPC function (bypasses PostgREST cache issues)
+      const { error: updateError } = await supabase.rpc('update_user_favorites', {
+        p_user_id: userId,
+        p_favorites: updatedFavorites
+      });
       
       if (updateError) {
-        console.error('Error removing favorite:', updateError);
-        return;
+        console.error('Error removing favorite via RPC:', updateError);
+        // Fallback to direct table query
+        const { error: fallbackError } = await (supabase as any)
+          .from('profiles')
+          .update({ favorite_shows: updatedFavorites })
+          .eq('user_id', userId);
+        
+        if (fallbackError) {
+          console.error('Fallback update also failed:', fallbackError);
+          return;
+        }
       }
       
       await loadFavorites();
@@ -551,16 +568,24 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       
       console.log('📤 Updating favorites to:', updatedFavorites);
       
-      // Update via direct table query
-      const { data: updateData, error: updateError } = await (supabase as any)
-        .from('profiles')
-        .update({ favorite_shows: updatedFavorites })
-        .eq('user_id', userId)
-        .select();
+      // Update via RPC function (bypasses PostgREST cache issues)
+      const { data: updateData, error: updateError } = await supabase.rpc('update_user_favorites', {
+        p_user_id: userId,
+        p_favorites: updatedFavorites
+      });
       
       if (updateError) {
-        console.error('❌ Error updating favorites:', updateError);
-        return;
+        console.error('❌ Error updating favorites via RPC:', updateError);
+        // Fallback to direct table query
+        const { error: fallbackError } = await (supabase as any)
+          .from('profiles')
+          .update({ favorite_shows: updatedFavorites })
+          .eq('user_id', userId);
+        
+        if (fallbackError) {
+          console.error('❌ Fallback update also failed:', fallbackError);
+          return;
+        }
       }
       
       console.log('✅ Update response:', updateData);

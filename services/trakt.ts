@@ -252,16 +252,21 @@ export async function getSeasonEpisodes(
 }
 
 export async function fetchShowEndYear(
-  traktShow: TraktShow, 
-  seasons?: TraktSeason[]
+  traktShowOrId: TraktShow | number, 
+  seasons?: TraktSeason[],
+  startYear?: number
 ): Promise<number | undefined> {
   try {
+    // Determine if we received a TraktShow object or just a traktId
+    const traktId = typeof traktShowOrId === 'number' ? traktShowOrId : traktShowOrId.ids.trakt;
+    const showYear = typeof traktShowOrId === 'number' ? startYear : traktShowOrId.year;
+    
     // Calculate end year for ALL shows based on last aired episode
     // This gives us accurate year ranges for both ended and ongoing shows
     // Example: "Loot" (2022 - 2024) even though it's still "returning series"
     
     // Reuse seasons if provided, otherwise fetch them
-    const showSeasons = seasons || await getShowSeasons(traktShow.ids.trakt);
+    const showSeasons = seasons || await getShowSeasons(traktId);
     
     if (showSeasons.length === 0) {
       return undefined;
@@ -277,7 +282,7 @@ export async function fetchShowEndYear(
     const sortedSeasons = [...regularSeasons].sort((a, b) => b.number - a.number);
     const lastSeason = sortedSeasons[0];
     
-    const episodes = await getSeasonEpisodes(traktShow.ids.trakt, lastSeason.number);
+    const episodes = await getSeasonEpisodes(traktId, lastSeason.number);
     
     const airedEpisodes = episodes.filter(ep => ep.first_aired);
     
@@ -290,7 +295,7 @@ export async function fetchShowEndYear(
     
     // Only return endYear if it's different from the start year
     // This prevents "2022 - 2022" and shows just "2022" instead
-    if (endYear === traktShow.year) {
+    if (showYear && endYear === showYear) {
       return undefined;
     }
     

@@ -278,13 +278,32 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     }
   }, [visible, preselectedShow, preselectedEpisode, preselectedEpisodes, skipToPostDetails, prefilledRating]);
 
-  // Fallback: if recommendations aren't ready when modal opens, trigger a load
+  // Track whether we've already tried loading recommendations this modal session
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+  
+  // Reset the load attempt flag when modal closes
   useEffect(() => {
-    if (visible && step === 'selectShow' && !recommendationsReady && !isLoadingRecommendations && currentUser?.id) {
-      console.log('📊 Recommendations not ready, triggering fallback load...');
-      loadRecommendations({ force: true });
+    if (!visible) {
+      setHasAttemptedLoad(false);
     }
-  }, [visible, step, recommendationsReady, isLoadingRecommendations, currentUser?.id, loadRecommendations]);
+  }, [visible]);
+  
+  // Load recommendations when modal opens on selectShow step
+  useEffect(() => {
+    if (visible && step === 'selectShow' && !hasAttemptedLoad) {
+      // Only try to load if recommendations aren't ready and we're not already loading
+      if (!recommendationsReady && !isLoadingRecommendations) {
+        console.log('📊 Recommendations not ready, triggering load on modal open...');
+        setHasAttemptedLoad(true);
+        loadRecommendations({ force: true });
+      } else if (cachedRecommendations.length === 0 && !isLoadingRecommendations && !recommendationsReady) {
+        // Also trigger if cache is empty AND not marked as ready (prevents infinite loop)
+        console.log('📊 Cached recommendations empty, forcing reload...');
+        setHasAttemptedLoad(true);
+        loadRecommendations({ force: true });
+      }
+    }
+  }, [visible, step, recommendationsReady, isLoadingRecommendations, cachedRecommendations.length, hasAttemptedLoad, loadRecommendations]);
 
   const loadTraktDataForPreselectedShow = async (show: Show, skipToReview: boolean) => {
     setIsFetchingEpisodes(true);
