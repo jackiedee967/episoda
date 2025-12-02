@@ -449,7 +449,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       console.log('📤 Updating favorites to:', updatedFavorites);
       
       // Update via RPC function (bypasses PostgREST cache issues)
-      const { data: updateData, error: updateError } = await supabase.rpc('update_user_favorites', {
+      const { data: updateData, error: updateError } = await supabase.rpc('set_user_favorites', {
         p_user_id: userId,
         p_favorites: updatedFavorites
       });
@@ -501,7 +501,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       const updatedFavorites = favoritesArray.filter((f: any) => f.display_order !== displayOrder);
       
       // Update via RPC function (bypasses PostgREST cache issues)
-      const { error: updateError } = await supabase.rpc('update_user_favorites', {
+      const { error: updateError } = await supabase.rpc('set_user_favorites', {
         p_user_id: userId,
         p_favorites: updatedFavorites
       });
@@ -569,7 +569,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       console.log('📤 Updating favorites to:', updatedFavorites);
       
       // Update via RPC function (bypasses PostgREST cache issues)
-      const { data: updateData, error: updateError } = await supabase.rpc('update_user_favorites', {
+      const { data: updateData, error: updateError } = await supabase.rpc('set_user_favorites', {
         p_user_id: userId,
         p_favorites: updatedFavorites
       });

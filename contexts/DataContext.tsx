@@ -2664,7 +2664,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Derived selector: check if recommendations are ready (fetched recently, regardless of result count)
   const recommendationsReady = useMemo(() => {
     if (!lastRecommendationFetch) return false;
-    const age = Date.now() - lastRecommendationFetch;
+    const age = Date.now() - lastRecommendationFetch.timestamp;
     return age < RECOMMENDATION_CACHE_TTL;
   }, [lastRecommendationFetch]);
 

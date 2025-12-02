@@ -251,19 +251,46 @@ export default function HomeScreen() {
       const shows = Array.from(uniqueShows.values());
       
       // Enrich shows missing endYear with data from Trakt
-      const { fetchShowEndYear } = await import('@/services/trakt');
+      const { fetchShowEndYear, searchShows } = await import('@/services/trakt');
       const enrichedShows = await Promise.all(
         shows.map(async (show) => {
-          if (!show.endYear && show.traktId) {
-            try {
-              const endYear = await fetchShowEndYear(show.traktId, undefined, show.year);
-              return { ...show, endYear };
-            } catch (err) {
-              console.warn(`Failed to fetch endYear for ${show.title}:`, err);
-              return show;
+          // Skip if already has endYear
+          if (show.endYear) return show;
+          
+          try {
+            let traktId = show.traktId;
+            
+            // If traktId is missing, search for the show by title
+            if (!traktId && show.title) {
+              console.log(`📡 Searching Trakt for "${show.title}" to get traktId...`);
+              const results = await searchShows(show.title);
+              // Filter out results with null/undefined show data
+              const validResults = results.filter(r => r?.show?.ids?.trakt);
+              if (validResults.length > 0) {
+                // Find best match - prefer exact title match with same year
+                const exactMatch = validResults.find(r => 
+                  r.show.title.toLowerCase() === show.title.toLowerCase() && 
+                  (!show.year || r.show.year === show.year)
+                );
+                const match = exactMatch || validResults[0];
+                traktId = match.show.ids.trakt;
+                console.log(`✅ Found traktId ${traktId} for "${show.title}"`);
+              } else {
+                console.log(`⚠️ No valid Trakt results for "${show.title}"`);
+              }
             }
+            
+            // Now fetch endYear if we have a traktId
+            if (traktId) {
+              const endYear = await fetchShowEndYear(traktId, undefined, show.year);
+              return { ...show, traktId, endYear };
+            }
+            
+            return show;
+          } catch (err) {
+            console.warn(`Failed to fetch endYear for ${show.title}:`, err);
+            return show;
           }
-          return show;
         })
       );
       
