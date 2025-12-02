@@ -11,10 +11,10 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { colors, typography } from '@/styles/tokens';
 import { X, Instagram, Music, Globe } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';

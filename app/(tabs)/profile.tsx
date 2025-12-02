@@ -960,7 +960,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   statCard: {
-    width: 'calc(50% - 4px)' as any,
+    flex: 1,
+    minWidth: '45%',
     height: 57,
     padding: 8,
     justifyContent: 'center',

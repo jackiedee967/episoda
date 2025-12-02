@@ -10,6 +10,8 @@ import {
   ScrollView,
   Dimensions,
   Animated,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -247,23 +249,27 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
       animationType="none"
       onRequestClose={handleClose}
     >
-      <Animated.View 
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeAnim,
-          }
-        ]}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       >
-        <Pressable style={styles.overlayTouchable} onPress={handleClose} />
         <Animated.View 
           style={[
-            styles.modalContainer,
+            styles.overlay,
             {
-              transform: [{ translateY: slideAnim }],
+              opacity: fadeAnim,
             }
           ]}
         >
+          <Pressable style={styles.overlayTouchable} onPress={handleClose} />
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
           {/* Success Indicator */}
           {showSuccess ? (
             <Animated.View 
@@ -355,7 +361,8 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
             </View>
           </ScrollView>
         </Animated.View>
-      </Animated.View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
