@@ -11,8 +11,6 @@ const getTMDBApiKey = () => {
   
   if (!key) {
     console.warn('⚠️ TMDB API key not configured. Poster enrichment will fall back to OMDB/TVMaze.');
-  } else {
-    console.log('✅ TMDB API key loaded successfully (length:', key.length, ')');
   }
   
   return key;
