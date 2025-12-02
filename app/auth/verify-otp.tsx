@@ -18,6 +18,7 @@ import ButtonL from '@/components/ButtonL';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
+import { checkRateLimit } from '@/services/rateLimiting';
 
 const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
 const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
@@ -122,6 +123,17 @@ export default function VerifyOTPScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
+      // Check rate limit before resending OTP
+      const rateLimitResult = await checkRateLimit(phone, 'otp');
+      if (!rateLimitResult.allowed) {
+        Alert.alert(
+          'Too Many Attempts',
+          rateLimitResult.error || 'Please wait before requesting another code.'
+        );
+        setResending(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithOtp({ phone: phone });
 
       if (error) {

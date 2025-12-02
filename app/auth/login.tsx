@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { checkRateLimit } from '@/services/rateLimiting';
 let PhoneInput: any = null;
 if (Platform.OS !== 'web') {
   PhoneInput = require('react-native-phone-number-input').default;
@@ -64,6 +65,17 @@ export default function LoginScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
+      // Check rate limit before sending OTP
+      const rateLimitResult = await checkRateLimit(formattedNumber, 'otp');
+      if (!rateLimitResult.allowed) {
+        Alert.alert(
+          'Too Many Attempts',
+          rateLimitResult.error || 'Please wait before requesting another code.'
+        );
+        setLoading(false);
+        return;
+      }
+
       console.log('Sending OTP to:', formattedNumber);
 
       const { data, error } = await supabase.auth.signInWithOtp({
