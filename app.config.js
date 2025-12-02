@@ -1,6 +1,10 @@
-const traktClientId = process.env.TRAKT_CLIENT_ID || '235d184cb03ded3292ed89fe4347e3452a3087027d76f5edd13bdb65ccf2d456';
+const traktClientId = process.env.TRAKT_CLIENT_ID || '';
 const omdbApiKey = process.env.OMDB_API_KEY || '';
 const tmdbApiKey = process.env.TMDB_API_KEY || '';
+
+if (!traktClientId) {
+  console.warn('⚠️ TRAKT_CLIENT_ID not set in environment variables. Show search may not work.');
+}
 
 // PRODUCTION CREDENTIALS - No fallbacks to prevent silent DEV instance usage
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
