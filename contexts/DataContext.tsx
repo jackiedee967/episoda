@@ -1446,6 +1446,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
               traktId: showData?.trakt_id,
               colorScheme: showData?.color_scheme || null,
               year: showData?.year,
+              endYear: showData?.end_year,
             },
             episodes: episodes.length > 0 ? episodes : undefined,
             episode: episodes.length > 0 ? episodes[0] : undefined,
