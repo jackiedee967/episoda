@@ -243,9 +243,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
           <View style={styles.repostBanner}>
             <RefreshCw size={12} color={tokens.colors.grey1} strokeWidth={1.5} />
             <Text style={styles.repostBannerText}>
-              {repostContext.isSelfRepost 
-                ? `${repostContext.repostedBy.displayName} reposted their own post`
-                : `${repostContext.repostedBy.displayName} reposted`}
+              {`${repostContext.repostedBy.displayName} reposted`}
             </Text>
           </View>
         ) : null}
@@ -266,9 +264,7 @@ export default function PostCard({ post, onLike, onComment, onRepost, onShare, r
         <View style={styles.repostBanner}>
           <RefreshCw size={12} color={tokens.colors.grey1} strokeWidth={1.5} />
           <Text style={styles.repostBannerText}>
-            {repostContext.isSelfRepost 
-              ? `${repostContext.repostedBy.displayName} reposted their own post`
-              : `${repostContext.repostedBy.displayName} reposted`}
+            {`${repostContext.repostedBy.displayName} reposted`}
           </Text>
         </View>
       ) : null}
@@ -408,8 +404,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   repostBannerText: {
-    fontSize: 12,
-    fontWeight: '500',
+    ...tokens.typography.p4,
     color: tokens.colors.grey1,
   },
   userPostInfo: {
