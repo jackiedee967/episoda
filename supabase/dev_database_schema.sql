@@ -631,6 +631,90 @@ CREATE TRIGGER update_replies_updated_at BEFORE UPDATE ON replies FOR EACH ROW E
 CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
+-- 13. ADMIN COLUMN PROTECTION
+-- ============================================
+
+-- Trigger function to protect admin-only columns from non-admin users
+CREATE OR REPLACE FUNCTION protect_admin_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  current_user_admin BOOLEAN;
+BEGIN
+  SELECT COALESCE(is_admin, FALSE) INTO current_user_admin
+  FROM profiles
+  WHERE user_id = auth.uid();
+  
+  current_user_admin := COALESCE(current_user_admin, FALSE);
+  
+  IF NOT current_user_admin THEN
+    IF OLD.is_admin IS DISTINCT FROM NEW.is_admin THEN
+      RAISE EXCEPTION 'Unauthorized: Cannot modify is_admin column';
+    END IF;
+    
+    IF OLD.is_suspended IS DISTINCT FROM NEW.is_suspended THEN
+      RAISE EXCEPTION 'Unauthorized: Cannot modify is_suspended column';
+    END IF;
+    
+    IF OLD.suspended_at IS DISTINCT FROM NEW.suspended_at THEN
+      RAISE EXCEPTION 'Unauthorized: Cannot modify suspended_at column';
+    END IF;
+    
+    IF OLD.suspended_reason IS DISTINCT FROM NEW.suspended_reason THEN
+      RAISE EXCEPTION 'Unauthorized: Cannot modify suspended_reason column';
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS protect_profiles_admin_columns ON profiles;
+
+CREATE TRIGGER protect_profiles_admin_columns
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION protect_admin_columns();
+
+-- Trigger to prevent non-admins from setting admin columns on INSERT
+CREATE OR REPLACE FUNCTION protect_admin_columns_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  current_user_admin BOOLEAN;
+BEGIN
+  SELECT COALESCE(is_admin, FALSE) INTO current_user_admin
+  FROM profiles
+  WHERE user_id = auth.uid();
+  
+  current_user_admin := COALESCE(current_user_admin, FALSE);
+  
+  IF NOT current_user_admin THEN
+    IF NEW.is_admin = TRUE THEN
+      RAISE EXCEPTION 'Unauthorized: Cannot set is_admin on profile creation';
+    END IF;
+    
+    IF NEW.is_suspended = TRUE THEN
+      RAISE EXCEPTION 'Unauthorized: Cannot set is_suspended on profile creation';
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS protect_profiles_admin_columns_insert ON profiles;
+
+CREATE TRIGGER protect_profiles_admin_columns_insert
+  BEFORE INSERT ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION protect_admin_columns_insert();
+
+-- ============================================
 -- DONE! Your dev database is ready.
 -- Complete with all 24 tables matching production.
 -- ============================================
