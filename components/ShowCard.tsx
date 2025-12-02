@@ -41,6 +41,8 @@ export default function ShowCard({ show, friends = [] }: ShowCardProps) {
           rating: show.rating,
           totalSeasons: show.totalSeasons,
           totalEpisodes: show.totalEpisodes,
+          year: show.year ?? null,
+          endYear: show.endYear ?? null,
         });
         
         if (dbShow?.id) {

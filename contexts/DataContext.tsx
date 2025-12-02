@@ -1056,6 +1056,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         rating: show.rating || 0,
         totalSeasons: show.totalSeasons || 0,
         totalEpisodes: show.totalEpisodes || 0,
+        year: show.year ?? fullTraktShow?.year ?? null,
+        endYear: show.endYear ?? (fullTraktShow as any)?.end_year ?? null,
       });
 
       const uuid = dbShow.id;

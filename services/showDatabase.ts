@@ -12,6 +12,7 @@ export interface DatabaseShow {
   tvmaze_id: number | null;
   title: string;
   year: number | null;
+  end_year: number | null;
   description: string | null;
   poster_url: string | null;
   backdrop_url: string | null;
@@ -46,6 +47,7 @@ export interface SaveShowOptions {
   enrichedSeasonCount?: number | null;
   enrichedTVMazeId?: number | null;
   enrichedImdbId?: string | null;
+  enrichedEndYear?: number | null;
 }
 
 export async function saveShow(
@@ -97,6 +99,7 @@ export async function saveShow(
     tvmaze_id: tvmazeId,
     title: traktShow.title,
     year: traktShow.year || null,
+    end_year: (traktShow as any).end_year ?? options.enrichedEndYear ?? null,
     description: traktShow.overview || null,
     poster_url: posterUrl,
     backdrop_url: backdropUrl,
@@ -140,6 +143,8 @@ export async function upsertShowFromAppModel(show: {
   rating?: number;
   totalSeasons?: number;
   totalEpisodes?: number;
+  year?: number | null;
+  endYear?: number | null;
 }): Promise<DatabaseShow> {
   console.log('🔍 upsertShowFromAppModel START:', show.title);
   
@@ -153,6 +158,8 @@ export async function upsertShowFromAppModel(show: {
     tmdb_id: show.tmdbId || null,
     tvmaze_id: show.tvmazeId || null,
     title: show.title,
+    year: show.year ?? null,
+    end_year: show.endYear ?? null,
     description: show.description || null,
     poster_url: show.posterUrl || null,
     backdrop_url: show.backdropUrl || null,
