@@ -1646,13 +1646,13 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               </Pressable>
             </View>
           ) : null}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && isLoadingRecommendations ? (
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && (isLoadingRecommendations || (!recommendationsReady && cachedRecommendations.length === 0)) ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
               <Text style={styles.loadingText}>Loading recommendations...</Text>
             </View>
           ) : null}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length > 0 ? (
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendationsReady && cachedRecommendations.length > 0 ? (
             <View style={styles.showsGrid}>
                 {cachedRecommendations.slice(0, 12).map(result => (
                   <Pressable
@@ -1687,7 +1687,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                 ))}
             </View>
           ) : null}
-          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && cachedRecommendations.length === 0 ? (
+          {!isSearching && !searchError && showSearchResults.length === 0 && searchQuery.trim() === '' && !isLoadingRecommendations && recommendationsReady && cachedRecommendations.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>Start typing to search for shows</Text>
             </View>

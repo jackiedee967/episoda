@@ -107,22 +107,51 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       setLoading(true);
       console.log('📚 FavoritesSection: Fetching favorites for user:', userId);
       
-      // Use direct table query with 'as any' to bypass TypeScript schema cache
-      let profileData, profileError;
+      // Try RPC function first (bypasses PostgREST cache issues)
+      let favoritesArray: any[] = [];
+      let fetchSuccessful = false;
+      
       try {
-        const result = await (supabase as any)
-          .from('profiles')
-          .select('favorite_shows')
-          .eq('user_id', userId)
-          .single();
-        profileData = result.data;
-        profileError = result.error;
-        console.log('📚 FavoritesSection: Query completed, error:', profileError);
-      } catch (queryErr) {
-        console.error('❌ FavoritesSection: Query exception:', queryErr);
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_favorites', {
+          p_user_id: userId
+        });
+        
+        if (!rpcError && rpcData) {
+          console.log('📚 FavoritesSection: RPC call successful:', rpcData);
+          favoritesArray = Array.isArray(rpcData) ? rpcData : [];
+          fetchSuccessful = true;
+        } else if (rpcError) {
+          console.log('📚 FavoritesSection: RPC not available, falling back to direct query:', rpcError.message);
+        }
+      } catch (rpcErr) {
+        console.log('📚 FavoritesSection: RPC exception, falling back to direct query');
+      }
+      
+      // Fallback to direct table query
+      if (!fetchSuccessful) {
+        try {
+          const result = await (supabase as any)
+            .from('profiles')
+            .select('favorite_shows')
+            .eq('user_id', userId)
+            .single();
+          
+          if (!result.error && result.data) {
+            console.log('📚 FavoritesSection: Direct query successful:', result.data);
+            favoritesArray = result.data?.favorite_shows || [];
+            fetchSuccessful = true;
+          } else if (result.error) {
+            console.error('❌ FavoritesSection: Direct query error:', result.error);
+          }
+        } catch (queryErr) {
+          console.error('❌ FavoritesSection: Query exception:', queryErr);
+        }
+      }
+      
+      if (!fetchSuccessful) {
+        console.log('📚 FavoritesSection: No fetch method worked, showing empty state');
         setFavorites([]);
         setShowSkeleton(false);
-        // Trigger fade-in animation
         Animated.timing(contentFadeAnim, {
           toValue: 1,
           duration: 300,
@@ -132,22 +161,6 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         return;
       }
 
-      if (profileError) {
-        console.error('❌ FavoritesSection: Error loading favorites from profile:', profileError);
-        setFavorites([]);
-        setShowSkeleton(false);
-        // Trigger fade-in animation
-        Animated.timing(contentFadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-        setInitialLoadComplete(true);
-        return;
-      }
-
-      console.log('📚 FavoritesSection: Profile data received:', profileData);
-      const favoritesArray = profileData?.favorite_shows || [];
       console.log('📚 FavoritesSection: Favorites array:', favoritesArray);
       
       if (favoritesArray.length === 0) {

@@ -267,7 +267,16 @@ export async function fetchShowEndYear(
       return undefined;
     }
     
-    const lastSeason = showSeasons[showSeasons.length - 1];
+    // Filter out season 0 (specials) and get the highest numbered regular season
+    const regularSeasons = showSeasons.filter(s => s.number > 0);
+    if (regularSeasons.length === 0) {
+      return undefined;
+    }
+    
+    // Sort by season number descending and get the latest regular season
+    const sortedSeasons = [...regularSeasons].sort((a, b) => b.number - a.number);
+    const lastSeason = sortedSeasons[0];
+    
     const episodes = await getSeasonEpisodes(traktShow.ids.trakt, lastSeason.number);
     
     const airedEpisodes = episodes.filter(ep => ep.first_aired);
