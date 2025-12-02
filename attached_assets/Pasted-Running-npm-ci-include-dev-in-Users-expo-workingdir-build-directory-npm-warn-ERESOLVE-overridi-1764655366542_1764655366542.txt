@@ -1,0 +1,170 @@
+Running "npm ci --include=dev" in /Users/expo/workingdir/build/ directory
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: @callstack/react-theme-provider@3.0.3
+npm warn Found: react@19.0.0
+npm warn node_modules/react
+npm warn   react@"19.0.0" from the root project
+npm warn   50 more (@expo/vector-icons, @radix-ui/react-compose-refs, ...)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer react@"^16.3.0" from @callstack/react-theme-provider@3.0.3
+npm warn node_modules/@callstack/react-theme-provider
+npm warn   @callstack/react-theme-provider@"3.0.3" from react-native-country-picker-modal@2.0.0
+npm warn   node_modules/react-native-country-picker-modal
+npm warn
+npm warn Conflicting peer dependency: react@16.14.0
+npm warn node_modules/react
+npm warn   peer react@"^16.3.0" from @callstack/react-theme-provider@3.0.3
+npm warn   node_modules/@callstack/react-theme-provider
+npm warn     @callstack/react-theme-provider@"3.0.3" from react-native-country-picker-modal@2.0.0
+npm warn     node_modules/react-native-country-picker-modal
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: modal-react-native-web@0.2.0
+npm warn Found: react@19.0.0
+npm warn node_modules/react
+npm warn   react@"19.0.0" from the root project
+npm warn   50 more (@expo/vector-icons, @radix-ui/react-compose-refs, ...)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer react@"16.x.x" from modal-react-native-web@0.2.0
+npm warn node_modules/modal-react-native-web
+npm warn   modal-react-native-web@"0.2.0" from react-native-country-picker-modal@2.0.0
+npm warn   node_modules/react-native-country-picker-modal
+npm warn
+npm warn Conflicting peer dependency: react@16.14.0
+npm warn node_modules/react
+npm warn   peer react@"16.x.x" from modal-react-native-web@0.2.0
+npm warn   node_modules/modal-react-native-web
+npm warn     modal-react-native-web@"0.2.0" from react-native-country-picker-modal@2.0.0
+npm warn     node_modules/react-native-country-picker-modal
+npm warn ERESOLVE overriding peer dependency
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: modal-react-native-web@0.2.0
+npm warn Found: react-dom@19.0.0
+npm warn node_modules/react-dom
+npm warn   react-dom@"19.0.0" from the root project
+npm warn   4 more (react-native-country-picker-modal, react-native-web, ...)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer react-dom@"16.x.x" from modal-react-native-web@0.2.0
+npm warn node_modules/modal-react-native-web
+npm warn   modal-react-native-web@"0.2.0" from react-native-country-picker-modal@2.0.0
+npm warn   node_modules/react-native-country-picker-modal
+npm warn
+npm warn Conflicting peer dependency: react-dom@16.14.0
+npm warn node_modules/react-dom
+npm warn   peer react-dom@"16.x.x" from modal-react-native-web@0.2.0
+npm warn   node_modules/modal-react-native-web
+npm warn     modal-react-native-web@"0.2.0" from react-native-country-picker-modal@2.0.0
+npm warn     node_modules/react-native-country-picker-modal
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: modal-react-native-web@0.2.0
+npm warn Found: react-native-web@0.20.0
+npm warn node_modules/react-native-web
+npm warn   react-native-web@"^0.20.0" from the root project
+npm warn   4 more (expo-image, expo-system-ui, ...)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peer react-native-web@"0.9.x" from modal-react-native-web@0.2.0
+npm warn node_modules/modal-react-native-web
+npm warn   modal-react-native-web@"0.2.0" from react-native-country-picker-modal@2.0.0
+npm warn   node_modules/react-native-country-picker-modal
+npm warn
+npm warn Conflicting peer dependency: react-native-web@0.9.13
+npm warn node_modules/react-native-web
+npm warn   peer react-native-web@"0.9.x" from modal-react-native-web@0.2.0
+npm warn   node_modules/modal-react-native-web
+npm warn     modal-react-native-web@"0.2.0" from react-native-country-picker-modal@2.0.0
+npm warn     node_modules/react-native-country-picker-modal
+npm error code EUSAGE
+npm error
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+npm error
+npm error Invalid: lock file's ajv@6.12.6 does not satisfy ajv@8.17.1
+npm error Missing: ajv@6.12.6 from lock file
+npm error Missing: webpack@5.103.0 from lock file
+npm error Invalid: lock file's json-schema-traverse@0.4.1 does not satisfy json-schema-traverse@1.0.0
+npm error Missing: ajv@6.12.6 from lock file
+npm error Missing: react-art@16.13.1 from lock file
+npm error Missing: art@0.10.3 from lock file
+npm error Missing: create-react-class@15.7.0 from lock file
+npm error Missing: scheduler@0.19.1 from lock file
+npm error Missing: tailwindcss@3.4.18 from lock file
+npm error Missing: @alloc/quick-lru@5.2.0 from lock file
+npm error Missing: didyoumean@1.2.2 from lock file
+npm error Missing: dlv@1.1.3 from lock file
+npm error Missing: jiti@1.21.7 from lock file
+npm error Missing: lilconfig@3.1.3 from lock file
+npm error Missing: object-hash@3.0.0 from lock file
+npm error Missing: postcss-import@15.1.0 from lock file
+npm error Missing: postcss-js@4.1.0 from lock file
+npm error Missing: postcss-load-config@6.0.1 from lock file
+npm error Missing: yaml@2.8.2 from lock file
+npm error Missing: postcss-nested@6.2.0 from lock file
+npm error Missing: postcss-selector-parser@6.1.2 from lock file
+npm error Missing: read-cache@1.0.0 from lock file
+npm error Missing: camelcase-css@2.0.1 from lock file
+npm error Missing: cssesc@3.0.0 from lock file
+npm error Missing: pify@2.3.0 from lock file
+npm error Missing: @types/eslint-scope@3.7.7 from lock file
+npm error Missing: @types/estree@1.0.8 from lock file
+npm error Missing: @webassemblyjs/ast@1.14.1 from lock file
+npm error Missing: @webassemblyjs/wasm-edit@1.14.1 from lock file
+npm error Missing: @webassemblyjs/wasm-parser@1.14.1 from lock file
+npm error Missing: acorn-import-phases@1.0.4 from lock file
+npm error Missing: chrome-trace-event@1.0.4 from lock file
+npm error Missing: enhanced-resolve@5.18.3 from lock file
+npm error Missing: es-module-lexer@1.7.0 from lock file
+npm error Missing: eslint-scope@5.1.1 from lock file
+npm error Missing: events@3.3.0 from lock file
+npm error Missing: glob-to-regexp@0.4.1 from lock file
+npm error Missing: loader-runner@4.3.1 from lock file
+npm error Missing: neo-async@2.6.2 from lock file
+npm error Missing: schema-utils@4.3.3 from lock file
+npm error Missing: tapable@2.3.0 from lock file
+npm error Missing: terser-webpack-plugin@5.3.14 from lock file
+npm error Missing: watchpack@2.4.4 from lock file
+npm error Missing: webpack-sources@3.3.3 from lock file
+npm error Missing: @types/eslint@9.6.1 from lock file
+npm error Missing: @webassemblyjs/helper-numbers@1.13.2 from lock file
+npm error Missing: @webassemblyjs/helper-wasm-bytecode@1.13.2 from lock file
+npm error Missing: @webassemblyjs/floating-point-hex-parser@1.13.2 from lock file
+npm error Missing: @webassemblyjs/helper-api-error@1.13.2 from lock file
+npm error Missing: @xtuc/long@4.2.2 from lock file
+npm error Missing: @webassemblyjs/helper-buffer@1.14.1 from lock file
+npm error Missing: @webassemblyjs/helper-wasm-section@1.14.1 from lock file
+npm error Missing: @webassemblyjs/wasm-gen@1.14.1 from lock file
+npm error Missing: @webassemblyjs/wasm-opt@1.14.1 from lock file
+npm error Missing: @webassemblyjs/wast-printer@1.14.1 from lock file
+npm error Missing: @webassemblyjs/ieee754@1.13.2 from lock file
+npm error Missing: @webassemblyjs/leb128@1.13.2 from lock file
+npm error Missing: @webassemblyjs/utf8@1.13.2 from lock file
+npm error Missing: @xtuc/ieee754@1.2.0 from lock file
+npm error Missing: ajv-formats@2.1.1 from lock file
+npm error Missing: ajv-keywords@5.1.0 from lock file
+npm error Missing: jest-worker@27.5.1 from lock file
+npm error Missing: json-schema-traverse@0.4.1 from lock file
+npm error Missing: ajv@6.12.6 from lock file
+npm error Missing: json-schema-traverse@0.4.1 from lock file
+npm error Missing: json-schema-traverse@0.4.1 from lock file
+npm error Missing: supports-color@8.1.1 from lock file
+npm error Missing: estraverse@4.3.0 from lock file
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /Users/expo/.npm/_logs/2025-12-02T06_01_10_945Z-debug-0.log
