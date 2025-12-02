@@ -533,11 +533,13 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           
           if (dbShows && dbShows.length > 0) {
             console.log(`📦 Found ${dbShows.length} shows from database fallback`);
-            const { mapDatabaseShowToShow } = await import('@/services/showMappers');
-            const mappedShows = dbShows.map(dbShow => ({
-              show: mapDatabaseShowToShow(dbShow),
-              traktShow: null // No Trakt data available
-            }));
+            const { mapDatabaseShowToShow, mapDatabaseShowToTraktShow } = await import('@/services/showMappers');
+            const mappedShows = dbShows.map(dbShow => {
+              return {
+                show: mapDatabaseShowToShow(dbShow as any),
+                traktShow: mapDatabaseShowToTraktShow(dbShow as any)
+              };
+            });
             setShowSearchResults(mappedShows);
             setIsSearching(false);
             return;
@@ -566,7 +568,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         const traktIds = traktShows.map(s => s.ids.trakt);
         const { data: dbShows } = await supabase
           .from('shows')
-          .select('trakt_id, poster_url, backdrop_url, tvmaze_id, imdb_id, total_seasons')
+          .select('trakt_id, poster_url, backdrop_url, tvmaze_id, imdb_id, total_seasons, year')
           .in('trakt_id', traktIds);
         
         const dbShowsMap = new Map(

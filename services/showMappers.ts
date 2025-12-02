@@ -64,6 +64,23 @@ export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
   };
 }
 
+export function mapPartialDatabaseShowToShow(dbShow: Partial<DatabaseShow> & { id: string; trakt_id: number; title: string }): Show {
+  return {
+    id: dbShow.id,
+    traktId: dbShow.trakt_id,
+    title: dbShow.title,
+    year: dbShow.year ?? undefined,
+    endYear: undefined,
+    poster: dbShow.poster_url ?? null,
+    description: dbShow.description || '',
+    rating: dbShow.rating || 0,
+    totalSeasons: dbShow.total_seasons || 0,
+    totalEpisodes: dbShow.total_episodes || 0,
+    friendsWatching: 0,
+    colorScheme: dbShow.color_scheme ?? null,
+  };
+}
+
 export function mapDatabaseEpisodeToEpisode(dbEpisode: DatabaseEpisode): Episode {
   return {
     id: dbEpisode.id,
