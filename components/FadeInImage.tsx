@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Animated, ViewStyle, StyleSheet } from 'react-native';
 import { Image, ImageProps, ImageStyle } from 'expo-image';
 
@@ -54,11 +54,27 @@ export default function FadeInImage({
     }
   };
 
+  // Check if style has explicit dimensions (for icons)
+  // If so, don't apply 100% defaults to container
+  const flatStyle = StyleSheet.flatten(style) || {};
+  const hasExplicitDimensions = 
+    (typeof flatStyle.width === 'number' || typeof flatStyle.height === 'number');
+
+  // For images with explicit dimensions (icons), container should match
+  // For images without (thumbnails filling containers), use 100% defaults
+  const defaultContainerStyle = hasExplicitDimensions 
+    ? {} 
+    : { width: '100%' as const, height: '100%' as const };
+
+  const defaultImageStyle = hasExplicitDimensions
+    ? style
+    : [{ width: '100%' as const, height: '100%' as const }, style];
+
   return (
-    <Animated.View style={[containerStyle, { opacity: fadeAnim }]}>
+    <Animated.View style={[defaultContainerStyle, containerStyle, { opacity: fadeAnim }]}>
       <Image
         {...imageProps}
-        style={style}
+        style={defaultImageStyle}
         onLoad={handleLoad}
         onError={handleError}
         onLoadEnd={handleLoadEnd}
