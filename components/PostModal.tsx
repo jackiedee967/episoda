@@ -1958,28 +1958,34 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       animationType="none"
       onRequestClose={onClose}
     >
-      <Animated.View 
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeAnim,
-          }
-        ]}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <Pressable style={styles.overlayTouchable} onPress={onClose} />
         <Animated.View 
           style={[
-            styles.modalContainer,
+            styles.overlay,
             {
-              transform: [{ translateY: slideAnim }],
+              opacity: fadeAnim,
             }
           ]}
         >
-          {step === 'selectShow' && renderSelectShow()}
-          {step === 'selectEpisodes' && renderSelectEpisodes()}
-          {step === 'postDetails' && renderPostDetails()}
+          <Pressable style={styles.overlayTouchable} onPress={onClose} />
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            {step === 'selectShow' && renderSelectShow()}
+            {step === 'selectEpisodes' && renderSelectEpisodes()}
+            {step === 'postDetails' && renderPostDetails()}
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      </KeyboardAvoidingView>
       
       {selectedShowForPlaylist ? (
         <PlaylistModal
