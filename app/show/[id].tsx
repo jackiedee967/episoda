@@ -1226,15 +1226,15 @@ export default function ShowHub() {
                 setRatingModalVisible(true);
               }}
             >
-              {[1, 2, 3, 4, 5].map((star) => {
+              {[1, 2, 3, 4, 5].map((star, index) => {
                 const isFilled = userShowRating > 0 && userShowRating >= star;
                 const isHalfFilled = userShowRating > 0 && userShowRating >= star - 0.5 && userShowRating < star;
                 return (
-                  <View key={star} style={{ position: 'relative', width: 20, height: 20 }}>
+                  <View key={star} style={{ marginLeft: index > 0 ? 4 : 0, width: 20, height: 20 }}>
                     <Star 
                       size={20}
                       color={isFilled ? tokens.colors.greenHighlight : tokens.colors.grey1}
-                      fill={isFilled ? tokens.colors.greenHighlight : 'transparent'}
+                      fill={isFilled ? tokens.colors.greenHighlight : 'none'}
                       strokeWidth={1}
                     />
                     {isHalfFilled && (
@@ -1770,7 +1770,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: -6,
-    gap: 4,
   },
   posterRatingContainerPressed: {
     opacity: 0.7,
