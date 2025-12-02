@@ -53,7 +53,7 @@ export function mapDatabaseShowToShow(dbShow: DatabaseShow): Show {
     traktId: dbShow.trakt_id,
     title: dbShow.title,
     year: dbShow.year || undefined,
-    endYear: undefined, // Year ranges disabled - heuristic calculation was inaccurate
+    endYear: dbShow.end_year || undefined,
     poster: dbShow.poster_url ?? null,
     description: dbShow.description || '',
     rating: dbShow.rating || 0,
