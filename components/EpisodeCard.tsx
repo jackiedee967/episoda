@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Image,
   ImageSourcePropType,
 } from 'react-native';
 import { colors, typography, components, spacing } from '@/styles/commonStyles';
 import * as Haptics from 'expo-haptics';
 import { IconSymbol } from '@/components/IconSymbol';
+import FadeInImage from '@/components/FadeInImage';
 
 interface EpisodeCardProps {
   title: string;
@@ -89,10 +89,10 @@ export default function EpisodeCard({
         ]}
       >
         {image ? (
-          <Image
+          <FadeInImage
             source={typeof image === 'string' ? { uri: image } : image}
             style={styles.compactImage}
-            resizeMode="cover"
+            contentFit="cover"
           />
         ) : null}
         <View style={styles.compactOverlay}>
@@ -125,10 +125,10 @@ export default function EpisodeCard({
       ]}
     >
       {image ? (
-        <Image
+        <FadeInImage
           source={typeof image === 'string' ? { uri: image } : image}
           style={styles.image}
-          resizeMode="cover"
+          contentFit="cover"
         />
       ) : null}
       <View style={styles.overlay}>

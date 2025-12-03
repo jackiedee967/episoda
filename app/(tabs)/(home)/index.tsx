@@ -19,7 +19,7 @@ import { useData } from '@/contexts/DataContext';
 import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
-import FadeInView, { resetFadeInCache } from '@/components/FadeInView';
+import FadeInView from '@/components/FadeInView';
 import { Friends } from '@/components/Friends';
 import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { supabase } from '@/integrations/supabase/client';
@@ -498,9 +498,6 @@ export default function HomeScreen() {
     // Trigger haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // Reset fade-in animations so sections animate again on refresh
-    resetFadeInCache();
-    
     setRefreshing(true);
     try {
       // Reload posts from DataContext (this refreshes activity feed data)
@@ -954,15 +951,13 @@ export default function HomeScreen() {
   }, [activityData, communityPosts]);
 
   const renderFeedItem = useCallback(({ item, index }: { item: any; index: number }) => (
-    <FadeInView key={`${item.post.id}-${item.repostContext ? 'repost' : 'post'}-${index}`} delay={Math.min(index * 50, 500)}>
-      <PostCard
-        post={item.post}
-        onLike={() => handleLike(item.post.id)}
-        onRepost={() => handleRepost(item.post.id)}
-        onShare={() => handleShare(item.post.id)}
-        repostContext={item.repostContext}
-      />
-    </FadeInView>
+    <PostCard
+      post={item.post}
+      onLike={() => handleLike(item.post.id)}
+      onRepost={() => handleRepost(item.post.id)}
+      onShare={() => handleShare(item.post.id)}
+      repostContext={item.repostContext}
+    />
   ), []);
 
   const renderListHeader = () => (
