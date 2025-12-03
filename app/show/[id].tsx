@@ -33,6 +33,7 @@ import { mockShows, mockUsers } from '@/data/mockData';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import AvatarImage from '@/components/AvatarImage';
+import AnimatedTabPanel from '@/components/AnimatedTabPanel';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp, Star } from 'lucide-react-native';
@@ -1474,11 +1475,16 @@ export default function ShowHub() {
     </View>
   );
 
+  const activeTabIndex = useMemo(() => tabs.findIndex(t => t.key === activeTab), [activeTab, tabs]);
+
   const renderFeed = () => {
     const filteredPosts = filteredAndSortedPosts;
 
     return (
-      <View style={styles.feedContainer}>
+      <AnimatedTabPanel 
+        activeIndex={activeTabIndex} 
+        style={styles.feedContainer}
+      >
         {activeTab !== 'episodes' ? renderSortDropdown() : null}
         
         {activeTab === 'episodes' ? (
@@ -1514,7 +1520,7 @@ export default function ShowHub() {
             )}
           </>
         )}
-      </View>
+      </AnimatedTabPanel>
     );
   };
 
