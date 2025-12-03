@@ -15,14 +15,22 @@ export default function FadeInView({
   style 
 }: FadeInViewProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const hasAnimated = useRef(false);
 
   useEffect(() => {
+    if (hasAnimated.current) {
+      fadeAnim.setValue(1);
+      return;
+    }
+
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration,
         useNativeDriver: false,
-      }).start();
+      }).start(() => {
+        hasAnimated.current = true;
+      });
     }, delay);
 
     return () => clearTimeout(timer);
