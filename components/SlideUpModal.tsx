@@ -1,14 +1,21 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   Modal,
   Pressable,
   Dimensions,
-  Animated,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+  runOnJS,
+} from 'react-native-reanimated';
 import { colors } from '@/styles/commonStyles';
 
 interface SlideUpModalProps {
@@ -30,60 +37,63 @@ export default function SlideUpModal({
   showHandle = true,
 }: SlideUpModalProps) {
   const [isModalVisible, setIsModalVisible] = useState(visible);
-  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(SCREEN_HEIGHT);
+  const backdropOpacity = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
       setIsModalVisible(true);
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 65,
-          friction: 11,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      translateY.value = withSpring(0, {
+        damping: 18,
+        stiffness: 120,
+        mass: 0.8,
+      });
+      backdropOpacity.value = withTiming(1, {
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+      });
     } else if (isModalVisible) {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: SCREEN_HEIGHT,
-          duration: ANIMATION_DURATION,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: ANIMATION_DURATION,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setIsModalVisible(false);
+      translateY.value = withTiming(SCREEN_HEIGHT, {
+        duration: ANIMATION_DURATION,
+        easing: Easing.in(Easing.cubic),
+      }, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnJS(setIsModalVisible)(false);
+          runOnJS(onClose)();
+        }
+      });
+      backdropOpacity.value = withTiming(0, {
+        duration: ANIMATION_DURATION,
+        easing: Easing.in(Easing.cubic),
       });
     }
-  }, [visible]);
+  }, [visible, onClose]);
 
   const handleClose = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: SCREEN_HEIGHT,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: ANIMATION_DURATION,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setIsModalVisible(false);
-      onClose();
+    translateY.value = withTiming(SCREEN_HEIGHT, {
+      duration: ANIMATION_DURATION,
+      easing: Easing.in(Easing.cubic),
+    }, (finished) => {
+      'worklet';
+      if (finished) {
+        runOnJS(setIsModalVisible)(false);
+        runOnJS(onClose)();
+      }
     });
-  }, [onClose, slideAnim, fadeAnim]);
+    backdropOpacity.value = withTiming(0, {
+      duration: ANIMATION_DURATION,
+      easing: Easing.in(Easing.cubic),
+    });
+  }, [onClose]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   if (!isModalVisible) {
     return null;
@@ -95,13 +105,14 @@ export default function SlideUpModal({
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
         <Animated.View
           style={[
             styles.modalContainer,
-            { maxHeight, transform: [{ translateY: slideAnim }] },
+            { maxHeight },
+            modalStyle,
           ]}
         >
           {showHandle && <View style={styles.handle} />}

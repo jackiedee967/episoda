@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Image, Animated, Platform, ImageBackground, useWindowDimensions, RefreshControl, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, FlatList, Pressable, Animated, Platform, ImageBackground, useWindowDimensions, RefreshControl, Share, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
@@ -28,6 +29,7 @@ import { getCommunityPosts } from '@/services/communityPosts';
 import { useAppUsageTracker } from '@/hooks/useAppUsageTracker';
 import { useFoundersWelcome } from '@/hooks/useFoundersWelcome';
 import AvatarImage from '@/components/AvatarImage';
+import { ShowPosterPlaceholder } from '@/components/GradientPlaceholder';
 
 type SuggestedUser = User & {
   mutualFriends: Array<{
@@ -673,10 +675,17 @@ export default function HomeScreen() {
                 onPress={() => handleShowPress(show)}
                 disabled={navigatingShowId === show.id}
               >
-                <View style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}>
+                <ShowPosterPlaceholder 
+                  width={posterDimensions.cardWidth}
+                  aspectRatio={1.5}
+                  borderRadius={8}
+                  style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
+                >
                   <Image 
                     source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-                    style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
+                    style={styles.posterImage}
+                    transition={300}
+                    contentFit="cover"
                   />
                   
                   {/* Mutual Friends Badge - Top Left */}
@@ -721,7 +730,7 @@ export default function HomeScreen() {
                   >
                     <Text style={styles.logEpisodeButtonText}>Log episode</Text>
                   </Pressable>
-                </View>
+                </ShowPosterPlaceholder>
 
                 <Text style={styles.showTitle} numberOfLines={2}>
                   {show.title}
@@ -804,10 +813,17 @@ export default function HomeScreen() {
                 onPress={() => handleShowPress(show)}
                 disabled={navigatingShowId === show.id}
               >
-                <View style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}>
+                <ShowPosterPlaceholder 
+                  width={posterDimensions.cardWidth}
+                  aspectRatio={1.5}
+                  borderRadius={8}
+                  style={[styles.posterWrapper, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
+                >
                   <Image 
                     source={{ uri: show.poster || 'https://via.placeholder.com/215x280' }}
-                    style={[styles.showImage, { width: posterDimensions.cardWidth, height: posterDimensions.cardHeight }]}
+                    style={styles.posterImage}
+                    transition={300}
+                    contentFit="cover"
                   />
                   
                   {/* Mutual Friends Badge - Top Left */}
@@ -840,7 +856,7 @@ export default function HomeScreen() {
                       color={tokens.colors.pureWhite} 
                     />
                   </Pressable>
-                </View>
+                </ShowPosterPlaceholder>
 
                 <Text style={styles.showTitle} numberOfLines={2}>
                   {show.title}
@@ -1253,6 +1269,12 @@ const styles = StyleSheet.create({
     width: 140,
     height: 210,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: tokens.colors.imageStroke,
+  },
+  posterImage: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: tokens.colors.imageStroke,
   },

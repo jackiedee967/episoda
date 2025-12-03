@@ -34,6 +34,7 @@ import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import AvatarImage from '@/components/AvatarImage';
 import AnimatedTabPanel from '@/components/AnimatedTabPanel';
+import AnimatedCollapsible from '@/components/AnimatedCollapsible';
 import { Episode, Show } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { ChevronDown, ChevronUp, Star } from 'lucide-react-native';
@@ -1467,11 +1468,11 @@ export default function ShowHub() {
         </View>
       </Pressable>
 
-      {season.expanded ? (
+      <AnimatedCollapsible expanded={season.expanded} duration={300}>
         <View style={styles.episodesList}>
           {season.episodes.map(episode => renderEpisodeRow(episode))}
         </View>
-      ) : null}
+      </AnimatedCollapsible>
     </View>
   );
 

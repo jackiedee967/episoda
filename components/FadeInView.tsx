@@ -1,5 +1,13 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, ViewStyle } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ViewStyle } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+  runOnJS,
+} from 'react-native-reanimated';
 
 const animatedSectionsCache = new Set<string>();
 
@@ -27,30 +35,41 @@ export default function FadeInView({
   animationKey
 }: FadeInViewProps) {
   const hasAlreadyAnimated = animationKey ? animatedSectionsCache.has(animationKey) : false;
-  const fadeAnim = useRef(new Animated.Value(hasAlreadyAnimated ? 1 : 0)).current;
+  const opacity = useSharedValue(hasAlreadyAnimated ? 1 : 0);
+  const [hasAnimated, setHasAnimated] = useState(hasAlreadyAnimated);
 
   useEffect(() => {
     if (hasAlreadyAnimated) {
       return;
     }
 
-    const timer = setTimeout(() => {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration,
-        useNativeDriver: true,
-      }).start(() => {
-        if (animationKey) {
-          animatedSectionsCache.add(animationKey);
-        }
-      });
-    }, delay);
+    const markAsAnimated = () => {
+      if (animationKey) {
+        animatedSectionsCache.add(animationKey);
+      }
+      setHasAnimated(true);
+    };
 
-    return () => clearTimeout(timer);
-  }, [fadeAnim, duration, delay, animationKey, hasAlreadyAnimated]);
+    opacity.value = withDelay(
+      delay,
+      withTiming(1, {
+        duration,
+        easing: Easing.out(Easing.cubic),
+      }, (finished) => {
+        'worklet';
+        if (finished) {
+          runOnJS(markAsAnimated)();
+        }
+      })
+    );
+  }, [animationKey, hasAlreadyAnimated, delay, duration]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
   return (
-    <Animated.View style={[{ opacity: fadeAnim }, style]}>
+    <Animated.View style={[animatedStyle, style]}>
       {children}
     </Animated.View>
   );
