@@ -1,0 +1,115 @@
+## Add Page Transition Animations - Directional Sliding
+
+**Goal:** Add subtle slide animations when navigating between pages to help orient users and create a smoother, more intuitive experience.
+
+---
+
+### Navigation Direction Rules:
+
+**Forward navigation (slide in from RIGHT):**
+
+- When moving "forward" through the bottom navigation bar (Home → Search → Notifications → Profile)
+- When clicking into a page or opening a modal/detail view
+- Example: Home → Search = content slides in from right
+- Example: Home → Profile (skipping Search and Notifications) = still slides in from right since it's directionally forward
+
+**Backward navigation (slide in from LEFT):**
+
+- When clicking a back button to return to previous screen
+- When moving "backward" through the bottom navigation bar (Profile → Notifications → Search → Home)
+
+---
+
+### Module Pop Ups:
+
+- All pop up modules that attach to the bottom of the screen (logging show flow, follower pop ups, show review popup, etc) all should animate sliding up when first opening, then slide sideways depending on the direction (forward or backwards), and then slide down to close.
+
+---
+
+### Toggle Content Sliding:
+
+**Pages with toggle buttons** (Friends/Everyone/Episodes on ShowHub, Shows/Posts/Comments/Users on Search, etc.):
+
+**Behavior:**
+
+- The page header and structure stay fixed
+- Only the toggle content area slides when switching tabs
+- Slide direction matches toggle order
+
+---
+
+### Specific Page Transitions to Implement:
+
+**Main Navigation:**
+
+- Home ↔ Search ↔ Notifications ↔ Profile (based on direction)
+
+Other page animation examples:
+
+- Any page → Show Hub = slide in from right
+- Show Hub → back to previous page = slide in from left
+- Any page → Post Detail = slide in from right
+- Post Detail → back = slide in from left
+- Any page → User Profile = slide in from right
+- User Profile → back = slide in from left
+
+---
+
+### Animation Specifications:
+
+**Timing:**
+
+- Duration: 250-300ms (quick but not jarring)
+- Easing: Use ease-in-out or cubic-bezier for smooth motion
+
+**Distance:**
+
+- Full screen width slide (100%)
+
+**What moves:**
+
+- For page transitions: entire page content slides
+- For toggle content: only the content area below toggles slides, header/toggles stay fixed
+
+---
+
+### Implementation Notes:
+
+- Apply these animations consistently across the ENTIRE app
+- Every navigation should have appropriate directional sliding
+- Test on actual device to ensure smooth 60fps animations
+- Ensure animations don't interfere with user interaction (no lag or blocking)
+
+## Performance Optimization - Preload During Animation
+
+**CRITICAL:** Content must begin loading simultaneously with the animation start, NOT after the animation completes. This way we can cut down the perceived loading time of content anyways.
+
+### Loading Strategy:
+
+**When user initiates navigation:**
+
+1. Animation begins immediately (page starts sliding)
+2. Content fetch/API calls start at the same time (parallel, not sequential)
+3. Animation completes in 250-300ms
+4. Content should ideally finish loading during or shortly after animation
+
+**Benefits:**
+
+- Perceived performance improvement - users see smooth motion while data loads
+- Reduces apparent loading time
+- Creates illusion of faster app
+- Better user experience - no standing still waiting for loading
+
+### Implementation Requirements:
+
+**DO:**
+
+- Trigger data fetching on navigation initiation (same moment animation starts)
+- Show skeleton loaders or existing cached content during animation
+- Preload anticipated content when possible (e.g., start loading Profile data when user hovers over Profile tab)
+
+**DON'T:**
+
+- Wait for animation to complete before fetching data
+- Block the UI with loading spinners during animation
+- Make animations wait for data to load before starting
