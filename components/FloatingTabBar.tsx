@@ -76,10 +76,10 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
       return { opacity: 0 };
     }
 
-    const tabWidth = (containerWidth - 24) / tabs.length;
+    const tabWidth = 64;
     const translateX = animatedValue.interpolate({
       inputRange: tabs.map((_, i) => i),
-      outputRange: tabs.map((_, i) => 12 + i * tabWidth),
+      outputRange: tabs.map((_, i) => 12 + i * (tabWidth + 8)),
     });
 
     return {
@@ -185,9 +185,8 @@ const styles = StyleSheet.create({
     borderColor: colors.cardStroke,
   },
   tab: {
-    flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
