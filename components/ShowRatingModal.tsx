@@ -196,6 +196,8 @@ function HalfStarRating({ rating, onRatingChange, size = 40 }: HalfStarRatingPro
   );
 }
 
+const ANIMATION_DURATION = 250;
+
 export default function ShowRatingModal({ 
   visible, 
   onClose, 
@@ -207,12 +209,16 @@ export default function ShowRatingModal({
   const [rating, setRating] = useState(existingRating);
   const [step, setStep] = useState<'rate' | 'success'>('rate');
   const [isSaving, setIsSaving] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(visible);
   
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
       setRating(existingRating);
       setStep('rate');
       Animated.parallel([
@@ -228,21 +234,31 @@ export default function ShowRatingModal({
           useNativeDriver: true,
         }),
       ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: SCREEN_HEIGHT,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    } else if (isModalVisible && !isClosingRef.current) {
+      closeWithAnimation();
     }
   }, [visible]);
+
+  const closeWithAnimation = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+    });
+  };
 
   const handleSaveRating = async () => {
     if (!show || !currentUser?.id || rating === 0) return;
@@ -270,14 +286,50 @@ export default function ShowRatingModal({
   };
 
   const handleClose = () => {
-    setStep('rate');
-    setRating(existingRating);
-    onClose();
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+      setStep('rate');
+      setRating(existingRating);
+      onClose();
+    });
   };
 
   const handleDone = () => {
-    setStep('rate');
-    onClose();
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+      setStep('rate');
+      onClose();
+    });
   };
 
   const renderRatingText = () => {
@@ -289,11 +341,11 @@ export default function ShowRatingModal({
     return 'Not great';
   };
 
-  if (!show) return null;
+  if (!show || !isModalVisible) return null;
 
   return (
     <Modal
-      visible={visible}
+      visible={isModalVisible}
       transparent
       animationType="none"
       onRequestClose={handleClose}

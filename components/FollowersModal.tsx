@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  Image,
   Dimensions,
   Animated,
 } from 'react-native';
@@ -30,6 +29,7 @@ interface FollowersModalProps {
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+const ANIMATION_DURATION = 250;
 
 export default function FollowersModal({
   visible,
@@ -41,29 +41,82 @@ export default function FollowersModal({
   onFollowToggle,
 }: FollowersModalProps) {
   const router = useRouter();
-  const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const [isModalVisible, setIsModalVisible] = useState(visible);
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-    } else {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (isModalVisible && !isClosingRef.current) {
+      closeWithAnimation();
+    }
+  }, [visible]);
+
+  const closeWithAnimation = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
-        duration: 250,
+        duration: ANIMATION_DURATION,
         useNativeDriver: true,
-      }).start();
-    }
-  }, [visible, slideAnim]);
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+    });
+  }, [slideAnim, fadeAnim]);
+
+  const handleClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+      onClose();
+    });
+  }, [onClose, slideAnim, fadeAnim]);
 
   const handleUserPress = (userId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onClose();
-    router.push(`/user/${userId}`);
+    handleClose();
+    setTimeout(() => {
+      router.push(`/user/${userId}`);
+    }, ANIMATION_DURATION);
   };
 
   const handleFollowToggle = async (userId: string) => {
@@ -78,10 +131,16 @@ export default function FollowersModal({
     }
   };
 
+  if (!isModalVisible) {
+    return null;
+  }
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={isModalVisible} transparent animationType="none" onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        </Animated.View>
         <Animated.View
           style={[
             styles.modalContainer,
@@ -90,9 +149,10 @@ export default function FollowersModal({
             },
           ]}
         >
+          <View style={styles.handle} />
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable onPress={handleClose} style={styles.closeButton}>
               <IconSymbol name="xmark" size={24} color={tokens.colors.black} />
             </Pressable>
           </View>
@@ -108,8 +168,6 @@ export default function FollowersModal({
               users.map((user) => {
                 const isFollowing = followingIds.includes(user.id);
                 const isCurrentUser = user.id === currentUserId;
-
-                console.log('FollowersModal - Rendering user:', user.username, 'isFollowing:', isFollowing);
 
                 return (
                   <View key={user.id} style={styles.userItem}>
@@ -154,11 +212,11 @@ export default function FollowersModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
     backgroundColor: tokens.colors.pureWhite,
@@ -167,11 +225,21 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.8,
     paddingBottom: 40,
   },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 2,
+    marginTop: 12,
+    marginBottom: 4,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
+    paddingTop: 12,
     borderBottomWidth: 1,
     borderBottomColor: tokens.colors.grey2,
   },
@@ -216,6 +284,7 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     flex: 1,
+    marginLeft: 12,
   },
   displayName: {
     ...tokens.typography.subtitle,

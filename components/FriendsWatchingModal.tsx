@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
   Pressable,
-  Image,
   ScrollView,
+  Dimensions,
+  Animated,
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import tokens from '@/styles/tokens';
@@ -22,6 +23,9 @@ interface FriendsWatchingModalProps {
   showTitle: string;
 }
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const ANIMATION_DURATION = 250;
+
 export default function FriendsWatchingModal({
   visible,
   onClose,
@@ -29,6 +33,75 @@ export default function FriendsWatchingModal({
   showTitle,
 }: FriendsWatchingModalProps) {
   const { isFollowing, followUser, unfollowUser } = useData();
+  const [isModalVisible, setIsModalVisible] = useState(visible);
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const isClosingRef = useRef(false);
+
+  useEffect(() => {
+    if (visible) {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (isModalVisible && !isClosingRef.current) {
+      closeWithAnimation();
+    }
+  }, [visible]);
+
+  const closeWithAnimation = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+    });
+  }, [slideAnim, fadeAnim]);
+
+  const handleClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+      onClose();
+    });
+  }, [onClose, slideAnim, fadeAnim]);
 
   const handleToggleFollow = async (userId: string) => {
     if (isFollowing(userId)) {
@@ -38,18 +111,33 @@ export default function FriendsWatchingModal({
     }
   };
 
+  if (!isModalVisible) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={visible}
+      visible={isModalVisible}
       transparent={true}
-      animationType="slide"
-      onRequestClose={onClose}
+      animationType="none"
+      onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        </Animated.View>
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            {
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <View style={styles.handle} />
           <View style={styles.header}>
             <Text style={styles.title}>Friends Watching</Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable onPress={handleClose} style={styles.closeButton}>
               <X size={24} color={tokens.colors.almostWhite} />
             </Pressable>
           </View>
@@ -86,7 +174,7 @@ export default function FriendsWatchingModal({
               </View>
             ))}
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -95,8 +183,11 @@ export default function FriendsWatchingModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   modalContainer: {
     backgroundColor: tokens.colors.cardBackground,
@@ -105,11 +196,21 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     paddingBottom: 40,
   },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 2,
+    marginTop: 12,
+    marginBottom: 4,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    paddingTop: 12,
     borderBottomWidth: 1,
     borderBottomColor: tokens.colors.cardStroke,
   },
@@ -124,8 +225,8 @@ const styles = StyleSheet.create({
     ...tokens.typography.subtitle,
     color: tokens.colors.grey1,
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   scrollView: {
     flex: 1,
@@ -134,42 +235,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderBottomWidth: 0.5,
+    padding: 16,
+    borderBottomWidth: 1,
     borderBottomColor: tokens.colors.cardStroke,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 10,
-  },
-  avatar: {
-    width: 47,
-    height: 47,
-    borderRadius: 23.5,
   },
   textContainer: {
+    marginLeft: 12,
     flex: 1,
-    gap: 2,
   },
   name: {
+    ...tokens.typography.subtitle,
     color: tokens.colors.pureWhite,
-    fontFamily: 'Funnel Display',
-    fontSize: 13,
-    fontWeight: '600',
   },
   username: {
-    color: tokens.colors.greenHighlight,
-    fontFamily: 'Funnel Display',
-    fontSize: 10,
-    fontWeight: '500',
+    ...tokens.typography.p1,
+    color: tokens.colors.grey1,
+    marginTop: 2,
   },
   bio: {
+    ...tokens.typography.p3R,
     color: tokens.colors.grey1,
-    fontFamily: 'Funnel Display',
-    fontSize: 10,
-    fontWeight: '400',
+    marginTop: 4,
   },
 });

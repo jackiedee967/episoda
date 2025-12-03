@@ -32,9 +32,12 @@ interface PlaylistModalProps {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
+const ANIMATION_DURATION = 250;
+
 export default function PlaylistModal({ visible, onClose, show, traktShow, onAddToPlaylist }: PlaylistModalProps) {
   const { playlists, createPlaylist, addShowToPlaylist, removeShowFromPlaylist, isShowInPlaylist, recordTraktIdMapping } = useData();
   const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(visible);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
@@ -45,6 +48,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef<TextInput>(null);
   const requestTokenRef = useRef<number>(0);
+  const isClosingRef = useRef(false);
   
   // Safety check: if show is null/undefined when modal is visible, close it via deferred callback
   useEffect(() => {
@@ -107,6 +111,8 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
 
   useEffect(() => {
     if (visible) {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
       // Slide up and fade in
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -125,22 +131,32 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
           inputRef.current?.focus();
         }, 100);
       });
-    } else {
-      // Slide down and fade out
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: SCREEN_HEIGHT,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    } else if (isModalVisible && !isClosingRef.current) {
+      // Close animation triggered by parent
+      closeWithAnimation();
     }
-  }, [visible, fadeAnim, slideAnim]);
+  }, [visible]);
+
+  const closeWithAnimation = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+    });
+  };
 
   // Keyboard listener for proper keyboard avoidance
   useEffect(() => {
@@ -289,13 +305,35 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   };
 
   const handleClose = () => {
-    resetModal();
-    onClose();
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIMATION_DURATION,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+      resetModal();
+      onClose();
+    });
   };
+
+  if (!isModalVisible) {
+    return null;
+  }
 
   return (
     <Modal
-      visible={visible}
+      visible={isModalVisible}
       transparent
       animationType="none"
       onRequestClose={handleClose}
