@@ -1650,7 +1650,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             onChangeText={setSearchQuery}
           />
         </View>
-        <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {isSearching ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
@@ -1766,7 +1766,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       ) : null}
       <Text style={styles.stepTitle}>Select Episodes</Text>
       <Text style={styles.stepSubtitle}>Optional</Text>
-      <ScrollView style={styles.episodesList} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.episodesList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {seasons.map(season => (
           <View key={season.seasonNumber} style={styles.seasonContainer}>
             <Pressable
@@ -1849,7 +1849,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
         <Text style={styles.stepTitle}>Log Details</Text>
-        <ScrollView style={styles.detailsForm} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.detailsForm} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           
           {/* Rating Section - FIRST */}
           <View style={styles.ratingSection}>

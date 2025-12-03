@@ -738,7 +738,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
           />
         </View>
         
-        <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.showsList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {isSearching ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={tokens.colors.greenHighlight} />
