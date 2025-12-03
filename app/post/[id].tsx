@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Asset } from 'expo-asset';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Heart, MessageCircle, RefreshCw, ChevronLeft, Send, MoreVertical } from 'lucide-react-native';
 import CommentCard from '@/components/CommentCard';
@@ -57,6 +58,7 @@ function getRelativeTime(timestamp: Date): string {
 export default function PostDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { currentUser, getPost, deletePost, likePost, unlikePost, repostPost, unrepostPost, hasUserReposted, hasUserReportedPost, unreportPost: unreportPostAction, updateCommentCount, posts, isDeletingPost, userProfileCache } = useData();
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState('');
@@ -705,7 +707,7 @@ export default function PostDetail() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={100}
       >
-          <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView ref={scrollViewRef} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}>
             {/* Header with Back Button, Menu, and User Avatar */}
             <View style={styles.headerRow}>
               <Pressable onPress={handleBack} style={styles.backButton}>
@@ -1010,7 +1012,7 @@ export default function PostDetail() {
       {/* Delete Menu - Rendered outside ScrollView for proper click handling */}
       {canDelete && showDeleteMenu && !isDeletingPost ? (
         <Pressable 
-          style={styles.menuOverlay} 
+          style={[styles.menuOverlay, { paddingTop: insets.top + 60 }]} 
           onPress={() => setShowDeleteMenu(false)}
         >
           <View style={styles.deleteMenu}>

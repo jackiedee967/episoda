@@ -10,6 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -43,6 +44,7 @@ const FEED_TABS: Tab[] = [
 export default function EpisodeHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { posts, isFollowing, currentUser, isShowInPlaylist, playlists } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
@@ -729,7 +731,7 @@ export default function EpisodeHub() {
           }
         >
           {/* Header with Back and Search */}
-          <View style={styles.topBar}>
+          <View style={[styles.topBar, { paddingTop: insets.top + 20 }]}>
             <Pressable style={styles.backButton} onPress={handleBack}>
               <IconSymbol name="chevron.left" size={16} color={tokens.colors.pureWhite} />
               <Text style={styles.backText}>Back</Text>

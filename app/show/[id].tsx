@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import tokens from '@/styles/tokens';
 import { ChevronLeft } from 'lucide-react-native';
@@ -109,6 +110,7 @@ function mapDatabaseEpisodeToEpisode(dbEpisode: DatabaseEpisode): Episode {
 export default function ShowHub() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { posts, isFollowing, currentUser, isShowInPlaylist, playlists } = useData();
   const [activeTab, setActiveTab] = useState<TabKey>('friends');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
@@ -1129,7 +1131,7 @@ export default function ShowHub() {
     
     if (!hasBackdrop || isDuplicateArt || bannerFailed) {
       return (
-        <View style={styles.noBannerHeader}>
+        <View style={[styles.noBannerHeader, { paddingTop: insets.top + 16 }]}>
           <Pressable onPress={() => router.back()} style={styles.backButtonNoBanner}>
             <ChevronLeft size={18} color={tokens.colors.pureWhite} />
             <Text style={styles.backText}>Back</Text>
@@ -1149,7 +1151,7 @@ export default function ShowHub() {
           contentFit="cover"
           onError={() => setBannerFailed(true)}
         />
-        <View style={styles.bannerOverlay}>
+        <View style={[styles.bannerOverlay, { paddingTop: insets.top + 16 }]}>
           <Pressable onPress={() => router.back()} style={styles.backButtonOverlay}>
             <ChevronLeft size={18} color={tokens.colors.pureWhite} />
             <Text style={styles.backText}>Back</Text>

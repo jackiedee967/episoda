@@ -10,6 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '@/styles/tokens';
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -45,6 +46,7 @@ type Tab = 'posts' | 'shows' | 'playlists';
 export default function UserProfile() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const { 
     posts, 
     followUser, 
@@ -464,7 +466,7 @@ export default function UserProfile() {
     if (!profileUser) return null;
     
     return (
-    <View style={styles.profileInfoSection}>
+    <View style={[styles.profileInfoSection, { paddingTop: insets.top + 60 }]}>
       <AvatarImage
         uri={profileUser.avatar_url || profileUser.avatar}
         colorSchemeId={profileUser.avatar_color_scheme}
