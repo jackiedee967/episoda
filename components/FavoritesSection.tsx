@@ -708,6 +708,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
           styles.modalBackdrop,
           { opacity: backdropAnim }
         ]}
+        pointerEvents="box-none"
       >
         <Pressable style={styles.backdropPressable} onPress={closeModal} />
       </Animated.View>
@@ -946,6 +947,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
     maxHeight: SCREEN_HEIGHT * 0.85,
+    zIndex: 2,
   },
   modalHeader: {
     flexDirection: 'row',
