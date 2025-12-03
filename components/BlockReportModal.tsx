@@ -40,11 +40,41 @@ export default function BlockReportModal({
 }: BlockReportModalProps) {
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const stepSlideAnim = React.useRef(new Animated.Value(0)).current;
+  const stepFadeAnim = React.useRef(new Animated.Value(1)).current;
   const [isModalVisible, setIsModalVisible] = React.useState(visible);
   const isClosingRef = React.useRef(false);
   const [selectedAction, setSelectedAction] = useState<'block' | 'report' | null>(null);
   const [selectedReason, setSelectedReason] = useState<ReportReason>('spam');
   const [details, setDetails] = useState('');
+  
+  const STEP_ANIMATION_DURATION = 200;
+
+  const navigateToAction = React.useCallback((action: 'block' | 'report' | null) => {
+    const isForward = action !== null;
+    
+    Animated.timing(stepFadeAnim, {
+      toValue: 0,
+      duration: STEP_ANIMATION_DURATION / 2,
+      useNativeDriver: true,
+    }).start(() => {
+      stepSlideAnim.setValue(isForward ? 50 : -50);
+      setSelectedAction(action);
+      
+      Animated.parallel([
+        Animated.timing(stepSlideAnim, {
+          toValue: 0,
+          duration: STEP_ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+        Animated.timing(stepFadeAnim, {
+          toValue: 1,
+          duration: STEP_ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, [stepSlideAnim, stepFadeAnim]);
 
   const closeWithAnimation = () => {
     if (isClosingRef.current) return;
@@ -137,7 +167,7 @@ export default function BlockReportModal({
         style={styles.actionOption}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setSelectedAction('block');
+          navigateToAction('block');
         }}
       >
         <View style={styles.actionIconContainer}>
@@ -156,7 +186,7 @@ export default function BlockReportModal({
         style={styles.actionOption}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setSelectedAction('report');
+          navigateToAction('report');
         }}
       >
         <View style={styles.actionIconContainer}>
@@ -179,7 +209,7 @@ export default function BlockReportModal({
         style={styles.backButton}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setSelectedAction(null);
+          navigateToAction(null);
         }}
       >
         <IconSymbol name="chevron.left" size={20} color={colors.text} />
@@ -208,7 +238,7 @@ export default function BlockReportModal({
           style={styles.backButton}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setSelectedAction(null);
+            navigateToAction(null);
           }}
         >
           <IconSymbol name="chevron.left" size={20} color={colors.text} />
@@ -291,11 +321,19 @@ export default function BlockReportModal({
             </Pressable>
           </View>
 
-          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-            {!selectedAction && renderActionSelection()}
-            {selectedAction === 'block' && renderBlockScreen()}
-            {selectedAction === 'report' && renderReportScreen()}
-          </ScrollView>
+          <Animated.View
+            style={{
+              flex: 1,
+              transform: [{ translateX: stepSlideAnim }],
+              opacity: stepFadeAnim,
+            }}
+          >
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+              {!selectedAction && renderActionSelection()}
+              {selectedAction === 'block' && renderBlockScreen()}
+              {selectedAction === 'report' && renderReportScreen()}
+            </ScrollView>
+          </Animated.View>
         </Animated.View>
       </Animated.View>
     </Modal>

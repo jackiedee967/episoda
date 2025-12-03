@@ -178,11 +178,44 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const stepSlideAnim = useRef(new Animated.Value(0)).current;
+  const stepFadeAnim = useRef(new Animated.Value(1)).current;
   const inputRef = useRef<TextInput>(null);
   const customTagInputRef = useRef<TextInput>(null);
   const searchTimeoutRef = useRef<any>(null);
   const [isModalVisible, setIsModalVisible] = useState(visible);
   const isClosingRef = useRef(false);
+  
+  const STEP_ORDER: Step[] = ['selectShow', 'selectEpisodes', 'postDetails'];
+  const STEP_ANIMATION_DURATION = 200;
+
+  const navigateToStep = useCallback((newStep: Step) => {
+    const currentIndex = STEP_ORDER.indexOf(step);
+    const newIndex = STEP_ORDER.indexOf(newStep);
+    const isForward = newIndex > currentIndex;
+    
+    Animated.timing(stepFadeAnim, {
+      toValue: 0,
+      duration: STEP_ANIMATION_DURATION / 2,
+      useNativeDriver: true,
+    }).start(() => {
+      stepSlideAnim.setValue(isForward ? 50 : -50);
+      setStep(newStep);
+      
+      Animated.parallel([
+        Animated.timing(stepSlideAnim, {
+          toValue: 0,
+          duration: STEP_ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+        Animated.timing(stepFadeAnim, {
+          toValue: 1,
+          duration: STEP_ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, [step, stepSlideAnim, stepFadeAnim]);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
@@ -374,7 +407,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       if (skipToReview) {
         // Flow 2: Episodes already provided, skip directly to review
         setIsFetchingEpisodes(false);
-        setStep('postDetails');
+        navigateToStep('postDetails');
         return;
       }
       
@@ -417,7 +450,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       // Display episodes immediately for fast UI
       setSeasons(seasonsArray);
       setIsFetchingEpisodes(false);
-      setStep('selectEpisodes');
+      navigateToStep('selectEpisodes');
       
       // Fetch thumbnails in background if TVMaze ID available (reuse dbShow from earlier)
       if (dbShow && dbShow.tvmaze_id) {
@@ -948,7 +981,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         setSeasons(initialSeasons);
         setTraktEpisodesMap(traktEpsMap);
         setIsFetchingEpisodes(false);
-        setStep('selectEpisodes');
+        navigateToStep('selectEpisodes');
         
         const remainingSeasons = seasonsData.filter(s => s.number > 0 && s.number !== firstSeason?.number);
         console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${showWithValidId.title}...`);
@@ -1040,7 +1073,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       setSeasons(initialSeasons);
       setTraktEpisodesMap(traktEpsMap);
       setIsFetchingEpisodes(false);
-      setStep('selectEpisodes');
+      navigateToStep('selectEpisodes');
       
       const remainingSeasons = seasonsData.filter(s => s.number > 0 && s.number !== firstSeason?.number);
       console.log(`📡 Background loading ${remainingSeasons.length} additional seasons for ${showWithValidId.title}...`);
@@ -1743,7 +1776,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const renderSelectEpisodes = () => (
     <View style={styles.stepContainer}>
       {!preselectedShow ? (
-        <Pressable style={styles.backButton} onPress={() => setStep('selectShow')}>
+        <Pressable style={styles.backButton} onPress={() => navigateToStep('selectShow')}>
           <IconSymbol name="chevron.left" size={20} color={tokens.colors.black} />
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
@@ -1798,7 +1831,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       </ScrollView>
       <Pressable
         style={styles.continueButton}
-        onPress={() => setStep('postDetails')}
+        onPress={() => navigateToStep('postDetails')}
       >
         <Text style={styles.continueButtonText}>Continue</Text>
       </Pressable>
@@ -1828,7 +1861,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 
     return (
       <View style={styles.stepContainer}>
-        <Pressable style={styles.backButton} onPress={() => setStep('selectEpisodes')}>
+        <Pressable style={styles.backButton} onPress={() => navigateToStep('selectEpisodes')}>
           <IconSymbol name="chevron.left" size={20} color={tokens.colors.black} />
           <Text style={styles.backButtonText}>Back</Text>
         </Pressable>
@@ -1990,9 +2023,17 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
               }
             ]}
           >
-            {step === 'selectShow' && renderSelectShow()}
-            {step === 'selectEpisodes' && renderSelectEpisodes()}
-            {step === 'postDetails' && renderPostDetails()}
+            <Animated.View
+              style={{
+                flex: 1,
+                transform: [{ translateX: stepSlideAnim }],
+                opacity: stepFadeAnim,
+              }}
+            >
+              {step === 'selectShow' && renderSelectShow()}
+              {step === 'selectEpisodes' && renderSelectEpisodes()}
+              {step === 'postDetails' && renderPostDetails()}
+            </Animated.View>
           </Animated.View>
         </Animated.View>
       </KeyboardAvoidingView>

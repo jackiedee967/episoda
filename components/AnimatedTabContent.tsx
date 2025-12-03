@@ -1,13 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  SlideInLeft,
-  SlideInRight,
-  SlideOutLeft,
-  SlideOutRight,
-} from 'react-native-reanimated';
+import React, { useRef, useEffect } from 'react';
+import { StyleSheet, Animated as RNAnimated, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useNavigationDirection } from '@/contexts/NavigationDirectionContext';
 
@@ -17,43 +9,65 @@ interface AnimatedTabContentProps {
 }
 
 const ANIMATION_DURATION = 200;
+const SLIDE_DISTANCE = 50;
 
 export default function AnimatedTabContent({ children, tabIndex }: AnimatedTabContentProps) {
-  const [key, setKey] = useState(0);
-  const { direction, currentTabIndex } = useNavigationDirection();
+  const { direction, previousTabIndex, currentTabIndex } = useNavigationDirection();
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const opacity = useRef(new RNAnimated.Value(1)).current;
+  const isFirstRender = useRef(true);
+  const lastTabIndex = useRef(currentTabIndex);
 
   useFocusEffect(
-    useCallback(() => {
-      setKey((prevKey) => prevKey + 1);
-    }, [])
+    React.useCallback(() => {
+      if (isFirstRender.current) {
+        isFirstRender.current = false;
+        translateX.setValue(0);
+        opacity.setValue(1);
+        return;
+      }
+
+      if (lastTabIndex.current === currentTabIndex) {
+        return;
+      }
+      lastTabIndex.current = currentTabIndex;
+
+      if (direction === 'right') {
+        translateX.setValue(SLIDE_DISTANCE);
+      } else if (direction === 'left') {
+        translateX.setValue(-SLIDE_DISTANCE);
+      } else {
+        translateX.setValue(0);
+        opacity.setValue(0.8);
+      }
+
+      RNAnimated.parallel([
+        RNAnimated.timing(translateX, {
+          toValue: 0,
+          duration: ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+        RNAnimated.timing(opacity, {
+          toValue: 1,
+          duration: ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, [direction, currentTabIndex])
   );
 
-  const getEnteringAnimation = () => {
-    if (direction === 'right') {
-      return SlideInRight.duration(ANIMATION_DURATION);
-    } else if (direction === 'left') {
-      return SlideInLeft.duration(ANIMATION_DURATION);
-    }
-    return FadeIn.duration(ANIMATION_DURATION);
-  };
-
-  const getExitingAnimation = () => {
-    if (direction === 'right') {
-      return SlideOutLeft.duration(ANIMATION_DURATION);
-    } else if (direction === 'left') {
-      return SlideOutRight.duration(ANIMATION_DURATION);
-    }
-    return FadeOut.duration(ANIMATION_DURATION);
-  };
-
   return (
-    <Animated.View
-      key={key}
-      style={styles.container}
-      entering={getEnteringAnimation()}
+    <RNAnimated.View
+      style={[
+        styles.container,
+        {
+          transform: [{ translateX }],
+          opacity,
+        },
+      ]}
     >
       {children}
-    </Animated.View>
+    </RNAnimated.View>
   );
 }
 
