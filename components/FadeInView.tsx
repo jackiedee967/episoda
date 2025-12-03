@@ -1,25 +1,36 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, ViewStyle } from 'react-native';
 
+const animatedSectionsCache = new Set<string>();
+
+export function resetFadeInCache() {
+  animatedSectionsCache.clear();
+}
+
+export function resetFadeInKey(key: string) {
+  animatedSectionsCache.delete(key);
+}
+
 interface FadeInViewProps {
   children: React.ReactNode;
   duration?: number;
   delay?: number;
   style?: ViewStyle;
+  animationKey?: string;
 }
 
 export default function FadeInView({ 
   children, 
   duration = 300, 
   delay = 0,
-  style 
+  style,
+  animationKey
 }: FadeInViewProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const hasAnimated = useRef(false);
+  const hasAlreadyAnimated = animationKey ? animatedSectionsCache.has(animationKey) : false;
+  const fadeAnim = useRef(new Animated.Value(hasAlreadyAnimated ? 1 : 0)).current;
 
   useEffect(() => {
-    if (hasAnimated.current) {
-      fadeAnim.setValue(1);
+    if (hasAlreadyAnimated) {
       return;
     }
 
@@ -27,14 +38,16 @@ export default function FadeInView({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start(() => {
-        hasAnimated.current = true;
+        if (animationKey) {
+          animatedSectionsCache.add(animationKey);
+        }
       });
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [fadeAnim, duration, delay]);
+  }, [fadeAnim, duration, delay, animationKey, hasAlreadyAnimated]);
 
   return (
     <Animated.View style={[{ opacity: fadeAnim }, style]}>

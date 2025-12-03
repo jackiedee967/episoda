@@ -647,7 +647,7 @@ export default function HomeScreen() {
     }
 
     return (
-      <FadeInView duration={400} delay={0}>
+      <FadeInView duration={400} delay={0} animationKey="home-currently-watching">
         <View style={styles.currentlyWatchingSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Currently Watching</Text>
@@ -772,7 +772,7 @@ export default function HomeScreen() {
     }
 
     return (
-      <FadeInView duration={400} delay={100}>
+      <FadeInView duration={400} delay={100} animationKey="home-for-you">
         <View style={styles.recommendedSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>For You</Text>
@@ -866,7 +866,7 @@ export default function HomeScreen() {
     if (suggestedUsers.length === 0) return null;
 
     return (
-      <FadeInView duration={400} delay={200}>
+      <FadeInView duration={400} delay={200} animationKey="home-you-may-know">
         <View style={styles.youMayKnowSection}>
         <Pressable 
           style={styles.sectionHeader}
@@ -972,7 +972,7 @@ export default function HomeScreen() {
       {renderRecommendedTitles()}
       {renderYouMayKnow()}
       {feedData.length > 0 && (
-        <FadeInView duration={400} delay={0}>
+        <FadeInView duration={400} delay={0} animationKey="home-friend-activity">
           <View style={styles.friendActivitySection}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Friend Activity</Text>
