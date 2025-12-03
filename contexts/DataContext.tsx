@@ -138,6 +138,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [traktIdToUuidMap, setTraktIdToUuidMap] = useState<Map<number, string>>(new Map());
   const [reportedPostIds, setReportedPostIds] = useState<Set<string>>(new Set());
   
+  // Ref to hold loadPlaylists function for use in mutations (avoids circular dependency)
+  const loadPlaylistsRef = useRef<(() => Promise<void>) | null>(null);
+  
+  // Helper function to refresh playlists from Supabase
+  // Uses ref to avoid circular dependency with loadPlaylists
+  const refreshPlaylistsFromSupabase = useCallback(async () => {
+    // The ref should always be set by the time any mutation is called
+    // since mutations are triggered by user actions, not during render
+    if (loadPlaylistsRef.current) {
+      await loadPlaylistsRef.current();
+    } else {
+      // This should never happen in practice, but log it if it does
+      console.error('❌ INVARIANT VIOLATION: loadPlaylistsRef.current is null during playlist mutation.');
+      console.error('   This indicates a bug in the component lifecycle. Playlists may be stale.');
+      // Don't try to duplicate loadPlaylists logic - that leads to inconsistencies
+      // Instead, schedule a retry after React's next render cycle
+      setTimeout(async () => {
+        if (loadPlaylistsRef.current) {
+          console.log('🔄 Retrying playlist refresh after timeout...');
+          await loadPlaylistsRef.current();
+        }
+      }, 100);
+    }
+  }, []);
+  
   // Memoize currentUser to prevent recreation on every render
   const currentUser = useMemo(() => ({
     ...currentUserData,
@@ -739,8 +764,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
         createdAt: new Date(data.created_at),
       };
 
-      setPlaylists(prev => [...prev, newPlaylist]);
-      await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify([...playlists, newPlaylist]));
+      // CRITICAL: Refresh playlists from Supabase to ensure consistency
+      console.log('🔄 Refreshing playlists from Supabase after create...');
+      await refreshPlaylistsFromSupabase();
 
       return newPlaylist;
     } catch (error) {
@@ -762,27 +788,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         throw new Error(errorMsg);
       }
 
-      // Record Trakt ID -> UUID mapping BEFORE optimistic update for immediate bookmark state
+      // Record Trakt ID -> UUID mapping for bookmark state lookups
       if (traktId) {
         recordTraktIdMapping(traktId, showId);
       }
 
-      // OPTIMISTIC UPDATE FIRST - Update UI immediately for instant feedback
-      setPlaylists(prev => {
-        const updated = prev.map(p => 
-          p.id === playlistId 
-            ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
-            : p
-        );
-        
-        // Persist to AsyncStorage (fire-and-forget with error handling)
-        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updated))
-          .catch(error => console.error('❌ Error saving playlists to AsyncStorage:', error));
-        
-        return updated;
-      });
-
-      // THEN persist to database (if authenticated)
+      // Persist to database (if authenticated)
       if (authUserId) {
         const { error } = await supabase
           .from('playlist_shows')
@@ -793,18 +804,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           console.error('❌ Error adding show to playlist in Supabase:', error);
-          // Rollback optimistic update on error
-          setPlaylists(prev => {
-            const reverted = prev.map(p => 
-              p.id === playlistId 
-                ? { ...p, shows: (p.shows || []).filter(id => id !== showId), showCount: Math.max(0, (p.showCount || 0) - 1) }
-                : p
-            );
-            // Persist rollback to AsyncStorage
-            AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(reverted))
-              .catch(err => console.error('❌ Error saving rolled-back playlists to AsyncStorage:', err));
-            return reverted;
-          });
           throw new Error(`Failed to add show: ${error.message}`);
         }
 
@@ -822,12 +821,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('✅ Show added to playlist in Supabase');
+        
+        // CRITICAL: Refresh playlists from Supabase to ensure consistency
+        console.log('🔄 Refreshing playlists from Supabase after add...');
+        await refreshPlaylistsFromSupabase();
+      } else {
+        // For non-authenticated users, update local state only
+        setPlaylists(prev => {
+          const updated = prev.map(p => 
+            p.id === playlistId 
+              ? { ...p, shows: [...(p.shows || []), showId], showCount: (p.shows?.length || 0) + 1 }
+              : p
+          );
+          AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updated))
+            .catch(error => console.error('❌ Error saving playlists to AsyncStorage:', error));
+          return updated;
+        });
       }
     } catch (error) {
       console.error('❌ Error adding show to playlist:', error);
       throw error;
     }
-  }, [playlists, authUserId]);
+  }, [authUserId]);
 
   const removeShowFromPlaylist = useCallback(async (playlistId: string, showId: string) => {
     try {
@@ -873,20 +888,24 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('✅ Show removed from playlist in Supabase');
-      }
-
-      // Update local state
-      setPlaylists(prev => {
-        const updatedPlaylists = prev.map(p => {
-          if (p.id === playlistId) {
-            const newShows = (p.shows || []).filter(id => id !== showId);
-            return { ...p, shows: newShows, showCount: newShows.length };
-          }
-          return p;
+        
+        // CRITICAL: Refresh playlists from Supabase to ensure consistency
+        console.log('🔄 Refreshing playlists from Supabase after remove...');
+        await refreshPlaylistsFromSupabase();
+      } else {
+        // Update local state only for non-authenticated users
+        setPlaylists(prev => {
+          const updatedPlaylists = prev.map(p => {
+            if (p.id === playlistId) {
+              const newShows = (p.shows || []).filter(id => id !== showId);
+              return { ...p, shows: newShows, showCount: newShows.length };
+            }
+            return p;
+          });
+          AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+          return updatedPlaylists;
         });
-        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
-        return updatedPlaylists;
-      });
+      }
     } catch (error) {
       console.error('❌ Error removing show from playlist:', error);
       throw error;
@@ -910,14 +929,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('✅ Playlist deleted from Supabase');
+        
+        // CRITICAL: Refresh playlists from Supabase to ensure consistency
+        console.log('🔄 Refreshing playlists from Supabase after delete...');
+        await refreshPlaylistsFromSupabase();
+      } else {
+        // Update local state only for non-authenticated users
+        setPlaylists(prev => {
+          const updatedPlaylists = prev.filter(p => p.id !== playlistId);
+          AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+          return updatedPlaylists;
+        });
       }
-
-      // Update local state
-      setPlaylists(prev => {
-        const updatedPlaylists = prev.filter(p => p.id !== playlistId);
-        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
-        return updatedPlaylists;
-      });
     } catch (error) {
       console.error('❌ Error deleting playlist:', error);
       throw error;
@@ -940,18 +963,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         console.log('✅ Playlist privacy updated in Supabase');
+        
+        // CRITICAL: Refresh playlists from Supabase to ensure consistency
+        console.log('🔄 Refreshing playlists from Supabase after privacy update...');
+        await refreshPlaylistsFromSupabase();
+      } else {
+        // Update local state only for non-authenticated users
+        setPlaylists(prev => {
+          const updatedPlaylists = prev.map(p => 
+            p.id === playlistId 
+              ? { ...p, isPublic }
+              : p
+          );
+          AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
+          return updatedPlaylists;
+        });
       }
-
-      // Update local state
-      setPlaylists(prev => {
-        const updatedPlaylists = prev.map(p => 
-          p.id === playlistId 
-            ? { ...p, isPublic }
-            : p
-        );
-        AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(updatedPlaylists));
-        return updatedPlaylists;
-      });
     } catch (error) {
       console.error('❌ Error updating playlist privacy:', error);
       throw error;
@@ -1120,6 +1147,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const shows = p.playlist_shows.map((ps: any) => ps.show_id);
             // Filter out invalid show IDs (corrupted data like "trakt-191758")
             const validShows = shows.filter((id: string) => uuidRegex.test(id));
+            
+            // RUNTIME VALIDATION: Detect mismatch between DB show_count and actual shows loaded
+            const dbShowCount = p.show_count || 0;
+            const actualShowCount = validShows.length;
+            if (dbShowCount > 0 && actualShowCount === 0) {
+              console.error(`🚨 PLAYLIST DATA MISMATCH: Playlist "${p.name}" (${p.id}) has show_count=${dbShowCount} but loaded ${actualShowCount} shows!`);
+              console.error(`   playlist_shows raw data:`, p.playlist_shows);
+            } else if (dbShowCount !== actualShowCount) {
+              console.warn(`⚠️ Playlist "${p.name}" show_count mismatch: DB=${dbShowCount}, actual=${actualShowCount}`);
+            }
+            
             return {
               id: p.id,
               name: p.name,
@@ -1131,7 +1169,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             };
           });
 
-          console.log('✅ Loaded', loadedPlaylists.length, 'playlists from Supabase');
+          console.log('✅ Loaded', loadedPlaylists.length, 'playlists from Supabase with shows:', loadedPlaylists.map(p => `${p.name}(${p.shows.length})`).join(', '));
           setPlaylists(loadedPlaylists);
           await AsyncStorage.setItem(STORAGE_KEYS.PLAYLISTS, JSON.stringify(loadedPlaylists));
           
@@ -1188,6 +1226,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('❌ Error loading playlists:', error);
     }
   }, [authUserId]);
+
+  // Set ref so mutation functions can access loadPlaylists without circular dependency
+  loadPlaylistsRef.current = loadPlaylists;
 
   const loadPosts = useCallback(async () => {
     try {
