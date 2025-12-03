@@ -27,6 +27,7 @@ import { searchHistoryManager, SearchCategory as SearchCat } from '@/services/se
 import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
 import FadeInView, { resetFadeInCache } from '@/components/FadeInView';
+import AnimatedTabContent from '@/components/AnimatedTabContent';
 import FadeInImage from '@/components/FadeInImage';
 import AvatarImage from '@/components/AvatarImage';
 import { supabase } from '@/integrations/supabase/client';
@@ -2628,7 +2629,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <>
+    <AnimatedTabContent tabIndex={1}>
       <Stack.Screen options={{ headerShown: false }} />
       <ImageBackground
         source={{ uri: appBackground }}
@@ -2637,7 +2638,7 @@ export default function SearchScreen() {
       >
         {content}
       </ImageBackground>
-    </>
+    </AnimatedTabContent>
   );
 }
 

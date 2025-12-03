@@ -28,6 +28,7 @@ import { supabase } from '@/integrations/supabase/client';
 import StatCardSkeleton from '@/components/skeleton/StatCardSkeleton';
 import FadeInView from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
+import AnimatedTabContent from '@/components/AnimatedTabContent';
 import { getPosterUrl } from '@/utils/posterPlaceholderGenerator';
 import FavoritesSection from '@/components/FavoritesSection';
 import AvatarImage from '@/components/AvatarImage';
@@ -861,7 +862,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <>
+    <AnimatedTabContent tabIndex={3}>
       <Stack.Screen options={{ headerShown: false }} />
       <ImageBackground
         source={{ uri: appBackground }}
@@ -870,7 +871,7 @@ export default function ProfileScreen() {
       >
         {content}
       </ImageBackground>
-    </>
+    </AnimatedTabContent>
   );
 }
 

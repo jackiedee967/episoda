@@ -21,6 +21,7 @@ import { ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import PostCardSkeleton from '@/components/skeleton/PostCardSkeleton';
 import FadeInView from '@/components/FadeInView';
+import AnimatedTabContent from '@/components/AnimatedTabContent';
 import { Friends } from '@/components/Friends';
 import { Friends as BaseFriends } from '@/components/ui-pages/base/friends';
 import { supabase } from '@/integrations/supabase/client';
@@ -1126,13 +1127,15 @@ export default function HomeScreen() {
   }
 
   return (
-    <ImageBackground
-      source={{ uri: appBackground }}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      {content}
-    </ImageBackground>
+    <AnimatedTabContent tabIndex={0}>
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.container}
+        resizeMode="cover"
+      >
+        {content}
+      </ImageBackground>
+    </AnimatedTabContent>
   );
 }
 

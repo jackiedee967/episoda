@@ -22,6 +22,7 @@ import * as Clipboard from 'expo-clipboard';
 import Button from '@/components/Button';
 import tokens from '@/styles/tokens';
 import FadeInImage from '@/components/FadeInImage';
+import AnimatedTabContent from '@/components/AnimatedTabContent';
 import AvatarImage from '@/components/AvatarImage';
 
 const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
@@ -264,7 +265,7 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <>
+    <AnimatedTabContent tabIndex={2}>
       <Stack.Screen options={{ headerShown: false }} />
       <ImageBackground
         source={{ uri: appBackground }}
@@ -273,7 +274,7 @@ export default function NotificationsScreen() {
       >
         {content}
       </ImageBackground>
-    </>
+    </AnimatedTabContent>
   );
 }
 
