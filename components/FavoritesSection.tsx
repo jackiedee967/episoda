@@ -928,12 +928,11 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   backdropPressable: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 0,
+    flex: 1,
   },
   modalContainer: {
     backgroundColor: tokens.colors.almostWhite,
@@ -943,7 +942,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
     maxHeight: SCREEN_HEIGHT * 0.85,
-    zIndex: 1,
   },
   modalHeader: {
     flexDirection: 'row',
