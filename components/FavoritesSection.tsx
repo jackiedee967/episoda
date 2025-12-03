@@ -1034,6 +1034,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 16,
     paddingBottom: 40,
+    height: SCREEN_HEIGHT * 0.7,
     maxHeight: SCREEN_HEIGHT * 0.85,
   },
   modalHeader: {
