@@ -1653,7 +1653,7 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   bannerContainer: {
-    height: 160,
+    height: 200,
     width: '100%',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -1663,7 +1663,7 @@ const styles = StyleSheet.create({
   bannerImage: {
     flex: 1,
     width: '100%',
-    height: 160,
+    height: 200,
   },
   bannerPlaceholder: {
     flex: 1,

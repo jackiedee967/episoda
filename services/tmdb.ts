@@ -87,6 +87,68 @@ export function getBackdropUrl(backdropPath: string | null): string | null {
   return `${TMDB_IMAGE_BASE}${backdropPath}`;
 }
 
+export function getTMDBBackdropUrl(backdropPath: string | null, size: 'w300' | 'w780' | 'w1280' | 'original' = 'w1280'): string | null {
+  if (!backdropPath) return null;
+  return `https://image.tmdb.org/t/p/${size}${backdropPath}`;
+}
+
+export interface TMDBImage {
+  aspect_ratio: number;
+  height: number;
+  iso_639_1: string | null;
+  file_path: string;
+  vote_average: number;
+  vote_count: number;
+  width: number;
+}
+
+export interface TMDBImagesResponse {
+  id: number;
+  backdrops: TMDBImage[];
+  logos: TMDBImage[];
+  posters: TMDBImage[];
+}
+
+export async function getShowImages(tmdbId: number): Promise<TMDBImagesResponse | null> {
+  if (!TMDB_API_KEY) {
+    console.log('⚠️ TMDB API key not configured');
+    return null;
+  }
+
+  try {
+    console.log(`🖼️ Fetching TMDB images for ID ${tmdbId}...`);
+    const response = await fetch(
+      `${TMDB_BASE_URL}/tv/${tmdbId}/images?api_key=${TMDB_API_KEY}`
+    );
+
+    if (!response.ok) {
+      console.error(`❌ TMDB images API error: ${response.status}`);
+      return null;
+    }
+
+    const data: TMDBImagesResponse = await response.json();
+    console.log(`✅ TMDB images found: ${data.backdrops.length} backdrops, ${data.posters.length} posters`);
+    return data;
+  } catch (error) {
+    console.error(`❌ Error fetching TMDB images:`, error);
+    return null;
+  }
+}
+
+export async function getAlternativeBackdrop(tmdbId: number, skipFirst: boolean = true): Promise<string | null> {
+  const images = await getShowImages(tmdbId);
+  if (!images || images.backdrops.length === 0) return null;
+  
+  const backdrops = images.backdrops
+    .filter(b => !b.iso_639_1)
+    .sort((a, b) => b.vote_average - a.vote_average);
+  
+  if (backdrops.length === 0) return null;
+  
+  const selectedBackdrop = skipFirst && backdrops.length > 1 ? backdrops[1] : backdrops[0];
+  return getTMDBBackdropUrl(selectedBackdrop.file_path);
+}
+
 export interface TMDBKeyword {
   id: number;
   name: string;
