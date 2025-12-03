@@ -2,6 +2,7 @@
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { NavigationDirectionProvider } from "@/contexts/NavigationDirectionContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Button from "@/components/Button";
 import { useNetworkState } from "expo-network";
@@ -170,6 +171,7 @@ export default function RootLayout() {
           <AuthProvider>
             <DataProvider>
               <WidgetProvider>
+                <NavigationDirectionProvider>
                 <AuthNavigator />
                 <Stack
               screenOptions={{
@@ -292,6 +294,7 @@ export default function RootLayout() {
               </Stack>
                 <StatusBar style="light" />
                 <SystemBars style="light" />
+                </NavigationDirectionProvider>
               </WidgetProvider>
             </DataProvider>
           </AuthProvider>
