@@ -175,7 +175,7 @@ export default function RootLayout() {
                 <AuthNavigator />
                 <Stack
               screenOptions={{
-                animation: "slide_from_right",
+                animation: Platform.OS === 'ios' ? 'default' : 'slide_from_right',
                 headerShown: true,
                 headerStyle: {
                   backgroundColor: colors.background,
@@ -184,6 +184,8 @@ export default function RootLayout() {
                 headerBackTitle: "Back",
                 gestureEnabled: true,
                 gestureDirection: "horizontal",
+                fullScreenGestureEnabled: Platform.OS === 'ios',
+                animationDuration: 350,
                 headerTitleStyle: {
                   fontFamily: 'FunnelDisplay_700Bold',
                 },
