@@ -26,7 +26,7 @@ import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { searchHistoryManager, SearchCategory as SearchCat } from '@/services/searchHistory';
 import SearchHistoryItem from '@/components/SearchHistoryItem';
 import SearchResultSkeleton from '@/components/skeleton/SearchResultSkeleton';
-import FadeInView from '@/components/FadeInView';
+import FadeInView, { resetFadeInCache } from '@/components/FadeInView';
 import FadeInImage from '@/components/FadeInImage';
 import AvatarImage from '@/components/AvatarImage';
 import { supabase } from '@/integrations/supabase/client';
@@ -661,6 +661,9 @@ export default function SearchScreen() {
     
     // Trigger haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Reset fade-in animations so sections animate again on refresh
+    resetFadeInCache();
     
     setRefreshing(true);
     try {
@@ -2435,54 +2438,10 @@ export default function SearchScreen() {
             }
           >
             {forYouShows.length > 0 ? (
-              <ExploreShowSection
-                title="For You"
-                shows={forYouShows}
-                onShowPress={async (show) => {
-                  const uuid = await ensureShowUuid(show, show.traktShow);
-                  router.push(`/show/${uuid}`);
-                }}
-                onBookmarkPress={(show) => {
-                  setSelectedShow(show as Show);
-                  setPlaylistModalVisible(true);
-                }}
-                isShowSaved={isShowSaved}
-                onViewMore={() => router.push('/search?tab=shows&section=for-you')}
-              />
-            ) : null}
-
-            {trendingShows.length > 0 ? (
-              <ExploreShowSection
-                title="Trending"
-                shows={trendingShows}
-                onShowPress={async (show) => {
-                  const uuid = await ensureShowUuid(show, show.traktShow);
-                  router.push(`/show/${uuid}`);
-                }}
-                onBookmarkPress={(show) => {
-                  setSelectedShow(show as Show);
-                  setPlaylistModalVisible(true);
-                }}
-                isShowSaved={isShowSaved}
-                onViewMore={() => router.push('/search?tab=shows&section=trending')}
-              />
-            ) : null}
-
-            {becauseYouWatchedSections
-              .filter(section => section.relatedShows.length > 0)
-              .map((section, index) => (
+              <FadeInView duration={400} delay={0} animationKey="explore-for-you">
                 <ExploreShowSection
-                  key={`because-you-watched-${section.show.id}-${index}`}
-                  title={`Because You Watched ${section.show.title}`}
-                  shows={section.relatedShows}
-                  seedShow={{
-                    id: section.show.id,
-                    title: section.show.title,
-                    traktId: section.show.traktId,
-                    year: section.show.year,
-                    rating: section.show.rating,
-                    genres: section.show.genres,
-                  }}
+                  title="For You"
+                  shows={forYouShows}
                   onShowPress={async (show) => {
                     const uuid = await ensureShowUuid(show, show.traktShow);
                     router.push(`/show/${uuid}`);
@@ -2492,29 +2451,86 @@ export default function SearchScreen() {
                     setPlaylistModalVisible(true);
                   }}
                   isShowSaved={isShowSaved}
-                  onViewMore={() => router.push(`/search?tab=shows&section=because-you-watched&seedShowId=${section.show.id}&seedShowTitle=${encodeURIComponent(section.show.title)}&seedShowTraktId=${section.show.traktId}&seedShowYear=${section.show.year || ''}&seedShowRating=${section.show.rating || ''}&seedShowGenres=${encodeURIComponent(JSON.stringify(section.show.genres || []))}`)}
+                  onViewMore={() => router.push('/search?tab=shows&section=for-you')}
                 />
+              </FadeInView>
+            ) : null}
+
+            {trendingShows.length > 0 ? (
+              <FadeInView duration={400} delay={100} animationKey="explore-trending">
+                <ExploreShowSection
+                  title="Trending"
+                  shows={trendingShows}
+                  onShowPress={async (show) => {
+                    const uuid = await ensureShowUuid(show, show.traktShow);
+                    router.push(`/show/${uuid}`);
+                  }}
+                  onBookmarkPress={(show) => {
+                    setSelectedShow(show as Show);
+                    setPlaylistModalVisible(true);
+                  }}
+                  isShowSaved={isShowSaved}
+                  onViewMore={() => router.push('/search?tab=shows&section=trending')}
+                />
+              </FadeInView>
+            ) : null}
+
+            {becauseYouWatchedSections
+              .filter(section => section.relatedShows.length > 0)
+              .map((section, index) => (
+                <FadeInView 
+                  key={`because-you-watched-${section.show.id}-${index}`} 
+                  duration={400} 
+                  delay={200 + (index * 100)} 
+                  animationKey={`explore-because-you-watched-${section.show.id}`}
+                >
+                  <ExploreShowSection
+                    title={`Because You Watched ${section.show.title}`}
+                    shows={section.relatedShows}
+                    seedShow={{
+                      id: section.show.id,
+                      title: section.show.title,
+                      traktId: section.show.traktId,
+                      year: section.show.year,
+                      rating: section.show.rating,
+                      genres: section.show.genres,
+                    }}
+                    onShowPress={async (show) => {
+                      const uuid = await ensureShowUuid(show, show.traktShow);
+                      router.push(`/show/${uuid}`);
+                    }}
+                    onBookmarkPress={(show) => {
+                      setSelectedShow(show as Show);
+                      setPlaylistModalVisible(true);
+                    }}
+                    isShowSaved={isShowSaved}
+                    onViewMore={() => router.push(`/search?tab=shows&section=because-you-watched&seedShowId=${section.show.id}&seedShowTitle=${encodeURIComponent(section.show.title)}&seedShowTraktId=${section.show.traktId}&seedShowYear=${section.show.year || ''}&seedShowRating=${section.show.rating || ''}&seedShowGenres=${encodeURIComponent(JSON.stringify(section.show.genres || []))}`)}
+                  />
+                </FadeInView>
               ))}
 
             {popularRewatchesShows.length > 0 ? (
-              <ExploreShowSection
-                title="Popular Rewatches"
-                shows={popularRewatchesShows}
-                onShowPress={async (show) => {
-                  const uuid = await ensureShowUuid(show, show.traktShow);
-                  router.push(`/show/${uuid}`);
-                }}
-                onBookmarkPress={(show) => {
-                  setSelectedShow(show as Show);
-                  setPlaylistModalVisible(true);
-                }}
-                isShowSaved={isShowSaved}
-                onViewMore={() => router.push('/search?tab=shows&section=popular-rewatches')}
-              />
+              <FadeInView duration={400} delay={300} animationKey="explore-popular-rewatches">
+                <ExploreShowSection
+                  title="Popular Rewatches"
+                  shows={popularRewatchesShows}
+                  onShowPress={async (show) => {
+                    const uuid = await ensureShowUuid(show, show.traktShow);
+                    router.push(`/show/${uuid}`);
+                  }}
+                  onBookmarkPress={(show) => {
+                    setSelectedShow(show as Show);
+                    setPlaylistModalVisible(true);
+                  }}
+                  isShowSaved={isShowSaved}
+                  onViewMore={() => router.push('/search?tab=shows&section=popular-rewatches')}
+                />
+              </FadeInView>
             ) : null}
 
             {allGenres.length > 0 ? (
-              <View style={styles.genresSection}>
+              <FadeInView duration={400} delay={400} animationKey="explore-genres">
+                <View style={styles.genresSection}>
                 <Text style={styles.genresTitle}>Genres</Text>
                 <FlatList
                   data={allGenres.slice(0, Math.ceil(allGenres.length / 2))}
@@ -2566,7 +2582,8 @@ export default function SearchScreen() {
                   snapToInterval={140}
                   decelerationRate="fast"
                 />
-              </View>
+                </View>
+              </FadeInView>
             ) : null}
           </RNScrollView>
         ) : (
