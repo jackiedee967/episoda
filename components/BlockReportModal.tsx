@@ -39,36 +39,61 @@ export default function BlockReportModal({
   reportOnly = false,
 }: BlockReportModalProps) {
   const slideAnim = React.useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const [isModalVisible, setIsModalVisible] = React.useState(visible);
+  const isClosingRef = React.useRef(false);
   const [selectedAction, setSelectedAction] = useState<'block' | 'report' | null>(null);
   const [selectedReason, setSelectedReason] = useState<ReportReason>('spam');
   const [details, setDetails] = useState('');
 
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
-      // If reportOnly mode, automatically set selectedAction to 'report'
-      if (reportOnly) {
-        setSelectedAction('report');
-      }
-    } else {
+  const closeWithAnimation = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: SCREEN_HEIGHT,
         duration: 250,
         useNativeDriver: true,
-      }).start();
-      // Reset state when modal closes
-      setTimeout(() => {
-        setSelectedAction(reportOnly ? 'report' : null);
-        setDetails('');
-        setSelectedReason('spam');
-      }, 300);
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+      setSelectedAction(reportOnly ? 'report' : null);
+      setDetails('');
+      setSelectedReason('spam');
+    });
+  };
+
+  useEffect(() => {
+    if (visible) {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      if (reportOnly) {
+        setSelectedAction('report');
+      }
+    } else if (isModalVisible && !isClosingRef.current) {
+      closeWithAnimation();
     }
-  }, [visible, slideAnim, reportOnly]);
+  }, [visible, reportOnly]);
 
   const handleBlock = () => {
     Alert.alert(
@@ -239,10 +264,12 @@ export default function BlockReportModal({
     </View>
   );
 
+  if (!isModalVisible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+    <Modal visible={isModalVisible} transparent animationType="none" onRequestClose={closeWithAnimation}>
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+        <Pressable style={styles.backdrop} onPress={closeWithAnimation} />
         <Animated.View
           style={[
             styles.modalContainer,
@@ -259,7 +286,7 @@ export default function BlockReportModal({
                 ? 'Report User' 
                 : 'User Actions'}
             </Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable onPress={closeWithAnimation} style={styles.closeButton}>
               <IconSymbol name="xmark" size={24} color={colors.text} />
             </Pressable>
           </View>
@@ -270,7 +297,7 @@ export default function BlockReportModal({
             {selectedAction === 'report' && renderReportScreen()}
           </ScrollView>
         </Animated.View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

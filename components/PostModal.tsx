@@ -181,6 +181,8 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
   const inputRef = useRef<TextInput>(null);
   const customTagInputRef = useRef<TextInput>(null);
   const searchTimeoutRef = useRef<any>(null);
+  const [isModalVisible, setIsModalVisible] = useState(visible);
+  const isClosingRef = useRef(false);
 
   const isShowSaved = (showId: string) => {
     return playlists.some(pl => isShowInPlaylist(pl.id, showId));
@@ -482,8 +484,31 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     }
   }, [step, visible]);
 
+  const closeWithAnimation = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+    });
+  };
+
   useEffect(() => {
     if (visible) {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -496,21 +521,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
           useNativeDriver: true,
         }),
       ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: SCREEN_HEIGHT,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    } else if (isModalVisible && !isClosingRef.current) {
+      closeWithAnimation();
     }
-  }, [visible, fadeAnim, slideAnim]);
+  }, [visible]);
 
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -1940,12 +1954,16 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     );
   };
 
+  if (!isModalVisible) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={visible}
+      visible={isModalVisible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={closeWithAnimation}
     >
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1962,7 +1980,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
         >
           <Pressable 
             style={styles.overlayTouchable} 
-            onPress={onClose}
+            onPress={closeWithAnimation}
           />
           <Animated.View 
             style={[

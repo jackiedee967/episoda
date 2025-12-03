@@ -60,6 +60,9 @@ export default function EditProfileModal({
   onSave,
 }: EditProfileModalProps) {
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [isModalVisible, setIsModalVisible] = useState(visible);
+  const isClosingRef = useRef(false);
   
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [username, setUsername] = useState(initialUsername);
@@ -78,18 +81,55 @@ export default function EditProfileModal({
   const [spotifyUsername, setSpotifyUsername] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
 
+  const closeWithAnimation = () => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setIsModalVisible(false);
+      isClosingRef.current = false;
+    });
+  };
+
   useEffect(() => {
     if (visible) {
+      isClosingRef.current = false;
+      setIsModalVisible(true);
       setDisplayName(initialDisplayName);
       setUsername(initialUsername);
       setBio(initialBio);
       
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }).start();
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 65,
+          friction: 11,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (isModalVisible && !isClosingRef.current) {
+      closeWithAnimation();
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (visible) {
       
       const socialLinksArray = Array.isArray(initialSocialLinks) ? initialSocialLinks : [];
       
@@ -476,21 +516,21 @@ export default function EditProfileModal({
     }
   };
 
-  if (!visible) return null;
+  if (!isModalVisible) return null;
 
   return (
     <Modal
       transparent
-      visible={visible}
-      onRequestClose={onClose}
+      visible={isModalVisible}
+      onRequestClose={closeWithAnimation}
       animationType="none"
     >
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.backdrop} onPress={onClose} />
+        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+          <Pressable style={styles.backdrop} onPress={closeWithAnimation} />
           
           <Animated.View
           style={[
@@ -502,7 +542,7 @@ export default function EditProfileModal({
         >
           <View style={styles.header}>
             <Text style={styles.title}>Edit Profile</Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
+            <Pressable onPress={closeWithAnimation} style={styles.closeButton}>
               <X size={24} color={colors.black} />
             </Pressable>
           </View>
@@ -701,7 +741,7 @@ export default function EditProfileModal({
             </Pressable>
           </View>
         </Animated.View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
