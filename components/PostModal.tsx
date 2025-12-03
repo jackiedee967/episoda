@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -1686,24 +1687,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                       style={styles.showGridPoster}
                       contentFit="cover"
                     />
-                    <Pressable 
-                      style={({ pressed }) => [
-                        styles.saveIconGrid,
-                        pressed && styles.saveIconPressed,
-                      ]} 
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setSelectedShowForPlaylist(result.show);
-                        setPlaylistModalVisible(true);
-                      }}
-                    >
-                      <IconSymbol 
-                        name={isShowSaved(result.show.id) ? "bookmark.fill" : "bookmark"} 
-                        size={14} 
-                        color={colors.pureWhite} 
-                      />
-                    </Pressable>
                   </Pressable>
                 ))}
             </View>
@@ -1734,24 +1717,6 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
                     style={styles.showGridPoster}
                     contentFit="cover"
                   />
-                  <Pressable 
-                    style={({ pressed }) => [
-                      styles.saveIconGrid,
-                      pressed && styles.saveIconPressed,
-                    ]} 
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setSelectedShowForPlaylist(result.show);
-                      setPlaylistModalVisible(true);
-                    }}
-                  >
-                    <IconSymbol 
-                      name={isShowSaved(result.show.id) ? "bookmark.fill" : "bookmark"} 
-                      size={14} 
-                      color={colors.pureWhite} 
-                    />
-                  </Pressable>
                 </Pressable>
               ))}
             </View>
@@ -1982,31 +1947,36 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       animationType="none"
       onRequestClose={onClose}
     >
-      <Animated.View 
-        style={[
-          styles.overlay,
-          {
-            opacity: fadeAnim,
-          }
-        ]}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       >
-        <Pressable 
-          style={styles.overlayTouchable} 
-          onPress={onClose}
-        />
         <Animated.View 
           style={[
-            styles.modalContainer,
+            styles.overlay,
             {
-              transform: [{ translateY: slideAnim }],
+              opacity: fadeAnim,
             }
           ]}
         >
-          {step === 'selectShow' && renderSelectShow()}
-          {step === 'selectEpisodes' && renderSelectEpisodes()}
-          {step === 'postDetails' && renderPostDetails()}
+          <Pressable 
+            style={styles.overlayTouchable} 
+            onPress={onClose}
+          />
+          <Animated.View 
+            style={[
+              styles.modalContainer,
+              {
+                transform: [{ translateY: slideAnim }],
+              }
+            ]}
+          >
+            {step === 'selectShow' && renderSelectShow()}
+            {step === 'selectEpisodes' && renderSelectEpisodes()}
+            {step === 'postDetails' && renderPostDetails()}
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
+      </KeyboardAvoidingView>
       
       {selectedShowForPlaylist ? (
         <PlaylistModal

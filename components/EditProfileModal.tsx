@@ -186,31 +186,41 @@ export default function EditProfileModal({
         };
         input.click();
       } else {
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        
-        if (permissionResult.granted === false) {
-          if (typeof window !== 'undefined') {
-            window.alert('Permission to access photos is required!');
+        // Native iOS/Android - wrap in try/catch for safety
+        try {
+          const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          
+          if (permissionResult.granted === false) {
+            Alert.alert(
+              'Permission Required',
+              'Please allow access to your photos in Settings to upload a profile picture.',
+              [{ text: 'OK' }]
+            );
+            return;
           }
-          return;
-        }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 0.8,
-        });
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+          });
 
-        if (!result.canceled && result.assets[0]) {
-          setAvatarUri(result.assets[0].uri);
+          if (!result.canceled && result.assets && result.assets[0]) {
+            setAvatarUri(result.assets[0].uri);
+          }
+        } catch (pickerError) {
+          console.error('ImagePicker error:', pickerError);
+          Alert.alert(
+            'Unable to Access Photos',
+            'There was an issue accessing your photo library. Please try again.',
+            [{ text: 'OK' }]
+          );
         }
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      if (typeof window !== 'undefined') {
-        window.alert('Failed to pick image. Please try again.');
-      }
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
     }
   };
 
@@ -433,18 +443,35 @@ export default function EditProfileModal({
 
       setAvatarUri(null);
 
-      if (typeof window !== 'undefined') {
-        window.alert('Your profile has been updated!');
-        onClose();
-      }
+      // Use native Alert for iOS/Android
+      Alert.alert(
+        'Success',
+        'Your profile has been updated!',
+        [{ text: 'OK', onPress: () => onClose() }]
+      );
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save profile:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      if (typeof window !== 'undefined') {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        window.alert(`Failed to save profile: ${errorMessage}\n\nPlease check the console for details.`);
+      
+      // Extract the most useful error message
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
+      
+      // Use native Alert for iOS/Android
+      Alert.alert(
+        'Failed to Save',
+        `${errorMessage}\n\nPlease try again.`,
+        [{ text: 'OK' }]
+      );
     } finally {
       setIsSaving(false);
     }

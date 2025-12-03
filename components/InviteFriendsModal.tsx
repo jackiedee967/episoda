@@ -26,27 +26,41 @@ export default function InviteFriendsModal({ visible, onClose, onInvite }: Invit
       }
       
       // Otherwise, default share behavior
-      // Copy link to clipboard
-      await Clipboard.setStringAsync(APP_STORE_URL);
+      // Copy link to clipboard first
+      try {
+        await Clipboard.setStringAsync(APP_STORE_URL);
+      } catch (clipboardError) {
+        console.warn('Clipboard access failed:', clipboardError);
+      }
       
-      // Share with native share sheet
+      // Share with native share sheet - use only message to avoid iOS issues
       const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
       
-      const result = await Share.share({
-        message: message,
-        url: APP_STORE_URL,
-      });
+      try {
+        const result = await Share.share({
+          message: message,
+        });
 
-      if (result.action === Share.sharedAction) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (result.action === Share.sharedAction) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onClose();
+        }
+      } catch (shareError) {
+        console.error('Share sheet error:', shareError);
+        // Fallback - just close the modal since link was copied
+        if (Platform.OS === 'web') {
+          window.alert('Link copied to clipboard!');
+        } else {
+          Alert.alert('Copied!', 'Link copied to clipboard.');
+        }
         onClose();
       }
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error('Error in handleInviteFriends:', error);
       if (Platform.OS === 'web') {
-        window.alert('Failed to share. Link copied to clipboard.');
+        window.alert('Failed to share. Please try again.');
       } else {
-        Alert.alert('Error', 'Failed to share. Link copied to clipboard.');
+        Alert.alert('Error', 'Failed to share. Please try again.');
       }
     }
   };

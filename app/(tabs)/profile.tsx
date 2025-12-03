@@ -816,7 +816,6 @@ export default function ProfileScreen() {
             const { Share } = await import('react-native');
             const result = await Share.share({
               message: message,
-              url: APP_STORE_URL,
             });
 
             if (result.action === Share.sharedAction) {
@@ -825,11 +824,8 @@ export default function ProfileScreen() {
             }
           } catch (error) {
             console.error('Error sharing:', error);
-            if (Platform.OS === 'web') {
-              window.alert('Failed to share. Link copied to clipboard.');
-            } else {
-              Alert.alert('Error', 'Failed to share.');
-            }
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setShowInviteFriendsModal(false);
           }
         }}
       />
