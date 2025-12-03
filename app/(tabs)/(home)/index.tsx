@@ -250,12 +250,23 @@ export default function HomeScreen() {
       
       const shows = Array.from(uniqueShows.values());
       
+      // Debug log to see what data the shows have
+      console.log('📺 Currently Watching shows (pre-enrichment):', shows.map(s => ({ 
+        title: s.title, 
+        year: s.year, 
+        endYear: s.endYear, 
+        traktId: s.traktId 
+      })));
+      
       // Enrich shows missing endYear with data from Trakt
       const { fetchShowEndYear, searchShows } = await import('@/services/trakt');
       const enrichedShows = await Promise.all(
         shows.map(async (show) => {
           // Skip if already has endYear
-          if (show.endYear) return show;
+          if (show.endYear) {
+            console.log(`✅ ${show.title} already has endYear: ${show.endYear}`);
+            return show;
+          }
           
           try {
             let traktId = show.traktId;
@@ -282,7 +293,9 @@ export default function HomeScreen() {
             
             // Now fetch endYear if we have a traktId
             if (traktId) {
+              console.log(`📡 Fetching endYear for "${show.title}" (traktId: ${traktId})...`);
               const endYear = await fetchShowEndYear(traktId, undefined, show.year);
+              console.log(`📅 ${show.title}: year=${show.year}, endYear=${endYear}`);
               return { ...show, traktId, endYear };
             }
             
