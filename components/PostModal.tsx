@@ -12,7 +12,6 @@ import {
   Animated,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -1983,37 +1982,31 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       animationType="none"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      <Animated.View 
+        style={[
+          styles.overlay,
+          {
+            opacity: fadeAnim,
+          }
+        ]}
       >
+        <Pressable 
+          style={styles.overlayTouchable} 
+          onPress={onClose}
+        />
         <Animated.View 
           style={[
-            styles.overlay,
+            styles.modalContainer,
             {
-              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
             }
           ]}
         >
-          <Pressable 
-            style={styles.overlayTouchable} 
-            onPress={onClose}
-          />
-          <Animated.View 
-            style={[
-              styles.modalContainer,
-              {
-                transform: [{ translateY: slideAnim }],
-              }
-            ]}
-          >
-            {step === 'selectShow' && renderSelectShow()}
-            {step === 'selectEpisodes' && renderSelectEpisodes()}
-            {step === 'postDetails' && renderPostDetails()}
-          </Animated.View>
+          {step === 'selectShow' && renderSelectShow()}
+          {step === 'selectEpisodes' && renderSelectEpisodes()}
+          {step === 'postDetails' && renderPostDetails()}
         </Animated.View>
-      </KeyboardAvoidingView>
+      </Animated.View>
       
       {selectedShowForPlaylist ? (
         <PlaylistModal
