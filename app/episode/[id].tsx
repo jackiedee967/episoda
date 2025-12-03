@@ -8,7 +8,9 @@ import {
   Pressable,
   ActivityIndicator,
   RefreshControl,
+  ImageBackground,
 } from 'react-native';
+import { Asset } from 'expo-asset';
 import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -714,22 +716,21 @@ export default function EpisodeHub() {
     setModalVisible(false);
   };
 
-  return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={tokens.colors.almostWhite}
-              colors={[tokens.colors.almostWhite]}
-            />
-          }
-        >
+  const appBackgroundImage = Asset.fromModule(require('@/assets/images/app-background.jpg'));
+
+  const containerContent = (
+    <ScrollView 
+      style={styles.scrollView} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={tokens.colors.almostWhite}
+          colors={[tokens.colors.almostWhite]}
+        />
+      }
+    >
           {/* Header with Back and Search */}
           <View style={[styles.topBar, { paddingTop: insets.top + 20 }]}>
             <Pressable style={styles.backButton} onPress={handleBack}>
@@ -868,7 +869,24 @@ export default function EpisodeHub() {
             </View>
           </View>
         </ScrollView>
-      </View>
+  );
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      {Platform.OS === 'web' ? (
+        <View style={styles.container}>
+          {containerContent}
+        </View>
+      ) : (
+        <ImageBackground
+          source={{ uri: appBackgroundImage.uri }}
+          style={styles.container}
+          resizeMode="cover"
+        >
+          {containerContent}
+        </ImageBackground>
+      )}
       
       <PostModal 
         visible={modalVisible} 
