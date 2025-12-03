@@ -438,17 +438,17 @@ export default function ProfileScreen() {
   const renderActionButtons = () => (
     <View style={styles.actionButtonsSection}>
       <Pressable style={styles.actionButton} onPress={handleEditProfile}>
-        <FadeInImage source={require('@/assets/images/edit_1761625354124.png')} style={styles.actionIcon} contentFit="contain" />
+        <Image source={require('@/assets/images/edit_1761625354124.png')} style={styles.actionIcon} contentFit="contain" />
         <Text style={styles.actionButtonLabel}>Edit</Text>
       </Pressable>
       
       <Pressable style={styles.actionButton} onPress={handleSettingsPress}>
-        <FadeInImage source={require('@/assets/images/Setting_line_light_1761625354125.png')} style={styles.actionIcon} contentFit="contain" />
+        <Image source={require('@/assets/images/Setting_line_light_1761625354125.png')} style={styles.actionIcon} contentFit="contain" />
         <Text style={styles.actionButtonLabel}>Settings</Text>
       </Pressable>
       
       <Pressable style={styles.actionButton} onPress={handleHelpPress}>
-        <FadeInImage source={require('@/assets/images/Question_light_1761625354125.png')} style={styles.actionIcon} contentFit="contain" />
+        <Image source={require('@/assets/images/Question_light_1761625354125.png')} style={styles.actionIcon} contentFit="contain" />
         <Text style={styles.actionButtonLabel}>Help</Text>
       </Pressable>
     </View>
@@ -459,7 +459,7 @@ export default function ProfileScreen() {
     <View style={styles.statsSection}>
       <View style={styles.statCard}>
         <View style={styles.statContent}>
-          <FadeInImage source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+          <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
           <Text style={styles.statValue}>
             <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
           </Text>
@@ -468,7 +468,7 @@ export default function ProfileScreen() {
 
       <View style={styles.statCard}>
         <View style={styles.statContent}>
-          <FadeInImage source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+          <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
           <Text style={styles.statValue}>
             <Text style={styles.statNumber}>{totalLikes}</Text> Likes
           </Text>

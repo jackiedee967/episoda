@@ -565,9 +565,9 @@ export default function UserProfile() {
       ) : (
         <>
           <View style={styles.statCard}>
-            <FadeInView delay={0}>
+            <FadeInView delay={0} animationKey="user-stat-episodes">
               <View style={styles.statContent}>
-                <FadeInImage source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+                <Image source={require('@/assets/images/Eye_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
                 <Text style={styles.statValue}>
                   <Text style={styles.statNumber}>{episodesWatched}</Text> Episodes
                 </Text>
@@ -576,9 +576,9 @@ export default function UserProfile() {
           </View>
 
           <View style={styles.statCard}>
-            <FadeInView delay={50}>
+            <FadeInView delay={50} animationKey="user-stat-likes">
               <View style={styles.statContent}>
-                <FadeInImage source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
+                <Image source={require('@/assets/images/Fire_light_1761625354125.png')} style={styles.statIcon} contentFit="contain" />
                 <Text style={styles.statValue}>
                   <Text style={styles.statNumber}>{totalLikes}</Text> Likes
                 </Text>
@@ -587,7 +587,7 @@ export default function UserProfile() {
           </View>
 
           <Pressable style={styles.statCard} onPress={handleShowFollowers}>
-            <FadeInView delay={100}>
+            <FadeInView delay={100} animationKey="user-stat-followers">
               <View style={styles.statContent}>
                 <View style={styles.avatarRow}>
                   {topFollowers.slice(0, 3).filter(Boolean).map((follower, index) => (
@@ -625,7 +625,7 @@ export default function UserProfile() {
           </Pressable>
 
           <Pressable style={styles.statCard} onPress={handleShowFollowing}>
-            <FadeInView delay={150}>
+            <FadeInView delay={150} animationKey="user-stat-following">
               <View style={styles.statContent}>
                 <View style={styles.avatarRow}>
                   {topFollowing.slice(0, 3).filter(Boolean).map((user, index) => (
