@@ -765,7 +765,10 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
                 <Pressable
                   key={result.show.id}
                   style={styles.showGridItem}
-                  onPress={() => handleRecommendationSelect(result)}
+                  onPress={() => {
+                    console.log('🎯 FAVORITES: Recommendation card pressed:', result.show.title);
+                    handleRecommendationSelect(result);
+                  }}
                 >
                   <Image 
                     source={{ uri: getPosterUrl(result.show.poster, result.show.title) }} 
@@ -795,7 +798,10 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
                 <Pressable
                   key={result.show.id}
                   style={styles.showGridItem}
-                  onPress={() => handleShowSelect(result)}
+                  onPress={() => {
+                    console.log('🎯 FAVORITES: Show card pressed:', result.show.title);
+                    handleShowSelect(result);
+                  }}
                 >
                   <Image 
                     source={{ uri: getPosterUrl(result.show.poster, result.show.title) }} 
@@ -931,12 +937,15 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   backdropPressable: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 0,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContainer: {
     backgroundColor: tokens.colors.almostWhite,
@@ -946,7 +955,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
     maxHeight: SCREEN_HEIGHT * 0.85,
-    zIndex: 1,
   },
   modalHeader: {
     flexDirection: 'row',

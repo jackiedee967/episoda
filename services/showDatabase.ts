@@ -112,7 +112,7 @@ export async function saveShow(
   };
 
   console.log('💾 Upserting to database...');
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('shows')
     .upsert(showData, {
       onConflict: 'trakt_id',
@@ -121,12 +121,28 @@ export async function saveShow(
     .select()
     .single();
 
+  // If end_year column doesn't exist, retry without it
+  if (error && error.message?.includes('end_year')) {
+    console.log('⚠️ end_year column missing, retrying without it...');
+    const { end_year, ...showDataWithoutEndYear } = showData;
+    const retryResult = await supabase
+      .from('shows')
+      .upsert(showDataWithoutEndYear, {
+        onConflict: 'trakt_id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+    data = retryResult.data;
+    error = retryResult.error;
+  }
+
   if (error) {
     console.error('❌ Upsert error:', error);
     throw error;
   }
 
-  console.log('✅ saveShow COMPLETE, ID:', data.id);
+  console.log('✅ saveShow COMPLETE, ID:', data!.id);
   return data as DatabaseShow;
 }
 
@@ -172,7 +188,7 @@ export async function upsertShowFromAppModel(show: {
   };
 
   console.log('💾 Upserting show from app model...');
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('shows')
     .upsert(showData, {
       onConflict: 'trakt_id',
@@ -181,12 +197,28 @@ export async function upsertShowFromAppModel(show: {
     .select()
     .single();
 
+  // If end_year column doesn't exist, retry without it
+  if (error && error.message?.includes('end_year')) {
+    console.log('⚠️ end_year column missing, retrying without it...');
+    const { end_year, ...showDataWithoutEndYear } = showData;
+    const retryResult = await supabase
+      .from('shows')
+      .upsert(showDataWithoutEndYear, {
+        onConflict: 'trakt_id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+    data = retryResult.data;
+    error = retryResult.error;
+  }
+
   if (error) {
     console.error('❌ Upsert error:', error);
     throw error;
   }
 
-  console.log('✅ upsertShowFromAppModel COMPLETE, ID:', data.id);
+  console.log('✅ upsertShowFromAppModel COMPLETE, ID:', data!.id);
   return data as DatabaseShow;
 }
 
