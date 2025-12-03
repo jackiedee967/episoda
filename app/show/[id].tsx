@@ -1153,11 +1153,12 @@ export default function ShowHub() {
     
     return (
       <View style={styles.bannerContainer}>
-        <Image 
+        <FadeInImage 
           source={{ uri: show.backdrop }} 
           style={styles.bannerImage}
           contentFit="cover"
           onError={() => setBannerFailed(true)}
+          duration={400}
         />
         <View style={[styles.bannerOverlay, { paddingTop: insets.top + 16 }]}>
           <Pressable onPress={() => router.back()} style={styles.backButtonOverlay}>

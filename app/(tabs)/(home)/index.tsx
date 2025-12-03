@@ -647,7 +647,8 @@ export default function HomeScreen() {
     }
 
     return (
-      <View style={styles.currentlyWatchingSection}>
+      <FadeInView duration={400} delay={0}>
+        <View style={styles.currentlyWatchingSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Currently Watching</Text>
         </View>
@@ -738,6 +739,7 @@ export default function HomeScreen() {
           })}
         </ScrollView>
       </View>
+      </FadeInView>
     );
   };
 
@@ -770,7 +772,8 @@ export default function HomeScreen() {
     }
 
     return (
-      <View style={styles.recommendedSection}>
+      <FadeInView duration={400} delay={100}>
+        <View style={styles.recommendedSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>For You</Text>
           <Pressable 
@@ -855,6 +858,7 @@ export default function HomeScreen() {
           })}
         </ScrollView>
       </View>
+      </FadeInView>
     );
   };
 
@@ -862,7 +866,8 @@ export default function HomeScreen() {
     if (suggestedUsers.length === 0) return null;
 
     return (
-      <View style={styles.youMayKnowSection}>
+      <FadeInView duration={400} delay={200}>
+        <View style={styles.youMayKnowSection}>
         <Pressable 
           style={styles.sectionHeader}
           onPress={() => router.push('/(tabs)/search?tab=users')}
@@ -900,6 +905,7 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
       </View>
+      </FadeInView>
     );
   };
 
@@ -965,11 +971,15 @@ export default function HomeScreen() {
       {renderCurrentlyWatching()}
       {renderRecommendedTitles()}
       {renderYouMayKnow()}
-      <View style={styles.friendActivitySection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Friend Activity</Text>
-        </View>
-      </View>
+      {feedData.length > 0 && (
+        <FadeInView duration={400} delay={0}>
+          <View style={styles.friendActivitySection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Friend Activity</Text>
+            </View>
+          </View>
+        </FadeInView>
+      )}
     </>
   );
 
