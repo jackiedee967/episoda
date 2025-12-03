@@ -485,7 +485,29 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         await loadFavorites();
         console.log('✅ Favorites updated successfully');
       } else {
-        console.log('ℹ️ Skipping loadFavorites since DB update was not possible in dev');
+        // DEV MODE FALLBACK: Update local state so user sees the selection immediately
+        // This won't persist, but provides visual feedback until DB schema is ready
+        console.log('ℹ️ DB update failed - applying local state fallback for dev mode');
+        const displayOrder = selectedSlot + 1;
+        const newFavorite: FavoriteShow = {
+          id: `local-${Date.now()}`,
+          show_id: showId,
+          display_order: displayOrder,
+          show: {
+            ...result.show,
+            id: showId,
+            traktId: result.traktShow?.ids?.trakt || result.show.traktId,
+          }
+        };
+        
+        // Update favorites state directly
+        setFavorites(prev => {
+          // Remove any existing favorite at this slot
+          const filtered = prev.filter(f => f.display_order !== displayOrder);
+          // Add the new favorite and sort by display order
+          return [...filtered, newFavorite].sort((a, b) => a.display_order - b.display_order);
+        });
+        console.log('✅ Local state updated with favorite:', result.show.title);
       }
       closeModal();
     } catch (err) {

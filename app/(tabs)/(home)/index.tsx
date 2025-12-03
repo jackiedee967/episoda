@@ -236,7 +236,7 @@ export default function HomeScreen() {
       // Get user's posts only (most recent first)
       const userPosts = posts
         .filter(post => post.user.id === currentUser.id && post.show)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       
       // Extract unique shows (most recent first)
       const uniqueShows = new Map();
@@ -258,18 +258,19 @@ export default function HomeScreen() {
         traktId: s.traktId 
       })));
       
-      // Enrich shows missing endYear with data from Trakt
-      const { fetchShowEndYear, searchShows } = await import('@/services/trakt');
+      // Enrich shows missing year or endYear with data from Trakt
+      const { fetchShowEndYear, searchShows, getShowDetails } = await import('@/services/trakt');
       const enrichedShows = await Promise.all(
         shows.map(async (show) => {
-          // Skip if already has endYear
-          if (show.endYear) {
-            console.log(`✅ ${show.title} already has endYear: ${show.endYear}`);
+          // Skip if already has both year and endYear
+          if (show.year && show.endYear) {
+            console.log(`✅ ${show.title} already has year: ${show.year}, endYear: ${show.endYear}`);
             return show;
           }
           
           try {
             let traktId = show.traktId;
+            let year = show.year;
             
             // If traktId is missing, search for the show by title
             if (!traktId && show.title) {
@@ -285,23 +286,41 @@ export default function HomeScreen() {
                 );
                 const match = exactMatch || validResults[0];
                 traktId = match.show.ids.trakt;
+                // Also get year from search result if missing
+                if (!year && match.show.year) {
+                  year = match.show.year;
+                  console.log(`✅ Found year ${year} from search for "${show.title}"`);
+                }
                 console.log(`✅ Found traktId ${traktId} for "${show.title}"`);
               } else {
                 console.log(`⚠️ No valid Trakt results for "${show.title}"`);
               }
             }
             
-            // Now fetch endYear if we have a traktId
-            if (traktId) {
-              console.log(`📡 Fetching endYear for "${show.title}" (traktId: ${traktId})...`);
-              const endYear = await fetchShowEndYear(traktId, undefined, show.year);
-              console.log(`📅 ${show.title}: year=${show.year}, endYear=${endYear}`);
-              return { ...show, traktId, endYear };
+            // If we have traktId but missing year, try to get it from show details
+            if (traktId && !year) {
+              try {
+                const details = await getShowDetails(traktId);
+                if (details?.year) {
+                  year = details.year;
+                  console.log(`✅ Found year ${year} from details for "${show.title}"`);
+                }
+              } catch (e) {
+                console.warn(`Could not fetch show details for year: ${e}`);
+              }
             }
             
-            return show;
+            // Now fetch endYear if we have a traktId and it's missing
+            let endYear = show.endYear;
+            if (traktId && !endYear) {
+              console.log(`📡 Fetching endYear for "${show.title}" (traktId: ${traktId})...`);
+              endYear = await fetchShowEndYear(traktId, undefined, year);
+              console.log(`📅 ${show.title}: year=${year}, endYear=${endYear}`);
+            }
+            
+            return { ...show, traktId, year, endYear };
           } catch (err) {
-            console.warn(`Failed to fetch endYear for ${show.title}:`, err);
+            console.warn(`Failed to enrich show ${show.title}:`, err);
             return show;
           }
         })

@@ -12,7 +12,7 @@ const getOMDBApiKey = () => {
 };
 
 const OMDB_API_KEY = getOMDBApiKey();
-const OMDB_BASE_URL = 'http://www.omdbapi.com/';
+const OMDB_BASE_URL = 'https://www.omdbapi.com/';
 
 export interface OMDBSearchResult {
   Title: string;
