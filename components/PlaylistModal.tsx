@@ -46,11 +46,14 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   const inputRef = useRef<TextInput>(null);
   const requestTokenRef = useRef<number>(0);
   
-  // Safety check: if show is null/undefined when modal is visible, close it via useEffect
+  // Safety check: if show is null/undefined when modal is visible, close it via deferred callback
   useEffect(() => {
     if (visible && !show) {
-      console.warn('PlaylistModal: show prop is null/undefined, closing modal');
-      onClose();
+      console.warn('PlaylistModal: show prop is null/undefined, scheduling modal close');
+      const timeoutId = setTimeout(() => {
+        onClose();
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [visible, show, onClose]);
   
