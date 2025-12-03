@@ -471,13 +471,15 @@ export default function UserProfile() {
     
     return (
     <View style={[styles.profileInfoSection, { paddingTop: insets.top + 60 }]}>
-      <AvatarImage
-        uri={profileUser.avatar_url || profileUser.avatar}
-        colorSchemeId={profileUser.avatar_color_scheme}
-        iconName={profileUser.avatar_icon}
-        size={80}
-        borderRadius={24}
-      />
+      <View style={styles.avatarContainer}>
+        <AvatarImage
+          uri={profileUser.avatar_url || profileUser.avatar}
+          colorSchemeId={profileUser.avatar_color_scheme}
+          iconName={profileUser.avatar_icon}
+          size={127}
+          borderRadius={20}
+        />
+      </View>
       
       <View style={styles.profileTextContainer}>
         <Text style={styles.username}>@{profileUser.username}</Text>
@@ -1075,23 +1077,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
   },
-  avatar: {
-    width: 127,
-    height: 127,
-    borderRadius: 20,
+  avatarContainer: {
     marginBottom: 10,
-  },
-  avatarPlaceholder: {
-    backgroundColor: colors.cardBackground,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-  },
-  avatarPlaceholderText: {
-    ...typography.largeTitle,
-    color: colors.greenHighlight,
-    fontSize: 48,
   },
   profileTextContainer: {
     width: 331,
@@ -1104,7 +1091,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   displayName: {
-    fontFamily: 'Instrument Serif',
+    fontFamily: 'InstrumentSerif_400Regular',
     fontSize: 25,
     fontWeight: '400',
     color: colors.pureWhite,
@@ -1204,7 +1191,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   statCard: {
-    width: 'calc(50% - 4px)' as any,
+    flex: 1,
+    minWidth: '45%',
     height: 57,
     padding: 8,
     justifyContent: 'center',

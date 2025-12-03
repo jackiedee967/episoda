@@ -45,6 +45,19 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef<TextInput>(null);
   const requestTokenRef = useRef<number>(0);
+  
+  // Safety check: if show is null/undefined when modal is visible, close it via useEffect
+  useEffect(() => {
+    if (visible && !show) {
+      console.warn('PlaylistModal: show prop is null/undefined, closing modal');
+      onClose();
+    }
+  }, [visible, show, onClose]);
+  
+  // Don't render if show is null
+  if (!show) {
+    return null;
+  }
 
   // Ensure we have the database UUID for UI state checks
   useEffect(() => {

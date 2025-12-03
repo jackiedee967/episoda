@@ -247,9 +247,7 @@ export default function EditProfileModal({
 
       if (uploadError) {
         console.error('Upload error details:', uploadError);
-        if (typeof window !== 'undefined') {
-          window.alert(`Upload failed: ${uploadError.message || 'Unknown error'}`);
-        }
+        Alert.alert('Upload Failed', uploadError.message || 'Unknown error');
         return null;
       }
 
@@ -261,9 +259,7 @@ export default function EditProfileModal({
       return data.publicUrl;
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      if (typeof window !== 'undefined') {
-        window.alert('Failed to upload profile picture. Please try again.');
-      }
+      Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
       return null;
     }
   };
@@ -274,17 +270,13 @@ export default function EditProfileModal({
     }
 
     if (username !== initialUsername && !usernameAvailable) {
-      if (typeof window !== 'undefined') {
-        window.alert('Please choose an available username');
-      }
+      Alert.alert('Username Unavailable', 'Please choose an available username');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
 
     if (websiteUrl && !isValidUrl(websiteUrl)) {
-      if (typeof window !== 'undefined') {
-        window.alert('Please enter a valid website URL (e.g., https://yourwebsite.com)');
-      }
+      Alert.alert('Invalid URL', 'Please enter a valid website URL (e.g., https://yourwebsite.com)');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -345,9 +337,7 @@ export default function EditProfileModal({
         setIsUploadingAvatar(false);
         
         if (!avatarUrl) {
-          if (typeof window !== 'undefined') {
-            window.alert('Failed to upload profile picture. Please try again.');
-          }
+          Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
           setIsSaving(false);
           return;
         }

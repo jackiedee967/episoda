@@ -1950,6 +1950,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         <Animated.View 
           style={[
