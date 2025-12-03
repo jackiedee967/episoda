@@ -584,7 +584,7 @@ export default function HomeScreen() {
   };
 
   const renderHeader = () => (
-    <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+    <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <Image 
         source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
@@ -1162,7 +1162,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 25,
     paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingRight: 20,
   },
   logo: {
     width: 123.2,
