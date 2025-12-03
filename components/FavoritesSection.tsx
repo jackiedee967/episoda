@@ -705,20 +705,17 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     >
       <Animated.View 
         style={[
-          styles.modalBackdrop,
+          styles.modalOverlay,
           { opacity: backdropAnim }
         ]}
-        pointerEvents="box-none"
       >
         <Pressable style={styles.backdropPressable} onPress={closeModal} />
-      </Animated.View>
-      
-      <Animated.View 
-        style={[
-          styles.modalContainer,
-          { transform: [{ translateY: slideAnim }] }
-        ]}
-      >
+        <Animated.View 
+          style={[
+            styles.modalContainer,
+            { transform: [{ translateY: slideAnim }] }
+          ]}
+        >
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Select a Show</Text>
           <Pressable style={styles.closeButton} onPress={closeModal}>
@@ -807,6 +804,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
             </View>
           ) : null}
         </ScrollView>
+        </Animated.View>
       </Animated.View>
       
       {selectedShowForPlaylist ? (
@@ -928,18 +926,16 @@ const styles = StyleSheet.create({
     aspectRatio: 2 / 3,
     borderRadius: 14,
   },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   backdropPressable: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 0,
   },
   modalContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: tokens.colors.almostWhite,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -947,7 +943,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
     maxHeight: SCREEN_HEIGHT * 0.85,
-    zIndex: 2,
+    zIndex: 1,
   },
   modalHeader: {
     flexDirection: 'row',
