@@ -23,31 +23,26 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Navigation**: Expo Router (file-based routing)
 - **State Management**: React Context API
 - **Styling**: StyleSheet API with a centralized design token system (`styles/tokens.ts`)
-- **Authentication**: Supabase Auth with a 7-screen onboarding flow and specific fixes for production stability.
+- **Authentication**: Supabase Auth with a 7-screen onboarding flow and production stability fixes.
 - **Architecture**: Comprehensive state/actions/selectors refactor for improved data flow stability.
 - **Database Schema**: All table names standardized to match Supabase PostgREST cached schema (e.g., `post_likes`, `post_reposts`, `comments`). Table names cannot be changed due to Supabase managed PostgREST cache.
 
 ### Feature Specifications
-- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, friend activity feed with infinite scroll, user profiles, "You May Know" suggestions, user mention system with autocomplete and notifications.
-- **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommended titles, dynamic episode progress bar, "Currently Watching" section, show-level rating, and a favorites section. Includes robust poster fallback chain and episode metadata/thumbnail refresh systems.
+- **Social Features**: Posting, liking, commenting (4-tier recursive nesting), reposting, following, activity feed with infinite scroll, user profiles, "You May Know" suggestions, user mention system with autocomplete and notifications.
+- **TV Show Management**: Show/episode pages, playlists, watchlist, watch history, personalized recommendations, dynamic episode progress, "Currently Watching" section, show-level rating, and a favorites section. Includes robust poster fallback chain and episode metadata/thumbnail refresh.
 - **Explore Page**: Redesigned search/explore page featuring 6 distinct curated content rows, intelligent year/year-range display, mutual friends count, and genre-based filtering.
 - **Recommendation Algorithm**: Production-grade system with strict universal hard filters and progressive relaxation, using composite ranking based on similarity (60%) and popularity (40%).
 - **Genre Discovery System**: Three-view routing architecture using Trakt's native genre API with production-grade pagination.
 - **Streaming Providers Display**: ShowHub displays streaming service logos using TMDB Watch Providers API with intelligent deduplication and fallback logic.
-- **Rewatch Episode Tracking**: 3-click cycling for episode selection states (unselected → watched → rewatched → unselected) with visual indicators and database tracking.
+- **Rewatch Episode Tracking**: 3-click cycling for episode selection states with visual indicators and database tracking.
 - **Account Management**: Account deletion and phone number change features.
 - **Invite Friends System**: Two-trigger invite modal for user acquisition.
-- **Founders Welcome Modal**: One-time welcome popup for first-time users featuring personalized message from founders Jasmine & Jackie, encouraging feedback and community engagement.
-- **Push Notifications System**: Expo Push Notifications with Supabase Edge Functions for delivery. Notification types: likes, comments, follows, mentions, admin announcements, friend logs watched show, friend logs playlist show. Permission prompt appears in onboarding after "Select 3 Shows" step before Founders modal.
-- **Legal & Attribution**: Terms of Service and Privacy Policy accessible via clickable links on signup screen with slide-up modal display. Acknowledgments page (`/settings/acknowledgments`) displays required attribution for TMDB, Trakt, and TVMaze APIs with logos and links.
+- **Founders Welcome Modal**: One-time welcome popup for first-time users.
+- **Push Notifications System**: Expo Push Notifications with Supabase Edge Functions for delivery. Notification types include likes, comments, follows, mentions, admin announcements, friend activity. Permission prompt appears during onboarding.
+- **Legal & Attribution**: Terms of Service and Privacy Policy accessible via clickable links on signup screen with slide-up modal. Acknowledgments page (`/settings/acknowledgments`) displays required attribution for TMDB, Trakt, and TVMaze APIs.
 
 ### System Design Choices
-- **Development vs Production**: Separate Supabase instances for safe development.
-  - **EPISODA-Dev** (atzrteveximvujzoneuu): Development/testing database
-  - **EPISODA-Prod** (mbwuoqoktdgudzaemjhx): Production database with real users
-- **Environment Switching**: Automatic via Replit environment variables:
-  - Development environment → Dev database
-  - Production environment → Prod database
+- **Development vs Production**: Separate Supabase instances for safe development (`EPISODA-Dev`) and production (`EPISODA-Prod`), with automatic environment switching via Replit environment variables.
 - **Production Credential Management**: Supabase credentials stored as `EXPO_PUBLIC_` environment variables, split by environment.
 - **Data Management**: All data managed via real Supabase data; Supabase-backed user profile cache.
 - **TV Show Data Integration**: Utilizes multiple APIs (Trakt, TMDB, OMDB, TVMaze) with a robust fallback system.
@@ -57,60 +52,18 @@ The application features a pixel-perfect UI aligned with Figma specifications, u
 - **Scalability Infrastructure**: Comprehensive scaling guide at `supabase/SCALING_GUIDE.md` covering Supabase tier upgrades, connection pooling, read replicas, and monitoring. Database performance indexes in `supabase/migrations/004_performance_indexes.sql`.
 - **API Reliability**: Comprehensive Trakt API health check and database fallback system.
 - **Database Schema**: Key tables include `profiles`, `posts`, `shows`, `episodes`, `playlists`, `post_likes`, `post_reposts`, `comments`, `follows`, `social_links`, `watch_history`, `show_ratings`, `post_mentions`, `comment_mentions`, `notifications`, `post_reports`, `user_reports`. `post_likes` and `post_reposts` are locked by Supabase PostgREST cache. `profiles` table now includes `expo_push_token`, `notification_preferences` (JSONB), `is_admin`, `is_suspended`, `suspended_at`, and `suspended_reason` columns.
-- **Admin Dashboard**: In-app admin panel at `/settings/admin` with server-side authorization. Features: overview stats (users, posts, engagement), reports queue (post/user reports with resolve/dismiss/delete actions), user management (search/suspend/unsuspend), flagged content moderation. All admin RPC functions check `is_current_user_admin()` for authorization. Migration: `supabase/migrations/007_admin_dashboard.sql`.
-- **Content Moderation System**: Automated word-list based detection of harmful slurs in posts and comments. Flagged content appears in admin dashboard "Flagged" tab for review (approve/remove). Does NOT block general profanity, only targets hateful slurs. Implementation: `services/contentModeration.ts` for detection, integration in `contexts/DataContext.tsx` (posts) and `app/post/[id].tsx` (comments). Migration: `supabase/migrations/008_content_moderation.sql`.
-- **Error Boundary & Logging System**: Custom error boundary (`components/ErrorBoundary.tsx`) catches all unhandled React errors and displays a friendly error page with gradient background and scream emoji. Errors are logged to `app_errors` table and push notifications are sent to all admins. Admin dashboard "Errors" tab shows error statistics, top error screens, and recent unresolved errors with ability to mark as resolved. Migration: `supabase/migrations/009_app_errors.sql`.
-- **Security Hardening (Dec 2025)**: Comprehensive security audit completed. API keys loaded from environment variables only (no hardcoded fallbacks). Admin column protection via database triggers prevents privilege escalation (`supabase/migrations/010_protect_admin_columns.sql`). Server-side input length validation prevents abuse (`supabase/migrations/011_input_length_validation.sql`). Rate limiting infrastructure (`supabase/migrations/012_rate_limiting.sql`) with client-side integration (`services/rateLimiting.ts`) for OTP (3/hr), posts (20/hr), comments (60/hr), follows (100/hr). Auth tokens now stored in encrypted SecureStore on iOS/Android (`services/secureStorage.ts`). Enhanced XSS prevention in `services/contentModeration.ts` with `sanitizeText()`, `sanitizeForDisplay()`, `containsDangerousContent()` functions. Full security documentation in `supabase/SECURITY_NOTES.md`.
-- **iOS Crash Prevention (Dec 2025)**: Multiple iOS-specific crash fixes implemented. InviteFriendsModal Share fixed by removing problematic `url` parameter causing native crashes on iOS. EditProfileModal photo upload crash fixed with comprehensive try/catch and native Alert.alert instead of window.alert. Profile page share functionality enhanced with proper error handling. PostModal bookmark icons removed from show selection to prevent crash. PostModal now uses KeyboardAvoidingView for proper keyboard handling on iOS when adding custom tags.
-- **Playlist Data Flow (Dec 2025)**: Critical fix to ensure playlists always show their shows. All playlist mutations (`createPlaylist`, `addShowToPlaylist`, `removeShowFromPlaylist`, `deletePlaylist`, `updatePlaylistPrivacy`) now refresh data from Supabase after successful DB operations using `loadPlaylistsRef` pattern. Runtime validation in `loadPlaylists` detects and logs show_count mismatches. AsyncStorage is only used as fallback for non-authenticated users. Architecture uses `useRef` to solve circular dependency between mutations and `loadPlaylists`.
+- **Admin Dashboard**: In-app admin panel at `/settings/admin` with server-side authorization. Features: overview stats, reports queue, user management, flagged content moderation. All admin RPC functions check `is_current_user_admin()` for authorization. Migration: `supabase/migrations/007_admin_dashboard.sql`.
+- **Content Moderation System**: Automated word-list based detection of harmful slurs in posts and comments. Flagged content appears in admin dashboard "Flagged" tab for review. Implementation: `services/contentModeration.ts` for detection, integration in `contexts/DataContext.tsx` (posts) and `app/post/[id].tsx` (comments). Migration: `supabase/migrations/008_content_moderation.sql`.
+- **Error Boundary & Logging System**: Custom error boundary (`components/ErrorBoundary.tsx`) catches unhandled React errors, displays a friendly error page, logs errors to `app_errors` table, and sends push notifications to admins. Admin dashboard "Errors" tab shows error statistics, top error screens, and recent unresolved errors. Migration: `supabase/migrations/009_app_errors.sql`.
+- **Security Hardening**: API keys loaded from environment variables only. Admin column protection via database triggers (`supabase/migrations/010_protect_admin_columns.sql`). Server-side input length validation (`supabase/migrations/011_input_length_validation.sql`). Rate limiting infrastructure (`supabase/migrations/012_rate_limiting.sql`) with client-side integration (`services/rateLimiting.ts`) for OTP, posts, comments, follows. Auth tokens stored in encrypted SecureStore on iOS/Android (`services/secureStorage.ts`). Enhanced XSS prevention in `services/contentModeration.ts`. Full security documentation in `supabase/SECURITY_NOTES.md`.
+- **iOS Crash Prevention**: Multiple iOS-specific crash fixes implemented for sharing, photo uploads, and bookmark icons. `PostModal` now uses `KeyboardAvoidingView` for proper keyboard handling.
+- **iOS Animation Improvements**: Comprehensive iOS animation fixes using `react-native-reanimated` for smoother performance in `FadeInView.tsx`, `AnimatedCollapsible.tsx`, `SlideUpModal.tsx`, `GradientPlaceholder.tsx`, and `FadeInImage.tsx`. Homepage show posters now use `ShowPosterPlaceholder` wrappers.
+- **Playlist Data Flow**: Critical fix to ensure playlists always show their shows. All playlist mutations refresh data from Supabase after successful DB operations using `loadPlaylistsRef` pattern. Runtime validation in `loadPlaylists` detects and logs `show_count` mismatches. `AsyncStorage` is only used as fallback for non-authenticated users. Architecture uses `useRef` to solve circular dependency between mutations and `loadPlaylists`.
 
 ### Protected Critical Paths (DO NOT MODIFY WITHOUT REVIEW)
 - **`contexts/DataContext.tsx` - Playlist mutations**: All 5 playlist mutation functions MUST call `refreshPlaylistsFromSupabase()` after successful Supabase operations. This ensures UI always reflects database state.
 - **`contexts/DataContext.tsx` - loadPlaylistsRef pattern**: The `loadPlaylistsRef.current = loadPlaylists` assignment MUST remain after `loadPlaylists` definition. This enables mutations to refresh without circular dependencies.
 - **`integrations/supabase/client.ts`**: Authentication and database connection - DO NOT MODIFY without explicit approval.
-
-## Development & Deployment Workflow
-
-### Environment Setup
-1. **Development (Replit)**: Uses EPISODA-Dev Supabase automatically
-2. **Production (EAS Build)**: Uses EPISODA-Prod Supabase automatically
-
-### Safe Deployment Process
-
-**1. Database Changes**
-- Test all schema changes in dev database first
-- Use `supabase/dev_database_schema.sql` as reference for dev setup
-- Make changes additive (add new columns, don't delete old ones immediately)
-- Backup production before any migration
-
-**2. App Updates**
-- **Over-the-Air (OTA)**: For UI fixes, feature updates (instant, no App Store)
-- **Full Build**: For native code changes, new permissions (1-3 day Apple review)
-
-**3. Pre-Launch Checklist**
-- [ ] Test in dev environment
-- [ ] Check signup/login still works
-- [ ] Verify old user accounts aren't broken
-- [ ] Backup production database
-- [ ] Test on real iPhone
-
-**4. Rollback Plan**
-- Database: Restore from Supabase automatic backups
-- App (OTA): Instantly revert to previous version via Expo
-- App (Store): Re-submit old version (1-3 days)
-
-### Key Files
-- `supabase/dev_database_schema.sql`: Complete schema for dev database setup
-- `integrations/supabase/client.ts`: Auto-switches between dev/prod based on environment
-- `supabase/migrations/`: Version-controlled database migrations
-- `supabase/DEPLOYMENT_CHECKLIST.md`: Step-by-step deployment guide
-
-### Agent Reminder
-When the user makes database changes or deploys updates, remind them to:
-1. Test in EPISODA-Dev first before touching production
-2. Follow the deployment checklist at `supabase/DEPLOYMENT_CHECKLIST.md`
-3. Create migration files for any schema changes
-4. Backup production before major changes
 
 ## External Dependencies
 - **Supabase**: Database, authentication, real-time.
