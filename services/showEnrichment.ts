@@ -55,45 +55,36 @@ class ShowEnrichmentManager {
     this.activeRequests++;
 
     try {
-      // Multi-tier poster fallback for 99% coverage
-      let posterUrl: string | null = null;
-      let backdropUrl: string | null = null;
-      let imdbId: string | null = traktShow.ids.imdb || null;
-      let tmdbId: number | null = null;
-      let keywords: string[] = [];
-      
-      // Tier 1: TMDB (best coverage for both posters and backdrops)
-      const tmdbData = await this.fetchTMDBData(traktShow.title, traktShow.year);
-      posterUrl = tmdbData?.posterUrl || null;
-      backdropUrl = tmdbData?.backdropUrl || null;
-      tmdbId = tmdbData?.tmdbId || null;
-      keywords = tmdbData?.keywords || [];
-      
-      // Tier 2: OMDB (high quality posters)
-      if (!posterUrl) {
-        const omdbData = await this.fetchOMDBData(traktShow.title, traktShow.year);
-        posterUrl = omdbData?.posterUrl || null;
-        if (omdbData?.imdbId) {
-          imdbId = omdbData.imdbId;
-        }
-      }
+      // PARALLEL: Fetch from all sources simultaneously for speed
+      const [tmdbResult, omdbResult, tvmazeResult, seasonsResult] = await Promise.allSettled([
+        this.fetchTMDBData(traktShow.title, traktShow.year),
+        this.fetchOMDBData(traktShow.title, traktShow.year),
+        this.fetchTVMazeData(traktShow.ids.imdb || null, traktShow.ids.tvdb, traktShow.title),
+        getShowSeasons(traktShow.ids.trakt),
+      ]);
 
-      // Tier 3: TVMaze (ID-based + title search fallback)
-      if (!posterUrl) {
-        const tvmazeData = await this.fetchTVMazeData(imdbId, traktShow.ids.tvdb, traktShow.title);
-        posterUrl = tvmazeData?.posterUrl || null;
-      }
+      // Extract results (use null for rejected promises)
+      const tmdbData = tmdbResult.status === 'fulfilled' ? tmdbResult.value : null;
+      const omdbData = omdbResult.status === 'fulfilled' ? omdbResult.value : null;
+      const tvmazeData = tvmazeResult.status === 'fulfilled' ? tvmazeResult.value : null;
+      const seasons = seasonsResult.status === 'fulfilled' ? seasonsResult.value : [];
 
-      // Fetch seasons once and reuse for both totalSeasons and endYear
-      const seasons = await getShowSeasons(traktShow.ids.trakt);
+      // Multi-tier poster fallback: TMDB > OMDB > TVMaze
+      let posterUrl: string | null = tmdbData?.posterUrl || omdbData?.posterUrl || tvmazeData?.posterUrl || null;
+      let backdropUrl: string | null = tmdbData?.backdropUrl || null;
+      let imdbId: string | null = traktShow.ids.imdb || omdbData?.imdbId || null;
+      let tmdbId: number | null = tmdbData?.tmdbId || null;
+      let keywords: string[] = tmdbData?.keywords || [];
+
+      // Calculate seasons and end year
       const totalSeasons = seasons.filter(s => s.number > 0).length;
       const endYear = await fetchShowEndYear(traktShow, seasons);
 
       const enriched = {
         totalSeasons,
         posterUrl,
-        backdropUrl, // TMDB backdrop for ShowHub headers
-        tvmazeId: null,
+        backdropUrl,
+        tvmazeId: tvmazeData?.tvmazeId || null,
         imdbId,
         tmdbId,
         keywords,
@@ -104,7 +95,6 @@ class ShowEnrichmentManager {
       return enriched;
     } catch (error) {
       console.error(`❌ ENRICHMENT ERROR for ${traktShow.title}:`, error);
-      // Return partial data instead of throwing
       return {
         totalSeasons: 0,
         posterUrl: null,
@@ -135,7 +125,14 @@ class ShowEnrichmentManager {
     }
     
     const tmdbId = tmdbResult.id;
-    const keywords = await getShowKeywords(tmdbId);
+    
+    // Fetch keywords in background - don't block on it
+    let keywords: string[] = [];
+    try {
+      keywords = await getShowKeywords(tmdbId);
+    } catch {
+      // Non-critical - continue without keywords
+    }
     
     return {
       posterUrl: tmdbResult.poster_path ? getTMDBPosterUrl(tmdbResult.poster_path) : null,

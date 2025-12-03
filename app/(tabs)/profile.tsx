@@ -99,20 +99,16 @@ export default function ProfileScreen() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
+        // PARALLEL: Fetch profile and social links simultaneously
+        const [profileResult, socialLinksResult] = await Promise.all([
+          supabase.from('profiles').select('*').eq('user_id', user.id).single(),
+          supabase.from('social_links').select('*').eq('user_id', user.id)
+        ]);
+
+        const profile = profileResult.data;
+        const socialLinks = socialLinksResult.data;
 
         if (profile) {
-          const { data: socialLinks } = await supabase
-            .from('social_links')
-            .select('*')
-            .eq('user_id', user.id);
-
-          // Keep the contextCurrentUser.id to maintain compatibility with mock data
-          // Only update profile-specific fields from Supabase
           setProfileUser(prev => {
             return {
               ...prev,
@@ -140,8 +136,11 @@ export default function ProfileScreen() {
     if (!profileUser) return;
     setIsLoadingStats(true);
     try {
-      const episodesCount = await getEpisodesWatchedCount(profileUser.id);
-      const likesCount = await getTotalLikesReceived(profileUser.id);
+      // PARALLEL: Fetch both stats simultaneously
+      const [episodesCount, likesCount] = await Promise.all([
+        getEpisodesWatchedCount(profileUser.id),
+        getTotalLikesReceived(profileUser.id)
+      ]);
       setEpisodesWatched(episodesCount);
       setTotalLikes(likesCount);
     } catch (error) {
@@ -154,10 +153,13 @@ export default function ProfileScreen() {
   const loadFollowData = useCallback(async () => {
     if (!profileUser) return;
     try {
-      const followersData = await getFollowers(profileUser.id);
-      const followingData = await getFollowing(profileUser.id);
-      const topFollowersData = await getTopFollowers(profileUser.id, 3);
-      const topFollowingData = await getTopFollowing(profileUser.id, 3);
+      // PARALLEL: Fetch all follow data simultaneously
+      const [followersData, followingData, topFollowersData, topFollowingData] = await Promise.all([
+        getFollowers(profileUser.id),
+        getFollowing(profileUser.id),
+        getTopFollowers(profileUser.id, 3),
+        getTopFollowing(profileUser.id, 3)
+      ]);
       
       setFollowers(followersData || []);
       setFollowing(followingData || []);

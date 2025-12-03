@@ -175,8 +175,11 @@ export default function UserProfile() {
   const loadStats = async (userId: string) => {
     setIsLoadingStats(true);
     try {
-      const episodesCount = await getEpisodesWatchedCount(userId);
-      const likesCount = await getTotalLikesReceived(userId);
+      // PARALLEL: Fetch both stats simultaneously
+      const [episodesCount, likesCount] = await Promise.all([
+        getEpisodesWatchedCount(userId),
+        getTotalLikesReceived(userId)
+      ]);
       setEpisodesWatched(episodesCount);
       setTotalLikes(likesCount);
     } catch (error) {
@@ -188,21 +191,26 @@ export default function UserProfile() {
 
   const loadFollowData = async (userId: string) => {
     try {
-      const followersData = await getFollowers(userId);
-      const followingData = await getFollowing(userId);
-      const topFollowersData = await getTopFollowers(userId, 3);
-      const topFollowingData = await getTopFollowing(userId, 3);
+      // PARALLEL: Fetch all follow data simultaneously
+      const fetchPromises: Promise<any>[] = [
+        getFollowers(userId),
+        getFollowing(userId),
+        getTopFollowers(userId, 3),
+        getTopFollowing(userId, 3),
+      ];
       
-      // Also fetch current user's following list for friends in common calculation
-      const currentUserFollowingData = !isCurrentUser && contextCurrentUser 
-        ? await getFollowing(contextCurrentUser.id) 
-        : [];
+      // Add current user's following if needed
+      if (!isCurrentUser && contextCurrentUser) {
+        fetchPromises.push(getFollowing(contextCurrentUser.id));
+      }
       
-      setFollowers(followersData || []);
-      setFollowing(followingData || []);
-      setTopFollowers(topFollowersData || []);
-      setTopFollowing(topFollowingData || []);
-      setCurrentUserFollowing(currentUserFollowingData || []);
+      const results = await Promise.all(fetchPromises);
+      
+      setFollowers(results[0] || []);
+      setFollowing(results[1] || []);
+      setTopFollowers(results[2] || []);
+      setTopFollowing(results[3] || []);
+      setCurrentUserFollowing(results[4] || []);
     } catch (error) {
       console.error('Error loading follow data:', error);
       setFollowers([]);
@@ -218,9 +226,12 @@ export default function UserProfile() {
     if (!resolvedUserId || isLoadingUser) return;
     
     const loadUserData = async () => {
-      await loadPlaylists(resolvedUserId);
-      await loadStats(resolvedUserId);
-      await loadFollowData(resolvedUserId);
+      // PARALLEL: Load all user data simultaneously
+      await Promise.all([
+        loadPlaylists(resolvedUserId),
+        loadStats(resolvedUserId),
+        loadFollowData(resolvedUserId)
+      ]);
     };
 
     loadUserData();
