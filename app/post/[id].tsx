@@ -11,6 +11,8 @@ import {
   Platform,
   Alert,
   ImageBackground,
+  Animated,
+  Keyboard,
 } from 'react-native';
 import { Asset } from 'expo-asset';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -63,6 +65,7 @@ export default function PostDetail() {
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const keyboardAnim = useRef(new Animated.Value(0)).current;
 
   const post = getPost(id as string);
   const isReposted = post ? hasUserReposted(post.id) : false;
@@ -191,6 +194,33 @@ export default function PostDetail() {
 
   // Note: Comment count is updated in submit handlers, not here
   // Removed useEffect that was causing infinite loop
+
+  // Keyboard animation for iOS curved edge overlap
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardAnim, {
+        toValue: e.endCoordinates.height,
+        duration: Platform.OS === 'ios' ? 250 : 100,
+        useNativeDriver: false,
+      }).start();
+    });
+    
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      Animated.timing(keyboardAnim, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? 250 : 100,
+        useNativeDriver: false,
+      }).start();
+    });
+    
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardAnim]);
 
   if (!post) {
     return (
@@ -914,7 +944,23 @@ export default function PostDetail() {
           </ScrollView>
 
           {/* Comment Input Popup */}
-          <View style={styles.commentPopup}>
+          <Animated.View 
+            style={[
+              styles.commentPopup,
+              {
+                marginBottom: keyboardAnim.interpolate({
+                  inputRange: [0, 20, 400],
+                  outputRange: [0, 0, 380],
+                  extrapolate: 'clamp',
+                }),
+                paddingBottom: keyboardAnim.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [Platform.OS === 'ios' ? 34 : 16, 60],
+                  extrapolate: 'clamp',
+                }),
+              }
+            ]}
+          >
             {/* Replying To Indicator */}
             {replyingTo ? (
               <View style={styles.replyingToContainer}>
@@ -958,7 +1004,7 @@ export default function PostDetail() {
                 />
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
       </KeyboardAvoidingView>
 
       {/* Delete Menu - Rendered outside ScrollView for proper click handling */}
@@ -1204,7 +1250,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     shadowColor: 'rgba(255, 255, 255, 0.20)',
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 4 },
