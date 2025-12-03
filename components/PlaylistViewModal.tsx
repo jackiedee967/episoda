@@ -23,6 +23,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import tokens from '@/styles/tokens';
 import { useRouter } from 'expo-router';
+import { searchShowByName as searchTMDB, getPosterUrl as getTMDBPosterUrl } from '@/services/tmdb';
+import { getOMDBByTitle } from '@/services/omdb';
 
 interface PlaylistViewModalProps {
   visible: boolean;
@@ -70,6 +72,63 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
     }
   }, [playlistId, visible]);
 
+  // Fetch missing posters from TMDB/OMDB and update state + database
+  const enrichMissingPosters = async (showsToEnrich: Show[], allShows: Show[]) => {
+    const enrichedMap = new Map<string, string>();
+    
+    for (const show of showsToEnrich) {
+      try {
+        let posterUrl: string | null = null;
+        
+        // Try TMDB first
+        const tmdbResult = await searchTMDB(show.title, show.year || null);
+        if (tmdbResult?.poster_path) {
+          posterUrl = getTMDBPosterUrl(tmdbResult.poster_path);
+          console.log(`✅ TMDB poster found for "${show.title}": ${posterUrl}`);
+        }
+        
+        // Fallback to OMDB if TMDB didn't have poster
+        if (!posterUrl) {
+          const omdbResult = await getOMDBByTitle(show.title, show.year?.toString());
+          if (omdbResult?.Poster && omdbResult.Poster !== 'N/A') {
+            posterUrl = omdbResult.Poster;
+            console.log(`✅ OMDB poster found for "${show.title}": ${posterUrl}`);
+          }
+        }
+        
+        if (posterUrl) {
+          enrichedMap.set(show.id, posterUrl);
+          
+          // Update database in background (don't await)
+          supabase
+            .from('shows')
+            .update({ poster_url: posterUrl })
+            .eq('id', show.id)
+            .then(({ error }) => {
+              if (error) {
+                console.warn(`⚠️ Failed to update poster in DB for ${show.title}:`, error.message);
+              } else {
+                console.log(`💾 Saved poster to DB for "${show.title}"`);
+              }
+            });
+        }
+      } catch (err) {
+        console.warn(`⚠️ Error fetching poster for "${show.title}":`, err);
+      }
+    }
+    
+    // Update state with enriched posters
+    if (enrichedMap.size > 0) {
+      setPlaylistShows(currentShows => 
+        currentShows.map(show => {
+          const newPoster = enrichedMap.get(show.id);
+          return newPoster ? { ...show, poster: newPoster } : show;
+        })
+      );
+      console.log(`✅ Updated ${enrichedMap.size} show posters in playlist view`);
+    }
+  };
+
   const loadPlaylistData = async () => {
     const foundPlaylist = playlists.find(p => p.id === playlistId);
     
@@ -112,6 +171,7 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               title: show.title,
               traktId: show.trakt_id,
               poster: show.poster_url,
+              year: show.year,
               description: show.overview || '',
               rating: show.rating || 0,
               totalSeasons: show.total_seasons || 0,
@@ -125,7 +185,15 @@ export default function PlaylistViewModal({ visible, onClose, playlistId }: Play
               return bAddedAt.localeCompare(aAddedAt);
             });
             
+            // Immediately set shows (with placeholders for missing posters)
             setPlaylistShows(sortedShows);
+            
+            // Background: Fetch missing posters and update
+            const showsMissingPosters = sortedShows.filter(s => !s.poster);
+            if (showsMissingPosters.length > 0) {
+              console.log(`🖼️ Fetching posters for ${showsMissingPosters.length} shows missing posters...`);
+              enrichMissingPosters(showsMissingPosters, sortedShows);
+            }
           }
         } else {
           setPlaylistShows([]);
