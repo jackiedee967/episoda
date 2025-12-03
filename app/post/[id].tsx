@@ -757,9 +757,7 @@ export default function PostDetail() {
               <View style={styles.infoColumn}>
                 <Text style={styles.timestamp}>{getRelativeTime(post.timestamp)}</Text>
                 <Text style={styles.watchedText}>
-                  <Pressable onPress={handleUserPress}>
-                    <Text style={styles.username}>{post.user.displayName}</Text>
-                  </Pressable>
+                  <Text style={styles.username} onPress={handleUserPress}>{post.user.displayName}</Text>
                   {(() => {
                     if (!post.episodes || post.episodes.length === 0) return ' watched';
                     const rewatchIds = post.rewatchEpisodeIds || [];
