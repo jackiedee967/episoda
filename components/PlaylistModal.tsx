@@ -298,7 +298,16 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
             styles.modalContainer,
             {
               transform: [{ translateY: slideAnim }],
-              marginBottom: keyboardAnim,
+              marginBottom: keyboardAnim.interpolate({
+                inputRange: [0, 20, 400],
+                outputRange: [0, 0, 380],
+                extrapolate: 'clamp',
+              }),
+              paddingBottom: keyboardAnim.interpolate({
+                inputRange: [0, 100],
+                outputRange: [40, 60],
+                extrapolate: 'clamp',
+              }),
             }
           ]}
         >
@@ -412,7 +421,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: SCREEN_HEIGHT * 0.7,
-    paddingBottom: 40,
   },
   successBanner: {
     position: 'absolute',
