@@ -522,6 +522,10 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
+    // Optimistic update - remove from local state immediately
+    const previousFavorites = [...favorites];
+    setFavorites(prev => prev.filter(f => f.display_order !== displayOrder));
+    
     try {
       // Get current favorites via direct table query
       const { data: profileData, error: fetchError } = await (supabase as any)
@@ -532,6 +536,7 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
       
       if (fetchError) {
         console.error('Error fetching profile:', fetchError);
+        // Still keep local state updated even if DB fetch fails
         return;
       }
       
@@ -556,13 +561,18 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
         
         if (fallbackError) {
           console.error('Fallback update also failed:', fallbackError);
+          // Revert optimistic update if all DB operations fail
+          setFavorites(previousFavorites);
           return;
         }
       }
       
+      // Reload to sync with database
       await loadFavorites();
     } catch (err) {
       console.error('Error in handleRemoveFavorite:', err);
+      // Revert optimistic update on error
+      setFavorites(previousFavorites);
     }
   };
 

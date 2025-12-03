@@ -920,18 +920,20 @@ export default function HomeScreen() {
     const wrappedCommunityPosts = communityPosts
       .map(post => {
         let timestamp: Date;
-        if (post.timestamp instanceof Date) {
+        if (post.timestamp instanceof Date && !isNaN(post.timestamp.getTime())) {
           timestamp = post.timestamp;
-        } else {
+        } else if (post.timestamp) {
           const parsed = new Date(post.timestamp);
-          timestamp = isNaN(parsed.getTime()) ? new Date(0) : parsed;
+          timestamp = isNaN(parsed.getTime()) ? new Date() : parsed;
+        } else {
+          timestamp = new Date(); // Default to now if no timestamp
         }
         return {
           post,
           sortTimestamp: timestamp,
         };
       })
-      .filter(item => item.sortTimestamp.getTime() > 0); // Filter out invalid timestamps
+      .filter(item => !isNaN(item.sortTimestamp.getTime())); // Filter out truly invalid timestamps only
     
     // Merge and sort by timestamp (newest first)
     const combined = [...activityData, ...wrappedCommunityPosts];

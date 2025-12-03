@@ -8,7 +8,11 @@ import {
   Alert,
   Platform,
   Linking,
+  ImageBackground,
 } from 'react-native';
+import { Asset } from 'expo-asset';
+
+const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '@/styles/tokens';
@@ -823,46 +827,44 @@ export default function UserProfile() {
     </View>
   );
 
-  return (
+  const pageContent = (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.pageContainer}>
-        {/* Back Button - Top Left */}
+      {/* Back Button - Top Left */}
+      <Pressable 
+        style={[styles.backButton, { top: insets.top + 10 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.back();
+        }}
+      >
+        <IconSymbol name="chevron.left" size={24} color="#FFFFFF" />
+      </Pressable>
+
+      {/* Top-Right Header Button - CONDITIONAL */}
+      {isCurrentUser ? (
         <Pressable 
-          style={styles.backButton}
+          style={[styles.inviteFloatingButton, { top: insets.top + 10 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
+            setShowInviteFriendsModal(true);
           }}
         >
-          <IconSymbol name="chevron.left" size={24} color="#FFFFFF" />
+          <Image 
+            source={require('@/assets/images/user-plus.png')} 
+            style={styles.inviteButtonIcon}
+          />
         </Pressable>
-
-        {/* Top-Right Header Button - CONDITIONAL */}
-        {isCurrentUser ? (
-          <Pressable 
-            style={styles.inviteFloatingButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowInviteFriendsModal(true);
-            }}
-          >
-            <Image 
-              source={require('@/assets/images/user-plus.png')} 
-              style={styles.inviteButtonIcon}
-            />
-          </Pressable>
-        ) : (
-          <Pressable 
-            style={styles.menuFloatingButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowBlockReportModal(true);
-            }}
-          >
-            <IconSymbol name="ellipsis" size={20} color="#FFFFFF" />
-          </Pressable>
-        )}
+      ) : (
+        <Pressable 
+          style={[styles.menuFloatingButton, { top: insets.top + 10 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowBlockReportModal(true);
+          }}
+        >
+          <IconSymbol name="ellipsis" size={20} color="#FFFFFF" />
+        </Pressable>
+      )}
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {renderProfileInfo()}
@@ -991,9 +993,38 @@ export default function UserProfile() {
             onAddToPlaylist={() => {}}
           />
         ) : null}
-      </View>
-      
-      {/* FloatingTabBar - Show main menu on profile pages */}
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.pageContainer}>
+          {pageContent}
+        </View>
+        <FloatingTabBar 
+          tabs={[
+            { name: 'Home', icon: 'house.fill', route: '/(home)' },
+            { name: 'Search', icon: 'magnifyingglass', route: '/search' },
+            { name: 'Notifications', icon: 'bell.fill', route: '/notifications' },
+            { name: 'Profile', icon: 'person.fill', route: '/profile' },
+          ]} 
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ImageBackground
+        source={{ uri: appBackground }}
+        style={styles.pageContainer}
+        resizeMode="cover"
+      >
+        {pageContent}
+      </ImageBackground>
       <FloatingTabBar 
         tabs={[
           { name: 'Home', icon: 'house.fill', route: '/(home)' },
