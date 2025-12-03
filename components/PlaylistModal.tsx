@@ -10,7 +10,7 @@ import {
   ScrollView,
   Dimensions,
   Animated,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -38,9 +38,11 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const successAnim = useRef(new Animated.Value(0)).current;
+  const keyboardAnim = useRef(new Animated.Value(0)).current;
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [ensuredShowUuid, setEnsuredShowUuid] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputRef = useRef<TextInput>(null);
   const requestTokenRef = useRef<number>(0);
 
@@ -123,6 +125,39 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
       ]).start();
     }
   }, [visible, fadeAnim, slideAnim]);
+
+  // Keyboard listener for proper keyboard avoidance
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        const height = e.endCoordinates.height;
+        setKeyboardHeight(height);
+        Animated.timing(keyboardAnim, {
+          toValue: height,
+          duration: Platform.OS === 'ios' ? 250 : 0,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+        Animated.timing(keyboardAnim, {
+          toValue: 0,
+          duration: Platform.OS === 'ios' ? 250 : 0,
+          useNativeDriver: false,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, [keyboardAnim]);
 
   const showSuccessAnimation = (message: string) => {
     setSuccessMessage(message);
@@ -249,27 +284,24 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
       animationType="none"
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <Animated.View 
+        style={[
+          styles.overlay,
+          {
+            opacity: fadeAnim,
+          }
+        ]}
       >
+        <Pressable style={styles.overlayTouchable} onPress={handleClose} />
         <Animated.View 
           style={[
-            styles.overlay,
+            styles.modalContainer,
             {
-              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+              marginBottom: keyboardAnim,
             }
           ]}
         >
-          <Pressable style={styles.overlayTouchable} onPress={handleClose} />
-          <Animated.View 
-            style={[
-              styles.modalContainer,
-              {
-                transform: [{ translateY: slideAnim }],
-              }
-            ]}
-          >
           {/* Success Indicator */}
           {showSuccess ? (
             <Animated.View 
@@ -361,8 +393,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
             </View>
           </ScrollView>
         </Animated.View>
-        </Animated.View>
-      </KeyboardAvoidingView>
+      </Animated.View>
     </Modal>
   );
 }
