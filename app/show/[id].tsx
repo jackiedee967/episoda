@@ -45,7 +45,7 @@ import { getPosterUrl, getBackdropUrl } from '@/utils/posterPlaceholderGenerator
 import { convertToFiveStarRating } from '@/utils/ratingConverter';
 import { supabase } from '@/integrations/supabase/client';
 import { processBatched } from '@/utils/batchOperations';
-import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider, searchShowByName as searchTMDBShow, getBackdropUrl as getTMDBBackdropUrl } from '@/services/tmdb';
+import { getWatchProviders, getProviderLogoUrl, findTMDBIdByName, WatchProvider, searchShowByName as searchTMDBShow, getBackdropUrl as getTMDBBackdropUrl, getAlternativeBackdrop, getTMDBBackdropUrl as getTMDBBackdropUrlWithSize } from '@/services/tmdb';
 
 import { getUserShowRatingFromStorage, getShowRatingStatsFromDB } from '@/components/ShowRatingModal';
 
@@ -465,9 +465,17 @@ export default function ShowHub() {
           // Tier 1: TMDB (has best backdrop coverage, especially for major shows)
           try {
             const tmdbResult = await searchTMDBShow(traktShow.title, traktShow.year);
-            if (tmdbResult?.backdrop_path) {
-              backdropUrl = getTMDBBackdropUrl(tmdbResult.backdrop_path);
-              console.log('🖼️ Got backdrop from TMDB:', backdropUrl ? 'yes' : 'no');
+            if (tmdbResult) {
+              // Try to get an alternative backdrop (often cleaner, without text overlays)
+              const altBackdrop = await getAlternativeBackdrop(tmdbResult.id, true);
+              if (altBackdrop) {
+                backdropUrl = altBackdrop;
+                console.log('🖼️ Got alternative backdrop from TMDB (no text)');
+              } else if (tmdbResult.backdrop_path) {
+                // Fall back to primary backdrop with higher quality size
+                backdropUrl = getTMDBBackdropUrlWithSize(tmdbResult.backdrop_path, 'w1280');
+                console.log('🖼️ Got primary backdrop from TMDB');
+              }
             }
           } catch (tmdbError) {
             console.warn('⚠️ Failed to fetch backdrop from TMDB:', tmdbError);
