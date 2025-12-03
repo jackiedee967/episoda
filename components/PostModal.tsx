@@ -2027,11 +2027,12 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   overlayTouchable: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 0,
   },
   modalContainer: {
     width: '100%',
@@ -2050,6 +2051,7 @@ const styles = StyleSheet.create({
     shadowColor: 'rgba(255, 255, 255, 0.2)',
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 4 },
+    zIndex: 1,
   },
   stepContainer: {
     flex: 1,
