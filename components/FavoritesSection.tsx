@@ -709,7 +709,10 @@ export default function FavoritesSection({ userId, isOwnProfile }: FavoritesSect
           { opacity: backdropAnim }
         ]}
       >
-        <Pressable style={styles.backdropPressable} onPress={closeModal} />
+        <Pressable 
+          style={styles.backdropPressable} 
+          onPress={closeModal}
+        />
         <Animated.View 
           style={[
             styles.modalContainer,

@@ -1990,7 +1990,10 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
             }
           ]}
         >
-          <Pressable style={styles.overlayTouchable} onPress={onClose} />
+          <Pressable 
+            style={styles.overlayTouchable} 
+            onPress={onClose}
+          />
           <Animated.View 
             style={[
               styles.modalContainer,
