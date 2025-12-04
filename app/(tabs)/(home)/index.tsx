@@ -50,8 +50,8 @@ export default function HomeScreen() {
   const [selectedShow, setSelectedShow] = useState<any>(null);
   const [selectedTraktShow, setSelectedTraktShow] = useState<any>(null);
   const [navigatingShowId, setNavigatingShowId] = useState<string | null>(null);
-  // Only show loading if posts haven't been fetched yet (prevents flicker on tab switch)
-  const [isLoadingFeed, setIsLoadingFeed] = useState(() => posts.length === 0);
+  // Track if initial data has loaded - prevents showing empty state prematurely
+  const [hasLoadedFeed, setHasLoadedFeed] = useState(posts.length > 0);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
   const [recommendedShows, setRecommendedShows] = useState<any[]>([]);
@@ -129,13 +129,12 @@ export default function HomeScreen() {
     ).start();
   }, []);
 
+  // Mark feed as loaded once posts arrive (even if empty array from DataContext)
   useEffect(() => {
-    // Once we have posts loaded, set loading to false
-    const timer = setTimeout(() => {
-      setIsLoadingFeed(false);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [posts]);
+    if (posts.length > 0 && !hasLoadedFeed) {
+      setHasLoadedFeed(true);
+    }
+  }, [posts, hasLoadedFeed]);
 
   // Show invite modal after 5 minutes of usage (one time only)
   useEffect(() => {
@@ -446,7 +445,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const fetchCommunityPosts = async () => {
-      if (!currentUser?.id || isLoadingFeed) return;
+      if (!currentUser?.id) return;
 
       const homeFeed = getHomeFeed();
       const activityPostIds = homeFeed.map(item => item.post.id);
@@ -460,10 +459,12 @@ export default function HomeScreen() {
       
       setCommunityPosts(rawCommunityPosts);
       setHasMorePosts(rawCommunityPosts.length === 10);
+      // Mark feed as loaded once fetch completes (even if empty)
+      setHasLoadedFeed(true);
     };
 
     fetchCommunityPosts();
-  }, [currentUser?.id, currentUser?.following, posts, isLoadingFeed, getHomeFeed]);
+  }, [currentUser?.id, currentUser?.following, posts, getHomeFeed]);
 
   const loadMorePosts = useCallback(async () => {
     if (isLoadingMore || !hasMorePosts || !currentUser?.id) return;
@@ -496,7 +497,7 @@ export default function HomeScreen() {
   }, [isLoadingMore, hasMorePosts, currentUser?.id, communityPosts, getHomeFeed]);
 
   const handleRefresh = useCallback(async () => {
-    if (!currentUser?.id || isLoadingFeed) return;
+    if (!currentUser?.id) return;
     
     // Trigger haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -521,7 +522,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [currentUser?.id, isLoadingFeed, getHomeFeed]);
+  }, [currentUser?.id, getHomeFeed]);
 
   // Silent auto-refresh disabled - was causing flicker on tab switch
   // The pull-to-refresh (handleRefresh) still works for manual refresh
@@ -962,17 +963,8 @@ export default function HomeScreen() {
   );
 
   const renderListFooter = () => {
-    if (isLoadingFeed) {
-      return (
-        <>
-          <PostCardSkeleton />
-          <PostCardSkeleton />
-          <PostCardSkeleton />
-        </>
-      );
-    }
-    
-    if (feedData.length === 0) {
+    // Only show empty state after data has loaded and is actually empty
+    if (feedData.length === 0 && hasLoadedFeed) {
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No activity yet</Text>
