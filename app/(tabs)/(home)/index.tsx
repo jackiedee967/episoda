@@ -562,25 +562,26 @@ export default function HomeScreen() {
     router.push('/profile');
   };
 
-  const renderHeader = () => (
+  const headerElement = useMemo(() => (
     <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <Image 
         source={require('@/assets/images/8bb62a0a-b050-44de-b77b-ca88fbec6d81.png')}
         style={styles.logo}
         resizeMode="contain"
+        cachePolicy="memory-disk"
       />
       <Pressable onPress={handleProfilePress}>
         <AvatarImage
-          uri={currentUser.avatar_url || currentUser.avatar}
-          colorSchemeId={currentUser.avatar_color_scheme}
-          iconName={currentUser.avatar_icon}
+          uri={currentUser?.avatar_url || currentUser?.avatar}
+          colorSchemeId={currentUser?.avatar_color_scheme}
+          iconName={currentUser?.avatar_icon}
           size={36}
           borderRadius={12}
         />
       </Pressable>
     </View>
-  );
+  ), [insets.top, currentUser?.avatar_url, currentUser?.avatar, currentUser?.avatar_color_scheme, currentUser?.avatar_icon]);
 
   const renderDivider = () => (
     <View style={styles.divider} />
@@ -941,9 +942,9 @@ export default function HomeScreen() {
     />
   ), []);
 
-  const renderListHeader = () => (
+  const listHeader = useMemo(() => (
     <>
-      {renderHeader()}
+      {headerElement}
       {renderDivider()}
       {renderWelcome()}
       {renderPostInput()}
@@ -960,7 +961,7 @@ export default function HomeScreen() {
         </FadeInView>
       )}
     </>
-  );
+  ), [headerElement, currentUser, currentlyWatchingShows, recommendedShows, suggestedUsers, feedData.length]);
 
   const renderListFooter = () => {
     // Only show empty state after data has loaded and is actually empty
@@ -1009,7 +1010,7 @@ export default function HomeScreen() {
         data={feedData}
         renderItem={renderFeedItem}
         keyExtractor={keyExtractor}
-        ListHeaderComponent={renderListHeader}
+        ListHeaderComponent={listHeader}
         ListFooterComponent={renderListFooter}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}

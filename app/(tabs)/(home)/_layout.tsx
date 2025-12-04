@@ -1,28 +1,43 @@
-import { Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 
 export default function HomeLayout() {
   return (
-    <Stack
-      screenOptions={{
-        animation: Platform.OS === 'ios' ? 'default' : 'slide_from_right',
-        gestureEnabled: true,
-        gestureDirection: 'horizontal',
-        fullScreenGestureEnabled: Platform.OS === 'ios',
-        headerStyle: {
-          backgroundColor: colors.background,
-        },
-        headerTintColor: colors.text,
-      }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: Platform.OS === 'ios',
-          title: 'Home'
+    <View style={styles.container}>
+      <Stack
+        screenOptions={{
+          animation: 'none',
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          fullScreenGestureEnabled: Platform.OS === 'ios',
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
+          headerTintColor: colors.text,
+          contentStyle: {
+            backgroundColor: colors.background,
+          },
         }}
-      />
-    </Stack>
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: false,
+            title: 'Home',
+            contentStyle: {
+              backgroundColor: colors.background,
+            },
+          }}
+        />
+      </Stack>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+});
