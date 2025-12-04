@@ -50,7 +50,8 @@ export default function HomeScreen() {
   const [selectedShow, setSelectedShow] = useState<any>(null);
   const [selectedTraktShow, setSelectedTraktShow] = useState<any>(null);
   const [navigatingShowId, setNavigatingShowId] = useState<string | null>(null);
-  const [isLoadingFeed, setIsLoadingFeed] = useState(true);
+  // Only show loading if posts haven't been fetched yet (prevents flicker on tab switch)
+  const [isLoadingFeed, setIsLoadingFeed] = useState(() => posts.length === 0);
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [currentlyWatchingShows, setCurrentlyWatchingShows] = useState<any[]>([]);
   const [recommendedShows, setRecommendedShows] = useState<any[]>([]);

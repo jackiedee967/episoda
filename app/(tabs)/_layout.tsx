@@ -17,6 +17,7 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarStyle: { display: 'none' },
+          lazy: false,
         }}
       >
         <Tabs.Screen name="(home)" options={{ headerShown: false }} />

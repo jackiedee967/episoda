@@ -63,7 +63,8 @@ export default function FloatingTabBar({ tabs, selectionMode = false, selectedCo
   }, [activeTabIndex, containerWidth, animatedValue]);
 
   const handleTabPress = (route: string) => {
-    router.push(route as any);
+    // Use navigate instead of push for tab switching to avoid stack duplication
+    router.navigate(route as any);
   };
 
   const handleLayout = (event: LayoutChangeEvent) => {
