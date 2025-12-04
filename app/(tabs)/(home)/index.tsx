@@ -10,7 +10,7 @@ import InviteFriendsModal from '@/components/InviteFriendsModal';
 import FoundersWelcomeModal from '@/components/FoundersWelcomeModal';
 import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
-import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Asset } from 'expo-asset';
 
@@ -522,33 +522,8 @@ export default function HomeScreen() {
     }
   }, [currentUser?.id, isLoadingFeed, getHomeFeed]);
 
-  // Silent auto-refresh when page comes into focus (no spinner)
-  useFocusEffect(
-    useCallback(() => {
-      const silentRefresh = async () => {
-        if (!currentUser?.id || isLoadingFeed) return;
-        
-        try {
-          const homeFeed = getHomeFeed();
-          const activityPostIds = homeFeed.map(item => item.post.id);
-          
-          // Reload community posts from scratch (no spinner, no haptic)
-          const rawCommunityPosts = await getCommunityPosts({
-            userId: currentUser.id,
-            excludedPostIds: activityPostIds,
-            limit: 10,
-          });
-          
-          setCommunityPosts(rawCommunityPosts);
-          setHasMorePosts(rawCommunityPosts.length === 10);
-        } catch (error) {
-          console.error('Error auto-refreshing feed:', error);
-        }
-      };
-      
-      silentRefresh();
-    }, [currentUser?.id, isLoadingFeed, getHomeFeed])
-  );
+  // Silent auto-refresh disabled - was causing flicker on tab switch
+  // The pull-to-refresh (handleRefresh) still works for manual refresh
 
   const handleLike = (postId: string) => {
     console.log('Like post:', postId);
