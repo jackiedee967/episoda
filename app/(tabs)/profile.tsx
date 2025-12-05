@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
     ...typography.p1,
     color: colors.pureWhite,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 19,
   },
   actionIcon: {
     width: 19,
