@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ImageBackground, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ImageBackground, Image, ActivityIndicator, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Asset } from 'expo-asset';
 import { colors } from '@/styles/tokens';
-import { useAuth } from '@/contexts/AuthContext';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Haptics from 'expo-haptics';
+import { supabase } from '@/integrations/supabase/client';
 
 const welcomeBackgroundModule = require('../../assets/images/auth/welcome-background.jpg');
 const layer1Module = require('../../assets/images/auth/layer-1.png');
@@ -17,8 +19,8 @@ const phoneIconModule = require('../../assets/images/auth/phone-icon.png');
  */
 export default function SplashScreen() {
   const router = useRouter();
-  const { signInWithApple } = useAuth();
   const [appleLoading, setAppleLoading] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
   const [assetUris, setAssetUris] = useState<{
     welcomeBackground: string;
@@ -57,6 +59,11 @@ export default function SplashScreen() {
     };
     
     loadAssets();
+    
+    // Check if Apple Sign In is available on this device
+    if (Platform.OS === 'ios') {
+      AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
+    }
   }, []);
 
   const handlePhoneSignIn = () => {
@@ -64,13 +71,78 @@ export default function SplashScreen() {
   };
 
   const handleAppleSignIn = async () => {
-    if (!signInWithApple) return;
-    
     setAppleLoading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     try {
-      await signInWithApple();
-    } catch (error) {
-      console.error('Apple sign-in error:', error);
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      console.log('Apple credential:', credential);
+
+      // Sign in with Supabase using the Apple ID token
+      if (credential.identityToken) {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: credential.identityToken,
+        });
+
+        if (error) {
+          console.error('Apple sign in error:', error);
+          
+          if (error.message.includes('not enabled')) {
+            Alert.alert(
+              'Apple Sign-In Not Configured',
+              'Apple Sign-In is not configured in this app yet.\n\n' +
+              'The administrator needs to configure Apple as an auth provider in Supabase.\n\n' +
+              'Please try phone authentication instead.'
+            );
+          } else {
+            Alert.alert('Error', error.message);
+          }
+        } else {
+          console.log('Apple sign in successful:', data);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          
+          // Create profile if it doesn't exist
+          if (data.user) {
+            const { error: profileError } = await supabase
+              .from('profiles' as any)
+              .upsert({
+                user_id: data.user.id,
+                username: data.user.email?.split('@')[0] || `user_${data.user.id.slice(0, 8)}`,
+                display_name: credential.fullName?.givenName 
+                  ? `${credential.fullName.givenName} ${credential.fullName.familyName || ''}`.trim()
+                  : data.user.email?.split('@')[0] || 'User',
+                avatar_url: null,
+                bio: null,
+              }, {
+                onConflict: 'user_id',
+                ignoreDuplicates: false,
+              });
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+            }
+          }
+          
+          // User is now signed in, navigation will be handled by auth state change
+        }
+      } else {
+        Alert.alert('Error', 'No identity token received from Apple');
+      }
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        // User canceled the sign-in flow
+        console.log('User canceled Apple sign in');
+      } else {
+        console.error('Apple sign in error:', error);
+        Alert.alert('Error', 'Failed to sign in with Apple. Please try again.');
+      }
     } finally {
       setAppleLoading(false);
     }
