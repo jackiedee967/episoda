@@ -118,7 +118,7 @@ export default function UserProfile() {
         return;
       }
       
-      // If it's a UUID, lookup by id
+      // If it's a UUID, lookup by user_id
       // If it's a username, lookup by username
       const isIdUUID = isUUID(idString);
       
@@ -126,7 +126,7 @@ export default function UserProfile() {
         let query = supabase.from('profiles').select('*');
         
         if (isIdUUID) {
-          query = query.eq('id', idString);
+          query = query.eq('user_id', idString);
         } else {
           query = query.eq('username', idString);
         }
@@ -140,7 +140,7 @@ export default function UserProfile() {
         } else {
           // Map Supabase profile to User type
           const mappedUser: User = {
-            id: data.id,
+            id: data.user_id,
             username: data.username || 'unknown',
             displayName: data.display_name || data.username || 'Unknown',
             avatar: data.avatar || 'https://i.pravatar.cc/150?img=1',
@@ -151,7 +151,7 @@ export default function UserProfile() {
             isFollowing: false,
           };
           setProfileUser(mappedUser);
-          setResolvedUserId(data.id);
+          setResolvedUserId(data.user_id);
         }
       } catch (error) {
         console.error('Error fetching user:', error);

@@ -296,7 +296,7 @@ export default function SearchScreen() {
       // Fetch friend posts for ONLY the displayed shows (targeted query, avoids pagination issues)
       const { data: friendsPosts } = await supabase
         .from('posts')
-        .select('user_id, show_id, shows(id, trakt_id), profiles(id, avatar, display_name, username)')
+        .select('user_id, show_id, shows(id, trakt_id), profiles(user_id, avatar, display_name, username)')
         .in('user_id', friendIds)
         .in('show_id', showDbIds);
       
@@ -311,10 +311,10 @@ export default function SearchScreen() {
         const showUuid = (post.shows as any).id;
         
         const friendData = {
-          id: post.profiles.id,
-          avatar: post.profiles.avatar || undefined,
-          displayName: post.profiles.display_name || undefined,
-          username: post.profiles.username || undefined,
+          id: (post.profiles as any).user_id,
+          avatar: (post.profiles as any).avatar || undefined,
+          displayName: (post.profiles as any).display_name || undefined,
+          username: (post.profiles as any).username || undefined,
         };
         
         // Index by Trakt ID for trakt-based shows
