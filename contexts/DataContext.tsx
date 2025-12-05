@@ -1144,15 +1144,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         } else if (data) {
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           
-          // Collect all show_ids that need migration (non-UUID format)
+          // Collect all show_ids that need repair (non-UUID format)
           interface LegacyShowId {
             playlistId: string;
+            playlistName: string;
             showId: string;
-            traktId?: number;
-            tmdbId?: number;
-            tvdbId?: number;
-            tvmazeId?: number;
-            imdbId?: string;
+            traktId: number | null;
+            tmdbId: number | null;
+            tvdbId: number | null;
+            tvmazeId: number | null;
+            imdbId: string | null;
           }
           const legacyShowIds: LegacyShowId[] = [];
           
@@ -1228,52 +1229,63 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 console.warn(`⚠️ Found legacy show_id in playlist "${p.name}": ${showId}`);
                 
-                // Parse various legacy formats
-                const legacy: LegacyShowId = { playlistId: p.id, showId };
+                // Parse to extract API IDs for repair - support all known formats
+                let traktId: number | null = null;
+                let tmdbId: number | null = null;
+                let tvdbId: number | null = null;
+                let tvmazeId: number | null = null;
+                let imdbId: string | null = null;
                 
                 // trakt-12345, trakt_12345, trakt12345
                 const traktMatch = showId.match(/^trakt[-_]?(\d+)$/i);
                 if (traktMatch) {
-                  legacy.traktId = parseInt(traktMatch[1], 10);
+                  traktId = parseInt(traktMatch[1], 10);
                 }
                 
                 // tmdb-12345, tmdb_12345, tmdb12345
                 const tmdbMatch = showId.match(/^tmdb[-_]?(\d+)$/i);
                 if (tmdbMatch) {
-                  legacy.tmdbId = parseInt(tmdbMatch[1], 10);
+                  tmdbId = parseInt(tmdbMatch[1], 10);
                 }
                 
                 // tvdb-12345, tvdb_12345, tvdb12345
                 const tvdbMatch = showId.match(/^tvdb[-_]?(\d+)$/i);
                 if (tvdbMatch) {
-                  legacy.tvdbId = parseInt(tvdbMatch[1], 10);
+                  tvdbId = parseInt(tvdbMatch[1], 10);
                 }
                 
-                // tvmaze-12345, tvmaze_12345
+                // tvmaze-12345, tvmaze_12345, tvmaze12345
                 const tvmazeMatch = showId.match(/^tvmaze[-_]?(\d+)$/i);
                 if (tvmazeMatch) {
-                  legacy.tvmazeId = parseInt(tvmazeMatch[1], 10);
+                  tvmazeId = parseInt(tvmazeMatch[1], 10);
                 }
                 
                 // imdb-tt1234567, imdb_tt1234567, tt1234567
                 const imdbMatch = showId.match(/^(?:imdb[-_]?)?(tt\d+)$/i);
                 if (imdbMatch) {
-                  legacy.imdbId = imdbMatch[1].toLowerCase();
+                  imdbId = imdbMatch[1].toLowerCase();
                 }
                 
                 // Plain numeric ID - assume it's a trakt ID (most common)
-                if (/^\d+$/.test(showId)) {
-                  legacy.traktId = parseInt(showId, 10);
+                if (!traktId && !tmdbId && !tvdbId && !tvmazeId && !imdbId && /^\d+$/.test(showId)) {
+                  traktId = parseInt(showId, 10);
                 }
                 
-                // Add to migration queue if we can identify it
-                if (legacy.traktId || legacy.tmdbId || legacy.tvdbId || legacy.tvmazeId || legacy.imdbId) {
-                  legacyShowIds.push(legacy);
+                // Add to repair queue if we can identify any API ID
+                if (traktId || tmdbId || tvdbId || tvmazeId || imdbId) {
+                  legacyShowIds.push({
+                    playlistId: p.id,
+                    playlistName: p.name,
+                    showId,
+                    traktId,
+                    tmdbId,
+                    tvdbId,
+                    tvmazeId,
+                    imdbId,
+                  });
                 } else {
-                  // Unknown format - KEEP IT in state anyway to avoid data loss
-                  // The show might not load properly but at least it's not deleted
-                  console.error(`🚨 Unknown show_id format in playlist "${p.name}": ${showId} - keeping in state but may not display properly`);
-                  validShows.push(showId);
+                  // Unknown format - log for manual investigation
+                  console.error(`🚨 Unknown show_id format in playlist "${p.name}": ${showId}`);
                 }
               }
             }
@@ -1289,37 +1301,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
             };
           });
           
-          // Migrate legacy show_ids
+          // Repair legacy show_ids - first try database lookup, then Trakt API for trakt IDs
           if (legacyShowIds.length > 0) {
-            console.log(`🔧 Migrating ${legacyShowIds.length} legacy playlist show IDs...`);
+            console.log(`🔧 Repairing ${legacyShowIds.length} legacy playlist show IDs...`);
             
-            // Build lookup sets for each ID type
-            const traktIds = [...new Set(legacyShowIds.filter(l => l.traktId).map(l => l.traktId!))];
-            const tmdbIds = [...new Set(legacyShowIds.filter(l => l.tmdbId).map(l => l.tmdbId!))];
-            const tvdbIds = [...new Set(legacyShowIds.filter(l => l.tvdbId).map(l => l.tvdbId!))];
-            const tvmazeIds = [...new Set(legacyShowIds.filter(l => l.tvmazeId).map(l => l.tvmazeId!))];
-            const imdbIds = [...new Set(legacyShowIds.filter(l => l.imdbId).map(l => l.imdbId!))];
+            // First: Try database lookup for all ID types
+            const traktIds = legacyShowIds.filter(l => l.traktId).map(l => l.traktId!);
+            const tmdbIds = legacyShowIds.filter(l => l.tmdbId).map(l => l.tmdbId!);
+            const tvdbIds = legacyShowIds.filter(l => l.tvdbId).map(l => l.tvdbId!);
+            const tvmazeIds = legacyShowIds.filter(l => l.tvmazeId).map(l => l.tvmazeId!);
+            const imdbIds = legacyShowIds.filter(l => l.imdbId).map(l => l.imdbId!);
             
-            // Query shows table for all ID types in parallel
+            // Query shows table for all ID types
             const [traktResult, tmdbResult, tvdbResult, tvmazeResult, imdbResult] = await Promise.all([
-              traktIds.length > 0 
-                ? supabase.from('shows').select('id, trakt_id').in('trakt_id', traktIds)
-                : { data: [] },
-              tmdbIds.length > 0 
-                ? supabase.from('shows').select('id, tmdb_id').in('tmdb_id', tmdbIds)
-                : { data: [] },
-              tvdbIds.length > 0 
-                ? supabase.from('shows').select('id, tvdb_id').in('tvdb_id', tvdbIds)
-                : { data: [] },
-              tvmazeIds.length > 0 
-                ? supabase.from('shows').select('id, tvmaze_id').in('tvmaze_id', tvmazeIds)
-                : { data: [] },
-              imdbIds.length > 0 
-                ? supabase.from('shows').select('id, imdb_id').in('imdb_id', imdbIds)
-                : { data: [] },
+              traktIds.length > 0 ? supabase.from('shows').select('id, trakt_id').in('trakt_id', traktIds) : { data: [] },
+              tmdbIds.length > 0 ? supabase.from('shows').select('id, tmdb_id').in('tmdb_id', tmdbIds) : { data: [] },
+              tvdbIds.length > 0 ? supabase.from('shows').select('id, tvdb_id').in('tvdb_id', tvdbIds) : { data: [] },
+              tvmazeIds.length > 0 ? supabase.from('shows').select('id, tvmaze_id').in('tvmaze_id', tvmazeIds) : { data: [] },
+              imdbIds.length > 0 ? supabase.from('shows').select('id, imdb_id').in('imdb_id', imdbIds) : { data: [] },
             ]);
             
-            // Build ID -> UUID maps
+            // Build ID -> UUID lookup maps
             const traktToUuid = new Map<number, string>();
             const tmdbToUuid = new Map<number, string>();
             const tvdbToUuid = new Map<number, string>();
@@ -1342,45 +1344,64 @@ export function DataProvider({ children }: { children: ReactNode }) {
               if (show.imdb_id) imdbToUuid.set(show.imdb_id.toLowerCase(), show.id);
             }
             
-            // Migrate each legacy entry
+            // Import ensureShowId for trakt IDs that aren't in database
+            const { ensureShowId } = await import('@/services/showRegistry');
+            
+            // Process each legacy entry
             for (const legacy of legacyShowIds) {
-              let correctUuid: string | undefined;
-              
-              // Try to find UUID in order of preference (trakt first as primary)
-              if (legacy.traktId && traktToUuid.has(legacy.traktId)) {
-                correctUuid = traktToUuid.get(legacy.traktId);
-              } else if (legacy.tmdbId && tmdbToUuid.has(legacy.tmdbId)) {
-                correctUuid = tmdbToUuid.get(legacy.tmdbId);
-              } else if (legacy.tvdbId && tvdbToUuid.has(legacy.tvdbId)) {
-                correctUuid = tvdbToUuid.get(legacy.tvdbId);
-              } else if (legacy.tvmazeId && tvmazeToUuid.has(legacy.tvmazeId)) {
-                correctUuid = tvmazeToUuid.get(legacy.tvmazeId);
-              } else if (legacy.imdbId && imdbToUuid.has(legacy.imdbId)) {
-                correctUuid = imdbToUuid.get(legacy.imdbId);
-              }
-              
-              if (correctUuid) {
-                // Update the database entry
-                const { error: updateError } = await supabase
-                  .from('playlist_shows')
-                  .update({ show_id: correctUuid })
-                  .eq('playlist_id', legacy.playlistId)
-                  .eq('show_id', legacy.showId);
+              try {
+                let correctUuid: string | undefined;
                 
-                if (updateError) {
-                  console.error(`❌ Failed to migrate playlist_shows entry:`, updateError);
+                // Try database lookup first (fastest, no API calls)
+                if (legacy.traktId && traktToUuid.has(legacy.traktId)) {
+                  correctUuid = traktToUuid.get(legacy.traktId);
+                } else if (legacy.tmdbId && tmdbToUuid.has(legacy.tmdbId)) {
+                  correctUuid = tmdbToUuid.get(legacy.tmdbId);
+                } else if (legacy.tvdbId && tvdbToUuid.has(legacy.tvdbId)) {
+                  correctUuid = tvdbToUuid.get(legacy.tvdbId);
+                } else if (legacy.tvmazeId && tvmazeToUuid.has(legacy.tvmazeId)) {
+                  correctUuid = tvmazeToUuid.get(legacy.tvmazeId);
+                } else if (legacy.imdbId && imdbToUuid.has(legacy.imdbId)) {
+                  correctUuid = imdbToUuid.get(legacy.imdbId);
+                }
+                
+                // If not found in database and we have a trakt ID, try Trakt API
+                if (!correctUuid && legacy.traktId) {
+                  console.log(`🔧 Fetching from Trakt API: ${legacy.showId} (trakt=${legacy.traktId})`);
+                  try {
+                    correctUuid = await ensureShowId(legacy.traktId);
+                    // Cache for future lookups
+                    traktToUuid.set(legacy.traktId, correctUuid);
+                  } catch (apiError) {
+                    console.error(`❌ Trakt API fetch failed for ${legacy.showId}:`, apiError);
+                  }
+                }
+                
+                if (correctUuid) {
+                  // Update playlist_shows with correct UUID
+                  const { error: updateError } = await supabase
+                    .from('playlist_shows')
+                    .update({ show_id: correctUuid })
+                    .eq('playlist_id', legacy.playlistId)
+                    .eq('show_id', legacy.showId);
+                  
+                  if (updateError) {
+                    console.error(`❌ Failed to update playlist_shows:`, updateError);
+                  } else {
+                    console.log(`✅ Repaired show_id ${legacy.showId} -> ${correctUuid}`);
+                  }
+                  
+                  // Add to loaded playlist immediately
+                  const playlist = loadedPlaylists.find(pl => pl.id === legacy.playlistId);
+                  if (playlist && !playlist.shows.includes(correctUuid)) {
+                    playlist.shows.push(correctUuid);
+                    playlist.showCount = playlist.shows.length;
+                  }
                 } else {
-                  console.log(`✅ Migrated show_id ${legacy.showId} -> ${correctUuid}`);
+                  console.error(`❌ Could not repair show_id: ${legacy.showId} - show not in database and no trakt ID for API lookup`);
                 }
-                
-                // Add the show to the loaded playlist immediately
-                const playlist = loadedPlaylists.find(pl => pl.id === legacy.playlistId);
-                if (playlist && !playlist.shows.includes(correctUuid)) {
-                  playlist.shows.push(correctUuid);
-                  playlist.showCount = playlist.shows.length;
-                }
-              } else {
-                console.error(`❌ Could not find UUID for legacy show_id: ${legacy.showId} (trakt=${legacy.traktId}, tmdb=${legacy.tmdbId}, tvdb=${legacy.tvdbId}, tvmaze=${legacy.tvmazeId}, imdb=${legacy.imdbId})`);
+              } catch (error) {
+                console.error(`❌ Failed to repair show_id ${legacy.showId}:`, error);
               }
             }
           }
