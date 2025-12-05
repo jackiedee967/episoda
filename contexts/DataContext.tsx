@@ -1143,19 +1143,59 @@ export function DataProvider({ children }: { children: ReactNode }) {
           console.error('❌ Error loading playlists from Supabase:', error);
         } else if (data) {
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          
+          // Collect all show_ids that need migration (non-UUID format)
+          interface LegacyShowId {
+            playlistId: string;
+            showId: string;
+            traktId?: number;
+            tmdbId?: number;
+            tvdbId?: number;
+          }
+          const legacyShowIds: LegacyShowId[] = [];
+          
+          // First pass: separate valid UUIDs from legacy IDs
           const loadedPlaylists: Playlist[] = data.map(p => {
             const shows = p.playlist_shows.map((ps: any) => ps.show_id);
-            // Filter out invalid show IDs (corrupted data like "trakt-191758")
-            const validShows = shows.filter((id: string) => uuidRegex.test(id));
+            const validShows: string[] = [];
             
-            // RUNTIME VALIDATION: Detect mismatch between DB show_count and actual shows loaded
-            const dbShowCount = p.show_count || 0;
-            const actualShowCount = validShows.length;
-            if (dbShowCount > 0 && actualShowCount === 0) {
-              console.error(`🚨 PLAYLIST DATA MISMATCH: Playlist "${p.name}" (${p.id}) has show_count=${dbShowCount} but loaded ${actualShowCount} shows!`);
-              console.error(`   playlist_shows raw data:`, p.playlist_shows);
-            } else if (dbShowCount !== actualShowCount) {
-              console.warn(`⚠️ Playlist "${p.name}" show_count mismatch: DB=${dbShowCount}, actual=${actualShowCount}`);
+            for (const showId of shows) {
+              if (!showId) continue;
+              
+              if (uuidRegex.test(showId)) {
+                validShows.push(showId);
+              } else {
+                console.warn(`⚠️ Found legacy show_id in playlist "${p.name}": ${showId}`);
+                
+                // Parse various legacy formats
+                const legacy: LegacyShowId = { playlistId: p.id, showId };
+                
+                // trakt-12345, trakt_12345, trakt12345
+                const traktMatch = showId.match(/^trakt[-_]?(\d+)$/i);
+                if (traktMatch) {
+                  legacy.traktId = parseInt(traktMatch[1], 10);
+                }
+                
+                // tmdb-12345, tmdb_12345, tmdb12345
+                const tmdbMatch = showId.match(/^tmdb[-_]?(\d+)$/i);
+                if (tmdbMatch) {
+                  legacy.tmdbId = parseInt(tmdbMatch[1], 10);
+                }
+                
+                // tvdb-12345, tvdb_12345, tvdb12345
+                const tvdbMatch = showId.match(/^tvdb[-_]?(\d+)$/i);
+                if (tvdbMatch) {
+                  legacy.tvdbId = parseInt(tvdbMatch[1], 10);
+                }
+                
+                // Only add to migration queue if we can identify it
+                if (legacy.traktId || legacy.tmdbId || legacy.tvdbId) {
+                  legacyShowIds.push(legacy);
+                } else {
+                  // Completely unknown format - log but don't add to state (would break queries)
+                  console.error(`🚨 UNMIGRATEABLE show_id in playlist "${p.name}": ${showId} - will be lost until manually fixed`);
+                }
+              }
             }
             
             return {
@@ -1168,6 +1208,82 @@ export function DataProvider({ children }: { children: ReactNode }) {
               createdAt: new Date(p.created_at),
             };
           });
+          
+          // Migrate legacy show_ids
+          if (legacyShowIds.length > 0) {
+            console.log(`🔧 Migrating ${legacyShowIds.length} legacy playlist show IDs...`);
+            
+            // Build lookup sets for each ID type
+            const traktIds = [...new Set(legacyShowIds.filter(l => l.traktId).map(l => l.traktId!))];
+            const tmdbIds = [...new Set(legacyShowIds.filter(l => l.tmdbId).map(l => l.tmdbId!))];
+            const tvdbIds = [...new Set(legacyShowIds.filter(l => l.tvdbId).map(l => l.tvdbId!))];
+            
+            // Query shows table for all ID types in parallel
+            const [traktResult, tmdbResult, tvdbResult] = await Promise.all([
+              traktIds.length > 0 
+                ? supabase.from('shows').select('id, trakt_id').in('trakt_id', traktIds)
+                : { data: [] },
+              tmdbIds.length > 0 
+                ? supabase.from('shows').select('id, tmdb_id').in('tmdb_id', tmdbIds)
+                : { data: [] },
+              tvdbIds.length > 0 
+                ? supabase.from('shows').select('id, tvdb_id').in('tvdb_id', tvdbIds)
+                : { data: [] },
+            ]);
+            
+            // Build ID -> UUID maps
+            const traktToUuid = new Map<number, string>();
+            const tmdbToUuid = new Map<number, string>();
+            const tvdbToUuid = new Map<number, string>();
+            
+            for (const show of (traktResult.data || [])) {
+              if (show.trakt_id) traktToUuid.set(show.trakt_id, show.id);
+            }
+            for (const show of (tmdbResult.data || [])) {
+              if (show.tmdb_id) tmdbToUuid.set(show.tmdb_id, show.id);
+            }
+            for (const show of (tvdbResult.data || [])) {
+              if (show.tvdb_id) tvdbToUuid.set(show.tvdb_id, show.id);
+            }
+            
+            // Migrate each legacy entry
+            for (const legacy of legacyShowIds) {
+              let correctUuid: string | undefined;
+              
+              // Try to find UUID in order of preference
+              if (legacy.traktId && traktToUuid.has(legacy.traktId)) {
+                correctUuid = traktToUuid.get(legacy.traktId);
+              } else if (legacy.tmdbId && tmdbToUuid.has(legacy.tmdbId)) {
+                correctUuid = tmdbToUuid.get(legacy.tmdbId);
+              } else if (legacy.tvdbId && tvdbToUuid.has(legacy.tvdbId)) {
+                correctUuid = tvdbToUuid.get(legacy.tvdbId);
+              }
+              
+              if (correctUuid) {
+                // Update the database entry
+                const { error: updateError } = await supabase
+                  .from('playlist_shows')
+                  .update({ show_id: correctUuid })
+                  .eq('playlist_id', legacy.playlistId)
+                  .eq('show_id', legacy.showId);
+                
+                if (updateError) {
+                  console.error(`❌ Failed to migrate playlist_shows entry:`, updateError);
+                } else {
+                  console.log(`✅ Migrated show_id ${legacy.showId} -> ${correctUuid}`);
+                }
+                
+                // Add the show to the loaded playlist immediately
+                const playlist = loadedPlaylists.find(pl => pl.id === legacy.playlistId);
+                if (playlist && !playlist.shows.includes(correctUuid)) {
+                  playlist.shows.push(correctUuid);
+                  playlist.showCount = playlist.shows.length;
+                }
+              } else {
+                console.error(`❌ Could not find UUID for legacy show_id: ${legacy.showId} (trakt=${legacy.traktId}, tmdb=${legacy.tmdbId}, tvdb=${legacy.tvdbId})`);
+              }
+            }
+          }
 
           console.log('✅ Loaded', loadedPlaylists.length, 'playlists from Supabase with shows:', loadedPlaylists.map(p => `${p.name}(${p.shows.length})`).join(', '));
           setPlaylists(loadedPlaylists);
