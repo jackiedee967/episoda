@@ -220,6 +220,7 @@ export default function EditProfileModal({
           if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
+              console.log('📸 Web image selected');
               setAvatarUri(reader.result as string);
             };
             reader.readAsDataURL(file);
@@ -229,72 +230,74 @@ export default function EditProfileModal({
         return;
       }
       
-      // Native iOS/Android - use expo-image-picker with extra safety
-      // Use setTimeout to ensure we're not blocking the main thread
-      setTimeout(async () => {
-        try {
-          // Check permissions first
-          const { status: existingStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
-          
-          let finalStatus = existingStatus;
-          if (existingStatus !== 'granted') {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            finalStatus = status;
-          }
-          
-          if (finalStatus !== 'granted') {
-            Alert.alert(
-              'Permission Required',
-              'Please allow access to your photos in Settings to upload a profile picture.',
-              [{ text: 'OK' }]
-            );
-            return;
-          }
+      // Native iOS/Android - use expo-image-picker
+      // Check permissions first
+      const { status: existingStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
+      
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please allow access to your photos in Settings to upload a profile picture.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
 
-          // Launch picker with error handling
-          const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.7,
-            exif: false,
-          });
+      // Launch picker with error handling
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        exif: false,
+      });
 
-          if (!result.canceled && result.assets && result.assets[0]?.uri) {
-            setAvatarUri(result.assets[0].uri);
-          }
-        } catch (pickerError: any) {
-          console.error('ImagePicker error:', pickerError);
-          // Don't show alert for user cancellation
-          if (pickerError?.message?.includes('cancel')) {
-            return;
-          }
-          Alert.alert(
-            'Unable to Access Photos',
-            'There was an issue accessing your photo library. Please try again.',
-            [{ text: 'OK' }]
-          );
-        }
-      }, 100);
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        console.log('📸 Image selected:', result.assets[0].uri.substring(0, 50) + '...');
+        setAvatarUri(result.assets[0].uri);
+      } else {
+        console.log('📸 Image selection cancelled or no URI');
+      }
+    } catch (pickerError: any) {
+      console.error('📸 ImagePicker error:', pickerError);
+      // Don't show alert for user cancellation
+      if (pickerError?.message?.includes('cancel')) {
+        return;
+      }
+      Alert.alert(
+        'Unable to Access Photos',
+        'There was an issue accessing your photo library. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
   const uploadAvatar = async (uri: string): Promise<string | null> => {
     try {
+      console.log('📸 uploadAvatar called with uri:', uri?.substring(0, 50) + '...');
+      
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
+      if (!user) {
+        console.error('📸 No user found for avatar upload');
+        return null;
+      }
 
+      console.log('📸 Fetching image data...');
       const response = await fetch(uri);
       const blob = await response.blob();
+      console.log('📸 Blob created:', { type: blob.type, size: blob.size });
 
       const fileExt = blob.type.split('/')[1] || 'jpg';
       const fileName = `avatar-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      console.log('Uploading avatar:', { filePath, type: blob.type, size: blob.size });
+      console.log('📸 Uploading to Supabase storage:', { filePath, type: blob.type, size: blob.size });
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -304,8 +307,8 @@ export default function EditProfileModal({
         });
 
       if (uploadError) {
-        console.error('Upload error details:', uploadError);
-        Alert.alert('Upload Failed', uploadError.message || 'Unknown error');
+        console.error('📸 Upload error details:', uploadError);
+        Alert.alert('Upload Failed', uploadError.message || 'Storage upload failed');
         return null;
       }
 
@@ -313,11 +316,11 @@ export default function EditProfileModal({
         .from('avatars')
         .getPublicUrl(filePath);
 
-      console.log('Upload successful:', data.publicUrl);
+      console.log('📸 Upload successful:', data.publicUrl);
       return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
+    } catch (error: any) {
+      console.error('📸 Error uploading avatar:', error);
+      Alert.alert('Error', error?.message || 'Failed to upload profile picture. Please try again.');
       return null;
     }
   };
@@ -380,6 +383,8 @@ export default function EditProfileModal({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
+      console.log('📸 Profile save started, avatarUri:', avatarUri ? 'present' : 'null');
+      
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
@@ -390,9 +395,11 @@ export default function EditProfileModal({
       let avatarUrl: string | null = null;
       
       if (avatarUri) {
+        console.log('📸 Starting avatar upload...');
         setIsUploadingAvatar(true);
         avatarUrl = await uploadAvatar(avatarUri);
         setIsUploadingAvatar(false);
+        console.log('📸 Avatar upload result:', avatarUrl ? 'success' : 'failed');
         
         if (!avatarUrl) {
           Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
