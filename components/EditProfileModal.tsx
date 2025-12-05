@@ -210,6 +210,7 @@ export default function EditProfileModal({
 
   const handlePickImage = async () => {
     try {
+      // Web platform - use file input
       if (typeof window !== 'undefined' && window.document) {
         const input = document.createElement('input');
         input.type = 'file';
@@ -225,12 +226,23 @@ export default function EditProfileModal({
           }
         };
         input.click();
-      } else {
-        // Native iOS/Android - wrap in try/catch for safety
+        return;
+      }
+      
+      // Native iOS/Android - use expo-image-picker with extra safety
+      // Use setTimeout to ensure we're not blocking the main thread
+      setTimeout(async () => {
         try {
-          const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          // Check permissions first
+          const { status: existingStatus } = await ImagePicker.getMediaLibraryPermissionsAsync();
           
-          if (permissionResult.granted === false) {
+          let finalStatus = existingStatus;
+          if (existingStatus !== 'granted') {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            finalStatus = status;
+          }
+          
+          if (finalStatus !== 'granted') {
             Alert.alert(
               'Permission Required',
               'Please allow access to your photos in Settings to upload a profile picture.',
@@ -239,25 +251,31 @@ export default function EditProfileModal({
             return;
           }
 
+          // Launch picker with error handling
           const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
             allowsEditing: true,
             aspect: [1, 1],
-            quality: 0.8,
+            quality: 0.7,
+            exif: false,
           });
 
-          if (!result.canceled && result.assets && result.assets[0]) {
+          if (!result.canceled && result.assets && result.assets[0]?.uri) {
             setAvatarUri(result.assets[0].uri);
           }
-        } catch (pickerError) {
+        } catch (pickerError: any) {
           console.error('ImagePicker error:', pickerError);
+          // Don't show alert for user cancellation
+          if (pickerError?.message?.includes('cancel')) {
+            return;
+          }
           Alert.alert(
             'Unable to Access Photos',
             'There was an issue accessing your photo library. Please try again.',
             [{ text: 'OK' }]
           );
         }
-      }
+      }, 100);
     } catch (error) {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image. Please try again.');
