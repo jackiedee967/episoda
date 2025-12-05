@@ -41,7 +41,7 @@ export default function SplashScreen() {
       <ImageBackground
         source={welcomeBackground}
         style={styles.backgroundImage}
-        resizeMode="stretch"
+        resizeMode="cover"
       >
         {/* Top decorative images */}
         <Image
