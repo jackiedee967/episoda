@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ImageBackground, Image, ActivityIndicator, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Asset } from 'expo-asset';
 import { colors } from '@/styles/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '@/integrations/supabase/client';
-
-const welcomeBackgroundModule = require('../../assets/images/auth/welcome-background.jpg');
-const layer1Module = require('../../assets/images/auth/layer-1.png');
-const topStuffModule = require('../../assets/images/auth/top-stuff.png');
-const bottomCombinedModule = require('../../assets/images/auth/bottom-combined.png');
-const appleLogoModule = require('../../assets/images/auth/apple-logo.png');
-const phoneIconModule = require('../../assets/images/auth/phone-icon.png');
 
 /**
  * Splash/Welcome Screen - First screen in auth flow
@@ -21,45 +14,8 @@ export default function SplashScreen() {
   const router = useRouter();
   const [appleLoading, setAppleLoading] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
-  const [assetUris, setAssetUris] = useState<{
-    welcomeBackground: string;
-    layer1: string;
-    topStuff: string;
-    bottomCombined: string;
-    appleLogo: string;
-    phoneIcon: string;
-  } | null>(null);
 
   useEffect(() => {
-    const loadAssets = async () => {
-      try {
-        const assets = await Asset.loadAsync([
-          welcomeBackgroundModule,
-          layer1Module,
-          topStuffModule,
-          bottomCombinedModule,
-          appleLogoModule,
-          phoneIconModule,
-        ]);
-        
-        setAssetUris({
-          welcomeBackground: assets[0].localUri || assets[0].uri,
-          layer1: assets[1].localUri || assets[1].uri,
-          topStuff: assets[2].localUri || assets[2].uri,
-          bottomCombined: assets[3].localUri || assets[3].uri,
-          appleLogo: assets[4].localUri || assets[4].uri,
-          phoneIcon: assets[5].localUri || assets[5].uri,
-        });
-        setAssetsLoaded(true);
-      } catch (error) {
-        console.error('Failed to load auth assets:', error);
-        setAssetsLoaded(true);
-      }
-    };
-    
-    loadAssets();
-    
     // Check if Apple Sign In is available on this device
     if (Platform.OS === 'ios') {
       AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
@@ -148,24 +104,16 @@ export default function SplashScreen() {
     }
   };
 
-  if (!assetsLoaded || !assetUris) {
-    return (
-      <View style={[styles.wrapper, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.wrapper}>
-      <ImageBackground
-        source={{ uri: assetUris.welcomeBackground }}
-        style={styles.backgroundImage}
-        resizeMode="stretch"
+      <LinearGradient
+        colors={['#7BA8FF', '#5B8DEE', '#3D6FD9', '#2855C5']}
+        locations={[0, 0.3, 0.6, 1]}
+        style={styles.gradient}
       >
         {/* Top decorative images */}
         <Image
-          source={{ uri: assetUris.topStuff }}
+          source={require('../../assets/images/auth/top-stuff.png')}
           style={styles.topStuff}
           resizeMode="contain"
         />
@@ -173,7 +121,7 @@ export default function SplashScreen() {
         {/* Center content - logo and tagline */}
         <View style={styles.centerContent}>
           <Image
-            source={{ uri: assetUris.layer1 }}
+            source={require('../../assets/images/auth/layer-1.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -185,7 +133,7 @@ export default function SplashScreen() {
 
         {/* Decorative image below tagline - positioned to extend beyond padding */}
         <Image
-          source={{ uri: assetUris.bottomCombined }}
+          source={require('../../assets/images/auth/bottom-combined.png')}
           style={styles.bottomCombined}
           resizeMode="contain"
         />
@@ -201,7 +149,7 @@ export default function SplashScreen() {
           >
             <View style={styles.buttonContent}>
               <Image
-                source={{ uri: assetUris.phoneIcon }}
+                source={require('../../assets/images/auth/phone-icon.png')}
                 style={styles.phoneIcon}
                 resizeMode="contain"
               />
@@ -217,7 +165,7 @@ export default function SplashScreen() {
           >
             <View style={styles.buttonContent}>
               <Image
-                source={{ uri: assetUris.appleLogo }}
+                source={require('../../assets/images/auth/apple-logo.png')}
                 style={styles.appleLogo}
                 resizeMode="contain"
               />
@@ -225,7 +173,7 @@ export default function SplashScreen() {
             </View>
           </Pressable>
         </View>
-      </ImageBackground>
+      </LinearGradient>
     </View>
   );
 }
@@ -235,11 +183,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#7BA8FF',
   },
-  loadingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backgroundImage: {
+  gradient: {
     flex: 1,
     width: '100%',
   },
