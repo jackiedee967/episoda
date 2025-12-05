@@ -3,11 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, Image, 
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { Asset } from 'expo-asset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 const tmdbLogo = require('../../assets/tmdb-logo.png');
 const traktLogo = require('../../assets/trakt-logo.png');
 const tvmazeLogo = require('../../assets/tvmaze-logo.png');
@@ -64,7 +61,7 @@ export default function AcknowledgmentsScreen() {
         }} 
       />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >

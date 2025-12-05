@@ -39,8 +39,6 @@ async function fetchPosterForTraktShow(traktShow: TraktShow): Promise<string | n
   return null;
 }
 
-const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const GRID_PADDING = 20;
 const POSTER_GAP = 10;
@@ -305,7 +303,7 @@ export default function SelectShowsScreen() {
 
   return (
     <ImageBackground
-      source={{ uri: phoneBackground }}
+      source={require('../../assets/images/auth/Background.png')}
       style={styles.container}
       resizeMode="cover"
     >

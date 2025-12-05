@@ -8,16 +8,11 @@ import {
   Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Asset } from 'expo-asset';
 import { colors } from '@/styles/tokens';
 import ButtonL from '@/components/ButtonL';
 import { PaginationDots } from '@/components/PaginationDots';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-
-const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
-const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
-const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
 export const options = {
   headerShown: false,
@@ -91,14 +86,14 @@ export default function DisplayNameScreen() {
   return (
     <View style={styles.wrapper}>
       <ImageBackground
-        source={{ uri: phoneBackground }}
+        source={require('../../assets/images/auth/Background.png')}
         style={styles.backgroundImage}
         resizeMode="stretch"
       >
         {/* Top logo */}
         <View style={styles.topContainer}>
           <Image
-            source={{ uri: layer1 }}
+            source={require('../../assets/images/auth/layer-1.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -157,7 +152,7 @@ export default function DisplayNameScreen() {
 
         {/* Bottom decorative image */}
         <Image
-          source={{ uri: layer12 }}
+          source={require('../../assets/images/auth/layer12.png')}
           style={styles.layer12}
           resizeMode="contain"
         />

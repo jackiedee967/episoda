@@ -12,9 +12,6 @@ import { LogAShow } from '@/components/LogAShow';
 import { IconSymbol } from '@/components/IconSymbol';
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Asset } from 'expo-asset';
-
-const appBackground = Asset.fromModule(require('../../../assets/images/app-background.jpg')).uri;
 import { mockShows, mockUsers } from '@/data/mockData';
 import { useData } from '@/contexts/DataContext';
 import { ChevronRight } from 'lucide-react-native';
@@ -1098,7 +1095,7 @@ export default function HomeScreen() {
   return (
     <AnimatedTabContent tabIndex={0}>
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../../assets/images/app-background.jpg')}
         style={styles.container}
         resizeMode="cover"
       >

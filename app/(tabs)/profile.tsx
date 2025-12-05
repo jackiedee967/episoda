@@ -3,10 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
-import { Asset } from 'expo-asset';
 import { colors, typography } from '@/styles/tokens';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { spacing, components, commonStyles } from '@/styles/commonStyles';
 import PostCard from '@/components/PostCard';
 import PostModal from '@/components/PostModal';
@@ -865,7 +862,7 @@ export default function ProfileScreen() {
     <AnimatedTabContent tabIndex={3}>
       <Stack.Screen options={{ headerShown: false }} />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.pageContainer}
         resizeMode="cover"
       >

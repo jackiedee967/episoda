@@ -34,10 +34,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Asset } from 'expo-asset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 
 interface AdminStats {
   total_users: number;
@@ -462,7 +459,7 @@ export default function AdminDashboard() {
     return (
       <>
         <Stack.Screen options={{ headerShown: false }} />
-        <ImageBackground source={{ uri: appBackground }} style={styles.backgroundImage}>
+        <ImageBackground source={require('../../assets/images/app-background.jpg')} style={styles.backgroundImage}>
           <View style={[styles.container, { paddingTop: insets.top + 60 }]}>
             <View style={styles.accessDenied}>
               <Shield size={48} color={colors.error} />
@@ -992,7 +989,7 @@ export default function AdminDashboard() {
         }} 
       />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >

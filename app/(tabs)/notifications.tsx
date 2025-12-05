@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
-import { Asset } from 'expo-asset';
 import TabSelector, { Tab as TabType } from '@/components/TabSelector';
 import { Notification } from '@/types';
 import { mockUsers, mockPosts, currentUser, mockComments } from '@/data/mockData';
@@ -24,8 +23,6 @@ import tokens from '@/styles/tokens';
 import FadeInImage from '@/components/FadeInImage';
 import AnimatedTabContent from '@/components/AnimatedTabContent';
 import AvatarImage from '@/components/AvatarImage';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 
 type Tab = 'you' | 'friends';
 
@@ -268,7 +265,7 @@ export default function NotificationsScreen() {
     <AnimatedTabContent tabIndex={2}>
       <Stack.Screen options={{ headerShown: false }} />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.pageContainer}
         resizeMode="cover"
       >

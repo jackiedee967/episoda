@@ -11,7 +11,6 @@ import {
   Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Asset } from 'expo-asset';
 import { colors, typography } from '@/styles/tokens';
 import { PaginationDots } from '@/components/PaginationDots';
 import ButtonL from '@/components/ButtonL';
@@ -19,10 +18,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { checkRateLimit } from '@/services/rateLimiting';
-
-const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
-const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
-const layer12 = Asset.fromModule(require('../../assets/images/auth/layer12.png')).uri;
 
 export const options = {
   headerShown: false,
@@ -154,14 +149,14 @@ export default function VerifyOTPScreen() {
   return (
     <View style={styles.wrapper}>
       <ImageBackground
-        source={{ uri: phoneBackground }}
+        source={require('../../assets/images/auth/Background.png')}
         style={styles.backgroundImage}
         resizeMode="stretch"
       >
         {/* Top logo */}
         <View style={styles.topContainer}>
           <Image
-            source={{ uri: layer1 }}
+            source={require('../../assets/images/auth/layer-1.png')}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -246,7 +241,7 @@ export default function VerifyOTPScreen() {
 
         {/* Bottom decorative image */}
         <Image
-          source={{ uri: layer12 }}
+          source={require('../../assets/images/auth/layer12.png')}
           style={styles.layer12}
           resizeMode="contain"
         />

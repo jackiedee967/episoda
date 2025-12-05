@@ -6,6 +6,7 @@ import {
   FlatList,
   Dimensions,
   Pressable,
+  ImageBackground,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -13,13 +14,11 @@ import { colors, typography } from '@/styles/tokens';
 import { AuthButton } from '@/components/auth/AuthButton';
 import { useAuth } from '@/contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
-import { Asset } from 'expo-asset';
 
 const step1Image = require('../../assets/onboarding/step1.png');
 const step2Image = require('../../assets/onboarding/step2.png');
 const step3Image = require('../../assets/onboarding/step3.png');
 const step4Image = require('../../assets/onboarding/step4.png');
-const backgroundImage = Asset.fromModule(require('../../assets/onboarding/background.jpg')).uri;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -124,7 +123,7 @@ export default function OnboardingCarouselScreen() {
   return (
     <View style={styles.container}>
         <Image
-          source={{ uri: backgroundImage }}
+          source={require('../../assets/onboarding/background.jpg')}
           style={styles.backgroundImage}
           contentFit="fill"
         />

@@ -22,14 +22,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { HelpDeskPost, HelpDeskComment } from '@/types';
 import { useData } from '@/contexts/DataContext';
-import { Asset } from 'expo-asset';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MentionInput from '@/components/MentionInput';
 import MentionText from '@/components/MentionText';
 import { extractMentions, getUserIdsByUsernames, saveHelpDeskCommentMentions, createMentionNotifications } from '@/utils/mentionUtils';
-
-const appBackground = Asset.fromModule(require('../../../../assets/images/app-background.jpg')).uri;
 
 const MAX_DEPTH = 4;
 
@@ -556,7 +553,7 @@ export default function HelpDeskPostDetailScreen() {
         }}
       />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../../../assets/images/app-background.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >

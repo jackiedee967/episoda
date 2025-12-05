@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Asset } from 'expo-asset';
 import { Bell, BellOff } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
@@ -18,8 +17,6 @@ import * as Haptics from 'expo-haptics';
 import tokens from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-
-const phoneBackground = Asset.fromModule(require('../../assets/images/auth/Background.png')).uri;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -121,7 +118,7 @@ export default function NotificationPermissionScreen() {
 
   return (
     <ImageBackground
-      source={{ uri: phoneBackground }}
+      source={require('../../assets/images/auth/Background.png')}
       style={styles.container}
       resizeMode="cover"
     >

@@ -4,7 +4,6 @@ import * as Haptics from 'expo-haptics';
 import { colors, typography } from '@/styles/commonStyles';
 import { Heart, MessageCircle, Plus, MoreVertical } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
-import { Asset } from 'expo-asset';
 import {
   View,
   Text,
@@ -20,8 +19,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AvatarImage from '@/components/AvatarImage';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { supabase } from '@/integrations/supabase/client';
 import { HelpDeskPost, HelpDeskCategory } from '@/types';
 import React, { useState, useEffect } from 'react';
@@ -493,7 +490,7 @@ export default function HelpDeskScreen() {
           }}
         />
         <ImageBackground
-          source={{ uri: appBackground }}
+          source={require('../../assets/images/app-background.jpg')}
           style={styles.backgroundImage}
           resizeMode="cover"
         >
@@ -516,7 +513,7 @@ export default function HelpDeskScreen() {
         }}
       />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >

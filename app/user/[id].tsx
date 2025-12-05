@@ -10,9 +10,6 @@ import {
   Linking,
   ImageBackground,
 } from 'react-native';
-import { Asset } from 'expo-asset';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography } from '@/styles/tokens';
@@ -1032,7 +1029,7 @@ export default function UserProfile() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.pageContainer}
         resizeMode="cover"
       >

@@ -8,10 +8,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
-import { Asset } from 'expo-asset';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const appBackground = Asset.fromModule(require('../../assets/images/app-background.jpg')).uri;
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -73,7 +70,7 @@ export default function SettingsScreen() {
         }} 
       />
       <ImageBackground
-        source={{ uri: appBackground }}
+        source={require('../../assets/images/app-background.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
