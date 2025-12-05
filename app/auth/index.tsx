@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ImageBackground, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Asset } from 'expo-asset';
 import { colors } from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
 
-const welcomeBackground = Asset.fromModule(require('../../assets/images/auth/welcome-background.jpg')).uri;
-const layer1 = Asset.fromModule(require('../../assets/images/auth/layer-1.png')).uri;
-const topStuff = Asset.fromModule(require('../../assets/images/auth/top-stuff.png')).uri;
-const bottomCombined = Asset.fromModule(require('../../assets/images/auth/bottom-combined.png')).uri;
-const appleLogo = Asset.fromModule(require('../../assets/images/auth/apple-logo.png')).uri;
-const phoneIcon = Asset.fromModule(require('../../assets/images/auth/phone-icon.png')).uri;
+const welcomeBackground = require('../../assets/images/auth/welcome-background.jpg');
+const layer1 = require('../../assets/images/auth/layer-1.png');
+const topStuff = require('../../assets/images/auth/top-stuff.png');
+const bottomCombined = require('../../assets/images/auth/bottom-combined.png');
+const appleLogo = require('../../assets/images/auth/apple-logo.png');
+const phoneIcon = require('../../assets/images/auth/phone-icon.png');
 
 /**
  * Splash/Welcome Screen - First screen in auth flow
@@ -40,13 +39,13 @@ export default function SplashScreen() {
   return (
     <View style={styles.wrapper}>
       <ImageBackground
-        source={{ uri: welcomeBackground }}
+        source={welcomeBackground}
         style={styles.backgroundImage}
         resizeMode="stretch"
       >
         {/* Top decorative images */}
         <Image
-          source={{ uri: topStuff }}
+          source={topStuff}
           style={styles.topStuff}
           resizeMode="contain"
         />
@@ -54,7 +53,7 @@ export default function SplashScreen() {
         {/* Center content - logo and tagline */}
         <View style={styles.centerContent}>
           <Image
-            source={{ uri: layer1 }}
+            source={layer1}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -66,7 +65,7 @@ export default function SplashScreen() {
 
         {/* Decorative image below tagline - positioned to extend beyond padding */}
         <Image
-          source={{ uri: bottomCombined }}
+          source={bottomCombined}
           style={styles.bottomCombined}
           resizeMode="contain"
         />
@@ -82,7 +81,7 @@ export default function SplashScreen() {
           >
             <View style={styles.buttonContent}>
               <Image
-                source={{ uri: phoneIcon }}
+                source={phoneIcon}
                 style={styles.phoneIcon}
                 resizeMode="contain"
               />
@@ -98,7 +97,7 @@ export default function SplashScreen() {
           >
             <View style={styles.buttonContent}>
               <Image
-                source={{ uri: appleLogo }}
+                source={appleLogo}
                 style={styles.appleLogo}
                 resizeMode="contain"
               />
