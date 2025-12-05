@@ -1142,6 +1142,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (error) {
           console.error('❌ Error loading playlists from Supabase:', error);
         } else if (data) {
+          // DIAGNOSTIC: Dump raw playlist_shows data to see actual formats
+          console.log('🔍 RAW PLAYLIST DATA DIAGNOSTIC:');
+          for (const p of data) {
+            const rawShowIds = p.playlist_shows.map((ps: any) => ps.show_id);
+            console.log(`  📁 Playlist "${p.name}" (${p.id}):`);
+            console.log(`     Raw show_ids: [${rawShowIds.join(', ')}]`);
+          }
+          
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           
           // Collect all show_ids that need repair (non-UUID format)
@@ -1304,6 +1312,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
           // Repair legacy show_ids - first try database lookup, then Trakt API for trakt IDs
           if (legacyShowIds.length > 0) {
             console.log(`🔧 Repairing ${legacyShowIds.length} legacy playlist show IDs...`);
+            console.log(`🔧 Legacy entries:`, legacyShowIds.map(l => ({
+              showId: l.showId,
+              playlist: l.playlistName,
+              traktId: l.traktId,
+              tmdbId: l.tmdbId,
+              tvdbId: l.tvdbId,
+              tvmazeId: l.tvmazeId,
+              imdbId: l.imdbId,
+            })));
             
             // First: Try database lookup for all ID types
             const traktIds = legacyShowIds.filter(l => l.traktId).map(l => l.traktId!);
@@ -1311,6 +1328,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const tvdbIds = legacyShowIds.filter(l => l.tvdbId).map(l => l.tvdbId!);
             const tvmazeIds = legacyShowIds.filter(l => l.tvmazeId).map(l => l.tvmazeId!);
             const imdbIds = legacyShowIds.filter(l => l.imdbId).map(l => l.imdbId!);
+            
+            console.log(`🔧 Looking up: trakt=${traktIds.length}, tmdb=${tmdbIds.length}, tvdb=${tvdbIds.length}, tvmaze=${tvmazeIds.length}, imdb=${imdbIds.length}`);
             
             // Query shows table for all ID types
             const [traktResult, tmdbResult, tvdbResult, tvmazeResult, imdbResult] = await Promise.all([
@@ -1320,6 +1339,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
               tvmazeIds.length > 0 ? supabase.from('shows').select('id, tvmaze_id').in('tvmaze_id', tvmazeIds) : { data: [] },
               imdbIds.length > 0 ? supabase.from('shows').select('id, imdb_id').in('imdb_id', imdbIds) : { data: [] },
             ]);
+            
+            console.log(`🔧 Database results: trakt=${(traktResult as any).data?.length || 0}, tmdb=${(tmdbResult as any).data?.length || 0}, tvdb=${(tvdbResult as any).data?.length || 0}, tvmaze=${(tvmazeResult as any).data?.length || 0}, imdb=${(imdbResult as any).data?.length || 0}`);
             
             // Build ID -> UUID lookup maps
             const traktToUuid = new Map<number, string>();
@@ -1367,15 +1388,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 
                 // If not found in database and we have a trakt ID, try Trakt API
                 if (!correctUuid && legacy.traktId) {
-                  console.log(`🔧 Fetching from Trakt API: ${legacy.showId} (trakt=${legacy.traktId})`);
+                  console.log(`🔧 Show not in database, fetching from Trakt API: ${legacy.showId} (trakt=${legacy.traktId})`);
                   try {
                     correctUuid = await ensureShowId(legacy.traktId);
+                    console.log(`🔧 Trakt API returned UUID: ${correctUuid}`);
                     // Cache for future lookups
                     traktToUuid.set(legacy.traktId, correctUuid);
                   } catch (apiError) {
                     console.error(`❌ Trakt API fetch failed for ${legacy.showId}:`, apiError);
                   }
                 }
+                
+                console.log(`🔧 Processing ${legacy.showId}: correctUuid=${correctUuid || 'NOT FOUND'}`);
                 
                 if (correctUuid) {
                   // Update playlist_shows with correct UUID
