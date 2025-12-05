@@ -19,6 +19,7 @@ import { colors, typography } from '@/styles/tokens';
 import { X, Instagram, Music, Globe } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { SocialLink } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -290,21 +291,83 @@ export default function EditProfileModal({
         return null;
       }
 
-      console.log('📸 Fetching image data...');
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      console.log('📸 Blob created:', { type: blob.type, size: blob.size });
+      let imageData: ArrayBuffer;
+      let mimeType = 'image/jpeg';
+      
+      // Check if running on native iOS/Android (not web)
+      const isNative = Platform.OS === 'ios' || Platform.OS === 'android';
+      
+      if (isNative && FileSystem.cacheDirectory) {
+        // On iOS native, asset-library:// and ph:// URIs cannot be fetched directly
+        // We need to copy the file to a readable location first using FileSystem
+        console.log('📸 Using FileSystem to read image on native platform');
+        
+        try {
+          // Copy to cache directory with a unique filename
+          const cachedUri = `${FileSystem.cacheDirectory}avatar_upload_${Date.now()}.jpg`;
+          
+          // Check if the URI is already a file:// URI (which can be read directly)
+          if (uri.startsWith('file://')) {
+            console.log('📸 URI is already file://, reading directly');
+          } else {
+            // Copy from asset-library:// or ph:// to file://
+            console.log('📸 Copying from asset library to cache...');
+            await FileSystem.copyAsync({
+              from: uri,
+              to: cachedUri
+            });
+            uri = cachedUri;
+            console.log('📸 Copied to:', cachedUri);
+          }
+          
+          // Read the file as base64
+          const base64Data = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64
+          });
+          
+          // Convert base64 to ArrayBuffer
+          const binaryString = atob(base64Data);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          imageData = bytes.buffer;
+          
+          // Detect MIME type from magic bytes
+          if (bytes[0] === 0xFF && bytes[1] === 0xD8) {
+            mimeType = 'image/jpeg';
+          } else if (bytes[0] === 0x89 && bytes[1] === 0x50) {
+            mimeType = 'image/png';
+          } else if (bytes[0] === 0x47 && bytes[1] === 0x49) {
+            mimeType = 'image/gif';
+          }
+          
+          console.log('📸 Image read via FileSystem:', { size: imageData.byteLength, mimeType });
+          
+        } catch (fsError: any) {
+          console.error('📸 FileSystem error:', fsError);
+          throw new Error(`Failed to read image file: ${fsError.message}`);
+        }
+      } else {
+        // Web platform or fallback - use fetch
+        console.log('📸 Using fetch to read image (web platform)');
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        imageData = await blob.arrayBuffer();
+        mimeType = blob.type || 'image/jpeg';
+        console.log('📸 Image read via fetch:', { size: imageData.byteLength, mimeType });
+      }
 
-      const fileExt = blob.type.split('/')[1] || 'jpg';
+      const fileExt = mimeType.split('/')[1] || 'jpg';
       const fileName = `avatar-${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      console.log('📸 Uploading to Supabase storage:', { filePath, type: blob.type, size: blob.size });
+      console.log('📸 Uploading to Supabase storage:', { filePath, mimeType, size: imageData.byteLength });
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob, {
-          contentType: blob.type || `image/${fileExt}`,
+        .upload(filePath, imageData, {
+          contentType: mimeType,
           upsert: true,
         });
 
