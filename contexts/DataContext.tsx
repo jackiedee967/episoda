@@ -1151,8 +1151,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
             traktId?: number;
             tmdbId?: number;
             tvdbId?: number;
+            tvmazeId?: number;
+            imdbId?: string;
           }
           const legacyShowIds: LegacyShowId[] = [];
+          
+          // Helper to normalize various UUID formats to proper UUID
+          const normalizeUuid = (id: string): string | null => {
+            // Check if it's a 32-char hex string (UUID without hyphens)
+            if (/^[0-9a-f]{32}$/i.test(id)) {
+              return `${id.slice(0, 8)}-${id.slice(8, 12)}-${id.slice(12, 16)}-${id.slice(16, 20)}-${id.slice(20)}`.toLowerCase();
+            }
+            return null;
+          };
+          
+          // Helper to extract UUID from prefixed formats like "trakt_<uuid>" or "tmdb-<uuid>"
+          const extractUuidFromPrefixed = (id: string): string | null => {
+            // Match patterns like "prefix_uuid" or "prefix-uuid" where uuid is valid
+            const match = id.match(/^[a-z]+[-_]([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+            if (match) {
+              return match[1].toLowerCase();
+            }
+            // Match patterns like "prefix_uuid" where uuid has no hyphens
+            const noHyphenMatch = id.match(/^[a-z]+[-_]([0-9a-f]{32})$/i);
+            if (noHyphenMatch) {
+              const hex = noHyphenMatch[1];
+              return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`.toLowerCase();
+            }
+            return null;
+          };
           
           // First pass: separate valid UUIDs from legacy IDs
           const loadedPlaylists: Playlist[] = data.map(p => {
@@ -1165,6 +1192,40 @@ export function DataProvider({ children }: { children: ReactNode }) {
               if (uuidRegex.test(showId)) {
                 validShows.push(showId);
               } else {
+                // Check if it's a UUID without hyphens
+                const normalizedUuid = normalizeUuid(showId);
+                if (normalizedUuid) {
+                  console.log(`🔧 Normalizing UUID without hyphens: ${showId} -> ${normalizedUuid}`);
+                  validShows.push(normalizedUuid);
+                  // Also update the database entry
+                  supabase
+                    .from('playlist_shows')
+                    .update({ show_id: normalizedUuid })
+                    .eq('playlist_id', p.id)
+                    .eq('show_id', showId)
+                    .then(({ error }) => {
+                      if (error) console.error(`❌ Failed to normalize UUID in DB:`, error);
+                    });
+                  continue;
+                }
+                
+                // Check if it's a prefixed UUID like "trakt_<uuid>" or "tmdb-<uuid>"
+                const extractedUuid = extractUuidFromPrefixed(showId);
+                if (extractedUuid) {
+                  console.log(`🔧 Extracting UUID from prefixed format: ${showId} -> ${extractedUuid}`);
+                  validShows.push(extractedUuid);
+                  // Also update the database entry
+                  supabase
+                    .from('playlist_shows')
+                    .update({ show_id: extractedUuid })
+                    .eq('playlist_id', p.id)
+                    .eq('show_id', showId)
+                    .then(({ error }) => {
+                      if (error) console.error(`❌ Failed to extract UUID in DB:`, error);
+                    });
+                  continue;
+                }
+                
                 console.warn(`⚠️ Found legacy show_id in playlist "${p.name}": ${showId}`);
                 
                 // Parse various legacy formats
@@ -1188,8 +1249,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
                   legacy.tvdbId = parseInt(tvdbMatch[1], 10);
                 }
                 
+                // tvmaze-12345, tvmaze_12345
+                const tvmazeMatch = showId.match(/^tvmaze[-_]?(\d+)$/i);
+                if (tvmazeMatch) {
+                  legacy.tvmazeId = parseInt(tvmazeMatch[1], 10);
+                }
+                
+                // imdb-tt1234567, imdb_tt1234567, tt1234567
+                const imdbMatch = showId.match(/^(?:imdb[-_]?)?(tt\d+)$/i);
+                if (imdbMatch) {
+                  legacy.imdbId = imdbMatch[1].toLowerCase();
+                }
+                
+                // Plain numeric ID - assume it's a trakt ID (most common)
+                if (/^\d+$/.test(showId)) {
+                  legacy.traktId = parseInt(showId, 10);
+                }
+                
                 // Only add to migration queue if we can identify it
-                if (legacy.traktId || legacy.tmdbId || legacy.tvdbId) {
+                if (legacy.traktId || legacy.tmdbId || legacy.tvdbId || legacy.tvmazeId || legacy.imdbId) {
                   legacyShowIds.push(legacy);
                 } else {
                   // Completely unknown format - log but don't add to state (would break queries)
@@ -1217,9 +1295,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const traktIds = [...new Set(legacyShowIds.filter(l => l.traktId).map(l => l.traktId!))];
             const tmdbIds = [...new Set(legacyShowIds.filter(l => l.tmdbId).map(l => l.tmdbId!))];
             const tvdbIds = [...new Set(legacyShowIds.filter(l => l.tvdbId).map(l => l.tvdbId!))];
+            const tvmazeIds = [...new Set(legacyShowIds.filter(l => l.tvmazeId).map(l => l.tvmazeId!))];
+            const imdbIds = [...new Set(legacyShowIds.filter(l => l.imdbId).map(l => l.imdbId!))];
             
             // Query shows table for all ID types in parallel
-            const [traktResult, tmdbResult, tvdbResult] = await Promise.all([
+            const [traktResult, tmdbResult, tvdbResult, tvmazeResult, imdbResult] = await Promise.all([
               traktIds.length > 0 
                 ? supabase.from('shows').select('id, trakt_id').in('trakt_id', traktIds)
                 : { data: [] },
@@ -1229,12 +1309,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
               tvdbIds.length > 0 
                 ? supabase.from('shows').select('id, tvdb_id').in('tvdb_id', tvdbIds)
                 : { data: [] },
+              tvmazeIds.length > 0 
+                ? supabase.from('shows').select('id, tvmaze_id').in('tvmaze_id', tvmazeIds)
+                : { data: [] },
+              imdbIds.length > 0 
+                ? supabase.from('shows').select('id, imdb_id').in('imdb_id', imdbIds)
+                : { data: [] },
             ]);
             
             // Build ID -> UUID maps
             const traktToUuid = new Map<number, string>();
             const tmdbToUuid = new Map<number, string>();
             const tvdbToUuid = new Map<number, string>();
+            const tvmazeToUuid = new Map<number, string>();
+            const imdbToUuid = new Map<string, string>();
             
             for (const show of (traktResult.data || [])) {
               if (show.trakt_id) traktToUuid.set(show.trakt_id, show.id);
@@ -1245,18 +1333,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
             for (const show of (tvdbResult.data || [])) {
               if (show.tvdb_id) tvdbToUuid.set(show.tvdb_id, show.id);
             }
+            for (const show of (tvmazeResult.data || [])) {
+              if (show.tvmaze_id) tvmazeToUuid.set(show.tvmaze_id, show.id);
+            }
+            for (const show of (imdbResult.data || [])) {
+              if (show.imdb_id) imdbToUuid.set(show.imdb_id.toLowerCase(), show.id);
+            }
             
             // Migrate each legacy entry
             for (const legacy of legacyShowIds) {
               let correctUuid: string | undefined;
               
-              // Try to find UUID in order of preference
+              // Try to find UUID in order of preference (trakt first as primary)
               if (legacy.traktId && traktToUuid.has(legacy.traktId)) {
                 correctUuid = traktToUuid.get(legacy.traktId);
               } else if (legacy.tmdbId && tmdbToUuid.has(legacy.tmdbId)) {
                 correctUuid = tmdbToUuid.get(legacy.tmdbId);
               } else if (legacy.tvdbId && tvdbToUuid.has(legacy.tvdbId)) {
                 correctUuid = tvdbToUuid.get(legacy.tvdbId);
+              } else if (legacy.tvmazeId && tvmazeToUuid.has(legacy.tvmazeId)) {
+                correctUuid = tvmazeToUuid.get(legacy.tvmazeId);
+              } else if (legacy.imdbId && imdbToUuid.has(legacy.imdbId)) {
+                correctUuid = imdbToUuid.get(legacy.imdbId);
               }
               
               if (correctUuid) {
@@ -1280,7 +1378,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                   playlist.showCount = playlist.shows.length;
                 }
               } else {
-                console.error(`❌ Could not find UUID for legacy show_id: ${legacy.showId} (trakt=${legacy.traktId}, tmdb=${legacy.tmdbId}, tvdb=${legacy.tvdbId})`);
+                console.error(`❌ Could not find UUID for legacy show_id: ${legacy.showId} (trakt=${legacy.traktId}, tmdb=${legacy.tmdbId}, tvdb=${legacy.tvdbId}, tvmaze=${legacy.tvmazeId}, imdb=${legacy.imdbId})`);
               }
             }
           }
