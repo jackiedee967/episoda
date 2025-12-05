@@ -491,12 +491,8 @@ export default function EditProfileModal({
 
       setAvatarUri(null);
 
-      // Use native Alert for iOS/Android
-      Alert.alert(
-        'Success',
-        'Your profile has been updated!',
-        [{ text: 'OK', onPress: () => onClose() }]
-      );
+      // Close the modal immediately after successful save
+      onClose();
 
     } catch (error: any) {
       console.error('Failed to save profile:', error);
