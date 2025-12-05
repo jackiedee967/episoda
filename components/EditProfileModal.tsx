@@ -22,6 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SocialLink } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useData } from '@/contexts/DataContext';
 
 interface EditProfileModalProps {
   visible: boolean;
@@ -59,6 +60,7 @@ export default function EditProfileModal({
   socialLinks: initialSocialLinks,
   onSave,
 }: EditProfileModalProps) {
+  const { updateCurrentUserAvatar } = useData();
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [isModalVisible, setIsModalVisible] = useState(visible);
@@ -497,6 +499,9 @@ export default function EditProfileModal({
       
       if (avatarUrl) {
         saveData.avatar = avatarUrl;
+        // Update avatar across all app state (nav bar, posts, etc.)
+        updateCurrentUserAvatar(avatarUrl);
+        console.log('📸 Called updateCurrentUserAvatar to propagate new avatar');
       }
       
       onSave(saveData);
