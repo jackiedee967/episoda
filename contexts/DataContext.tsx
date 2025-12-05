@@ -1266,12 +1266,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                   legacy.traktId = parseInt(showId, 10);
                 }
                 
-                // Only add to migration queue if we can identify it
+                // Add to migration queue if we can identify it
                 if (legacy.traktId || legacy.tmdbId || legacy.tvdbId || legacy.tvmazeId || legacy.imdbId) {
                   legacyShowIds.push(legacy);
                 } else {
-                  // Completely unknown format - log but don't add to state (would break queries)
-                  console.error(`🚨 UNMIGRATEABLE show_id in playlist "${p.name}": ${showId} - will be lost until manually fixed`);
+                  // Unknown format - KEEP IT in state anyway to avoid data loss
+                  // The show might not load properly but at least it's not deleted
+                  console.error(`🚨 Unknown show_id format in playlist "${p.name}": ${showId} - keeping in state but may not display properly`);
+                  validShows.push(showId);
                 }
               }
             }
