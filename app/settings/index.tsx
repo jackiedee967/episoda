@@ -1,12 +1,11 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ImageBackground, Platform, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
 import { User, Bell, HelpCircle, LogOut, Shield, Heart } from 'lucide-react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import * as Haptics from 'expo-haptics';
-import { Alert } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useData } from '@/contexts/DataContext';
 import { Asset } from 'expo-asset';
@@ -22,25 +21,39 @@ export default function SettingsScreen() {
   
   const isAdmin = (currentUserData as any)?.is_admin === true;
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Web-compatible confirmation
-    const confirmed = typeof window !== 'undefined' 
-      ? window.confirm('Are you sure you want to sign out?')
-      : true;
-    
-    if (!confirmed) return;
-    
-    try {
-      await signOut();
-      console.log('✅ User signed out successfully');
-      router.replace('/auth');
-    } catch (error) {
-      console.error('❌ Error signing out:', error);
-      if (typeof window !== 'undefined') {
-        window.alert('Failed to sign out. Please try again.');
+    const performSignOut = async () => {
+      try {
+        await signOut();
+        console.log('✅ User signed out successfully');
+        router.replace('/auth');
+      } catch (error) {
+        console.error('❌ Error signing out:', error);
+        if (Platform.OS === 'web') {
+          window.alert('Failed to sign out. Please try again.');
+        } else {
+          Alert.alert('Error', 'Failed to sign out. Please try again.');
+        }
       }
+    };
+    
+    // Use Alert.alert for iOS/Android, window.confirm for web
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      if (confirmed) {
+        performSignOut();
+      }
+    } else {
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Out', style: 'destructive', onPress: performSignOut },
+        ]
+      );
     }
   };
 
