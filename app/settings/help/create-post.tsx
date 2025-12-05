@@ -96,10 +96,7 @@ export default function CreatePostScreen() {
       const authenticatedUserId = sessionData.session.user.id;
       const username = currentUser.username;
 
-      // Determine section based on category
-      const section = category === 'Admin Announcement' ? 'announcement' : 'general';
-
-      console.log('📝 Create Post: Inserting to database...', { authenticatedUserId, username, category, section });
+      console.log('📝 Create Post: Inserting to database...', { authenticatedUserId, username, category });
 
       const { data, error } = await supabase
         .from('help_desk_posts')
@@ -109,7 +106,6 @@ export default function CreatePostScreen() {
           title: title.trim(),
           details: details.trim(),
           category,
-          section,
           likes_count: 0,
           comments_count: 0,
         })

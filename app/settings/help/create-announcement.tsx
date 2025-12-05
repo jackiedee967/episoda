@@ -72,12 +72,23 @@ export default function CreateAnnouncementScreen() {
 
     try {
       setLoading(true);
-      console.log('📢 Inserting announcement to database...');
+      
+      // Get the authenticated user's ID from Supabase session (required for RLS)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData?.session?.user?.id) {
+        console.error('📢 No active Supabase session', { sessionError });
+        Alert.alert('Session Expired', 'Your session has expired. Please sign in again.');
+        return;
+      }
+      
+      const authenticatedUserId = sessionData.session.user.id;
+      console.log('📢 Inserting announcement to database...', { authenticatedUserId });
 
       const { data, error } = await supabase
         .from('help_desk_posts')
         .insert({
-          user_id: currentUser.id,
+          user_id: authenticatedUserId,
           username: currentUser.username,
           title: title.trim(),
           details: details.trim(),
@@ -103,7 +114,7 @@ export default function CreateAnnouncementScreen() {
           const { data: allUsers, error: usersError } = await supabase
             .from('profiles')
             .select('user_id')
-            .neq('user_id', currentUser.id); // Don't notify the admin who created it
+            .neq('user_id', authenticatedUserId); // Don't notify the admin who created it
           
           if (usersError) {
             console.warn('📢 Error fetching users for notifications:', usersError);
@@ -113,7 +124,7 @@ export default function CreateAnnouncementScreen() {
             const notifications = allUsers.map(user => ({
               user_id: user.user_id,
               type: 'admin_announcement',
-              actor_id: currentUser.id,
+              actor_id: authenticatedUserId,
               post_id: announcementId,
               is_read: false,
             }));
