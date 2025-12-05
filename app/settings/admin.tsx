@@ -160,7 +160,7 @@ interface ErrorStats {
 export default function AdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-  const { currentUserData } = useData();
+  const { currentUser } = useData();
   const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -177,7 +177,7 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  const isAdmin = (currentUserData as any)?.is_admin === true;
+  const isAdmin = (currentUser as any)?.is_admin === true;
 
   const loadStats = useCallback(async () => {
     try {
@@ -1498,14 +1498,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginTop: 12,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
   },
 });
