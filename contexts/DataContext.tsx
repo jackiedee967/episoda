@@ -171,14 +171,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
     followers: userData.followers,
   }), [currentUserData, userData.following, userData.followers]);
 
+  // Helper to safely parse AsyncStorage data - guards against 'undefined' string corruption
+  const safeParseStorage = (data: string | null): any => {
+    // Guard against null, empty strings, and 'undefined' literal strings
+    if (!data || data === 'undefined' || data === 'null' || data.trim() === '') {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(data);
+      // Additional guard: parsed value should be a valid array or object
+      if (parsed === null || parsed === undefined) {
+        return null;
+      }
+      return parsed;
+    } catch (e) {
+      console.warn('❌ Failed to parse AsyncStorage data:', e);
+      return null;
+    }
+  };
+
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
 
       // Load posts
       const postsData = await AsyncStorage.getItem(STORAGE_KEYS.POSTS);
-      if (postsData) {
-        const parsedPosts = JSON.parse(postsData);
+      const parsedPosts = safeParseStorage(postsData);
+      if (parsedPosts && Array.isArray(parsedPosts)) {
         setPosts(parsedPosts.map((p: any) => ({
           ...p,
           timestamp: new Date(p.timestamp),
@@ -187,14 +206,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       // Load user data
       const userDataStr = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      if (userDataStr) {
-        setUserData(JSON.parse(userDataStr));
+      const parsedUserData = safeParseStorage(userDataStr);
+      if (parsedUserData && typeof parsedUserData === 'object') {
+        setUserData(parsedUserData);
       }
 
       // Load reposts
       const repostsData = await AsyncStorage.getItem(STORAGE_KEYS.REPOSTS);
-      if (repostsData) {
-        const parsedReposts = JSON.parse(repostsData);
+      const parsedReposts = safeParseStorage(repostsData);
+      if (parsedReposts && Array.isArray(parsedReposts)) {
         setReposts(parsedReposts.map((r: any) => ({
           ...r,
           timestamp: new Date(r.timestamp),
@@ -203,8 +223,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       // Load playlists
       const playlistsData = await AsyncStorage.getItem(STORAGE_KEYS.PLAYLISTS);
-      if (playlistsData) {
-        const parsedPlaylists = JSON.parse(playlistsData);
+      const parsedPlaylists = safeParseStorage(playlistsData);
+      if (parsedPlaylists && Array.isArray(parsedPlaylists)) {
         setPlaylists(parsedPlaylists.map((p: any) => ({
           ...p,
           createdAt: new Date(p.createdAt),
@@ -213,8 +233,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       // Load Trakt ID -> UUID mapping
       const traktIdMapData = await AsyncStorage.getItem(STORAGE_KEYS.TRAKT_ID_MAP);
-      if (traktIdMapData) {
-        const mapObject = JSON.parse(traktIdMapData);
+      const mapObject = safeParseStorage(traktIdMapData);
+      if (mapObject && typeof mapObject === 'object') {
         // Convert keys back to numbers (JSON stringifies number keys)
         const newMap = new Map<number, string>();
         Object.entries(mapObject).forEach(([key, value]) => {
@@ -228,6 +248,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setIsHydrated(true);
     } catch (error) {
       console.error('Error loading data:', error);
+      // Still mark as hydrated even on error to prevent infinite loading states
+      setIsHydrated(true);
     } finally {
       setIsLoading(false);
     }
@@ -723,6 +745,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   const createPlaylist = useCallback(async (name: string, showId?: string): Promise<Playlist> => {
+    // Hydration guard: prevent operations before data is loaded
+    if (!isHydrated) {
+      console.warn('⚠️ createPlaylist called before hydration complete, waiting...');
+      throw new Error('App is still loading. Please try again in a moment.');
+    }
+    
     try {
       console.log('📝 Creating playlist:', name);
 
@@ -822,6 +850,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [playlists, currentUser.id, authUserId]);
 
   const addShowToPlaylist = useCallback(async (playlistId: string, showId: string, traktId?: number) => {
+    // Hydration guard: prevent operations before data is loaded
+    if (!isHydrated) {
+      console.warn('⚠️ addShowToPlaylist called before hydration complete');
+      throw new Error('App is still loading. Please try again in a moment.');
+    }
+    
     try {
       console.log('📝 Adding show to playlist:', playlistId, showId);
 
@@ -891,6 +925,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [authUserId]);
 
   const removeShowFromPlaylist = useCallback(async (playlistId: string, showId: string) => {
+    // Hydration guard: prevent operations before data is loaded
+    if (!isHydrated) {
+      console.warn('⚠️ removeShowFromPlaylist called before hydration complete');
+      throw new Error('App is still loading. Please try again in a moment.');
+    }
+    
     try {
       console.log('📝 Removing show from playlist:', playlistId, showId);
 
@@ -959,6 +999,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [authUserId]);
 
   const deletePlaylist = useCallback(async (playlistId: string) => {
+    // Hydration guard: prevent operations before data is loaded
+    if (!isHydrated) {
+      console.warn('⚠️ deletePlaylist called before hydration complete');
+      throw new Error('App is still loading. Please try again in a moment.');
+    }
+    
     try {
       console.log('📝 Deleting playlist:', playlistId);
 
