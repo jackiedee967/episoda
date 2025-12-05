@@ -16,51 +16,75 @@ const APP_STORE_URL = 'https://apps.apple.com/app/episoda/idXXXXXXXXX';
 
 export default function InviteFriendsModal({ visible, onClose, onInvite }: InviteFriendsModalProps) {
   const handleInviteFriends = async () => {
+    // If parent provided a custom onInvite handler, use that
+    if (onInvite) {
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {}
+      onInvite();
+      return;
+    }
+    
+    // Otherwise, default share behavior
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
-      // If parent provided a custom onInvite handler, use that
-      if (onInvite) {
-        onInvite();
-        return;
+    } catch (e) {}
+    
+    // Copy link to clipboard first
+    let clipboardSuccess = false;
+    try {
+      await Clipboard.setStringAsync(APP_STORE_URL);
+      clipboardSuccess = true;
+    } catch (clipboardError) {
+      console.warn('Clipboard access failed:', clipboardError);
+    }
+    
+    // Share with native share sheet - use only message to avoid iOS issues
+    const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
+    
+    // Wrap Share.share in a setTimeout to prevent iOS crash
+    if (Platform.OS === 'ios') {
+      setTimeout(async () => {
+        try {
+          const result = await Share.share({
+            message: message,
+          });
+          if (result.action === Share.sharedAction) {
+            try {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (e) {}
+            onClose();
+          }
+        } catch (shareError) {
+          console.error('Share sheet error:', shareError);
+          Alert.alert('Copied!', 'Link copied to clipboard.');
+          onClose();
+        }
+      }, 100);
+    } else if (Platform.OS === 'web') {
+      // Web doesn't support native share, just copy to clipboard
+      if (clipboardSuccess) {
+        window.alert('Link copied to clipboard!');
+      } else {
+        window.alert('Failed to copy link. Please try again.');
       }
-      
-      // Otherwise, default share behavior
-      // Copy link to clipboard first
-      try {
-        await Clipboard.setStringAsync(APP_STORE_URL);
-      } catch (clipboardError) {
-        console.warn('Clipboard access failed:', clipboardError);
-      }
-      
-      // Share with native share sheet - use only message to avoid iOS issues
-      const message = `Check out EPISODA - the app for TV show discussions and recommendations! ${APP_STORE_URL}`;
-      
+      onClose();
+    } else {
+      // Android
       try {
         const result = await Share.share({
           message: message,
         });
-
         if (result.action === Share.sharedAction) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          try {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } catch (e) {}
           onClose();
         }
       } catch (shareError) {
         console.error('Share sheet error:', shareError);
-        // Fallback - just close the modal since link was copied
-        if (Platform.OS === 'web') {
-          window.alert('Link copied to clipboard!');
-        } else {
-          Alert.alert('Copied!', 'Link copied to clipboard.');
-        }
+        Alert.alert('Copied!', 'Link copied to clipboard.');
         onClose();
-      }
-    } catch (error) {
-      console.error('Error in handleInviteFriends:', error);
-      if (Platform.OS === 'web') {
-        window.alert('Failed to share. Please try again.');
-      } else {
-        Alert.alert('Error', 'Failed to share. Please try again.');
       }
     }
   };
