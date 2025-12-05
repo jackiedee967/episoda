@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ImageBackground, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, ImageBackground, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Asset } from 'expo-asset';
 import { colors } from '@/styles/tokens';
 import { useAuth } from '@/contexts/AuthContext';
 
-const welcomeBackground = require('../../assets/images/auth/welcome-background.jpg');
-const layer1 = require('../../assets/images/auth/layer-1.png');
-const topStuff = require('../../assets/images/auth/top-stuff.png');
-const bottomCombined = require('../../assets/images/auth/bottom-combined.png');
-const appleLogo = require('../../assets/images/auth/apple-logo.png');
-const phoneIcon = require('../../assets/images/auth/phone-icon.png');
+const welcomeBackgroundModule = require('../../assets/images/auth/welcome-background.jpg');
+const layer1Module = require('../../assets/images/auth/layer-1.png');
+const topStuffModule = require('../../assets/images/auth/top-stuff.png');
+const bottomCombinedModule = require('../../assets/images/auth/bottom-combined.png');
+const appleLogoModule = require('../../assets/images/auth/apple-logo.png');
+const phoneIconModule = require('../../assets/images/auth/phone-icon.png');
 
 /**
  * Splash/Welcome Screen - First screen in auth flow
@@ -18,6 +19,45 @@ export default function SplashScreen() {
   const router = useRouter();
   const { signInWithApple } = useAuth();
   const [appleLoading, setAppleLoading] = useState(false);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const [assetUris, setAssetUris] = useState<{
+    welcomeBackground: string;
+    layer1: string;
+    topStuff: string;
+    bottomCombined: string;
+    appleLogo: string;
+    phoneIcon: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const loadAssets = async () => {
+      try {
+        const assets = await Asset.loadAsync([
+          welcomeBackgroundModule,
+          layer1Module,
+          topStuffModule,
+          bottomCombinedModule,
+          appleLogoModule,
+          phoneIconModule,
+        ]);
+        
+        setAssetUris({
+          welcomeBackground: assets[0].localUri || assets[0].uri,
+          layer1: assets[1].localUri || assets[1].uri,
+          topStuff: assets[2].localUri || assets[2].uri,
+          bottomCombined: assets[3].localUri || assets[3].uri,
+          appleLogo: assets[4].localUri || assets[4].uri,
+          phoneIcon: assets[5].localUri || assets[5].uri,
+        });
+        setAssetsLoaded(true);
+      } catch (error) {
+        console.error('Failed to load auth assets:', error);
+        setAssetsLoaded(true);
+      }
+    };
+    
+    loadAssets();
+  }, []);
 
   const handlePhoneSignIn = () => {
     router.push('/auth/phone-number');
@@ -36,16 +76,24 @@ export default function SplashScreen() {
     }
   };
 
+  if (!assetsLoaded || !assetUris) {
+    return (
+      <View style={[styles.wrapper, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wrapper}>
       <ImageBackground
-        source={welcomeBackground}
+        source={{ uri: assetUris.welcomeBackground }}
         style={styles.backgroundImage}
-        resizeMode="cover"
+        resizeMode="stretch"
       >
         {/* Top decorative images */}
         <Image
-          source={topStuff}
+          source={{ uri: assetUris.topStuff }}
           style={styles.topStuff}
           resizeMode="contain"
         />
@@ -53,7 +101,7 @@ export default function SplashScreen() {
         {/* Center content - logo and tagline */}
         <View style={styles.centerContent}>
           <Image
-            source={layer1}
+            source={{ uri: assetUris.layer1 }}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -65,7 +113,7 @@ export default function SplashScreen() {
 
         {/* Decorative image below tagline - positioned to extend beyond padding */}
         <Image
-          source={bottomCombined}
+          source={{ uri: assetUris.bottomCombined }}
           style={styles.bottomCombined}
           resizeMode="contain"
         />
@@ -81,7 +129,7 @@ export default function SplashScreen() {
           >
             <View style={styles.buttonContent}>
               <Image
-                source={phoneIcon}
+                source={{ uri: assetUris.phoneIcon }}
                 style={styles.phoneIcon}
                 resizeMode="contain"
               />
@@ -97,7 +145,7 @@ export default function SplashScreen() {
           >
             <View style={styles.buttonContent}>
               <Image
-                source={appleLogo}
+                source={{ uri: assetUris.appleLogo }}
                 style={styles.appleLogo}
                 resizeMode="contain"
               />
@@ -114,6 +162,10 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#7BA8FF',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backgroundImage: {
     flex: 1,
