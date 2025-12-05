@@ -33,8 +33,7 @@ export default function CreatePostScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // AUTHENTICATION BYPASSED - Using mock user from DataContext
-  const currentUsername = currentUser.username;
+  const currentUsername = currentUser?.username || '';
   const userIsAdmin = currentUser?.is_admin === true;
 
   const categories: HelpDeskCategory[] = [
@@ -46,6 +45,19 @@ export default function CreatePostScreen() {
   ];
 
   const handleCreatePost = async () => {
+    console.log('📝 Create Post: Starting...');
+    
+    // Validate user is authenticated
+    if (!currentUser?.id || !currentUser?.username) {
+      console.error('📝 Create Post: User not authenticated', { currentUser });
+      if (Platform.OS === 'web') {
+        window.alert('Please sign in to create a post.');
+      } else {
+        Alert.alert('Not Signed In', 'Please sign in to create a post.');
+      }
+      return;
+    }
+    
     if (!title.trim()) {
       if (Platform.OS === 'web') {
         window.alert('Please enter a title for your post.');
@@ -68,17 +80,32 @@ export default function CreatePostScreen() {
       setLoading(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // AUTHENTICATION BYPASSED - Using mock user
-      const userId = currentUser.id;
+      // Get the authenticated user's ID from Supabase session (required for RLS)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData?.session?.user?.id) {
+        console.error('📝 Create Post: No active Supabase session', { sessionError });
+        if (Platform.OS === 'web') {
+          window.alert('Your session has expired. Please sign in again.');
+        } else {
+          Alert.alert('Session Expired', 'Your session has expired. Please sign in again.');
+        }
+        return;
+      }
+      
+      const authenticatedUserId = sessionData.session.user.id;
+      const username = currentUser.username;
 
       // Determine section based on category
       const section = category === 'Admin Announcement' ? 'announcement' : 'general';
 
+      console.log('📝 Create Post: Inserting to database...', { authenticatedUserId, username, category, section });
+
       const { data, error } = await supabase
         .from('help_desk_posts')
         .insert({
-          user_id: userId,
-          username: currentUsername,
+          user_id: authenticatedUserId,
+          username: username,
           title: title.trim(),
           details: details.trim(),
           category,
@@ -90,9 +117,11 @@ export default function CreatePostScreen() {
         .single();
 
       if (error) {
-        console.error('Error creating post:', error);
+        console.error('📝 Create Post: Database error:', error);
         throw error;
       }
+      
+      console.log('📝 Create Post: Success!', { postId: data?.id });
 
       // Save mentions if there are any
       if (mentionedUsers.length > 0 && data?.id) {
@@ -103,7 +132,7 @@ export default function CreatePostScreen() {
         const mentionedUserIds = Array.from(userMap.values());
         await createMentionNotifications(
           mentionedUserIds,
-          userId,
+          authenticatedUserId,
           'mention_post',
           data.id
         );
@@ -120,12 +149,13 @@ export default function CreatePostScreen() {
           },
         ]);
       }
-    } catch (error) {
-      console.error('Error creating post:', error);
+    } catch (error: any) {
+      console.error('📝 Create Post: Failed:', error);
+      const errorMessage = error?.message || 'Unknown error occurred';
       if (Platform.OS === 'web') {
-        window.alert('Failed to create post. Please try again.');
+        window.alert(`Failed to create post: ${errorMessage}`);
       } else {
-        Alert.alert('Error', 'Failed to create post. Please try again.');
+        Alert.alert('Error', `Failed to create post: ${errorMessage}`);
       }
     } finally {
       setLoading(false);
