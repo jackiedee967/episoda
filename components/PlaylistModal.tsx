@@ -211,84 +211,95 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
     });
   };
 
-  const handleCreatePlaylist = async () => {
-    if (newPlaylistName.trim()) {
-      // Haptic feedback
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      try {
-        // Create empty playlist first
-        const newPlaylist = await createPlaylist(newPlaylistName);
-        console.log(`Created new playlist "${newPlaylist.name}"`);
-        
-        // Then try to add the show if we have a valid UUID
-        if (ensuredShowUuid) {
-          const traktId = show.traktId || traktShow?.ids?.trakt;
-          await addShowToPlaylist(newPlaylist.id, ensuredShowUuid, traktId);
-          console.log(`Added ${show.title} to ${newPlaylist.name}`);
-          
-          // Call the callback if provided
-          if (onAddToPlaylist) {
-            onAddToPlaylist(newPlaylist.id, ensuredShowUuid);
-          }
+  const safeHaptic = (type: 'impact' | 'success' | 'error') => {
+    try {
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        if (type === 'impact') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        } else if (type === 'success') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        } else if (type === 'error') {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
         }
-        
-        // Show success animation
-        showSuccessAnimation(ensuredShowUuid ? 'Added to playlist!' : 'Playlist created!');
-        
-        // Reset the input and close the modal after a brief delay
-        setNewPlaylistName('');
-        setTimeout(() => {
-          onClose();
-        }, 1000);
-      } catch (error) {
-        console.error('Error creating playlist:', error);
-        showSuccessAnimation('Failed to create playlist');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
+    } catch (e) {
+      console.warn('Haptics not available:', e);
+    }
+  };
+
+  const handleCreatePlaylist = async () => {
+    if (!newPlaylistName.trim()) return;
+    
+    safeHaptic('impact');
+
+    try {
+      const newPlaylist = await createPlaylist(newPlaylistName);
+      console.log(`Created new playlist "${newPlaylist.name}"`);
+      
+      if (ensuredShowUuid && show) {
+        const traktId = show.traktId || traktShow?.ids?.trakt;
+        await addShowToPlaylist(newPlaylist.id, ensuredShowUuid, traktId);
+        console.log(`Added ${show.title} to ${newPlaylist.name}`);
+        
+        if (onAddToPlaylist) {
+          onAddToPlaylist(newPlaylist.id, ensuredShowUuid);
+        }
+      }
+      
+      showSuccessAnimation(ensuredShowUuid ? 'Added to playlist!' : 'Playlist created!');
+      
+      setNewPlaylistName('');
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+      showSuccessAnimation('Failed to create playlist');
+      safeHaptic('error');
     }
   };
 
   const handleTogglePlaylist = async (playlistId: string) => {
+    if (!show) {
+      console.error('handleTogglePlaylist: show is null');
+      return;
+    }
+    
     const playlist = playlists.find(pl => pl.id === playlistId);
     
     try {
-      // Ensure we have a valid database UUID for the show
       const showIdToUse = await ensureShowUuid(show, traktShow);
+      if (!showIdToUse) {
+        console.error('Failed to get show UUID');
+        showSuccessAnimation('Failed to update playlist');
+        return;
+      }
       console.log('✅ Ensured show has database UUID:', showIdToUse);
       
-      // Check if show is already in the playlist
       if (isShowInPlaylist(playlistId, showIdToUse)) {
-        // Remove from playlist
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        safeHaptic('impact');
         
         await removeShowFromPlaylist(playlistId, showIdToUse);
         console.log(`Removed ${show.title} from ${playlist?.name}`);
         
-        // Show success animation
         showSuccessAnimation('Removed from playlist!');
         
-        // Close modal after brief delay
         setTimeout(() => {
           onClose();
         }, 1000);
       } else {
-        // Add to playlist
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        safeHaptic('success');
         
         const traktId = show.traktId || traktShow?.ids?.trakt;
         await addShowToPlaylist(playlistId, showIdToUse, traktId);
         console.log(`Added ${show.title} to ${playlist?.name}`);
         
-        // Call the callback if provided
         if (onAddToPlaylist) {
           onAddToPlaylist(playlistId, showIdToUse);
         }
         
-        // Show success animation
         showSuccessAnimation('Added to playlist!');
         
-        // Close modal after brief delay
         setTimeout(() => {
           onClose();
         }, 1000);
@@ -296,7 +307,7 @@ export default function PlaylistModal({ visible, onClose, show, traktShow, onAdd
     } catch (error) {
       console.error('Error toggling playlist:', error);
       showSuccessAnimation('Failed to update playlist');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      safeHaptic('error');
     }
   };
 
