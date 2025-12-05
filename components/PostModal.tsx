@@ -1991,6 +1991,11 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
     return null;
   }
 
+  // Only enable keyboard avoidance when editing custom tag (the only input at bottom of modal)
+  // For selectShow step: search input is at top, no avoidance needed
+  // For postDetails step: Title/Body inputs are in ScrollView which handles itself
+  const needsKeyboardAvoidance = step === 'postDetails' && isEditingCustomTag;
+
   return (
     <Modal
       visible={isModalVisible}
@@ -1999,7 +2004,7 @@ export default function PostModal({ visible, onClose, preselectedShow, preselect
       onRequestClose={closeWithAnimation}
     >
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={needsKeyboardAvoidance && Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
