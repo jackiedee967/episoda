@@ -1291,9 +1291,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     tvmazeId,
                     imdbId,
                   });
+                  // CRITICAL FIX: Keep the legacy ID in validShows so it appears in UI
+                  // The migration will update it to a proper UUID later
+                  validShows.push(showId);
+                  console.log(`🔧 Keeping legacy show_id in playlist while migration runs: ${showId}`);
                 } else {
-                  // Unknown format - log for manual investigation
-                  console.error(`🚨 Unknown show_id format in playlist "${p.name}": ${showId}`);
+                  // Unknown format - still keep it to prevent data loss
+                  validShows.push(showId);
+                  console.error(`🚨 Unknown show_id format in playlist "${p.name}": ${showId} - keeping anyway`);
                 }
               }
             }
@@ -1415,14 +1420,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     console.log(`✅ Repaired show_id ${legacy.showId} -> ${correctUuid}`);
                   }
                   
-                  // Add to loaded playlist immediately
+                  // Replace legacy ID with correct UUID in loaded playlist
                   const playlist = loadedPlaylists.find(pl => pl.id === legacy.playlistId);
-                  if (playlist && !playlist.shows.includes(correctUuid)) {
-                    playlist.shows.push(correctUuid);
+                  if (playlist) {
+                    const legacyIndex = playlist.shows.indexOf(legacy.showId);
+                    if (legacyIndex !== -1) {
+                      playlist.shows[legacyIndex] = correctUuid;
+                      console.log(`✅ Replaced ${legacy.showId} with ${correctUuid} in playlist "${playlist.name}"`);
+                    } else if (!playlist.shows.includes(correctUuid)) {
+                      playlist.shows.push(correctUuid);
+                    }
                     playlist.showCount = playlist.shows.length;
                   }
                 } else {
-                  console.error(`❌ Could not repair show_id: ${legacy.showId} - show not in database and no trakt ID for API lookup`);
+                  // Keep the legacy ID - it will show as a placeholder until resolved
+                  console.warn(`⚠️ Could not repair show_id: ${legacy.showId} - keeping in playlist`);
                 }
               } catch (error) {
                 console.error(`❌ Failed to repair show_id ${legacy.showId}:`, error);
