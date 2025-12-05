@@ -68,6 +68,7 @@ interface DataContextType {
   getEpisodesWatchedCount: (userId: string) => Promise<number>;
   getTotalLikesReceived: (userId: string) => Promise<number>;
   getWatchHistory: (userId: string) => WatchHistoryItem[];
+  updateCurrentUserAvatar: (newAvatarUrl: string) => void;
   isLoading: boolean;
   isDeletingPost: boolean;
   cachedRecommendations: CachedRecommendation[];
@@ -305,6 +306,51 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Error loading user profile from Supabase:', error);
     }
   }, [isHydrated]);
+
+  // Update current user's avatar across all state
+  const updateCurrentUserAvatar = useCallback((newAvatarUrl: string) => {
+    console.log('📸 Updating current user avatar across app state:', newAvatarUrl.substring(0, 50) + '...');
+    
+    const userId = currentUserData.id;
+    if (!userId) {
+      console.warn('📸 Cannot update avatar: no current user ID');
+      return;
+    }
+    
+    // 1. Update currentUserData
+    setCurrentUserData(prev => ({
+      ...prev,
+      avatar: newAvatarUrl,
+      avatar_url: newAvatarUrl,
+    }));
+    
+    // 2. Update userProfileCache for current user
+    setUserProfileCache(prev => ({
+      ...prev,
+      [userId]: {
+        ...prev[userId],
+        avatar: newAvatarUrl,
+        avatar_url: newAvatarUrl,
+      },
+    }));
+    
+    // 3. Update posts that belong to current user
+    setPosts(prev => prev.map(post => {
+      if (post.user.id === userId) {
+        return {
+          ...post,
+          user: {
+            ...post.user,
+            avatar: newAvatarUrl,
+            avatar_url: newAvatarUrl,
+          },
+        };
+      }
+      return post;
+    }));
+    
+    console.log('📸 Avatar updated in currentUserData, userProfileCache, and posts');
+  }, [currentUserData.id]);
 
   const loadFollowDataFromSupabase = useCallback(async (userId: string) => {
     try {
@@ -3039,6 +3085,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getEpisodesWatchedCount,
     getTotalLikesReceived,
     loadRecommendations,
+    updateCurrentUserAvatar,
   }), [
     createPlaylist,
     addShowToPlaylist,
@@ -3064,6 +3111,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getEpisodesWatchedCount,
     getTotalLikesReceived,
     loadRecommendations,
+    updateCurrentUserAvatar,
   ]);
 
   // Assemble the context value from the three stable layers

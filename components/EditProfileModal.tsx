@@ -308,7 +308,12 @@ export default function EditProfileModal({
 
       if (uploadError) {
         console.error('📸 Upload error details:', uploadError);
-        Alert.alert('Upload Failed', uploadError.message || 'Storage upload failed');
+        // Check for specific error types
+        if (uploadError.message?.includes('exceeded the maximum allowed size')) {
+          Alert.alert('Image Too Large', 'Please select a smaller image (under 2MB).');
+        } else {
+          Alert.alert('Upload Failed', uploadError.message || 'Storage upload failed');
+        }
         return null;
       }
 
