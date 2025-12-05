@@ -9,6 +9,8 @@ import {
   ScrollView,
   ActivityIndicator,
   Modal,
+  Alert,
+  Platform,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
@@ -45,15 +47,19 @@ export default function CreatePostScreen() {
 
   const handleCreatePost = async () => {
     if (!title.trim()) {
-      if (typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
         window.alert('Please enter a title for your post.');
+      } else {
+        Alert.alert('Missing Title', 'Please enter a title for your post.');
       }
       return;
     }
 
     if (!details.trim()) {
-      if (typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
         window.alert('Please provide details for your post.');
+      } else {
+        Alert.alert('Missing Details', 'Please provide details for your post.');
       }
       return;
     }
@@ -103,14 +109,23 @@ export default function CreatePostScreen() {
         );
       }
 
-      if (typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
         window.alert('Your post has been created!');
+        router.replace('/settings/help?refresh=true');
+      } else {
+        Alert.alert('Success', 'Your post has been created!', [
+          {
+            text: 'OK',
+            onPress: () => router.replace({ pathname: '/settings/help', params: { refresh: Date.now().toString() } }),
+          },
+        ]);
       }
-      router.replace('/settings/help?refresh=true');
     } catch (error) {
       console.error('Error creating post:', error);
-      if (typeof window !== 'undefined') {
+      if (Platform.OS === 'web') {
         window.alert('Failed to create post. Please try again.');
+      } else {
+        Alert.alert('Error', 'Failed to create post. Please try again.');
       }
     } finally {
       setLoading(false);

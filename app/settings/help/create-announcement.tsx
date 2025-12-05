@@ -13,7 +13,6 @@ import { Stack, useRouter } from 'expo-router';
 import { colors, typography } from '@/styles/commonStyles';
 import { supabase } from '@/integrations/supabase/client';
 import { useData } from '@/contexts/DataContext';
-import { isAdmin } from '@/config/admins';
 import ButtonL from '@/components/ButtonL';
 import MentionInput from '@/components/MentionInput';
 
@@ -26,16 +25,16 @@ export default function CreateAnnouncementScreen() {
   const [loading, setLoading] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
 
-  // Admin check - must be in useEffect to avoid setState during render
+  // Admin check using database is_admin flag - must be in useEffect to avoid setState during render
   useEffect(() => {
     if (currentUser?.id) {
-      if (!isAdmin(currentUser.id)) {
+      if (currentUser?.is_admin !== true) {
         router.back();
       } else {
         setCheckingAdmin(false);
       }
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.is_admin]);
 
   // Show loading while checking admin status
   if (checkingAdmin) {
